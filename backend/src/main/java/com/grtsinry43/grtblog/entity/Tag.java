@@ -38,15 +38,15 @@ public class Tag implements Serializable {
     /**
      * 标签创建时间
      */
-    private LocalDateTime created;
+    private LocalDateTime createdAt;
 
     /**
      * 标签更新时间
      */
-    private LocalDateTime updated;
+    private LocalDateTime updatedAt;
 
     /**
      * 标签删除时间（软删除），如果不为空则表示已删除
      */
-    private LocalDateTime deleted;
+    private LocalDateTime deletedAt;
 }

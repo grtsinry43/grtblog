@@ -30,6 +30,16 @@ const Index = () => {
       key: 'status',
     },
     {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+    },
+    {
       title: '操作',
       valueType: 'option',
       render: () => [
@@ -38,7 +48,6 @@ const Index = () => {
       ],
     },
   ];
-
 
   return (
     <PageContainer title={'文章列表'}>
@@ -53,6 +62,8 @@ const Index = () => {
                 category: '分类1',
                 tags: '标签1',
                 status: '状态1',
+                createdAt: '2024-10-09 12:00:00',
+                updatedAt: '2024-10-09 12:00:00',
               },
               {
                 title: '标题2',
@@ -60,6 +71,8 @@ const Index = () => {
                 category: '分类2',
                 tags: '标签2',
                 status: '状态2',
+                createdAt: '2024-10-09 12:00:00',
+                updatedAt: '2024-10-09 12:00:00',
               },
             ],
             success: true,

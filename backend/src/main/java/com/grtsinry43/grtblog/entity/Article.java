@@ -56,6 +56,11 @@ public class Article implements Serializable {
     private String cover;
 
     /**
+     * 分类 ID
+     */
+    private Long categoryId;
+
+    /**
      * 文章浏览量
      */
     private Integer views;

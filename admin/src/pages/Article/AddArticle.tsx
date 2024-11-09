@@ -21,6 +21,8 @@ const AddArticle = () => {
     categoryId: 0,
     tags: '',
     status: '',
+    createdAt: '',
+    updatedAt: '',
   });
   const onValueChange = (key: string, value: any) => {
     setForm({
@@ -135,6 +137,18 @@ const AddArticle = () => {
             <Select.Option value="DRAFT"> 草稿 </Select.Option>
             <Select.Option value="PUBLISHED"> 发布 </Select.Option>
           </Select>
+        </Form.Item>
+        <Form.Item label="创建时间" name="createdAt">
+          <Input
+            placeholder="创建时间"
+            onChange={(e) => onValueChange('createdAt', e.target.value)}
+          />
+        </Form.Item>
+        <Form.Item label="更新时间" name="updatedAt">
+          <Input
+            placeholder="更新时间"
+            onChange={(e) => onValueChange('updatedAt', e.target.value)}
+          />
         </Form.Item>
       </ProForm>
     </div>

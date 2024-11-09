@@ -95,6 +95,9 @@ CREATE TABLE IF NOT EXISTS `article_tag`
     `id`         BIGINT NOT NULL AUTO_INCREMENT COMMENT '文章标签关联ID，会由雪花算法生成',
     `article_id` BIGINT NOT NULL COMMENT '文章ID',
     `tag_id`     BIGINT NOT NULL COMMENT '标签ID',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '文章标签关联创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '文章标签关联更新时间',
+    `deleted_at` TIMESTAMP COMMENT '文章标签关联删除时间（软删除），如果不为空则表示已删除',
     PRIMARY KEY (`id`)
 );
 

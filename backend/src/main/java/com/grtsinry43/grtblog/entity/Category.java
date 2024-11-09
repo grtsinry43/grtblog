@@ -2,11 +2,12 @@ package com.grtsinry43.grtblog.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,40 +21,34 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@TableName("article_tag")
-public class ArticleTag implements Serializable {
+public class Category implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     /**
-     * 文章标签关联ID，会由雪花算法生成
+     * 分类ID，会由雪花算法生成
      */
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
-     * 文章ID
+     * 分类名称
      */
-    private Long articleId;
+    private String name;
 
     /**
-     * 标签ID
-     */
-    private Long tagId;
-
-    /**
-     * 文章标签关联创建时间
+     * 分类创建时间
      */
     private LocalDateTime createdAt;
 
     /**
-     * 文章标签关联更新时间
+     * 分类更新时间
      */
     private LocalDateTime updatedAt;
 
     /**
-     * 文章标签关联删除时间（软删除），如果不为空则表示已删除
+     * 分类删除时间（软删除），如果不为空则表示已删除
      */
     private LocalDateTime deletedAt;
 }
