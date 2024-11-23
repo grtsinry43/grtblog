@@ -9,6 +9,7 @@ import com.grtsinry43.grtblog.exception.BusinessException;
 import com.grtsinry43.grtblog.mapper.ArticleMapper;
 import com.grtsinry43.grtblog.security.LoginUserDetails;
 import com.grtsinry43.grtblog.service.CommentAreaService;
+import com.grtsinry43.grtblog.service.ElasticsearchService;
 import com.grtsinry43.grtblog.service.IArticleService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.grtsinry43.grtblog.service.RecommendationService;
@@ -39,14 +40,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final UserServiceImpl userService;
     private final RecommendationService recommendationService;
     private final CommentAreaService commentAreaService;
+    private final ElasticsearchService elasticsearchService;
 
-    public ArticleServiceImpl(ArticleTagServiceImpl articleTagService, TagServiceImpl tagService, CategoryServiceImpl categoryService, UserServiceImpl userService, RecommendationService recommendationService, CommentAreaService commentAreaService) {
+    public ArticleServiceImpl(ArticleTagServiceImpl articleTagService, TagServiceImpl tagService, CategoryServiceImpl categoryService, UserServiceImpl userService, RecommendationService recommendationService, CommentAreaService commentAreaService, ElasticsearchService elasticsearchService) {
         this.articleTagService = articleTagService;
         this.tagService = tagService;
         this.categoryService = categoryService;
         this.userService = userService;
         this.recommendationService = recommendationService;
         this.commentAreaService = commentAreaService;
+        this.elasticsearchService = elasticsearchService;
     }
 
     @Override
@@ -82,6 +85,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         this.baseMapper.insert(article);
         articleTagService.syncArticleTag(article.getId(), tagIds);
         recommendationService.updateArticleStatus(article);
+        try {
+            elasticsearchService.indexArticle(article);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to index article in Elasticsearch");
+        }
         ArticleVO articleVO = new ArticleVO();
         BeanUtils.copyProperties(article, articleVO);
         articleVO.setId(article.getId().toString());
@@ -106,6 +114,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         recommendationService.deleteArticleStatus(articleId);
         // 删除评论区
         commentAreaService.deleteCommentArea(article.getCommentId());
+        try {
+            elasticsearchService.deleteArticle(articleId.toString());
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to delete article from Elasticsearch");
+        }
     }
 
     @Override
@@ -136,6 +149,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         this.baseMapper.updateById(article);
         articleTagService.syncArticleTag(article.getId(), tagIds);
         recommendationService.updateArticleStatus(article);
+        try {
+            elasticsearchService.updateArticle(article);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to update article in Elasticsearch");
+        }
         ArticleVO articleVO = new ArticleVO();
         BeanUtils.copyProperties(article, articleVO);
         articleVO.setId(article.getId().toString());

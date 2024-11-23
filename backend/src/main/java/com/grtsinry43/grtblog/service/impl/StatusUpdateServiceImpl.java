@@ -7,6 +7,7 @@ import com.grtsinry43.grtblog.exception.BusinessException;
 import com.grtsinry43.grtblog.mapper.StatusUpdateMapper;
 import com.grtsinry43.grtblog.mapper.UserMapper;
 import com.grtsinry43.grtblog.security.LoginUserDetails;
+import com.grtsinry43.grtblog.service.ElasticsearchService;
 import com.grtsinry43.grtblog.service.IStatusUpdateService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.grtsinry43.grtblog.vo.StatusUpdatePreview;
@@ -31,10 +32,12 @@ import java.util.stream.Collectors;
 public class StatusUpdateServiceImpl extends ServiceImpl<StatusUpdateMapper, StatusUpdate> implements IStatusUpdateService {
     private final UserMapper userMapper;
     private final CategoryServiceImpl categoryService;
+    private final ElasticsearchService elasticsearchService;
 
-    public StatusUpdateServiceImpl(UserMapper userMapper, CategoryServiceImpl categoryService) {
+    public StatusUpdateServiceImpl(UserMapper userMapper, CategoryServiceImpl categoryService, ElasticsearchService elasticsearchService) {
         this.userMapper = userMapper;
         this.categoryService = categoryService;
+        this.elasticsearchService = elasticsearchService;
     }
 
     @Override
@@ -142,6 +145,11 @@ public class StatusUpdateServiceImpl extends ServiceImpl<StatusUpdateMapper, Sta
         statusUpdate.setSummary(statusUpdateDTO.getSummary() != null ? statusUpdateDTO.getSummary() : statusUpdateDTO.getContent().length() > 200 ? statusUpdateDTO.getContent().substring(0, 200) : statusUpdateDTO.getContent());
         statusUpdate.setCategoryId(Long.valueOf(statusUpdateDTO.getCategoryId()));
         this.save(statusUpdate);
+        try {
+            elasticsearchService.indexStatusUpdate(statusUpdate);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to index status update in Elasticsearch");
+        }
         StatusUpdateVO statusUpdateVO = new StatusUpdateVO();
         BeanUtils.copyProperties(statusUpdate, statusUpdateVO);
         statusUpdateVO.setAuthorName(userMapper.selectById(userId).getNickname());
@@ -153,6 +161,11 @@ public class StatusUpdateServiceImpl extends ServiceImpl<StatusUpdateMapper, Sta
         StatusUpdate statusUpdate = this.getById(id);
         if (Objects.equals(statusUpdate.getAuthorId(), principal.getUser().getId())) {
             this.removeById(id);
+            try {
+                elasticsearchService.deleteStatusUpdate(id.toString());
+            } catch (Exception e) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to delete status update from Elasticsearch");
+            }
         } else {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
@@ -169,6 +182,11 @@ public class StatusUpdateServiceImpl extends ServiceImpl<StatusUpdateMapper, Sta
             statusUpdate.setCategoryId(Long.valueOf(statusUpdateDTO.getCategoryId()));
             statusUpdate.setSummary(statusUpdateDTO.getSummary() != null ? statusUpdateDTO.getSummary() : statusUpdateDTO.getContent().length() > 200 ? statusUpdateDTO.getContent().substring(0, 200) : statusUpdateDTO.getContent());
             this.updateById(statusUpdate);
+            try {
+                elasticsearchService.updateStatusUpdate(statusUpdate);
+            } catch (Exception e) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to update status update in Elasticsearch");
+            }
             StatusUpdateVO statusUpdateVO = new StatusUpdateVO();
             BeanUtils.copyProperties(statusUpdate, statusUpdateVO);
             statusUpdateVO.setAuthorName(userMapper.selectById(userId).getNickname());
