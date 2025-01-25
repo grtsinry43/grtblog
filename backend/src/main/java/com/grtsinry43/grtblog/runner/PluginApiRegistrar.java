@@ -28,12 +28,17 @@ public class PluginApiRegistrar implements PluginStateListener {
 
     @Override
     public void pluginStateChanged(PluginStateEvent event) {
+        System.out.println(event);
         if (event.getPluginState() == PluginState.STARTED) {
             pluginManager.getExtensions(BlogPlugin.class).forEach(extension -> {
                 try {
                     // 获取插件的 API 路径和处理方法
-                    String endpoint = extension.getEndpoint();
+                    System.out.println("===Registering API...===");
+                    String endpoint = "/plugins" + extension.getEndpoint();
+                    System.out.println("Registering API: " + endpoint);
+                    System.out.println("Extension: " + extension.getClass().getSimpleName());
                     Method handleRequestMethod = extension.getClass().getMethod("handleRequest");
+                    System.out.println("Method: " + handleRequestMethod.getName());
 
                     // 注册 API
                     handlerMapping.registerMapping(
@@ -41,6 +46,7 @@ public class PluginApiRegistrar implements PluginStateListener {
                             extension,
                             handleRequestMethod
                     );
+                    System.out.println("API registered.");
                 } catch (NoSuchMethodException e) {
                     e.printStackTrace();
                 }

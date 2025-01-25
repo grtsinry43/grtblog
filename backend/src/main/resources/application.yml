@@ -40,6 +40,10 @@ logging:
   #        web: DEBUG
   config: classpath:logback-spring.xml
 
+
+  level:
+    org:
+      pf4j: DEBUG
 # use at "In extreme cases, the primary key is duplicated."
 snowflake:
   data-center-id: 1
@@ -47,3 +51,5 @@ snowflake:
 
 pf4j:
   pluginsDir: plugins
+
+
