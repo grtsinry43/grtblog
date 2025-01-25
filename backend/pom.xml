@@ -17,7 +17,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/grtsinry43/grtblog</url>
+            <url>https://maven.pkg.github.com/grtsinry43/grtblog-plugin-interface</url>
         </repository>
     </distributionManagement>
     <url/>
@@ -199,11 +199,21 @@
 
         <dependency>
             <groupId>org.pf4j</groupId>
-            <artifactId>pf4j-spring</artifactId>
-            <version>0.9.0</version>
-            <scope>provided</scope>
+            <artifactId>pf4j</artifactId>
+            <version>3.13.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j-spring</artifactId>
+            <version>0.9.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.grtblog</groupId>
+            <artifactId>grtblog-interface</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
     </dependencies>
 

@@ -2,6 +2,7 @@ package com.grtsinry43.grtblog.controller;
 
 import com.grtsinry43.grtblog.plugin.BlogPlugin;
 import org.pf4j.PluginManager;
+import org.pf4j.spring.SpringPluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/plugins")
 public class PluginController {
     @Autowired
-    private PluginManager pluginManager;
+    private SpringPluginManager pluginManager;
 
     @PostMapping("/load")
     public String loadPlugins() {
@@ -28,6 +29,7 @@ public class PluginController {
 
     @GetMapping
     public List<String> getPlugins() {
+        System.out.println(pluginManager.getExtensions(BlogPlugin.class));
         return pluginManager.getExtensions(BlogPlugin.class)
                 .stream()
                 .map(plugin -> plugin.getClass().getSimpleName())
