@@ -52,6 +52,24 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return new LoginUserDetails(user, roleNames, permissionNames);
     }
 
+    public UserDetails loadUserByUserId(String userId) throws UsernameNotFoundException {
+        // 通过邮箱信息从数据库中查询用户信息
+        User user = userMapper.selectById(userId);
+        // 判断当前账号是否存在
+        if (Objects.isNull(user)) {
+            // 如果为空，直接抛出异常
+            throw new UsernameNotFoundException(userId);
+        }
+
+        // 获取角色名称列表
+        List<String> roleNames = getRoleNamesByUserId(user.getId());
+        // 获取权限名称列表
+        List<String> permissionNames = getPermissionNamesByRoleNames(roleNames);
+
+        // 返回用户信息
+        return new LoginUserDetails(user, roleNames, permissionNames);
+    }
+
     private List<String> getRoleNamesByUserId(Long userId) {
         List<UserRole> userRoles = userRoleMapper.getUserRolesByUserId(userId);
         if (CollectionUtils.isEmpty(userRoles)) {

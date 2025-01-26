@@ -7,8 +7,11 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grtsinry43.grtblog.common.ErrorCode;
 import com.grtsinry43.grtblog.dto.ApiResponse;
+import com.grtsinry43.grtblog.entity.AdminToken;
 import com.grtsinry43.grtblog.exception.BusinessException;
+import com.grtsinry43.grtblog.service.AdminTokenService;
 import com.grtsinry43.grtblog.service.UserDetailsServiceImpl;
+import com.grtsinry43.grtblog.util.TokenGenerator;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 /**
  * @author grtsinry43
@@ -38,6 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Resource
     private UserDetailsServiceImpl userDetailsService;
+
+    @Resource
+    private AdminTokenService adminTokenService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -57,6 +64,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+        } else if (token != null && token.startsWith("gb_tk_")) {
+            token = token.substring(6);
+            String userId = null;
+            String hashedToken = TokenGenerator.calculateHashedToken(token);
+            AdminToken tokenMatched = adminTokenService.lambdaQuery().eq(AdminToken::getToken, hashedToken)
+                    .gt(AdminToken::getExpireAt, LocalDateTime.now())
+                    .one();
+            if (tokenMatched != null) {
+                userId = tokenMatched.getUserId().toString();
+            }
+            if (userId != null) {
+                UserDetails userDetails = userDetailsService.loadUserByUserId(userId);
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+
         }
 
         // 放行, 后面交给 Spring Security 框架

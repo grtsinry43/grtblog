@@ -139,7 +139,8 @@ WHERE `permission_name` NOT IN
 INSERT INTO `role_permission` (`role_id`, `permission_id`)
 SELECT 3, id
 FROM `permission`
-WHERE `permission_name` LIKE 'article:%' OR `permission_name` = 'file:upload';
+WHERE `permission_name` LIKE 'article:%'
+   OR `permission_name` = 'file:upload';
 
 -- 普通用户拥有文章评论等查看权限
 INSERT INTO `role_permission` (`role_id`, `permission_id`)
@@ -550,10 +551,22 @@ CREATE TABLE IF NOT EXISTS `friend_link`
 
 CREATE TABLE IF NOT EXISTS `global_notification`
 (
-    `id`          BIGINT      NOT NULL AUTO_INCREMENT COMMENT '通知ID，会由雪花算法生成',
-    `content`     TEXT        NOT NULL COMMENT '通知内容',
-    `publish_at`  TIMESTAMP   NOT NULL COMMENT '通知发布时间',
-    `expire_at`   TIMESTAMP   NOT NULL COMMENT '通知过期时间',
-    `allow_close` TINYINT   DEFAULT 1 COMMENT '是否允许关闭（0：否，1：是）',
+    `id`          BIGINT    NOT NULL AUTO_INCREMENT COMMENT '通知ID，会由雪花算法生成',
+    `content`     TEXT      NOT NULL COMMENT '通知内容',
+    `publish_at`  TIMESTAMP NOT NULL COMMENT '通知发布时间',
+    `expire_at`   TIMESTAMP NOT NULL COMMENT '通知过期时间',
+    `allow_close` TINYINT DEFAULT 1 COMMENT '是否允许关闭（0：否，1：是）',
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `admin_token`
+(
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '管理员Token ID，会由雪花算法生成',
+    `token`       VARCHAR(255) NOT NULL COMMENT '管理员Token（经过hash加密）',
+    `user_id`     BIGINT       NOT NULL COMMENT '管理员ID',
+    `description` TEXT COMMENT 'Token描述',
+    `expire_at`   TIMESTAMP    NOT NULL COMMENT 'Token过期时间',
+    `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Token创建时间',
+    `updated_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Token更新时间',
     PRIMARY KEY (`id`)
 );
