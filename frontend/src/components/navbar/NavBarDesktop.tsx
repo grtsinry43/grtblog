@@ -18,6 +18,7 @@ import {OnlineCount} from "@/redux/onlineCountSlice";
 import {useWebsiteInfo} from "@/app/website-info-provider";
 import {useRouter} from "next/navigation";
 import SearchModal from "@/components/SearchModal";
+import {EnhancedAvatar} from "@/components/navbar/EnhancedAvatar";
 
 export default function NavBarDesktop({items}: {
     items: { name: string; href: string; children?: { name: string; href: string }[] }[]
@@ -140,12 +141,7 @@ export default function NavBarDesktop({items}: {
                 <nav className={clsx(styles.navbar, scrolled ? styles.scrolled : '')}>
                     <div className={styles.navbarContainer}>
                         <div className={styles.avatarWrapper}>
-                            <motion.div initial={{scale: 0}} animate={isInView ? {scale: 1} : {scale: 0}}
-                                        transition={{type: 'spring', stiffness: 260, damping: 20}}>
-                                <Avatar size="3" radius="large" src={websiteInfo.WEBSITE_LOGO}
-                                        fallback="A"
-                                        className={styles.avatar}/>
-                            </motion.div>
+                            <EnhancedAvatar avatarSrc={websiteInfo.WEBSITE_LOGO}/>
                         </div>
                         {isTitleVisible ? (
                             <motion.div initial={{y: 10, opacity: 0}}

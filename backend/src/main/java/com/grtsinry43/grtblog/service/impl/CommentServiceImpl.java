@@ -21,8 +21,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -129,7 +127,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         commentEmailNotificationHandle(comment);
         CommentVO vo = new CommentVO();
         BeanUtils.copyProperties(comment, vo);
-        socketIOService.broadcastMessage("有新的评论发布，作者：" + comment.getNickName() + "，内容：" + comment.getContent() + "，评论区：" + comment.getAreaId() + "，快去围观吧！");
+        socketIOService.broadcastNotification("有新的评论发布，作者：" + comment.getNickName() + "，内容：" + comment.getContent() + "，评论区：" + comment.getAreaId() + "，快去围观吧！");
         return vo;
     }
 
@@ -161,7 +159,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         commentEmailNotificationHandle(comment);
         CommentVO vo = new CommentVO();
         BeanUtils.copyProperties(comment, vo);
-        socketIOService.broadcastMessage("有新的评论发布，作者：" + comment.getNickName() + "，内容：" + comment.getContent() + "，评论区：" + comment.getAreaId() + "，快去围观吧！");
+        socketIOService.broadcastNotification("有新的评论发布，作者：" + comment.getNickName() + "，内容：" + comment.getContent() + "，评论区：" + comment.getAreaId() + "，快去围观吧！");
         return vo;
     }
 

@@ -1,6 +1,5 @@
 package com.grtsinry43.grtblog.service.impl;
 
-import com.corundumstudio.socketio.SocketIOServer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.grtsinry43.grtblog.common.ErrorCode;
 import com.grtsinry43.grtblog.dto.ArticleDTO;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.yaml.snakeyaml.Yaml;
 
-import javax.swing.text.html.parser.Parser;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -108,7 +106,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         articleVO.setId(article.getId().toString());
         articleVO.setAuthor(userService.getById(userId).getNickname());
         if (article.getIsPublished()) {
-            socketIOService.broadcastMessage("文章：" + article.getTitle() + " 已发布，新鲜出炉，快来看看吧！");
+            socketIOService.broadcastNotification("文章：" + article.getTitle() + " 已发布，新鲜出炉，快来看看吧！");
         }
         return articleVO;
     }
@@ -172,7 +170,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         articleVO.setId(article.getId().toString());
         articleVO.setAuthor(userService.getById(userId).getNickname());
         if (article.getIsPublished()) {
-            socketIOService.broadcastMessage("文章：" + article.getTitle() + " 已更新");
+            socketIOService.broadcastNotification("文章：" + article.getTitle() + " 已更新");
         }
         return articleVO;
     }
@@ -201,7 +199,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         articleVO.setId(article.getId().toString());
         articleVO.setAuthor(userService.getById(article.getAuthorId()).getNickname());
         if (article.getIsPublished()) {
-            socketIOService.broadcastMessage("文章：" + article.getTitle() + " 的状态已更新");
+            socketIOService.broadcastNotification("文章：" + article.getTitle() + " 的状态已更新");
         }
         return articleVO;
     }

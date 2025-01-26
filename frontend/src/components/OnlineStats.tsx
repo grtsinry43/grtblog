@@ -6,6 +6,7 @@ import {useAppDispatch} from "@/redux/hooks";
 import {usePathname} from "next/navigation";
 import {getPageView} from "@/api/pageView";
 import channel from "@/utils/channel";
+import emitter from "@/utils/eventBus";
 
 const url = process.env.NEXT_PUBLIC_SOCKET_IO_URL;
 
@@ -62,6 +63,12 @@ const OnlineStats = () => {
             });
             console.log("send message");
         });
+
+        // 用于更新站长实时在线动态
+        newSocket.on("authorStatus", (content) => {
+            console.log(content);
+            emitter.emit("authorStatus", content);
+        })
 
         // 在组件卸载时关闭连接
         return () => {

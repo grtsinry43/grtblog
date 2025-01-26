@@ -15,6 +15,7 @@ import LoginModalMobile from "@/components/user/LoginModalMobile";
 import {useAppDispatch, useAppSelector} from "@/redux/hooks";
 import {useRouter} from "next/navigation";
 import SearchModal from "@/components/SearchModal";
+import {EnhancedAvatar} from "@/components/navbar/EnhancedAvatar";
 
 const NavBarMobile = ({items}: {
     items: { name: string; href: string; children?: { name: string; href: string }[] }[]
@@ -39,7 +40,7 @@ const NavBarMobile = ({items}: {
     };
 
     const closeLoginModal = () => {
-        
+
         setIsLoginModalOpen(false);
     };
 
@@ -121,16 +122,9 @@ const NavBarMobile = ({items}: {
                             </motion.div>
                         ) : (
                             <>
-                                <motion.div initial={{scale: 0}} animate={{scale: 1}}
-                                            transition={{type: 'spring', stiffness: 260, damping: 20}}>
-                                    <Avatar
-                                        size="3"
-                                        radius="large"
-                                        src={websiteInfo.AUTHOR_AVATAR}
-                                        fallback="A"
-                                        className={styles.avatar}
-                                    />
-                                </motion.div>
+                                <div className={styles.avatarWrapper}>
+                                    <EnhancedAvatar avatarSrc={websiteInfo.WEBSITE_LOGO}/>
+                                </div>
                                 <div className={styles.navbarContent}>
                                     <div className={styles.searchWrapper}>
                                         <motion.div whileHover={{scale: 1.1}} whileTap={{scale: 0.95}}>

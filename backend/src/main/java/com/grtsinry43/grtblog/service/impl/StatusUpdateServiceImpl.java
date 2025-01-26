@@ -174,7 +174,7 @@ public class StatusUpdateServiceImpl extends ServiceImpl<StatusUpdateMapper, Sta
         BeanUtils.copyProperties(statusUpdate, statusUpdateVO);
         statusUpdateVO.setAuthorName(userMapper.selectById(userId).getNickname());
         if (statusUpdate.getIsPublished()) {
-            socketIOService.broadcastMessage("分享：" + statusUpdate.getTitle() + " 已发布，新鲜事儿来啦");
+            socketIOService.broadcastNotification("分享：" + statusUpdate.getTitle() + " 已发布，新鲜事儿来啦");
         }
         return statusUpdateVO;
     }
@@ -210,7 +210,7 @@ public class StatusUpdateServiceImpl extends ServiceImpl<StatusUpdateMapper, Sta
             BeanUtils.copyProperties(statusUpdate, statusUpdateVO);
             statusUpdateVO.setAuthorName(userMapper.selectById(userId).getNickname());
             if (statusUpdate.getIsPublished()) {
-                socketIOService.broadcastMessage("分享：" + statusUpdate.getTitle() + " 已更新");
+                socketIOService.broadcastNotification("分享：" + statusUpdate.getTitle() + " 已更新");
             }
             return statusUpdateVO;
         } else {
@@ -237,7 +237,7 @@ public class StatusUpdateServiceImpl extends ServiceImpl<StatusUpdateMapper, Sta
         statusUpdateVO.setId(statusUpdate.getId().toString());
         statusUpdateVO.setCategoryId(statusUpdate.getCategoryId() != null ? statusUpdate.getCategoryId().toString() : null);
         if (statusUpdate.getIsPublished()) {
-            socketIOService.broadcastMessage("分享" + statusUpdate.getTitle() + " 状态已更新");
+            socketIOService.broadcastNotification("分享" + statusUpdate.getTitle() + " 状态已更新");
         }
         return statusUpdateVO;
     }
