@@ -107,6 +107,39 @@ export default defineConfig({
       ],
     },
     {
+      name: '友链',
+      path: '/friend',
+      routes: [
+        {
+          name: '友链列表',
+          path: '/friend/list',
+          component: './Friend/FriendList',
+        },
+      ],
+    },
+    {
+      name: '插件',
+      path: '/plugin',
+      routes: [
+        {
+          name: '插件列表',
+          path: '/plugin/list',
+          component: './Plugin/PluginList',
+        },
+        {
+          name: '插件市场',
+          path: '/plugin/market',
+          component: './Plugin/PluginMarket',
+        },
+        {
+          name: '插件设置',
+          path: '/plugin/setting/:pluginName',
+          component: './Plugin/PluginSetting',
+          hideInMenu: true,
+        },
+      ],
+    },
+    {
       name: '登录',
       path: '/login',
       component: './Login',

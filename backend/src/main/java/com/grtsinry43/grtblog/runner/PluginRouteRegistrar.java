@@ -41,8 +41,7 @@ public class PluginRouteRegistrar implements ApplicationContextAware, Applicatio
         this.applicationContext = applicationContext;
     }
 
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void refreshPluginRoutes() {
         System.out.println("===Context refreshed event received.===");
         pluginManager.getPlugins().forEach(plugin -> {
             System.out.println("Plugin loaded: " + plugin.getPluginId() + " - " + plugin.getPluginState());
@@ -73,6 +72,18 @@ public class PluginRouteRegistrar implements ApplicationContextAware, Applicatio
                 e.printStackTrace();
             }
         });
+    }
 
+    public void unregisterPluginRoutes() {
+        registeredEndpoints.forEach(endpoint -> {
+            System.out.println("Unregistering endpoint: " + endpoint);
+            requestMappingHandlerMapping.unregisterMapping(RequestMappingInfo.paths(endpoint).methods(RequestMethod.GET).build());
+        });
+        registeredEndpoints.clear();
+    }
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        refreshPluginRoutes();
     }
 }
