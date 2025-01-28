@@ -6,9 +6,11 @@ import { useNavigate } from '@umijs/max';
 import { message } from 'antd';
 import { useState } from 'react';
 import {refreshFrontendCache} from "@/services/refersh";
+import useRouteLeaveConfirm from "@/hooks/use-route-leave-confirm";
 
 const AddArticle = () => {
   const navigate = useNavigate();
+  useRouteLeaveConfirm();
   const [newArticleInfo, setNewArticleInfo] = useState<AddArticleApiParams>({
     title: '',
     content: '',

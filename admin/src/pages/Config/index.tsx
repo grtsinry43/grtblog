@@ -3,10 +3,12 @@ import { PageContainer } from '@ant-design/pro-components';
 import { Button, Form, Input, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import {refreshFrontendCache} from "@/services/refersh";
+import useRouteLeaveConfirm from "@/hooks/use-route-leave-confirm";
 
 const ConfigPage = () => {
   const [config, setConfig] = useState({});
   const formRef = React.useRef<any>(null);
+  useRouteLeaveConfirm();
 
   useEffect(() => {
     getAllConfig().then((res) => {

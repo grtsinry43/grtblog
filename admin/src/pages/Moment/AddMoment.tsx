@@ -6,9 +6,11 @@ import { message } from 'antd';
 import { useState } from 'react';
 import MomentForm from './MomentForm';
 import {refreshFrontendCache} from "@/services/refersh";
+import useRouteLeaveConfirm from "@/hooks/use-route-leave-confirm";
 
 const AddMoment = () => {
   const navigate = useNavigate();
+  useRouteLeaveConfirm();
   const [newMomentInfo, setNewMomentInfo] = useState<AddMomentApiParams>({
     img: '',
     isOriginal: false,

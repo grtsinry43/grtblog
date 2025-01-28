@@ -55,7 +55,9 @@ const Login: React.FC = () => {
         <div className={styles.formContainer}>
           <div className={styles.leftContainer}>
             <div className={styles.title}>Grtblog</div>
-            <div className={styles.subTitle}>后台管理系统</div>
+            <div className={styles.subTitle}>
+              今天，又要书写什么故事呢？
+            </div>
           </div>
           <Form onFinish={onFinish} className={styles.rightContainer}>
             <div className={styles.rightTitle}>欢迎登录</div>

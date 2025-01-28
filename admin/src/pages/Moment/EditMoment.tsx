@@ -5,18 +5,20 @@ import { message } from 'antd';
 import { useEffect, useState } from 'react';
 import MomentForm from './MomentForm';
 import {refreshFrontendCache} from "@/services/refersh";
+import useRouteLeaveConfirm from "@/hooks/use-route-leave-confirm";
 
 const EditMoment = () => {
   const navigate = useNavigate();
   const { id } = useParams<string>();
   const [momentInfo, setMomentInfo] = useState<any>(null);
+  useRouteLeaveConfirm();
 
   useEffect(() => {
     async function fetchData() {
       if (id) {
         // 根据文章 id 获取该文章具体的信息
         const { data } = await MomentController.getMomentDetail(id);
-        
+
         setMomentInfo(data);
       }
     }

@@ -1,15 +1,18 @@
+import useRouteLeaveConfirm from '@/hooks/use-route-leave-confirm';
 import ArticleForm from '@/pages/Article/ArticleForm';
 import ArticleController from '@/services/article/ArticleController';
+import { refreshFrontendCache } from '@/services/refersh';
 import { useParams } from '@@/exports';
 import { PageContainer } from '@ant-design/pro-components';
 import { useNavigate } from '@umijs/max';
 import { message } from 'antd';
 import { useEffect, useState } from 'react';
-import {refreshFrontendCache} from "@/services/refersh";
 
 const EditArticle = () => {
   // 获取传递过来的 id
   const { id } = useParams<{ id: string }>(); // 获取可能传递过来的 id
+
+  useRouteLeaveConfirm();
 
   const navigate = useNavigate();
 
@@ -20,7 +23,7 @@ const EditArticle = () => {
       if (id) {
         // 根据文章 id 获取该文章具体的信息
         const { data } = await ArticleController.getArticleDetail(id);
-        
+
         setArticleInfo(data);
       }
     }

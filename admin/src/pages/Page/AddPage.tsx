@@ -1,11 +1,12 @@
+import useRouteLeaveConfirm from '@/hooks/use-route-leave-confirm';
 import PageForm from '@/pages/Page/PageForm';
 import PageController from '@/services/page/PageController';
 import { AddPageApiParams } from '@/services/page/typings';
+import { refreshFrontendCache } from '@/services/refersh';
 import { useNavigate } from '@@/exports';
 import { PageContainer } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useState } from 'react';
-import {refreshFrontendCache} from "@/services/refersh";
 
 const AddPage = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const AddPage = () => {
     refPath: '',
     title: '',
   });
+  useRouteLeaveConfirm();
 
   const submitHandle = (content: string) => {
     if (!content) {

@@ -1,0 +1,75 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.oneWordCard {
+  margin-bottom: 32px;
+  background-color: #f0f2f5;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.oneWordCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.oneWordTitle {
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.oneWord {
+  font-size: 18px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.oneWordFrom {
+  font-style: italic;
+  text-align: right;
+  margin-bottom: 8px;
+}
+
+.oneWordCreator {
+  font-size: 12px;
+  color: #8c8c8c;
+  text-align: right;
+}
+
+.overviewTitle {
+  margin-bottom: 24px;
+  color: #1890ff;
+}
+
+.overviewContainer {
+  margin-bottom: 32px;
+}
+
+.overviewCard {
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.overviewCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .oneWord {
+    font-size: 16px;
+  }
+
+  .overviewTitle {
+    margin-bottom: 16px;
+  }
+}
+

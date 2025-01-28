@@ -159,6 +159,8 @@ CREATE TABLE IF NOT EXISTS `article`
     `id`           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '文章ID，会由雪花算法生成',
     `title`        VARCHAR(255) NOT NULL COMMENT '文章标题',
     `summary`      TEXT         NOT NULL COMMENT '文章摘要',
+    `ai_summary`   TEXT COMMENT '文章摘要，由AI生成',
+    `lead_in`      TEXT COMMENT '文章引言',
     `toc`          JSON         NOT NULL COMMENT '文章目录，由后端根据文章内容生成',
     `content`      TEXT         NOT NULL COMMENT '文章内容，markdown格式，交由前端解析',
     `author_id`    BIGINT       NOT NULL COMMENT '作者ID，逻辑限制',

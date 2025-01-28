@@ -49,6 +49,8 @@ export function EnhancedAvatar({avatarSrc}: EnhancedAvatarProps) {
             setUserActivity(content);
             if (content.ok === 1) {
                 setIsOnline(true);
+            } else {
+                setIsOnline(false);
             }
         });
 
@@ -58,6 +60,8 @@ export function EnhancedAvatar({avatarSrc}: EnhancedAvatarProps) {
                 setUserActivity(res);
                 if (res.ok === 1) {
                     setIsOnline(true);
+                } else {
+                    setIsOnline(false);
                 }
             })
         }, 1000 * 60 * 5);

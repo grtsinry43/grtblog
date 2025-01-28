@@ -20,6 +20,9 @@ importers:
       '@toast-ui/react-editor':
         specifier: ^3.2.3
         version: 3.2.3(react@18.3.1)
+      '@umijs/history':
+        specifier: ^5.3.1
+        version: 5.3.1
       '@umijs/max':
         specifier: ^4.3.28
         version: 4.3.28(@babel/core@7.26.0)(@types/node@22.8.1)(@types/react-dom@18.3.1)(@types/react@18.3.12)(dva@2.5.0-beta.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(lightningcss@1.22.1)(prettier@2.8.8)(rc-field-form@2.4.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@3.29.5)(terser@5.36.0)(type-fest@1.4.0)(typescript@5.6.3)(webpack@5.95.0)
@@ -7889,7 +7892,7 @@ snapshots:
 
   '@umijs/history@5.3.1':
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.26.0
       query-string: 6.14.1
 
   '@umijs/lint@4.3.28(eslint@8.35.0)(stylelint@14.8.2)(typescript@5.6.3)':

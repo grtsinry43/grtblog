@@ -15,6 +15,7 @@
     "@ant-design/pro-components": "^2.4.4",
     "@toast-ui/editor": "^3.2.2",
     "@toast-ui/react-editor": "^3.2.3",
+    "@umijs/history": "^5.3.1",
     "@umijs/max": "^4.3.28",
     "antd": "^5.4.0",
     "axios": "^1.7.7",

@@ -1,13 +1,15 @@
+import useRouteLeaveConfirm from '@/hooks/use-route-leave-confirm';
 import PageForm from '@/pages/Page/PageForm';
 import PageController from '@/services/page/PageController';
+import { refreshFrontendCache } from '@/services/refersh';
 import { useNavigate, useParams } from '@@/exports';
 import { PageContainer } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useEffect, useState } from 'react';
-import {refreshFrontendCache} from "@/services/refersh";
 
 const EditPage = () => {
   const { id } = useParams<{ id: string }>();
+  useRouteLeaveConfirm();
 
   const navigate = useNavigate();
 
