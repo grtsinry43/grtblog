@@ -12,15 +12,18 @@ import org.springframework.web.bind.annotation.*;
  * @description 热爱可抵岁月漫长
  */
 
-@FeignClient(name = "recommender-service", url = "http://localhost:8001/article")
+@FeignClient(name = "recommender-service", url = "http://localhost:8001")
 public interface RecommenderClient {
 
-    @GetMapping("/{article_id}")
+    @GetMapping("/article/{article_id}")
     ApiResponse<ArticleRecommendation> getRecommendations(@PathVariable("article_id") String articleId, @RequestParam("count") Integer size);
 
-    @PostMapping("/{article_id}")
+    @PostMapping("/article/{article_id}")
     ApiResponse<Object> updateArticleStatus(@PathVariable("article_id") String articleId, @RequestBody ArticleRecommendUpdate articleRecommendUpdate);
 
-    @DeleteMapping("/{article_id}")
+    @DeleteMapping("/article/{article_id}")
     ApiResponse<Object> deleteArticle(@PathVariable("article_id") String articleId);
+
+    @GetMapping("/user/{user_id}")
+    ApiResponse<ArticleRecommendation> getUserRecommendations(@PathVariable("user_id") String userId, @RequestParam("count") Integer size);
 }

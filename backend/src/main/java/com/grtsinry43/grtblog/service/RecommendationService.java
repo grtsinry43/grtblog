@@ -10,6 +10,7 @@ import com.grtsinry43.grtblog.client.RecommenderClient;
 import com.grtsinry43.grtblog.dto.ApiResponse;
 import com.grtsinry43.grtblog.dto.ArticleRecommendUpdate;
 import com.grtsinry43.grtblog.entity.Article;
+import com.grtsinry43.grtblog.service.impl.ArticleServiceImpl;
 import com.grtsinry43.grtblog.vo.ArticleRecommendation;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +49,15 @@ public class RecommendationService {
         ApiResponse<Object> objectApiResponse = recommenderClient.deleteArticle(articleId.toString());
         if (objectApiResponse.getCode() != 0 && objectApiResponse.getCode() != 404) {
             throw new RuntimeException("删除文章失败");
+        }
+    }
+
+    public String[] getUserRecommendations(String userId, Integer count) {
+        ApiResponse<ArticleRecommendation> res = recommenderClient.getUserRecommendations(userId, count);
+        if (res.getCode() == 0) {
+            return res.getData().getRecommendation();
+        } else {
+            return new String[0];
         }
     }
 }
