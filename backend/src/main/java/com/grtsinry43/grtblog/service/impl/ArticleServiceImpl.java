@@ -212,6 +212,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
         ArticleView articleView = new ArticleView();
         BeanUtils.copyProperties(article, articleView);
+        articleView.setId(article.getId().toString());
         articleView.setAuthorName(userService.getById(article.getAuthorId()).getNickname());
         articleView.setCategoryName(categoryService.getById(article.getCategoryId()) == null ? "未分类" : categoryService.getById(article.getCategoryId()).getName());
         articleView.setTags(String.join(",", tagService.getTagNamesByArticleId(article.getId())));

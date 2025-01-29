@@ -1,6 +1,7 @@
 package com.grtsinry43.grtblog.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.grtsinry43.grtblog.GrtblogBackendApplication;
 import com.grtsinry43.grtblog.dto.*;
 import com.grtsinry43.grtblog.entity.Category;
 import com.grtsinry43.grtblog.entity.User;
@@ -13,6 +14,9 @@ import com.grtsinry43.grtblog.vo.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,8 +25,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 后台管理控制器
@@ -34,6 +45,9 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/admin")
 public class AdminController {
+    @Autowired
+    private ApplicationContext applicationContext;
+
     private final UserServiceImpl userService;
     private final AuthenticationManager authenticationManager;
     private final ArticleServiceImpl articleService;
@@ -265,5 +279,85 @@ public class AdminController {
         }
     }
 
+    @PreAuthorize("hasAuthority('system:core')")
+    @PostMapping("/update")
+    public ApiResponse<String> uploadJar(@RequestParam("file") MultipartFile file) {
+        try {
+            // 备份当前 JAR 包
+            backupCurrentJar();
+
+            // 保存新的 JAR 包
+            String savedNewJar = saveNewJar(file);
+
+            // 重启应用
+            restartApplication(savedNewJar);
+
+            return ApiResponse.success("更新成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.error(500, "更新失败: " + e.getMessage());
+        }
+    }
+
+    private void backupCurrentJar() throws IOException {
+        String jarPath = System.getProperty("user.dir") + "/app.jar";
+        String backupPath = System.getProperty("user.dir") + "/sys-backup/app-backup.jar";
+        File currentJar = new File(jarPath);
+        File backupJar = new File(backupPath);
+
+        // Ensure the backup directory exists
+        File backupDir = backupJar.getParentFile();
+        if (!backupDir.exists()) {
+            backupDir.mkdirs();
+        }
+
+        Files.copy(currentJar.toPath(), backupJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private String saveNewJar(MultipartFile file) throws IOException {
+        String jarPath = System.getProperty("user.dir") + "/app.jar";
+        File newJar = new File(jarPath);
+        Files.copy(file.getInputStream(), newJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        return jarPath;
+    }
+
+    public void restartApplication(String jarPath) {
+        Thread thread = new Thread(() -> {
+            try {
+                Thread.sleep(1000); // 等待 1 秒，确保当前应用程序有足够的时间进行清理
+
+                // 退出当前应用程序
+                SpringApplication.exit(applicationContext, () -> 0);
+
+                // 获取 Java 运行环境
+                String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+
+                // 构建新的进程启动命令
+                List<String> command = new ArrayList<>();
+                command.add(javaBin);
+                command.add("-jar");
+                command.add(jarPath);
+
+                // 创建日志文件以捕获新进程的输出
+                File logFile = new File("restart.log");
+                File errorFile = new File("restart_error.log");
+
+                // 启动新的应用程序进程，并将输出重定向到文件
+                ProcessBuilder builder = new ProcessBuilder(command);
+                builder.redirectOutput(logFile); // 标准输出重定向到文件
+                builder.redirectError(errorFile); // 标准错误重定向到文件
+                Process process = builder.start();
+
+                // 退出当前进程
+                System.exit(0);
+
+            } catch (Exception e) {
+                e.printStackTrace(); // 打印异常信息
+            }
+        });
+
+        thread.setDaemon(false);
+        thread.start();
+    }
 
 }

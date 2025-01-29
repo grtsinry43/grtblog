@@ -93,7 +93,8 @@ VALUES (1, 'article:add'),
        (43, 'page:delete'),
        (44, 'page:view'),
        (45, 'file:upload'),
-       (46, 'file:delete');
+       (46, 'file:delete'),
+       (47, 'system:core');
 
 
 -- 创建用户角色关联表

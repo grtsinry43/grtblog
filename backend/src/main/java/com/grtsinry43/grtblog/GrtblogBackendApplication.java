@@ -19,8 +19,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 public class GrtblogBackendApplication {
 
     public static void main(String[] args) {
-        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-        bCryptPasswordEncoder.encode("password");
+        System.out.println(System.getProperty("user.dir"));
         SpringApplication.run(GrtblogBackendApplication.class, args);
     }
 

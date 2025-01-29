@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Data
 public class ArticleView {
+    private String id;
     /**
      * 文章短链接
      */
@@ -75,7 +76,7 @@ public class ArticleView {
     private Integer comments;
 
     /**
-     * 挂载评论区id
+     * 挂载评论区 id
      */
     private String commentId;
 
