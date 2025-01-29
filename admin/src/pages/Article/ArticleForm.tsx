@@ -51,7 +51,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         type: 'category/initCategoryList',
       });
     }
-    
+
   }, []);
 
   const [addCategoryForm, setAddCategoryForm] = useState({
@@ -224,7 +224,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           <Upload
             listType="picture-card"
             maxCount={1}
-            action="/api/upload"
+            action="/api/v1/upload"
             onChange={(e) => {
               if (e.file.status === 'done') {
                 const url = e.file.response.data;

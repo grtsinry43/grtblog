@@ -23,6 +23,7 @@ import 'rehype-callouts/theme/github'
 // import rehypeRaw from "rehype-raw";
 // import rehypeKatex from "rehype-katex";
 import rehypeReact from "rehype-react";
+import UserReadReporter from "@/components/article/UserReadReporter";
 
 export type Post = {
     id: string;
@@ -68,6 +69,7 @@ const ArticleView = ({post}: { post: Post }) => {
                             views={post.views}
                             readingTime={readingTime}
                         />
+                        <UserReadReporter articleId={post.id}/>
                         <ReactMarkdown
                             className={styles.markdown}
                             rehypePlugins={[
