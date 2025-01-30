@@ -1,37 +1,46 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import NavBarDesktop from './NavBarDesktop';
 import NavBarMobile from './NavBarMobile';
+import useIdentify from "@/hooks/clarity/use-identify";
+import {useAppSelector} from "@/redux/hooks";
+import useClarityInit from "@/utils/clarity";
+import Cookies from "js-cookie";
 
 type NavItem = {
-  name: string;
-  href: string;
-  children?: NavItem[];
+    name: string;
+    href: string;
+    children?: NavItem[];
 }
 
-const NavBar = ({ items }: { items: NavItem[] }) => {
-  
-  const [isMobile, setIsMobile] = useState(false);
+const NavBar = ({items}: { items: NavItem[] }) => {
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
+    const [isMobile, setIsMobile] = useState(false);
+    const user = useAppSelector(state => state.user);
+    console.log(user);
 
-    handleResize(); // 初始化
-    window.addEventListener('resize', handleResize);
+    useClarityInit();
+    useIdentify(user.isLogin ? user.userInfo.id : Cookies.get('JSESSIONID') || '');
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
 
-  return (
-    <div>
-      {isMobile ? <NavBarMobile items={items} /> : <NavBarDesktop items={items} />}
-    </div>
-  );
+        handleResize(); // 初始化
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    return (
+        <div>
+            {isMobile ? <NavBarMobile items={items}/> : <NavBarDesktop items={items}/>}
+        </div>
+    );
 };
 
 export default NavBar;

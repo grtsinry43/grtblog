@@ -5,6 +5,7 @@ import eventBus from '@/utils/eventBus';
 import {Post} from "@/components/article/ArticleView";
 import {PageVO} from "@/app/[slug]/PageView";
 import {MomentView} from "@/components/moment/MomentReading";
+import useSetTag from "@/hooks/clarity/use-set-tag";
 
 export type TitleEvent = {
     type: string;
@@ -19,6 +20,17 @@ const ArticleScrollSync = ({children, type, post}: {
 }) => {
     const articleRef = useRef<HTMLDivElement>(null);
     const [curScrollLength, setCurScrollLength] = React.useState(0);
+    const setTag = useSetTag();
+
+    useEffect(() => {
+        if (post) {
+            setTag('postType', type);
+            setTag('postTitle', post.title);
+            if ('categoryName' in post) {
+                setTag('categoryName', post.categoryName);
+            }
+        }
+    }, [post, type, setTag]);
 
     useEffect(() => {
         const handleScroll = () => {

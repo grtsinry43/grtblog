@@ -13,6 +13,7 @@
     "@heroicons/react": "^2.1.5",
     "@hey-api/client-axios": "^0.2.9",
     "@hey-api/client-fetch": "^0.4.2",
+    "@microsoft/clarity": "^1.0.0",
     "@openpanel/nextjs": "^1.0.7",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
