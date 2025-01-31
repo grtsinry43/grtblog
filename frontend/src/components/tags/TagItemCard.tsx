@@ -19,7 +19,7 @@ const TagItemCard = ({ name, count, index }: { name: string, count: number, inde
         transition: { duration: 0.2 },
       }}
     >
-      <Link href={`/tag/${name}`} className={clsx('flex h-12 bg-opacity-20 backdrop-blur', color)} style={{
+      <Link href={`/tags/${name}`} className={clsx('flex h-12 bg-opacity-20 backdrop-blur', color)} style={{
         borderRadius: '0.5rem',
         backdropFilter: 'blur(10px)',
         margin: '0.5rem',

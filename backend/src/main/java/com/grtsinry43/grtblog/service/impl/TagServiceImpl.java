@@ -1,8 +1,6 @@
 package com.grtsinry43.grtblog.service.impl;
 
-import com.grtsinry43.grtblog.common.ErrorCode;
 import com.grtsinry43.grtblog.entity.Tag;
-import com.grtsinry43.grtblog.exception.BusinessException;
 import com.grtsinry43.grtblog.exception.TestException;
 import com.grtsinry43.grtblog.mapper.ArticleTagMapper;
 import com.grtsinry43.grtblog.mapper.TagMapper;
@@ -73,6 +71,12 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements ITagS
             tagVO.setArticleCount(articleTagMapper.countArticlesByTagId(tag.getId()));
             return tagVO;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getAllTagNames(){
+        List<Tag> tags = list();
+        return tags.stream().map(Tag::getName).toList();
     }
 
     @Override

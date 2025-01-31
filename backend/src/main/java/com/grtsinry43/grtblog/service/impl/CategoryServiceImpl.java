@@ -85,4 +85,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public Category getCategoryByShortUrl(String shortUrl) {
         return getOne(new QueryWrapper<Category>().eq("short_url", shortUrl));
     }
+
+    @Override
+    public String getShortUrlById(Long id) {
+        Category category = getById(id);
+        return category != null ? category.getShortUrl() : null;
+    }
 }

@@ -50,22 +50,25 @@ const Page = async () => {
                         }}>TAGS</span>
                 </div>
                 {/*<div className="search">*/}
-                {/*  <TextField.Root*/}
-                {/*    placeholder="搜索标签"*/}
-                {/*    className={noto_sans_sc.className}*/}
-                {/*    style={{*/}
-                {/*      width: '100%',*/}
-                {/*      maxWidth: '800px',*/}
-                {/*      margin: '2em auto',*/}
-                {/*      height: '50px',*/}
-                {/*      fontSize: '1.2em',*/}
-                {/*      borderRadius: '5px',*/}
-                {/*      border: '1px solid rgba(var(--foreground), 0.1)',*/}
-                {/*      backgroundColor: 'rgba(var(--foreground), 0.01)',*/}
-                {/*      backdropFilter: 'blur(10px)',*/}
-                {/*      textAlign: 'center',*/}
-                {/*}}*/}
-                {/*  />*/}
+                {/*    <TextField.Root*/}
+                {/*        placeholder="搜索标签"*/}
+                {/*        className={noto_sans_sc.className}*/}
+                {/*        style={{*/}
+                {/*            width: '100%',*/}
+                {/*            maxWidth: '800px',*/}
+                {/*            margin: '2em auto',*/}
+                {/*            height: '50px',*/}
+                {/*            fontSize: '1.2em',*/}
+                {/*            borderRadius: '5px',*/}
+                {/*            border: '1px solid rgba(var(--foreground), 0.1)',*/}
+                {/*            backgroundColor: 'rgba(var(--foreground), 0.01)',*/}
+                {/*            backdropFilter: 'blur(10px)',*/}
+                {/*            textAlign: 'center',*/}
+                {/*        }}*/}
+                {/*        onChange={(e) => {*/}
+                {/*            console.log(e.target.value);*/}
+                {/*        }}*/}
+                {/*    />*/}
                 {/*</div>*/}
                 <div className="flex" style={{flexWrap: 'wrap'}}>
                     {tags.map((tag, index) => (

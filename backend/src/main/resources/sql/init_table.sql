@@ -573,3 +573,15 @@ CREATE TABLE IF NOT EXISTS `admin_token`
     `updated_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Token更新时间',
     PRIMARY KEY (`id`)
 );
+
+CREATE TABLE IF NOT EXISTS `thinking`
+(
+    `id`         BIGINT      NOT NULL AUTO_INCREMENT COMMENT '思考ID，会由雪花算法生成',
+    `content`    TEXT        NOT NULL COMMENT '思考内容',
+    `author`     VARCHAR(45) NOT NULL DEFAULT '原创' COMMENT '思考作者（来源）',
+    `created_at` TIMESTAMP            DEFAULT CURRENT_TIMESTAMP COMMENT '思考创建时间',
+    PRIMARY KEY (`id`)
+);
+
+INSERT INTO `thinking` (`id`, `content`, `author`, `created_at`)
+VALUES (1, '我们终此一生，就是摆脱他人的期待，找到真正的自己', '原创', NOW());

@@ -12,6 +12,7 @@ import {PinTopIcon} from '@radix-ui/react-icons';
 
 export type ArticlePreview = {
     authorName: string,
+    categoryShortUrl: string,
     comments: number,
     cover: string | null,
     createdAt: string,
@@ -52,8 +53,19 @@ const ArticlePageItem = ({post}: { post: ArticlePreview }) => {
                     <div className="commentMeta mt-2 text-sm text-gray-700 dark:text-gray-300">
                         <div className="flex flex-wrap">
                             <div className="flex items-center mr-4 mb-2">
-                                <HashtagIcon width={12} height={12} className="inline-block mr-1"/>
-                                <span>{post.categoryName}</span>
+                                {
+                                    post.categoryShortUrl ? (
+                                        <Link href={`/categories/${post.categoryShortUrl}`} className="underlineAnimation">
+                                            <HashtagIcon width={12} height={12} className="inline-block mr-1"/>
+                                            <span>{post.categoryName}</span>
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            <HashtagIcon width={12} height={12} className="inline-block mr-1"/>
+                                            <span>{post.categoryName}</span>
+                                        </>
+                                    )
+                                }
                             </div>
                             <div className="flex items-center mr-4 mb-2">
                                 <Calendar width={12} height={12} className="inline-block mr-1"/>
@@ -63,10 +75,12 @@ const ArticlePageItem = ({post}: { post: ArticlePreview }) => {
                                         className="text-xs text-gray-450 dark:text-gray-550"> （更新于 {formattedUpdatedDate}）</span>}
                             </div>
                             {post.tags && post.tags.split(',').map((tag, index) => (
-                                <div className="flex items-center mr-4 mb-2" key={index}>
-                                    <TagIcon width={12} height={12} className="inline-block mr-1"/>
-                                    <span> {tag}</span>
-                                </div>
+                                <Link href={`/tags/${tag}`} key={index}>
+                                    <div className="flex items-center mr-4 mb-2">
+                                        <TagIcon width={12} height={12} className="inline-block mr-1"/>
+                                        <span className="underlineAnimation"> {tag}</span>
+                                    </div>
+                                </Link>
                             ))}
                             <div className="flex items-center mr-4 mb-2">
                                 <Eye width={12} height={12} className="inline-block mr-1"/>

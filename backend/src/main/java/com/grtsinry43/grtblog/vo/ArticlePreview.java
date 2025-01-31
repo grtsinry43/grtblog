@@ -56,6 +56,11 @@ public class ArticlePreview {
     private String categoryName;
 
     /**
+     * 文章分类短链接
+     */
+    private String categoryShortUrl;
+
+    /**
      * 文章标签
      */
     private String tags;

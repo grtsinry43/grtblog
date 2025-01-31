@@ -16,3 +16,23 @@ ul {
 @view-transition {
     navigation: auto;
 }
+
+.underlineAnimation {
+    position: relative;
+    display: inline-block;
+}
+
+.underlineAnimation::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: currentColor;
+    transition: width 0.3s ease;
+}
+
+.underlineAnimation:hover::after {
+    width: 100%;
+}

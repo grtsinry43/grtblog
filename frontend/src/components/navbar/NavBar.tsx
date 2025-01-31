@@ -18,7 +18,6 @@ const NavBar = ({items}: { items: NavItem[] }) => {
 
     const [isMobile, setIsMobile] = useState(false);
     const user = useAppSelector(state => state.user);
-    console.log(user);
 
     useClarityInit();
     useIdentify(user.isLogin ? user.userInfo.id : Cookies.get('JSESSIONID') || '');

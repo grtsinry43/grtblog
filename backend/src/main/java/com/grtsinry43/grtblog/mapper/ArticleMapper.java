@@ -47,4 +47,10 @@ public interface ArticleMapper extends BaseMapper<Article> {
      */
     @Select("SELECT * FROM article WHERE category_id = #{categoryId} AND is_published = 1 AND deleted_at is null ORDER BY created_at DESC LIMIT #{start}, #{pageSize}")
     List<Article> getArticleListByCategory(@Param("categoryId") Long categoryId, @Param("start") Integer start, @Param("pageSize") Integer pageSize);
+
+    @Select("SELECT a.* FROM article a " +
+            "JOIN article_tag at ON a.id = at.article_id " +
+            "WHERE at.tag_id = #{tagId} AND a.is_published = 1 AND a.deleted_at IS NULL " +
+            "ORDER BY a.created_at DESC LIMIT #{start}, #{pageSize}")
+    List<Article> getArticleByTag(@Param("tagId") Long tagId, @Param("start") Integer start, @Param("pageSize") Integer pageSize);
 }

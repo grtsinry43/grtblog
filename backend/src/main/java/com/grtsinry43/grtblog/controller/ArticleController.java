@@ -70,6 +70,13 @@ public class ArticleController {
         return ApiResponse.success(articleList);
     }
 
+    @PermitAll
+    @GetMapping("/tag/{tagName}")
+    public ApiResponse<List<ArticlePreview>> getArticleListByTag(@RequestParam Integer page, @RequestParam Integer pageSize, @PathVariable String tagName) {
+        List<ArticlePreview> articleList = articleService.getArticleListByTag(tagName, page, pageSize);
+        return ApiResponse.success(articleList);
+    }
+
     // 这个匹配的一定要放在最后，不然会被 /all 匹配
     @PermitAll
     @GetMapping("/{shortUrl}")

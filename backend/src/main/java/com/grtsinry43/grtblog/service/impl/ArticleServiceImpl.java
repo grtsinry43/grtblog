@@ -9,6 +9,7 @@ import com.grtsinry43.grtblog.entity.CommentArea;
 import com.grtsinry43.grtblog.entity.User;
 import com.grtsinry43.grtblog.exception.BusinessException;
 import com.grtsinry43.grtblog.mapper.ArticleMapper;
+import com.grtsinry43.grtblog.mapper.TagMapper;
 import com.grtsinry43.grtblog.security.LoginUserDetails;
 import com.grtsinry43.grtblog.service.CommentAreaService;
 import com.grtsinry43.grtblog.service.IArticleService;
@@ -28,10 +29,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -51,8 +49,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final RecommendationService recommendationService;
     private final CommentAreaService commentAreaService;
     private final SocketIOService socketIOService;
+    private final ArticleMapper articleMapper;
+    private final TagMapper tagMapper;
 
-    public ArticleServiceImpl(ArticleTagServiceImpl articleTagService, TagServiceImpl tagService, CategoryServiceImpl categoryService, UserServiceImpl userService, RecommendationService recommendationService, CommentAreaService commentAreaService, @Lazy SocketIOService socketIOService) {
+    public ArticleServiceImpl(ArticleTagServiceImpl articleTagService, TagServiceImpl tagService, CategoryServiceImpl categoryService, UserServiceImpl userService, RecommendationService recommendationService, CommentAreaService commentAreaService, @Lazy SocketIOService socketIOService, ArticleMapper articleMapper, TagMapper tagMapper) {
         this.articleTagService = articleTagService;
         this.tagService = tagService;
         this.categoryService = categoryService;
@@ -60,6 +60,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         this.recommendationService = recommendationService;
         this.commentAreaService = commentAreaService;
         this.socketIOService = socketIOService;
+        this.articleMapper = articleMapper;
+        this.tagMapper = tagMapper;
     }
 
     @Override
@@ -275,6 +277,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                     article.getContent().substring(0, 200) + "..." : article.getContent());
             articlePreview.setCategoryName(article.getCategoryId() != null ? categoryService.getById(article.getCategoryId()).getName() : "未分类");
             articlePreview.setAvatar(userService.getById(article.getAuthorId()).getAvatar());
+            articlePreview.setCategoryShortUrl(categoryService.getShortUrlById(article.getCategoryId()));
             articlePreview.setTags(String.join(",", tagService.getTagNamesByArticleId(article.getId())));
             articlePreview.setAuthorName(userService.getById(article.getAuthorId()).getNickname());
             return articlePreview;
@@ -292,6 +295,29 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             articlePreview.setSummary(!"".equals(article.getSummary()) ? article.getSummary() : article.getContent().length() > 200 ?
                     article.getContent().substring(0, 200) + "..." : article.getContent());
             articlePreview.setTags(String.join(",", tagService.getTagNamesByArticleId(article.getId())));
+            articlePreview.setCategoryName(article.getCategoryId() != null ? categoryService.getById(article.getCategoryId()).getName() : "未分类");
+            articlePreview.setCategoryShortUrl(categoryService.getShortUrlById(article.getCategoryId()));
+            articlePreview.setAvatar(userService.getById(article.getAuthorId()).getAvatar());
+            articlePreview.setAuthorName(userService.getById(article.getAuthorId()).getNickname());
+            return articlePreview;
+        }).collect(Collectors.toList());
+    }
+
+    public List<ArticlePreview> getArticleListByTag(String tagName, Integer page, Integer pageSize) {
+        Long tagId = tagMapper.getTagIdByName(tagName);
+        if (tagId == null) {
+            return Collections.emptyList();
+        }
+        int start = (page - 1) * pageSize;
+        List<Article> articles = articleMapper.getArticleByTag(tagId, start, pageSize);
+        return articles.stream().map(article -> {
+            ArticlePreview articlePreview = new ArticlePreview();
+            BeanUtils.copyProperties(article, articlePreview);
+            articlePreview.setId(article.getId().toString());
+            articlePreview.setSummary(!"".equals(article.getSummary()) ? article.getSummary() : article.getContent().length() > 200 ?
+                    article.getContent().substring(0, 200) + "..." : article.getContent());
+            articlePreview.setTags(String.join(",", tagService.getTagNamesByArticleId(article.getId())));
+            articlePreview.setCategoryShortUrl(categoryService.getShortUrlById(article.getCategoryId()));
             articlePreview.setCategoryName(article.getCategoryId() != null ? categoryService.getById(article.getCategoryId()).getName() : "未分类");
             articlePreview.setAvatar(userService.getById(article.getAuthorId()).getAvatar());
             articlePreview.setAuthorName(userService.getById(article.getAuthorId()).getNickname());

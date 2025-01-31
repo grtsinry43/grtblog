@@ -32,14 +32,19 @@ public class TagController {
     }
 
     //    @AuthCheck(requiredRole = UserRole.ADMIN)
-    @PostMapping("/add")
-    public ApiResponse<Tag> addNewTagApi(@NotNull @NotBlank @RequestParam String tagName) {
-        Tag tag = tagService.addNewTag(tagName);
-        return ApiResponse.success(tag);
-    }
+//    @PostMapping("/add")
+//    public ApiResponse<Tag> addNewTagApi(@NotNull @NotBlank @RequestParam String tagName) {
+//        Tag tag = tagService.addNewTag(tagName);
+//        return ApiResponse.success(tag);
+//    }
 
     @GetMapping
     public ApiResponse<List<TagVO>> listTagsApi() {
         return ApiResponse.success(tagService.getTagInfoList());
+    }
+
+    @GetMapping("/names")
+    public ApiResponse<List<String>> listTagNamesApi() {
+        return ApiResponse.success(tagService.getAllTagNames());
     }
 }

@@ -25,6 +25,8 @@ public interface ITagService extends IService<Tag> {
 
     List<TagVO> getTagInfoList();
 
+    List<String> getAllTagNames();
+
     String[] getTagNamesByArticleId(Long articleId);
 
 }

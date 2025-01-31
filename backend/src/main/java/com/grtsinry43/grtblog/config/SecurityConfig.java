@@ -66,7 +66,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable) // 防止跨站请求伪造
                 .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // 取消 session
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/user/login", "/user/logout", "/oauth2/authorization/**", "/login**", "/captcha", "/admin/login", "/page-view", "/page/**", "/search/**", "/websiteInfo/**", "/uploads/**", "/friendLink", "/feed", "/notification", "/plugins/**", "/onlineStatus", "/overview", "/recommend", "/user-behavior/**").permitAll() // 登录和未登录的人都可以访问
+                        .requestMatchers("/user/login", "/user/logout", "/oauth2/authorization/**", "/login**", "/captcha", "/admin/login", "/page-view", "/page/**", "/search/**", "/websiteInfo/**", "/uploads/**", "/friendLink", "/feed", "/notification", "/plugins/**", "/onlineStatus", "/overview", "/recommend", "/user-behavior/**", "/thinking/**").permitAll() // 登录和未登录的人都可以访问
                         // 这里感觉还是把对外的接口放在统一的路径，而需要权限认证和登录的或者管理员接口每个都需要校验
                         .requestMatchers("/article/**", "/statusUpdate/**", "/comment/**", "/tag/**", "/nav/**", "/category/**", "/archive").permitAll()
                         // TODO : 仅开发使用
