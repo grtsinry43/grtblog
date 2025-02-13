@@ -74,7 +74,7 @@ public class MeiliDataSyncService {
 
         List<Page> pages = pageMapper.selectList(null);
         List<PageDocument> pageDocuments = pages.stream()
-                .filter(page -> !page.getCanDelete() && page.getDeletedAt() == null && page.getEnable())
+                .filter(page -> page.getCanDelete() && page.getDeletedAt() == null && page.getEnable())
                 .map(page -> new PageDocument(page.getId(), page.getTitle(), page.getDescription(), page.getContent(), page.getRefPath()))
                 .toList();
         syncPagesToMeiliSearch(pageDocuments);

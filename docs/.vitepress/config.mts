@@ -16,6 +16,7 @@ export default defineConfig({
             {
                 text: '快速开始',
                 items: [
+                    {text: '使用Docker Compose部署', link: '/quick-start/docker-compose'},
                     {text: '搜索与推荐', link: '/quick-start/search-and-recommend'},
                     {text: '后端', link: '/quick-start/backend'},
                     {text: 'Nginx配置', link: '/quick-start/nginx-config'},

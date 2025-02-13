@@ -7,6 +7,7 @@ import {usePathname} from "next/navigation";
 import {getPageView} from "@/api/pageView";
 import channel from "@/utils/channel";
 import emitter from "@/utils/eventBus";
+import {useNotificationUtil} from "@/utils/notification";
 
 const url = process.env.NEXT_PUBLIC_SOCKET_IO_URL;
 
@@ -15,8 +16,10 @@ const OnlineStats = () => {
     const [pageViewCount, setPageViewCount] = useState(0); // 当前页面在线人数
     const [totalOnlineCount, setTotalOnlineCount] = useState(0); // 总在线人数
     const param = usePathname();
+    const showNotification = useNotificationUtil();
 
     const dispatch = useAppDispatch();
+    const [isFirst, setIsFirst] = useState(true);
 
     // 初始化 Socket.IO 连接
     useEffect(() => {
@@ -30,6 +33,18 @@ const OnlineStats = () => {
                 type: "onlineCount/initPageView",
                 payload: res
             })
+            if (isFirst) {
+                showNotification(
+                    "欢迎远方的朋友，当前全站在线人数：" +
+                    res.reduce((total: number, item: {
+                        name: string,
+                        count: number
+                    }) => total + item.count, 0),
+                    "success"
+                );
+            }
+            // showNotification("欢迎来到我的网站", "success");
+            setIsFirst(false);
         });
 
         // 监听总在线人数事件

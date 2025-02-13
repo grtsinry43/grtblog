@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
  * @description 热爱可抵岁月漫长
  */
 
-@FeignClient(name = "recommender-service", url = "http://localhost:8001")
+@FeignClient(name = "recommender-service", url = "${recommender.service.url}")
 public interface RecommenderClient {
 
     @GetMapping("/article/{article_id}")

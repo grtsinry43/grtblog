@@ -18,6 +18,7 @@ import GlobalNotification from "@/components/notification/GlobalNotification";
 import UpdateNotification from "@/components/notification/UpdateNotification";
 import {ToastContainer} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import {NotificationProvider} from "@/lib/NotificationContext";
 
 const websiteInfo: WebsiteInfo = await getWebsiteInfo({next: {revalidate: 60}});
 
@@ -52,11 +53,13 @@ export default async function RootLayout({
                     >
                         <Theme>
                             <WebsiteInfoProvider websiteInfo={websiteInfo}>
-                                <NavBar items={navItems}/>
-                                <div className={styles.mainContainer}>
-                                    {children}
-                                </div>
-                                <Footer websiteInfo={websiteInfo}/>
+                                <NotificationProvider>
+                                    <NavBar items={navItems}/>
+                                    <div className={styles.mainContainer}>
+                                        {children}
+                                    </div>
+                                    <Footer websiteInfo={websiteInfo}/>
+                                </NotificationProvider>
                             </WebsiteInfoProvider>
                             <GlobalNotification/>
                             <UpdateNotification/>

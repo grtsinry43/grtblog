@@ -1,0 +1,3 @@
+[submodule "recommend"]
+	path = recommend
+	url = https://github.com/grtsinry43/RelatedRecommend

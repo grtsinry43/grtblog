@@ -1,6 +1,5 @@
 import {ofetch} from 'ofetch';
 import {getToken, setToken} from '@/utils/token';
-import {toast} from "react-toastify";
 
 const ins = ofetch.create({
     baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || '/api/v1', // Ensure it works in both browser and Node.js environments
@@ -29,9 +28,10 @@ export const request = async (url: string, options?: RequestInit) => {
 
 
     if (res.code !== 0) {
-        if (typeof window !== 'undefined') {
-            toast(res.msg, {type: 'error'});
-        }
+        // if (typeof window !== 'undefined') {
+        //     const notificationUtil = useNotificationUtil();
+        //     notificationUtil(res.msg, "error");
+        // }
         return null;
     } else {
         return res.data;

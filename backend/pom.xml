@@ -116,6 +116,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
             <version>4.4.0</version>
@@ -210,9 +215,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.grtblog</groupId>
+            <groupId>com.grtsinry43.grtblog</groupId>
             <artifactId>grtblog-interface</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>0.0.1</version>
         </dependency>
 
         <dependency>

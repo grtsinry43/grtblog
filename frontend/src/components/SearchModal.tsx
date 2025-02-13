@@ -119,7 +119,7 @@ export default function SearchModal({
                         }}
                     >
                         <Text size="1" style={{color: "var(--gray-a11)"}}>
-                            搜索由 ElasticSearch 强力驱动
+                            搜索由 MeiliSearch 强力驱动
                         </Text>
                         <Flex gap="2">
                             <kbd

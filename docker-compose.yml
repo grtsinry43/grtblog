@@ -1,0 +1,97 @@
+services:
+  #  frontend:
+  #    image: node:20
+  #    working_dir: /app
+  #    volumes:
+  #      - ./frontend:/app
+  #    ports:
+  #      - "3000:3000"
+  #    command: sh -c "npm install && npm run dev"
+
+  backend:
+    build: ./backend
+    working_dir: /app
+    volumes:
+      - ./application.yml:/app/application.yml
+#      - ./logs:/app/logs
+#      - ./uploads:/app/uploads
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - mongo
+      - redis
+      - meilisearch
+    entrypoint: ["java", "-jar", "/app/app.jar", "--spring.config.location=application.yml"]
+    networks:
+      custom_network:
+        ipv4_address: 172.20.0.2
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: grtblog
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      custom_network:
+        ipv4_address: 172.20.0.3
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME:
+      MONGO_INITDB_ROOT_PASSWORD:
+    networks:
+      custom_network:
+        ipv4_address: 172.20.0.4
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      custom_network:
+        ipv4_address: 172.20.0.5
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7700:7700"
+    networks:
+      custom_network:
+        ipv4_address: 172.20.0.6
+
+  recommend:
+    build: ./recommend
+    working_dir: /app
+    volumes:
+      - ./recommend:/app
+      - ./cfg.py:/app/cfg.py
+    ports:
+      - "8001:8001"
+    command: python main.py
+    depends_on:
+      - mongo
+      - mysql
+    networks:
+      custom_network:
+        ipv4_address: 172.20.0.7
+
+networks:
+  custom_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  db_data:
