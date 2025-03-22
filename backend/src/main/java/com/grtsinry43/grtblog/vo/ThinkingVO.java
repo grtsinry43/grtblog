@@ -1,8 +1,10 @@
 package com.grtsinry43.grtblog.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * @author grtsinry43
@@ -15,4 +17,10 @@ public class ThinkingVO {
     private String content;
     private String author;
     private LocalDateTime createdAt;
+
+    @JsonProperty("createdAt")
+    public String getCreatedAt() {
+        // 格式化时间：2024-10-27 19:43:00
+        return createdAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
 }

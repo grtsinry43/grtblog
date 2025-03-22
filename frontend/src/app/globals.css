@@ -136,3 +136,109 @@
     background-color: rgba(var(--primary), 0.3) !important;
     text-shadow: 1px 1px 2px rgba(129, 129, 129, 0.3);
 }
+
+@keyframes blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+.typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background-color: currentColor;
+    margin-left: 2px;
+    animation: blink 1s step-end infinite;
+}
+
+.mask-image-fade {
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+}
+
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(var(--primary), 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(var(--primary), 0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shimmer-effect {
+    background: linear-gradient(
+            90deg,
+            rgba(var(--primary), 0.1) 25%,
+            rgba(var(--primary), 0.2) 50%,
+            rgba(var(--primary), 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite;
+}
+
+.nav-item-hover {
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-item-hover::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: rgb(var(--primary));
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+}
+
+.nav-item-hover:hover::after {
+    transform: translateX(0);
+}
+
+.glass-effect {
+    background: rgba(var(--background), 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(var(--border), 0.1);
+}
+
+.floating-animation {
+    animation: float 3s ease-in-out infinite;
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+

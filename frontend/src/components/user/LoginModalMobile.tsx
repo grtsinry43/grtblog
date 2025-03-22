@@ -5,10 +5,9 @@ import {AnimatePresence, motion} from 'framer-motion';
 import {IconButton, TextField, Tooltip} from '@radix-ui/themes';
 import {Button, ConfigProvider} from 'react-vant';
 import styles from '@/styles/LoginModalMobile.module.scss';
-import {CloseIcon} from 'next/dist/client/components/react-dev-overlay/internal/icons/CloseIcon';
 import {clsx} from 'clsx';
 import {varela_round, noto_sans_sc} from '@/app/fonts/font';
-import {MailIcon} from 'lucide-react';
+import {MailIcon, X} from 'lucide-react';
 import {GitHubLogoIcon} from '@radix-ui/react-icons';
 import {FaGoogle} from 'react-icons/fa';
 import {userLogin, userRegister} from '@/api/user';
@@ -119,7 +118,7 @@ const LoginModalMobile = ({isOpen, onClose}: { isOpen: boolean; onClose: () => v
                                                         backgroundColor: 'transparent',
                                                         border: 'none',
                                                     }}>
-                                                        <CloseIcon/>
+                                                        <X/>
                                                     </Button>
                                                 </motion.div>
                                             </div>

@@ -17,8 +17,8 @@ export const TracingBeam = ({
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const {scrollYProgress} = useScroll({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
+        
+        
         target: ref,
         offset: ["start start", "end start"],
     });
@@ -58,8 +58,8 @@ export const TracingBeam = ({
     return (
         <motion.div
             ref={ref}
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
+            
+            
             className={cn("relative w-full max-w-4xl mx-auto h-full", className)}
         >
             <div className="absolute -left-4 md:-left-20 top-3">
@@ -74,8 +74,8 @@ export const TracingBeam = ({
                                 ? "none"
                                 : "rgba(0, 0, 0, 0.24) 0px 3px 8px",
                     }}
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-expect-error
+                    
+                    
                     className="ml-[27px] h-4 w-4 rounded-full border border-netural-200 shadow-sm flex items-center justify-center"
                 >
                     <motion.div
@@ -89,8 +89,8 @@ export const TracingBeam = ({
                             borderColor:
                                 scrollYProgress.get() > 0 ? "white" : "var(--emerald-600)",
                         }}
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
+                        
+                        
                         className="h-2 w-2 rounded-full border border-neutral-300 bg-white"
                     />
                 </motion.div>

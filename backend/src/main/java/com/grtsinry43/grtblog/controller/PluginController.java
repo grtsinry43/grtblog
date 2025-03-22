@@ -5,6 +5,7 @@ import com.grtsinry43.grtblog.common.ErrorCode;
 import com.grtsinry43.grtblog.dto.ApiResponse;
 import com.grtsinry43.grtblog.exception.BusinessException;
 import com.grtsinry43.grtblog.runner.PluginRouteRegistrar;
+import com.grtsinry43.grtblog.vo.PluginFetchItem;
 import com.grtsinry43.grtblog.vo.PluginItem;
 import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
  * @description 热爱可抵岁月漫长
  */
 @RestController
-@RequestMapping("/api/plugins")
+@RequestMapping("/plugins/api")
 public class PluginController {
 
     @Autowired
@@ -36,6 +37,20 @@ public class PluginController {
 
     private static final String PLUGINS_DIR = "plugins";
     private static final String DISABLED_FILE = "disabled.txt";
+
+    @GetMapping("/all-endpoints")
+    public ApiResponse<List<PluginFetchItem>> getAllEndpoints() {
+        List<PluginFetchItem> pluginFetchItems = pluginManager.getPlugins().stream()
+                .flatMap(plugin -> pluginManager.getExtensions(BlogPlugin.class).stream()
+                        .map(extension -> {
+                            PluginFetchItem item = new PluginFetchItem();
+                            item.setName(plugin.getDescriptor().getPluginId());
+                            item.setEndpoint(extension.getEndpoint());
+                            return item;
+                        }))
+                .collect(Collectors.toList());
+        return ApiResponse.success(pluginFetchItems);
+    }
 
     @PostMapping("/load")
     public String loadPlugins() {

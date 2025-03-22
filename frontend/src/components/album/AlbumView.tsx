@@ -29,8 +29,8 @@ const AlbumView = ({photo, isOpen, setIsOpen, prevHandler, nextHandler, prevDisa
                     initial={{opacity: 0}}
                     animate={{opacity: 1}}
                     exit={{opacity: 0}}
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-expect-error
+                    
+                    
                     className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl flex items-center justify-center p-4"
                     onClick={() => setIsOpen(false)}
                 >
@@ -39,8 +39,8 @@ const AlbumView = ({photo, isOpen, setIsOpen, prevHandler, nextHandler, prevDisa
                         animate={{scale: 1}}
                         exit={{scale: 0.95}}
                         style={{maxWidth: '80vw'}}
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
+                        
+                        
                         className="relative max-h-[90vh] bg-neutral-900 overflow-hidden flex flex-col md:flex-row lg:flex-row"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
@@ -63,8 +63,8 @@ const AlbumView = ({photo, isOpen, setIsOpen, prevHandler, nextHandler, prevDisa
                                         initial={{opacity: 1}}
                                         exit={{opacity: 0}}
                                         transition={{duration: 0.5}}
-                                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                        // @ts-expect-error
+                                        
+                                        
                                         className="absolute inset-0 flex items-center justify-center"
                                     >
                                         <div
@@ -89,8 +89,8 @@ const AlbumView = ({photo, isOpen, setIsOpen, prevHandler, nextHandler, prevDisa
                                     clipPath: {duration: 1, ease: "easeInOut"},
                                     filter: {duration: 0.8, ease: "easeOut"},
                                 }}
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-expect-error
+                                
+                                
                                 className="w-full h-full flex justify-center"
                             >
                                 {/* eslint-disable-next-line @next/next/no-img-element */}

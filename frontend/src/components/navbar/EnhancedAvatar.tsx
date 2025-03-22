@@ -90,7 +90,9 @@ export function EnhancedAvatar({avatarSrc}: EnhancedAvatarProps) {
                     </Link>
                 </motion.div>
             ) : (
-                <Link href="/">
+                <Link href="/" onClick={() => {
+                    emitter.emit("hideTitle");
+                }}>
                     <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
                         <Avatar size="3" radius="large" src={avatarSrc} fallback="A" className={styles.avatar}/>
                     </div>
@@ -102,8 +104,8 @@ export function EnhancedAvatar({avatarSrc}: EnhancedAvatarProps) {
                     animate={{opacity: 1, y: 0}}
                     exit={{opacity: 0, y: 10}}
                     transition={{type: "spring", stiffness: 400, damping: 20}}
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-expect-error
+
+
                     className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 p-4 rounded-lg shadow-lg bg-white dark:bg-gray-900 backdrop-blur border border-gray-200 dark:border-gray-700 z-10"
                 >
                     <h3 className="text-sm font-medium mb-2"> 当前在线，康康他在干什么👀</h3>

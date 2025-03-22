@@ -17,8 +17,8 @@ import {motion} from 'framer-motion';
 import CommentForm from "@/components/comment/CommentForm";
 import CommentList from "@/components/comment/CommentList";
 import {article_font} from "@/app/fonts/font";
-import {FaWindows, FaApple, FaLinux, FaAndroid} from 'react-icons/fa';
-import {SiSafari, SiFirefox, SiGooglechrome, SiMicrosoftedge} from 'react-icons/si';
+import {FaWindows, FaApple, FaLinux, FaAndroid, FaEdge} from 'react-icons/fa';
+import {SiSafari, SiFirefox, SiGooglechrome} from 'react-icons/si';
 import {VscVerifiedFilled} from "react-icons/vsc";
 import {PinTopIcon} from "@radix-ui/react-icons";
 import {Reply} from "lucide-react";
@@ -35,7 +35,7 @@ const getBrowserIcon = (browser: string) => {
     if (browser.includes('Chrome')) return <SiGooglechrome size={'10'} style={{color: '#4285F4'}}/>;
     if (browser.includes('Firefox')) return <SiFirefox size={'10'} style={{color: '#FF7139'}}/>;
     if (browser.includes('Safari')) return <SiSafari size={'10'} style={{color: '#0078D7'}}/>;
-    if (browser.includes('Edge')) return <SiMicrosoftedge size={'10'} style={{color: '#0078D7'}}/>;
+    if (browser.includes('Edge')) return <FaEdge size={'10'} style={{color: '#0078D7'}}/>;
     return null;
 };
 

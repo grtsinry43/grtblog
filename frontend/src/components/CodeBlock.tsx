@@ -1,113 +1,162 @@
-'use client';
+"use client"
 
-import React, {useEffect, useState} from 'react';
-import {CopyToClipboard} from 'react-copy-to-clipboard';
-import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter';
-import {Badge, Button, ScrollArea} from '@radix-ui/themes';
-import {useTheme} from 'next-themes';
-import {jetbrains_mono} from '@/app/fonts/font';
-import theme from '@/components/code/customTheme';
-import fallbackTheme from '@/components/code/fallbackTheme';
-import styles from '@/styles/CodeBlock.module.scss';
-import {clsx} from 'clsx';
-import {motion} from 'framer-motion';
-import {CheckIcon, CopyIcon} from '@radix-ui/react-icons';
+import React, {useEffect, useState} from 'react'
+import {CopyToClipboard} from 'react-copy-to-clipboard'
+import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
+import {useTheme} from 'next-themes'
+import {cn} from '@/lib/utils'
+import {AnimatePresence, motion} from 'framer-motion'
+import {Check, ChevronDown, ChevronUp, Copy, Terminal} from 'lucide-react'
+import {Badge} from '@/components/ui/badge'
+import {Button} from '@/components/ui/button'
+import {jetbrains_mono} from '@/app/fonts/font'
+import fallbackTheme from "@/components/code/fallbackTheme";
+import customTheme from "@/components/code/customTheme";
+import {ScrollArea} from "@radix-ui/themes";
 
 interface CodeBlockProps {
-    language: string;
-    value: string;
+    language: string
+    value: string
+    showLineNumbers?: boolean
+    className?: string
+    initialVisibleLines?: number
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({language, value}) => {
-    const [copied, setCopied] = useState(false);
-    const {resolvedTheme} = useTheme();
-    const [currentTheme, setCurrentTheme] = useState<{ [key: string]: React.CSSProperties }>(fallbackTheme);
-    const [bgClass, setBgClass] = useState('');
-    const [lineNumberBg, setLineNumberBg] = useState('transparent');
+const CodeBlock: React.FC<CodeBlockProps> = ({
+                                                 language,
+                                                 value,
+                                                 showLineNumbers = true,
+                                                 initialVisibleLines = 10,
+                                             }) => {
+    const [copied, setCopied] = useState(false)
+    const {resolvedTheme} = useTheme()
+    const isDark = resolvedTheme === 'dark'
+    const [expanded, setExpanded] = useState(false)
+    const [shouldShowExpand, setShouldShowExpand] = useState(false)
+    const [bgClassName, setBgClassName] = useState('')
 
-    const handleCopy = () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+    const codeLines = value.split('\n')
 
     useEffect(() => {
-        setCurrentTheme(resolvedTheme === 'dark' ? theme.customSolarizedDarkAtom : theme.customSolarizedLightAtom);
-        setBgClass(resolvedTheme === 'dark' ? styles.darkBg : styles.lightBg);
-        setLineNumberBg(resolvedTheme === 'dark' ? '#242424' : '#f1f1f1');
-        document.documentElement.style.setProperty('--scrollbar-color', resolvedTheme === 'dark' ? '#2f2f2f transparent' : '#cacaca transparent');
-        return () => {
-            setCurrentTheme(fallbackTheme);
-            setBgClass('');
-            setLineNumberBg('transparent');
-            document.documentElement.style.removeProperty('--scrollbar-color');
-        };
-    }, [resolvedTheme]);
+        setShouldShowExpand(codeLines.length > initialVisibleLines)
+        setBgClassName(isDark ? "bg-zinc-900 border-zinc-800" : "bg-zinc-50 border-zinc-200")
+
+    }, [codeLines.length, initialVisibleLines, isDark])
+
+    const displayedCode = expanded
+        ? value
+        : codeLines.slice(0, initialVisibleLines).join('\n')
+
+    const handleCopy = () => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
+
+    const toggleExpand = () => {
+        setExpanded(!expanded)
+    }
+
+    const currentTheme = isDark ? customTheme.customSolarizedDarkAtom : customTheme.customSolarizedLightAtom || fallbackTheme
 
     return (
-        <ScrollArea radius={"full"} asChild>
-            <div className={clsx(styles.codeBlock, jetbrains_mono.className, bgClass)}>
-                <div className="quick-action"
-                     style={{
-                         position: 'absolute',
-                         top: 0,
-                         right: 0,
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: 8,
-                         padding: 8,
-                     }}
-                >
-                    <Badge style={{
-                        backgroundColor: 'var(--colors-background)',
-                        color: 'var(--colors-text)',
-                        fontSize: 12,
-                    }}>
-                        {language.toUpperCase()}
+        <div className={cn(
+            "relative rounded-lg overflow-hidden border my-4 mx-2",
+            bgClassName,
+            jetbrains_mono.className
+        )}>
+            <div className="flex items-center justify-between px-2 border-b border-border">
+                <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-muted-foreground"/>
+                    <Badge variant="outline" className="text-xs font-medium uppercase">
+                        {language}
                     </Badge>
-                    <CopyToClipboard text={value} onCopy={handleCopy}>
-                        <Button variant={'soft'}
-                                style={{
-                                    color: "rgb(var(--primary))",
-                                    backgroundColor: "rgba(var(--primary), 0.1)",
-                                }}
-                        >
-                            <motion.div
-                                initial={{scale: 1}}
-                                animate={{scale: copied ? 1.2 : 1}}
-                                transition={{duration: 0.2}}
-                            >
-                                {copied ? <CheckIcon/> : <CopyIcon/>}
-                            </motion.div>
-                        </Button>
-                    </CopyToClipboard>
                 </div>
-                <SyntaxHighlighter
-                    language={language}
-                    style={currentTheme}
-                    customStyle={{
-                        fontFamily: 'JetBrains Mono, monospace',
-                        fontSize: '14px',
-                        padding: '0.5em',
-                        transition: 'color 0.5s, background-color 0.5s',
-                        marginRight: '5em', // 防止代码块被遮挡
-                    }}
-                    showLineNumbers
-                    lineNumberStyle={{
-                        position: 'sticky',
-                        left: 0,
-                        background: lineNumberBg,
-                        paddingRight: '10px',
-                        marginRight: '10px',
-                        userSelect: 'none',
-                        minWidth: '2em',
-                        transition: 'background-color 0.5s',
-                    }}
-                >
-                    {value}
-                </SyntaxHighlighter>
+                <CopyToClipboard text={value} onCopy={handleCopy}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                    >
+                        <AnimatePresence mode="wait" initial={false}>
+                            {copied ? (
+                                <motion.div
+                                    key="check"
+                                    initial={{scale: 0.8, opacity: 0}}
+                                    animate={{scale: 1, opacity: 1}}
+                                    exit={{scale: 0.8, opacity: 0}}
+                                    transition={{duration: 0.15}}
+                                >
+                                    <Check className="h-4 w-4 text-green-500"/>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="copy"
+                                    initial={{scale: 0.8, opacity: 0}}
+                                    animate={{scale: 1, opacity: 1}}
+                                    exit={{scale: 0.8, opacity: 0}}
+                                    transition={{duration: 0.15}}
+                                >
+                                    <Copy className="h-4 w-4 text-muted-foreground"/>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </Button>
+                </CopyToClipboard>
             </div>
-        </ScrollArea>
-    );
-};
 
-export default CodeBlock;
+            <ScrollArea className="w-full" scrollbars="horizontal">
+                <div className={cn("relative", jetbrains_mono.className)}>
+                    <SyntaxHighlighter
+                        language={language}
+                        style={currentTheme}
+                        showLineNumbers={showLineNumbers}
+                        wrapLines={false}
+                        customStyle={{
+                            margin: 0,
+                            padding: '0.7rem',
+                            fontSize: '12px',
+                        }}
+                        lineNumberStyle={{
+                            minWidth: '2.5em',
+                            paddingRight: '1em',
+                            marginRight: '1em',
+                            textAlign: 'right',
+                            userSelect: 'none',
+                            opacity: 0.5,
+                            borderRight: isDark ? '1px solid #333' : '1px solid #eaeaea',
+                            position: 'sticky',
+                            left: 0,
+                        }}
+                    >
+                        {displayedCode}
+                    </SyntaxHighlighter>
+                </div>
+            </ScrollArea>
+
+            {shouldShowExpand && (
+                <div className="flex justify-center border-t border-border">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleExpand}
+                        className="w-full rounded-none flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                        {expanded ? (
+                            <>
+                                <ChevronUp className="h-3 w-3"/>
+                                <span>收起更多</span>
+                            </>
+                        ) : (
+                            <>
+                                <ChevronDown className="h-3 w-3"/>
+                                <span>展示全部 {codeLines.length} 行代码内容</span>
+                            </>
+                        )}
+                    </Button>
+                </div>
+            )}
+        </div>
+    )
+}
+
+export default CodeBlock

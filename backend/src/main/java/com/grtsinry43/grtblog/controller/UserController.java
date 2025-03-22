@@ -86,6 +86,8 @@ public class UserController {
     @PostMapping("/register")
     public ApiResponse<UserVO> registerApi(HttpServletRequest request, @RequestBody UserRegisterDTO user) {
         String sessionCaptcha = (String) request.getSession().getAttribute("captcha");
+        System.out.println("sessionCaptcha = " + sessionCaptcha);
+        System.out.println("request.getParameter(\"captcha\") = " + request.getParameter("captcha"));
         if (sessionCaptcha == null || !sessionCaptcha.equals(request.getParameter("captcha"))) {
             return ApiResponse.error(401, "验证码错误");
         }

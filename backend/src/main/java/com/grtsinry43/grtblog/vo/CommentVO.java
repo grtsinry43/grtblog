@@ -1,8 +1,10 @@
 package com.grtsinry43.grtblog.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * @author grtsinry43
@@ -76,9 +78,9 @@ public class CommentVO {
      */
     private Boolean isTop;
 
-    private LocalDateTime createdAt;
+    private transient LocalDateTime createdAt;
 
-    private LocalDateTime updatedAt;
+    private transient LocalDateTime updatedAt;
 
     /**
      * 评论者是否是博主
@@ -104,4 +106,16 @@ public class CommentVO {
      * 父评论 ID，如果为空则表示是顶级评论，否则是回复评论
      */
     private String parentId;
+
+    @JsonProperty("createdAt")
+    public String getCreatedAt() {
+        // 格式化时间：2024-10-27 19:43:00
+        return createdAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    @JsonProperty("updatedAt")
+    public String getUpdatedAt() {
+        // 格式化时间：2024-10-27 19:43:00
+        return updatedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
 }

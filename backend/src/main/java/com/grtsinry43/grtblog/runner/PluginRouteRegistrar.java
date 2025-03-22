@@ -1,6 +1,7 @@
 package com.grtsinry43.grtblog.runner;
 
 import com.grtblog.BlogPlugin;
+import org.jetbrains.annotations.NotNull;
 import org.pf4j.spring.SpringPluginManager;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -37,38 +39,58 @@ public class PluginRouteRegistrar implements ApplicationContextAware, Applicatio
     }
 
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public void setApplicationContext(@NotNull ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
 
     public void refreshPluginRoutes() {
-        System.out.println("===Context refreshed event received.===");
-        pluginManager.getPlugins().forEach(plugin -> {
-            System.out.println("Plugin loaded: " + plugin.getPluginId() + " - " + plugin.getPluginState());
-        });
-
-        System.out.println(pluginManager.getExtensions(BlogPlugin.class));
-
         pluginManager.getExtensions(BlogPlugin.class).forEach(extension -> {
             try {
-                String endpoint = "/plugins" + extension.getEndpoint();
-                if (!registeredEndpoints.contains(endpoint)) { // Check if already registered
-                    System.out.println("Registering endpoint: " + endpoint);
-                    Method handleRequestMethod = extension.getClass().getMethod("handleRequest");
+//                String endpoint = "/plugins" + extension.getEndpoint();
+//                if (!registeredEndpoints.contains(endpoint)) {
+//                    Method handleRequestMethod = extension.getClass().getMethod("handleRequest");
+//                    requestMappingHandlerMapping.registerMapping(
+//                            RequestMappingInfo.paths(endpoint).methods(RequestMethod.GET).build(),
+//                            extension,
+//                            handleRequestMethod
+//                    );
+//                    registeredEndpoints.add(endpoint);
+//                }
+
+                // 动态注册插件的 JavaScript 组件端点
+                String jsEndpoint = "/plugins" + extension.getEndpoint() + "/js";
+                if (!registeredEndpoints.contains(jsEndpoint)) {
+                    Method getJavaScriptComponentMethod = extension.getClass().getMethod("getJavaScriptContent");
                     requestMappingHandlerMapping.registerMapping(
-                            RequestMappingInfo.paths(endpoint).methods(RequestMethod.GET).build(),
+                            RequestMappingInfo.paths(jsEndpoint).methods(RequestMethod.GET).build(),
                             extension,
-                            handleRequestMethod
+                            getJavaScriptComponentMethod
                     );
-                    registeredEndpoints.add(endpoint); // Add to registered set
-                } else {
-                    System.out.println("Endpoint " + endpoint + " already registered. Skipping.");
+                    registeredEndpoints.add(jsEndpoint);
                 }
+
+                pluginManager.getExtensions(BlogPlugin.class).forEach(extension1 -> {
+                    for (Method method : extension1.getClass().getMethods()) {
+                        if (method.isAnnotationPresent(RequestMapping.class)) {
+                            RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+                            String[] paths = requestMapping.value();
+                            RequestMethod[] methods = requestMapping.method();
+                            for (String path : paths) {
+                                String fullPath = "/plugins" + extension1.getEndpoint() + path;
+                                if (!registeredEndpoints.contains(fullPath)) {
+                                    requestMappingHandlerMapping.registerMapping(
+                                            RequestMappingInfo.paths(fullPath).methods(methods).build(),
+                                            extension1,
+                                            method
+                                    );
+                                    registeredEndpoints.add(fullPath);
+                                }
+                            }
+                        }
+                    }
+                });
+                System.out.println("Registered endpoints: " + registeredEndpoints);
             } catch (NoSuchMethodException e) {
-                System.err.println("Method handleRequest not found for extension: " + extension.getClass().getName());
-                e.printStackTrace(); // Important for debugging
-            } catch (Exception e) { // Catch other potential exceptions during mapping
-                System.err.println("Error registering endpoint: " + e.getMessage());
                 e.printStackTrace();
             }
         });
@@ -76,7 +98,6 @@ public class PluginRouteRegistrar implements ApplicationContextAware, Applicatio
 
     public void unregisterPluginRoutes() {
         registeredEndpoints.forEach(endpoint -> {
-            System.out.println("Unregistering endpoint: " + endpoint);
             requestMappingHandlerMapping.unregisterMapping(RequestMappingInfo.paths(endpoint).methods(RequestMethod.GET).build());
         });
         registeredEndpoints.clear();

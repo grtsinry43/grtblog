@@ -1,25 +1,19 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
-import {AnimatePresence, motion} from 'framer-motion';
-import {Button, IconButton, TextField, Tooltip} from '@radix-ui/themes';
-import styles from '@/styles/LoginModal.module.scss';
-import {CloseIcon} from 'next/dist/client/components/react-dev-overlay/internal/icons/CloseIcon';
-import {clsx} from 'clsx';
-import {varela_round, noto_sans_sc} from '@/app/fonts/font';
-import {MailIcon} from 'lucide-react';
-import {GitHubLogoIcon} from '@radix-ui/react-icons';
-import {FaGoogle} from 'react-icons/fa';
-// import {IoLogoWechat} from 'react-icons/io5';
-// import {BiLogoMicrosoft} from 'react-icons/bi';
-import {userLogin, userRegister} from '@/api/user';
-import {UserInfo} from '@/redux/userSlice';
-import {useAppDispatch} from '@/redux/hooks';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from '@/components/ui/separator';
+import { X, MailIcon, LucideGithub } from 'lucide-react';
+import { FaGoogle } from 'react-icons/fa';
+import { userLogin, userRegister } from '@/api/user';
+import { UserInfo } from '@/redux/userSlice';
+import { useAppDispatch } from '@/redux/hooks';
 import Link from "next/link";
-import {toast} from "react-toastify";
-import {Separator} from '@/components/ui/separator';
+import { toast } from "react-toastify";
 
-const LoginModal = ({isOpen, onClose}: { isOpen: boolean; onClose: () => void }) => {
+const LoginModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
     const [loginForm, setLoginForm] = useState({
         userEmail: '',
         password: '',
@@ -53,18 +47,18 @@ const LoginModal = ({isOpen, onClose}: { isOpen: boolean; onClose: () => void })
     const submitLoginForm = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!loginForm.userEmail || !loginForm.password) {
-            toast('请填写所有必填字段', {type: 'error'});
+            toast('请填写所有必填字段', { type: 'error' });
             setError('请填写所有必填字段');
             return;
         }
         userLogin(loginForm, captcha).then((res) => {
             if (!res) {
-                toast('登录失败，请检查用户名密码或验证码', {type: 'error'});
+                toast('登录失败，请检查用户名密码或验证码', { type: 'error' });
                 setError('登录失败，请检查用户名密码或验证码');
                 setCaptchaRandom(Math.random());
             } else {
-                dispatch({type: 'user/initUserInfo', payload: res as UserInfo});
-                dispatch({type: 'user/changeLoginStatus', payload: true});
+                dispatch({ type: 'user/initUserInfo', payload: res as UserInfo });
+                dispatch({ type: 'user/changeLoginStatus', payload: true });
                 onClose();
             }
         });
@@ -73,22 +67,22 @@ const LoginModal = ({isOpen, onClose}: { isOpen: boolean; onClose: () => void })
     const submitRegisterForm = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!registerForm.userEmail || !registerForm.password || !registerForm.confirmPassword) {
-            toast('请填写所有必填字段', {type: 'error'});
+            toast('请填写所有必填字段', { type: 'error' });
             setError('请填写所有必填字段');
             return;
         }
         if (registerForm.password !== registerForm.confirmPassword) {
-            toast('两次输入的密码不一致', {type: 'error'});
+            toast('两次输入的密码不一致', { type: 'error' });
             setError('两次输入的密码不一致');
             return;
         }
         userRegister(registerForm, captcha).then((res) => {
             if (!res) {
-                toast('注册失败，可能是邮箱已被注册或验证码错误', {type: 'error'});
+                toast('注册失败，可能是邮箱已被注册或验证码错误', { type: 'error' });
                 setError('注册失败，可能是邮箱已被注册或验证码错误');
                 setCaptchaRandom(Math.random());
             } else {
-                toast('注册成功，请登录', {type: 'success'});
+                toast('注册成功，请登录', { type: 'success' });
                 setIsLoginForm(true);
                 setError('注册成功，请登录');
             }
@@ -104,382 +98,309 @@ const LoginModal = ({isOpen, onClose}: { isOpen: boolean; onClose: () => void })
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className={styles.modalOverlay}>
+                <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">
                     <motion.div
-                        initial={{opacity: 0}}
-                        animate={{opacity: 1}}
-                        exit={{opacity: 0}}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         transition={{
                             type: "tween",
                             duration: 0.2,
                         }}
+                        className="w-full h-full flex items-center justify-center"
                     >
                         <motion.div
-                            initial={{scale: 0.8, opacity: 0, y: 100}}
-                            animate={{scale: 1, opacity: 1, y: -20}}
-                            exit={{scale: 0.8, opacity: 0, y: 100}}
+                            initial={{ scale: 0.8, opacity: 0, y: 100 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.8, opacity: 0, y: 100 }}
+                            className="relative bg-card rounded-xl shadow-lg border border-border w-full max-w-md mx-4 overflow-hidden"
                         >
-                            <div className={styles.modalContent}>
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '1rem',
-                                    right: '1rem',
-                                }}>
-                                    <motion.div whileHover={{scale: 1.05}} whileTap={{scale: 0.95}}>
-                                        <Button variant="ghost" onClick={onClose}>
-                                            <CloseIcon/>
-                                        </Button>
-                                    </motion.div>
-                                </div>
-                                <h2 className={clsx(styles.title, varela_round.className)}>
-                                        <span
-                                            className={noto_sans_sc.className}>{isLoginForm ? '登录到' : '注册'} </span>
-                                    Grtsinry43&apos;s Blog 😘
-                                </h2>
-                                {
-                                    !isFormShow && (
-                                        <Button onClick={() => setIsFormShow(true)} style={{
-                                            borderRadius: '0.375rem',
-                                            backgroundColor: 'rgba(var(--primary),0.5)',
-                                            color: 'rga(var(--foreground))',
-                                        }}>
-                                            <MailIcon width={16} height={16}/>
+                            <div className="absolute top-4 right-4 z-10">
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={onClose}
+                                        className="h-8 w-8 rounded-full"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </motion.div>
+                            </div>
+
+                            <div className="p-6 md:p-8">
+                                <div className="space-y-6">
+                                    <div className="text-center space-y-2">
+                                        <h2 className="text-2xl font-bold tracking-tight">
+                                            {isLoginForm ? '登录到' : '注册'} Grtsinry43&apos;s Blog 😘
+                                        </h2>
+                                        <p className="text-sm text-muted-foreground">
+                                            {isLoginForm ? '欢迎回来！请登录您的账号' : '创建一个新账号，开始您的旅程'}
+                                        </p>
+                                    </div>
+
+                                    {!isFormShow && (
+                                        <Button
+                                            onClick={() => setIsFormShow(true)}
+                                            className="w-full"
+                                            variant="default"
+                                        >
+                                            <MailIcon className="mr-2 h-4 w-4" />
                                             通过邮箱 {isLoginForm ? '登录' : '注册'}
                                         </Button>
-                                    )
-                                }
-                                <Separator className="my-4"/>
-                                <AnimatePresence mode="wait">
-                                    {isFormShow && (
-                                        <motion.div
-                                            key={isLoginForm ? 'login' : 'register'}
-                                            initial={{height: 0, opacity: 0}}
-                                            animate={{height: 'auto', opacity: 1}}
-                                            exit={{height: 0, opacity: 0}}
-                                            transition={{
-                                                type: 'spring',
-                                                stiffness: 500,
-                                                damping: 30,
-                                                mass: 1,
-                                            }}
-                                            style={{
-                                                width: '100%',
-                                                overflow: 'hidden',
-                                            }}
-                                        >
-                                            {isLoginForm ? (
-                                                <form
-                                                    style={{
-                                                        marginTop: '1rem',
-                                                        width: '100%',
-                                                    }}
-                                                    onSubmit={submitLoginForm}>
-                                                    {error && (
-                                                        <div className={styles.error}>{error}</div>
-                                                    )}
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label}> 邮箱</div>
-                                                        <TextField.Root
-                                                            key="login-email"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            value={loginForm.userEmail}
-                                                            onChange={(e) => setLoginForm({
-                                                                ...loginForm,
-                                                                userEmail: e.target.value
-                                                            })}
-                                                        />
-                                                    </div>
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label}> 密码</div>
-                                                        <TextField.Root
-                                                            key="login-password"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            type="password"
-                                                            value={loginForm.password}
-                                                            onChange={(e) => setLoginForm({
-                                                                ...loginForm,
-                                                                password: e.target.value
-                                                            })}
-                                                        />
-                                                    </div>
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label} style={{
-                                                            marginRight: '1rem',
-                                                        }}> 验证码
-                                                        </div>
-                                                        <TextField.Root
-                                                            key="login-captcha"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            value={captcha}
-                                                            onChange={(e) => setCaptcha(e.target.value)}
-                                                        />
-                                                        <img
-                                                            src={process.env.NEXT_PUBLIC_BASE_URL + '/captcha' + '?' + captchaRandom}
-                                                            alt="captcha"
-                                                            className={styles.captcha}
-                                                            style={{
-                                                                cursor: 'pointer',
-                                                                width: '100px',
-                                                                marginLeft: '1rem',
-                                                                borderRadius: '0.25rem',
-                                                            }}
-                                                            onClick={() => {
-                                                                setCaptchaRandom(Math.random());
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div className="text-sm text-center">
-                                                        忘记密码了？ <Link
-                                                        href="/my/reset-password-request"
-                                                        color={"#184aff"}> 点击这里重置密码 </Link>
-                                                    </div>
-                                                    <div className={styles.formActions}>
-                                                        <Button style={{
-                                                            marginRight: '1rem',
-                                                            backgroundColor: 'rgba(var(--primary),0.5)',
-                                                            color: 'rga(var(--foreground))',
-                                                        }} type="submit">
-                                                            登录
-                                                        </Button>
-                                                        <Button variant="soft" style={{
-                                                            backgroundColor: 'rgba(var(--primary),0.5)',
-                                                            color: 'rga(var(--foreground))',
-                                                        }} onClick={toggleForm}>
-                                                            转到注册
-                                                        </Button>
-                                                    </div>
-                                                </form>
-                                            ) : (
-                                                <form
-                                                    style={{
-                                                        marginTop: '1rem',
-                                                        width: '100%',
-                                                    }}
-                                                    onSubmit={submitRegisterForm}>
-                                                    {error && (
-                                                        <div className={styles.error}>{error}</div>
-                                                    )}
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label}> 昵称</div>
-                                                        <TextField.Root
-                                                            key="register-nickname"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            value={registerForm.nickname}
-                                                            onChange={(e) => setRegisterForm({
-                                                                ...registerForm,
-                                                                nickname: e.target.value
-                                                            })}
-                                                        />
-                                                    </div>
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label}> 邮箱</div>
-                                                        <TextField.Root
-                                                            key="register-email"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            value={registerForm.userEmail}
-                                                            onChange={(e) => setRegisterForm({
-                                                                ...registerForm,
-                                                                userEmail: e.target.value
-                                                            })}
-                                                        />
-                                                    </div>
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label}> 密码</div>
-                                                        <TextField.Root
-                                                            key="register-password"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            type="password"
-                                                            value={registerForm.password}
-                                                            onChange={(e) => setRegisterForm({
-                                                                ...registerForm,
-                                                                password: e.target.value
-                                                            })}
-                                                        />
-                                                    </div>
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label} style={{
-                                                            marginRight: '1rem',
-                                                        }}> 确认密码
-                                                        </div>
-                                                        <TextField.Root
-                                                            key="register-confirm-password"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            type="password"
-                                                            value={registerForm.confirmPassword}
-                                                            onChange={(e) => setRegisterForm({
-                                                                ...registerForm,
-                                                                confirmPassword: e.target.value
-                                                            })}
-                                                        />
-                                                    </div>
-                                                    <div className={styles.formGroup}>
-                                                        <div className={styles.label}> 验证码</div>
-                                                        <TextField.Root
-                                                            key="login-captcha"
-                                                            style={{
-                                                                backgroundColor: 'rgba(var(--foreground), 0.03)',
-                                                                flex: '1',
-                                                                boxShadow: 'none',
-                                                                minHeight: '2rem',
-                                                                border: '1px solid rgba(var(--foreground), 0.1)',
-                                                                borderBottom: '1px solid rgba(var(--foreground), 0.5)',
-                                                                outline: 'none',
-                                                                borderRadius: '0.375rem',
-                                                            }}
-                                                            value={captcha}
-                                                            onChange={(e) => setCaptcha(e.target.value)}
-                                                        />
-                                                        <img
-                                                            src={process.env.NEXT_PUBLIC_BASE_URL + '/captcha' + '?' + captchaRandom}
-                                                            alt="captcha"
-                                                            className={styles.captcha}
-                                                            style={{
-                                                                cursor: 'pointer',
-                                                                width: '100px',
-                                                                marginLeft: '1rem',
-                                                                borderRadius: '0.25rem',
-                                                            }}
-                                                            onClick={() => {
-                                                                setCaptchaRandom(Math.random());
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div className={styles.formActions}>
-                                                        <Button style={{marginRight: '1rem'}} type="submit">
-                                                            注册
-                                                        </Button>
-                                                        <Button variant="soft" onClick={toggleForm}>
-                                                            返回登录
-                                                        </Button>
-                                                    </div>
-                                                </form>
-                                            )}
-                                        </motion.div>
                                     )}
-                                </AnimatePresence>
-                                {isFormShow && (
-                                    <Button variant="ghost"
-                                            style={{
-                                                color: 'rga(var(--foreground))',
-                                            }}
-                                            onClick={() => setIsFormShow(false)}> 返回使用快捷登录 </Button>
-                                )}
-                                {!isFormShow && (
-                                    <>
-                                        <div style={{
-                                            marginTop: '1rem',
-                                            marginBottom: '1rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '0.75rem',
-                                        }}> 通过社交账号登录
-                                        </div>
-                                        <div>
-                                            <Tooltip content="使用 GitHub 登录">
-                                                <IconButton radius="full" style={{
-                                                    backgroundColor: 'rgba(var(--background),0.5)',
-                                                    border: '1px solid rgba(var(--foreground), 0.1)',
-                                                    color: 'rga(var(--foreground))',
-                                                    marginRight: '0.5rem',
-                                                }} className={styles.icon} onClick={() => {
-                                                    location.href = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/oauth2/authorization/github?redirect_uri= ${encodeURIComponent(location.href)}`;
-                                                }}>
-                                                    <GitHubLogoIcon/>
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip content="使用 Google 登录">
-                                                <IconButton radius="full" style={{
-                                                    backgroundColor: 'rgba(var(--background),0.5)',
-                                                    border: '1px solid rgba(var(--foreground), 0.1)',
-                                                    color: 'rga(var(--foreground))',
-                                                }} className={styles.icon} onClick={() => {
-                                                    location.href = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/oauth2/authorization/google?redirect_uri=${encodeURIComponent(location.href)}`;
-                                                }}>
-                                                    <FaGoogle/>
-                                                </IconButton>
-                                            </Tooltip>
-                                            {/*<Tooltip content={'使用 Microsoft 登录'}>*/}
-                                            {/*    <IconButton radius="full" className={styles.icon}>*/}
-                                            {/*        <BiLogoMicrosoft/>*/}
-                                            {/*    </IconButton>*/}
-                                            {/*</Tooltip>*/}
-                                            {/*<Tooltip content={'使用 Apple 登录'}>*/}
-                                            {/*    <IconButton radius="full" className={styles.icon}>*/}
-                                            {/*        <FaApple/>*/}
-                                            {/*    </IconButton>*/}
-                                            {/*</Tooltip>*/}
-                                            {/*<Tooltip content={'使用微信登录'}>*/}
-                                            {/*    <IconButton radius="full" className={styles.icon}>*/}
-                                            {/*        <IoLogoWechat/>*/}
-                                            {/*    </IconButton>*/}
-                                            {/*</Tooltip>*/}
-                                        </div>
-                                    </>
-                                )}
+
+                                    <AnimatePresence mode="wait">
+                                        {isFormShow && (
+                                            <motion.div
+                                                key={isLoginForm ? 'login' : 'register'}
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{
+                                                    type: 'spring',
+                                                    stiffness: 500,
+                                                    damping: 30,
+                                                    mass: 1,
+                                                }}
+                                                className="w-full overflow-hidden"
+                                            >
+                                                {isLoginForm ? (
+                                                    <form
+                                                        className="space-y-4"
+                                                        onSubmit={submitLoginForm}
+                                                    >
+                                                        {error && (
+                                                            <div className="p-3 text-sm bg-destructive/10 border border-destructive/20 text-destructive rounded-md">
+                                                                {error}
+                                                            </div>
+                                                        )}
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                邮箱
+                                                            </label>
+                                                            <Input
+                                                                type="email"
+                                                                placeholder="your@email.com"
+                                                                value={loginForm.userEmail}
+                                                                onChange={(e) => setLoginForm({
+                                                                    ...loginForm,
+                                                                    userEmail: e.target.value
+                                                                })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                密码
+                                                            </label>
+                                                            <Input
+                                                                type="password"
+                                                                placeholder="••••••••"
+                                                                value={loginForm.password}
+                                                                onChange={(e) => setLoginForm({
+                                                                    ...loginForm,
+                                                                    password: e.target.value
+                                                                })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                    验证码
+                                                                </label>
+                                                            </div>
+                                                            <div className="flex space-x-2">
+                                                                <Input
+                                                                    placeholder="输入验证码"
+                                                                    value={captcha}
+                                                                    onChange={(e) => setCaptcha(e.target.value)}
+                                                                />
+                                                                <div
+                                                                    className="flex-shrink-0 h-10 w-24 overflow-hidden rounded-md border cursor-pointer"
+                                                                    onClick={() => setCaptchaRandom(Math.random())}
+                                                                >
+                                                                    <img
+                                                                        src={`${process.env.NEXT_PUBLIC_BASE_URL}/captcha?${captchaRandom}`}
+                                                                        alt="验证码"
+                                                                        className="h-full w-full object-cover"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-sm text-center">
+                                                            <Link
+                                                                href="/my/reset-password-request"
+                                                                className="text-primary hover:underline"
+                                                            >
+                                                                忘记密码？点击这里重置
+                                                            </Link>
+                                                        </div>
+                                                        <div className="flex flex-col space-y-2">
+                                                            <Button type="submit">
+                                                                登录
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                onClick={toggleForm}
+                                                            >
+                                                                没有账号？注册
+                                                            </Button>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    <form
+                                                        className="space-y-4"
+                                                        onSubmit={submitRegisterForm}
+                                                    >
+                                                        {error && (
+                                                            <div className="p-3 text-sm bg-destructive/10 border border-destructive/20 text-destructive rounded-md">
+                                                                {error}
+                                                            </div>
+                                                        )}
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                昵称
+                                                            </label>
+                                                            <Input
+                                                                placeholder="您的昵称"
+                                                                value={registerForm.nickname}
+                                                                onChange={(e) => setRegisterForm({
+                                                                    ...registerForm,
+                                                                    nickname: e.target.value
+                                                                })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                邮箱
+                                                            </label>
+                                                            <Input
+                                                                type="email"
+                                                                placeholder="your@email.com"
+                                                                value={registerForm.userEmail}
+                                                                onChange={(e) => setRegisterForm({
+                                                                    ...registerForm,
+                                                                    userEmail: e.target.value
+                                                                })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                密码
+                                                            </label>
+                                                            <Input
+                                                                type="password"
+                                                                placeholder="••••••••"
+                                                                value={registerForm.password}
+                                                                onChange={(e) => setRegisterForm({
+                                                                    ...registerForm,
+                                                                    password: e.target.value
+                                                                })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                确认密码
+                                                            </label>
+                                                            <Input
+                                                                type="password"
+                                                                placeholder="••••••••"
+                                                                value={registerForm.confirmPassword}
+                                                                onChange={(e) => setRegisterForm({
+                                                                    ...registerForm,
+                                                                    confirmPassword: e.target.value
+                                                                })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                                验证码
+                                                            </label>
+                                                            <div className="flex space-x-2">
+                                                                <Input
+                                                                    placeholder="输入验证码"
+                                                                    value={captcha}
+                                                                    onChange={(e) => setCaptcha(e.target.value)}
+                                                                />
+                                                                <div
+                                                                    className="flex-shrink-0 h-10 w-24 overflow-hidden rounded-md border cursor-pointer"
+                                                                    onClick={() => setCaptchaRandom(Math.random())}
+                                                                >
+                                                                    <img
+                                                                        src={`${process.env.NEXT_PUBLIC_BASE_URL}/captcha?${captchaRandom}`}
+                                                                        alt="验证码"
+                                                                        className="h-full w-full object-cover"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col space-y-2">
+                                                            <Button type="submit">
+                                                                注册
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                onClick={toggleForm}
+                                                            >
+                                                                已有账号？登录
+                                                            </Button>
+                                                        </div>
+                                                    </form>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {isFormShow && (
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full text-sm"
+                                            onClick={() => setIsFormShow(false)}
+                                        >
+                                            返回使用快捷登录
+                                        </Button>
+                                    )}
+
+                                    {!isFormShow && (
+                                        <>
+                                            <div className="relative">
+                                                <div className="absolute inset-0 flex items-center">
+                                                    <Separator className="w-full" />
+                                                </div>
+                                                <div className="relative flex justify-center text-xs uppercase">
+                                                    <span className="bg-card px-2 text-muted-foreground">
+                                                        或通过社交账号登录
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() => {
+                                                        location.href = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/oauth2/authorization/github?redirect_uri=${encodeURIComponent(location.href)}`;
+                                                    }}
+                                                >
+                                                    <LucideGithub className="mr-2 h-4 w-4" />
+                                                    GitHub
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() => {
+                                                        location.href = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/oauth2/authorization/google?redirect_uri=${encodeURIComponent(location.href)}`;
+                                                    }}
+                                                >
+                                                    <FaGoogle className="mr-2 h-4 w-4" />
+                                                    Google
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>

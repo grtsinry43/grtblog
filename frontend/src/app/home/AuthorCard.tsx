@@ -38,7 +38,7 @@ const AuthorCard = () => {
                         }}
                     >
                         <Container
-                            className="z-50 relative backdrop-blur-3xl bg-gradient-to-r from-white/40 to-white/20 dark:from-black/40 dark:to-black/20 p-8 rounded-xl border border-white/20 shadow-2xl">
+                            className="z-30 relative backdrop-blur-3xl bg-gradient-to-r from-white/40 to-white/20 dark:from-black/40 dark:to-black/20 p-8 rounded-xl border border-white/20 shadow-2xl">
                             <div className="flex items-center space-x-4 mb-4">
                                 <Avatar className="w-16 h-16 border-2 border-white shadow-lg"
                                         src="https://dogeoss.grtsinry43.com/img/author.jpeg" alt="Author"

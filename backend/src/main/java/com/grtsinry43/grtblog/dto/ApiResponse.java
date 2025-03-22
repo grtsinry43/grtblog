@@ -37,7 +37,6 @@ public class ApiResponse<T> implements Serializable {
 
     /**
      * 失败响应，包含错误码和错误信息
-     *
      * @param code 错误码
      * @param msg  错误信息
      */

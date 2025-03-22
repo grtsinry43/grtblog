@@ -51,9 +51,7 @@ const ArticlePageItem = ({post, isSummaryShow}: { post: ArticlePreview, isSummar
                     <AnimatePresence>
                         {isSummaryShow && (
                             <motion.div
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-expect-error
-                                className="text-gray-500 text-sm mt-2"
+                                className="text-gray-500 text-[0.8em] mt-2"
                                 initial={{opacity: 0, y: -10}}
                                 animate={{opacity: 1, y: 0}}
                                 exit={{opacity: 0, y: -10}}

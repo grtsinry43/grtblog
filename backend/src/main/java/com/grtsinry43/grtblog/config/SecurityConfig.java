@@ -71,9 +71,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers("/user/login", "/user/register", "/user/logout", "/user/request-password-reset", "/user/reset-password", "/oauth2/authorization/**", "/login**", "/captcha", "/admin/login", "/page-view", "/page/**", "/search/**", "/websiteInfo/**", "/uploads/**", "/friendLink", "/feed", "/notification", "/plugins/**", "/onlineStatus", "/overview", "/recommend", "/user-behavior/**", "/thinking/**").permitAll() // 登录和未登录的人都可以访问
                         // 这里感觉还是把对外的接口放在统一的路径，而需要权限认证和登录的或者管理员接口每个都需要校验
-                        .requestMatchers("/article/**", "/statusUpdate/**", "/comment/**", "/tag/**", "/photos", "/nav/**", "/footer/all", "/category/**", "/archive", "/like-record").permitAll()
+                        .requestMatchers("/article/**", "/statusUpdate/**", "/comment/**", "/tag/**", "/photos", "/nav/**", "/footer/all", "/category/**", "/archive", "/like-record", "/plugins/api/all-endpoints").permitAll()
                         // TODO : 仅开发使用
-                        .requestMatchers("/doc.html", "/swagger-resources/**", "/webjars/**", "/swagger-ui*/**", "/swagger-ui*/*swagger-initializer.js", "/test/sendEmail").permitAll() // 允许访问 Knife4j 和 Swagger 相关的端点
+                        .requestMatchers("/doc.html", "/swagger-resources/**", "/webjars/**", "/swagger-ui*/**", "/swagger-ui*/*swagger-initializer.js","/v3/api-docs/**", "/test/sendEmail").permitAll() // 允许访问 Knife4j 和 Swagger 相关的端点
                         .anyRequest().authenticated() // 除了上面设置的地址可以匿名访问, 其它所有的请求地址需要认证访问
                 )
                 .oauth2Login(oauth2Login -> oauth2Login

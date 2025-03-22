@@ -1,8 +1,10 @@
 package com.grtsinry43.grtblog.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,12 +79,12 @@ public class CommentView {
     /**
      * 评论创建时间
      */
-    private LocalDateTime createdAt;
+    private transient LocalDateTime createdAt;
 
     /**
      * 评论更新时间
      */
-    private LocalDateTime updatedAt;
+    private transient LocalDateTime updatedAt;
 
     private String parentId;
 
@@ -92,4 +94,16 @@ public class CommentView {
      * 查看时候存储子评论，而存储时候存储父评论 id
      */
     private List<CommentView> children = new ArrayList<>();
+
+    @JsonProperty("createdAt")
+    public String getCreatedAt() {
+        // 格式化时间：2024-10-27 19:43:00
+        return createdAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    @JsonProperty("updatedAt")
+    public String getUpdatedAt() {
+        // 格式化时间：2024-10-27 19:43:00
+        return updatedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
 }

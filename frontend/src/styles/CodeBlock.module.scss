@@ -1,44 +1,44 @@
-.codeBlock {
-  position: relative;
-  font-family: inherit;
-  overflow-x: auto;
-  border-radius: 5px;
-  transition: all ease 0.5s;
-
-  /* Custom scrollbar styles */
-  &::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: #888;
-    border-radius: 10px;
-    border: 3px solid #f1f1f1;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: #001d40;
-  }
-}
-
-.lineNumber {
-  position: sticky;
-  left: 0;
-  background: inherit;
-  padding-right: 10px;
-  margin-right: 10px;
-  user-select: none;
-}
-
-.darkBg {
-  background: #242424;
-}
-
-.lightBg {
-  background: #f1f1f1;
-}
+//.codeBlock {
+//  position: relative;
+//  font-family: inherit;
+//  overflow-x: auto;
+//  border-radius: 5px;
+//  transition: all ease 0.5s;
+//
+//  /* Custom scrollbar styles */
+//  &::-webkit-scrollbar {
+//    width: 12px;
+//    height: 12px;
+//  }
+//
+//  &::-webkit-scrollbar-track {
+//    background: #f1f1f1;
+//  }
+//
+//  &::-webkit-scrollbar-thumb {
+//    background-color: #888;
+//    border-radius: 10px;
+//    border: 3px solid #f1f1f1;
+//  }
+//
+//  &::-webkit-scrollbar-thumb:hover {
+//    background: #001d40;
+//  }
+//}
+//
+//.lineNumber {
+//  position: sticky;
+//  left: 0;
+//  background: inherit;
+//  padding-right: 10px;
+//  margin-right: 10px;
+//  user-select: none;
+//}
+//
+//.darkBg {
+//  background: #242424;
+//}
+//
+//.lightBg {
+//  background: #f1f1f1;
+//}
