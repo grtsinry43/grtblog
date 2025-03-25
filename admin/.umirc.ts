@@ -206,6 +206,13 @@ export default defineConfig({
       path: '/system',
       component: './System',
     },
+    {
+      name: '初始化',
+      path: '/initialize',
+      component: './Initialize',
+      menuRender: false,
+      hideInMenu: true,
+    },
     { path: '/*', component: '@/pages/404.tsx' },
   ],
   npmClient: 'pnpm',

@@ -118,4 +118,10 @@ public class CommentVO {
         // 格式化时间：2024-10-27 19:43:00
         return updatedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
+
+    @JsonProperty("deletedAt")
+    public String getDeletedAt() {
+        // 格式化时间：2024-10-27 19:43:00
+        return deletedAt != null ? deletedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null;
+    }
 }

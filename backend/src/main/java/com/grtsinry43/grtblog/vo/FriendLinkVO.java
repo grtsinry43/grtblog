@@ -66,6 +66,6 @@ public class FriendLinkVO {
     @JsonProperty("deletedAt")
     public String getDeletedAt() {
         // 格式化时间：2024-10-27 19:43:00
-        return deletedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return deletedAt != null ? deletedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null;
     }
 }

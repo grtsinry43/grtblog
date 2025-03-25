@@ -4,6 +4,8 @@ import com.grtsinry43.grtblog.dto.ApiResponse;
 import com.grtsinry43.grtblog.exception.BusinessException;
 import com.grtsinry43.grtblog.exception.TestException;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -21,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ControllerAdvice
 public class GlobalExceptionHandler {
     private static final AtomicInteger businessExceptionCount = new AtomicInteger(0);
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * 处理缺少请求参数异常
@@ -28,6 +31,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Object>> handleMissingServletRequestParameterException(Exception ex) {
         String errorMessage = "缺少请求参数：" + ex.getMessage();
+        logger.error(errorMessage);
         ApiResponse<Object> apiResponse = ApiResponse.error(400, errorMessage);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
@@ -38,6 +42,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleConstraintViolationException(ConstraintViolationException ex) {
         String errorMessage = ex.getMessage();
+        logger.error(errorMessage);
         ApiResponse<Object> apiResponse = ApiResponse.error(400, errorMessage);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
@@ -48,6 +53,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Object>> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
         String errorMessage = ex.getMessage();
+        logger.error(errorMessage);
         ApiResponse<Object> apiResponse = ApiResponse.error(400, errorMessage);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
@@ -59,6 +65,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleBusinessException(BusinessException ex) {
         businessExceptionCount.incrementAndGet();
         String errorMessage = ex.getMessage();
+        logger.error(errorMessage);
         ApiResponse<Object> apiResponse = ApiResponse.error(ex.getErrorCode().getCode(), errorMessage);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
@@ -69,18 +76,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TestException.class)
     public ResponseEntity<ApiResponse<Object>> handleTestException(TestException ex) {
         String errorMessage = ex.getMessage();
+        logger.error(errorMessage);
         ApiResponse<Object> apiResponse = ApiResponse.error(500, errorMessage);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
-
     /**
      * 处理其他异常（注释声明即可）
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleException(Exception ex) {
         String errorMessage = ex.getMessage();
-        System.out.println("==出现错误==");
-        ex.printStackTrace();
+        logger.error(errorMessage);
         ApiResponse<Object> apiResponse = ApiResponse.error(500, errorMessage);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }

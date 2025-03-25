@@ -1,12 +1,11 @@
+import useRouteLeaveConfirm from '@/hooks/use-route-leave-confirm';
 import ArticleForm from '@/pages/Article/ArticleForm';
 import ArticleController from '@/services/article/ArticleController';
 import { AddArticleApiParams } from '@/services/article/typings';
-import { PageContainer } from '@ant-design/pro-components';
+import { refreshFrontendCache } from '@/services/refersh';
 import { useNavigate } from '@umijs/max';
 import { message } from 'antd';
 import { useState } from 'react';
-import {refreshFrontendCache} from "@/services/refersh";
-import useRouteLeaveConfirm from "@/hooks/use-route-leave-confirm";
 
 const AddArticle = () => {
   const navigate = useNavigate();
@@ -44,14 +43,12 @@ const AddArticle = () => {
   };
 
   return (
-    <PageContainer title={'添加文章'}>
-      <ArticleForm
-        type={'add'}
-        articleInfo={newArticleInfo}
-        setArticleInfo={setNewArticleInfo}
-        submitHandle={submitHandle}
-      />
-    </PageContainer>
+    <ArticleForm
+      type={'add'}
+      articleInfo={newArticleInfo}
+      setArticleInfo={setNewArticleInfo}
+      submitHandle={submitHandle}
+    />
   );
 };
 

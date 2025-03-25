@@ -57,14 +57,12 @@ const EditArticle = () => {
   };
 
   return (
-    <PageContainer title={'编辑文章'}>
       <ArticleForm
         type={'edit'}
         articleInfo={articleInfo}
         setArticleInfo={setArticleInfo}
         submitHandle={submitHandle}
       />
-    </PageContainer>
   );
 };
 
