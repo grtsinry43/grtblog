@@ -258,7 +258,8 @@ const LoginModal = ({isOpen, onClose}: { isOpen: boolean; onClose: () => void })
                                                     <div className="text-sm text-center">
                                                         忘记密码了？ <Link
                                                         href="/my/reset-password-request"
-                                                        color={"#184aff"}> 点击这里重置密码 </Link>
+                                                        color={"#184aff"}
+                                                        onClick={() => onClose()}> 点击这里重置密码 </Link>
                                                     </div>
                                                     <div className={styles.formActions}>
                                                         <Button style={{
