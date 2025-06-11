@@ -17,7 +17,7 @@ const RelatedRecommend = async ({id}: { id: string }) => {
             }}> 相关推荐 </h1>
             <ScrollArea>
                 <div className="flex space-x-4">
-                    {relatedRecommend.map((recommend: ArticlePreview) => (
+                    {(relatedRecommend || []).map((recommend: ArticlePreview) => (
                         <RecommendCard key={recommend.id} item={recommend}/>
                     ))}
                 </div>
