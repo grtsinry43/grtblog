@@ -19,14 +19,11 @@ import {ColorPicker} from "@/components/menu/ColorPicker";
 import {useEffect} from "react";
 
 export interface MenuItem {
-    icon: React.ReactNode;
-    label: string;
-    type: 'switch' | 'select' | 'button';
-    value?: string | boolean;
-    onClick?: (e?: boolean) => void;
-    onChange?: (e: string) => void;
-    placeholder?: string;
-    options?: { label: string; value: string }[];
+    icon: React.ReactNode
+    label: string
+    type: 'switch' | 'select' | 'button'
+    value?: string | boolean
+    onClick?: (e?: boolean) => void
 }
 
 export default function FloatingMenu({items}: { items: MenuItem[] }) {
@@ -45,8 +42,8 @@ export default function FloatingMenu({items}: { items: MenuItem[] }) {
                         animate={{opacity: 1, scale: 1, y: 0}}
                         exit={{opacity: 0, scale: 0.8, y: 20}}
                         transition={{type: 'spring', stiffness: 300, damping: 30}}
-
-
+                        
+                        
                         className="absolute bottom-16 right-0 w-72 rounded-lg border bg-background shadow-lg overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-0"/>
@@ -64,16 +61,14 @@ export default function FloatingMenu({items}: { items: MenuItem[] }) {
                                         />
                                     }
                                     {item.type === 'select' && (
-                                        <Select onValueChange={item.onChange}>
+                                        <Select>
                                             <SelectTrigger id={item.label.toLowerCase().replace(' ', '-')}>
-                                                <SelectValue placeholder={item.placeholder}/>
+                                                <SelectValue placeholder="Select size"/>
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {item.options?.map((option, index) => (
-                                                    <SelectItem key={index} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
+                                                <SelectItem value="small">Small</SelectItem>
+                                                <SelectItem value="medium">Medium</SelectItem>
+                                                <SelectItem value="large">Large</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     )}

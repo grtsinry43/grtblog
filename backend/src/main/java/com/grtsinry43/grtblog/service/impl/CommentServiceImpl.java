@@ -134,6 +134,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         commentEmailNotificationHandle(comment);
         CommentView vo = new CommentView();
         BeanUtils.copyProperties(comment, vo);
+        vo.setCreatedAt(LocalDateTime.now());
+        vo.setUpdatedAt(LocalDateTime.now());
         socketIOService.broadcastNotification("有新的评论发布，作者：" + comment.getNickName() + "，内容：" + comment.getContent() + "，评论区：" + comment.getAreaId() + "，快去围观吧！");
         return vo;
     }
@@ -166,6 +168,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         commentEmailNotificationHandle(comment);
         CommentView vo = new CommentView();
         BeanUtils.copyProperties(comment, vo);
+        vo.setCreatedAt(LocalDateTime.now());
+        vo.setUpdatedAt(LocalDateTime.now());
         socketIOService.broadcastNotification("有新的评论发布，作者：" + comment.getNickName() + "，内容：" + comment.getContent() + "，评论区：" + comment.getAreaId() + "，快去围观吧！");
         return vo;
     }

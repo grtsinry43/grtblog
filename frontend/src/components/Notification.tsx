@@ -1,9 +1,10 @@
 "use client"
 
 import type React from "react"
-import {useEffect} from "react"
-import {motion, useAnimation, type Variants, AnimatePresence} from "framer-motion"
-import {CheckCircledIcon, ExclamationTriangleIcon, CrossCircledIcon, InfoCircledIcon} from "@radix-ui/react-icons"
+import { useEffect } from "react"
+import { createPortal } from "react-dom"
+import { motion, useAnimation, type Variants, AnimatePresence } from "framer-motion"
+import { CheckCircledIcon, ExclamationTriangleIcon, CrossCircledIcon, InfoCircledIcon } from "@radix-ui/react-icons"
 
 export type NotificationType = "success" | "warning" | "error" | "info"
 
@@ -13,98 +14,246 @@ interface NotificationProps {
     onClose: () => void
 }
 
-const notificationVariants: Variants = {
+const containerVariants: Variants = {
     initial: {
         opacity: 0,
-        y: -20,
-        scale: 0.8,
+        y: -60,
+        scale: 0.9
     },
     animate: {
         opacity: 1,
         y: 0,
-        scale: 1.05,
+        scale: 1,
         transition: {
-            duration: 0.2,
-            ease: [0, 0.71, 0.2, 1.01],
-        },
+            type: "spring",
+            duration: 0.6,
+            bounce: 0.4,
+            stiffness: 300,
+            damping: 20
+        }
     },
     exit: {
         opacity: 0,
-        y: -20,
-        scale: 0.75,
+        y: -40,
+        scale: 0.95,
         transition: {
-            duration: 0.07,
-            ease: "easeOut",
-        },
+            duration: 0.3,
+            ease: [0.4, 0, 0.2, 1]
+        }
+    }
+}
+
+const contentVariants: Variants = {
+    initial: { 
+        opacity: 0,
+        scale: 0.95
     },
+    animate: {
+        opacity: 1,
+        scale: 1,
+        transition: {
+            delay: 0.1,
+            duration: 0.4,
+            type: "spring",
+            bounce: 0.3
+        }
+    }
+}
+
+const iconVariants: Variants = {
+    initial: { 
+        scale: 0,
+        rotate: -90
+    },
+    animate: {
+        scale: 1,
+        rotate: 0,
+        transition: {
+            delay: 0.2,
+            type: "spring",
+            duration: 0.5,
+            bounce: 0.6
+        }
+    }
+}
+
+const textVariants: Variants = {
+    initial: { 
+        opacity: 0,
+        x: 10
+    },
+    animate: {
+        opacity: 1,
+        x: 0,
+        transition: {
+            delay: 0.3,
+            duration: 0.3,
+            ease: "easeOut"
+        }
+    }
+}
+
+const closeButtonVariants: Variants = {
+    initial: { 
+        opacity: 0,
+        scale: 0
+    },
+    animate: {
+        opacity: 1,
+        scale: 1,
+        transition: {
+            delay: 0.4,
+            type: "spring",
+            duration: 0.4,
+            bounce: 0.5
+        }
+    }
 }
 
 const typeConfig = {
-    success: {icon: CheckCircledIcon, bgColor: "bg-green-500"},
-    warning: {icon: ExclamationTriangleIcon, bgColor: "bg-yellow-500"},
-    error: {icon: CrossCircledIcon, bgColor: "bg-red-500"},
-    info: {icon: InfoCircledIcon, bgColor: "bg-blue-500"},
+    success: {
+        icon: CheckCircledIcon,
+        iconColor: "text-green-600 dark:text-green-400",
+        bgColor: "bg-green-50 dark:bg-green-950/30",
+        borderColor: "border-green-200 dark:border-green-800"
+    },
+    warning: {
+        icon: ExclamationTriangleIcon,
+        iconColor: "text-amber-600 dark:text-amber-400",
+        bgColor: "bg-amber-50 dark:bg-amber-950/30",
+        borderColor: "border-amber-200 dark:border-amber-800"
+    },
+    error: {
+        icon: CrossCircledIcon,
+        iconColor: "text-red-600 dark:text-red-400",
+        bgColor: "bg-red-50 dark:bg-red-950/30",
+        borderColor: "border-red-200 dark:border-red-800"
+    },
+    info: {
+        icon: InfoCircledIcon,
+        iconColor: "text-blue-600 dark:text-blue-400",
+        bgColor: "bg-blue-50 dark:bg-blue-950/30",
+        borderColor: "border-blue-200 dark:border-blue-800"
+    }
 }
 
-const Notification: React.FC<NotificationProps> = ({message, type, onClose}) => {
+const Notification: React.FC<NotificationProps> = ({ message, type, onClose }) => {
     const controls = useAnimation()
-    const {icon: Icon, bgColor} = typeConfig[type]
+    const { icon: Icon, iconColor, bgColor, borderColor } = typeConfig[type]
 
     useEffect(() => {
         controls.start("animate")
+        
         const timer = setTimeout(() => {
             controls.start("exit").then(onClose)
-        }, 5000)
+        }, 4000)
 
         return () => clearTimeout(timer)
     }, [controls, onClose])
 
-    return (
+    const notificationContent = (
         <AnimatePresence>
             <motion.div
-                className="fixed top-16 left-1/2 z-50"
+                className="fixed inset-0 pointer-events-none z-[9999] flex items-start justify-center pt-20"
                 initial="initial"
                 animate={controls}
                 exit="exit"
-                variants={notificationVariants}
+                variants={containerVariants}
             >
                 <motion.div
-                    className="bg-white dark:bg-black dark:bg-opacity-20 bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-full shadow-lg flex items-center overflow-hidden"
-                    initial={{width: 40, x: "-50%"}}
-                    animate={{
-                        width: "auto",
-                        x: "-50%",
-                        transition: {delay: 0.1, duration: 0.3, ease: "easeOut"},
+                    className={`
+                        relative rounded-xl border ${borderColor} ${bgColor}
+                        backdrop-blur-sm shadow-lg shadow-black/5 dark:shadow-black/20
+                        pointer-events-auto min-w-80 max-w-md overflow-hidden
+                        hover:shadow-xl hover:shadow-black/10 dark:hover:shadow-black/30
+                        transition-shadow duration-300
+                    `}
+                    variants={contentVariants}
+                    whileHover={{ 
+                        scale: 1.02,
+                        transition: { type: "spring", bounce: 0.4, duration: 0.3 }
                     }}
+                    whileTap={{ scale: 0.98 }}
                 >
-                    <div className={`w-10 h-10 ${bgColor} rounded-full flex items-center justify-center flex-shrink-0`}>
-                        <Icon className="text-white" height={20} width={20}/>
-                    </div>
-                    <motion.div
-                        className="px-4 py-2 overflow-hidden"
-                        initial={{width: 0, opacity: 0}}
-                        animate={{
-                            width: "auto",
-                            opacity: 1,
-                            transition: {delay: 0.1, duration: 0.3, ease: "easeOut"},
-                        }}
-                    >
-                        <motion.p
-                            className="text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap"
-                            initial={{x: 20, opacity: 0}}
-                            animate={{
-                                x: 0,
-                                opacity: 1,
-                                transition: {delay: 0.3, duration: 0.3, ease: "easeOut"},
+                    <div className="flex items-center gap-3 px-4 py-3">
+                        {/* Icon */}
+                        <motion.div 
+                            className="flex-shrink-0"
+                            variants={iconVariants}
+                        >
+                            <Icon className={`${iconColor} w-5 h-5`} width={20} height={20} />
+                        </motion.div>
+
+                        {/* Message */}
+                        <motion.div 
+                            className="flex-1 min-w-0"
+                            variants={textVariants}
+                        >
+                            <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                                {message}
+                            </p>
+                        </motion.div>
+
+                        {/* Close button */}
+                        <motion.button
+                            onClick={onClose}
+                            className="
+                                flex-shrink-0 w-5 h-5 rounded-md
+                                flex items-center justify-center
+                                text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
+                                hover:bg-gray-100 dark:hover:bg-gray-700/50
+                                transition-colors duration-150
+                            "
+                            variants={closeButtonVariants}
+                            whileHover={{ 
+                                scale: 1.1,
+                                rotate: 90,
+                                transition: { type: "spring", bounce: 0.6, duration: 0.3 }
+                            }}
+                            whileTap={{ 
+                                scale: 0.9,
+                                transition: { duration: 0.1 }
                             }}
                         >
-                            {message}
-                        </motion.p>
-                    </motion.div>
+                            <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </motion.button>
+                    </div>
+
+                    {/* Subtle shine effect */}
+                    <motion.div
+                        className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0"
+                        initial={{ x: "-100%" }}
+                        animate={{ 
+                            x: "100%",
+                            opacity: [0, 1, 0],
+                            transition: {
+                                delay: 0.5,
+                                duration: 1.5,
+                                ease: "easeInOut"
+                            }
+                        }}
+                    />
                 </motion.div>
             </motion.div>
         </AnimatePresence>
     )
+
+    // 使用 Portal 确保在最顶层渲染
+    if (typeof window !== "undefined") {
+        return createPortal(notificationContent, document.body)
+    }
+
+    return null
 }
 
 export default Notification

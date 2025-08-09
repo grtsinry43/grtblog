@@ -1,24 +1,38 @@
 import React from 'react';
 import {TracingBeam} from "@/components/ui/tracing-beam";
-import AlbumFlowClient from "@/components/album/AlbumFlowClient";
+import ModernAlbumFlowClient from "@/components/album/ModernAlbumFlowClient";
 import {fetchPhotosByPage} from "@/api/photos";
 import {noto_sans_sc, noto_serif_sc_bold} from "@/app/fonts/font";
 import {clsx} from "clsx";
 import FloatingMenu from "@/components/menu/FloatingMenu";
 
 const AlbumPage = async () => {
-    const initialImages = await fetchPhotosByPage(1, 10);
+    const initialImages = await fetchPhotosByPage(1, 12);
+    
     return (
         <TracingBeam>
-            <div>
-                <h1 style={{fontSize: '2em', fontWeight: 'bolder', marginTop: '1em',transform:'translateY(-0.15em)'}}
-                    className={noto_sans_sc.className}>
-                    相册
-                </h1>
-                <div
-                    className={clsx(noto_serif_sc_bold.className, 'text-gray-500 text-md mb-8 mt-4')}> 每一个精彩的瞬间，都值得被记录
+            <div className="relative">
+                {/* 精致化标题区域 */}
+                <div className="text-center mb-10">
+                    <h1 
+                        className={clsx(
+                            noto_sans_sc.className,
+                            "text-2xl md:text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-3"
+                        )}
+                    >
+                        相册
+                    </h1>
+                    <div className={clsx(
+                        noto_serif_sc_bold.className, 
+                        'text-gray-500 dark:text-gray-400 text-sm leading-relaxed'
+                    )}>
+                        每一个精彩的瞬间，都值得被记录
+                    </div>
                 </div>
-                <AlbumFlowClient initialImages={initialImages}/>
+
+                {/* 现代化相册流 */}
+                <ModernAlbumFlowClient initialImages={initialImages}/>
+                
                 <FloatingMenu items={[]}/>
             </div>
         </TracingBeam>

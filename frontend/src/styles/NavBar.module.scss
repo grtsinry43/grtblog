@@ -6,18 +6,26 @@
 
 .navbar {
   width: 100%;
+  // 保留原来的毛玻璃效果，稍作增强
   background-color: rgba(var(--background), 0.3);
   backdrop-filter: blur(10px) saturate(180%);
   -webkit-backdrop-filter: blur(10px) saturate(180%);
   color: rgb(var(--foreground));
-  padding: 10px;
+  padding: 12px;
   position: sticky;
   top: 0;
   z-index: 10;
   border-bottom: 1px solid rgba(var(--foreground), 0.1);
+  // 加快切换速度
   transition: all 0.2s ease;
+  // 增强阴影系统
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03),
+    0 0 0 1px rgba(var(--foreground), 0.02);
 }
 
+// 保留原来的网格背景，稍作优化
 .navbar::before {
   content: "";
   position: absolute;
@@ -38,8 +46,10 @@
   background-size: 20px 20px;
   pointer-events: none;
   opacity: 0.1;
+  animation: subtle-drift 20s linear infinite;
 }
 
+// 保留原来的噪声纹理
 .navbar::after {
   content: "";
   position: absolute;
@@ -52,8 +62,18 @@
   pointer-events: none;
 }
 
+@keyframes subtle-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 20px; }
+}
+
 .navbar.scrolled {
   background-color: rgba(var(--background), 0.7);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(var(--foreground), 0.04);
+  border-bottom-color: rgba(var(--foreground), 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -77,18 +97,49 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
 }
 
 .avatarWrapper {
   cursor: pointer;
+  position: relative;
+  
+  // 减小呼吸效果范围
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -2px;  // 从-4px改为-2px，更精致
+    border-radius: 50%;
+    background: linear-gradient(45deg, 
+      rgba(var(--primary), 0.08), 
+      rgba(var(--primary), 0.04), 
+      rgba(var(--primary), 0.08)
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;  // 更快的响应
+    z-index: -1;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+    animation: gentle-pulse 1.5s ease-in-out infinite;  // 更快的脉动
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.03); opacity: 0.5; }  // 更小的缩放
 }
 
 .avatar {
-  border: 1px solid rgb(var(--border));
-  transition: transform 0.2s ease;
+  border: 1px solid rgba(var(--border), 0.6);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);  // 更快
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.03) translateY(-1px);  // 更小的缩放
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    border-color: rgba(var(--primary), 0.4);
   }
 }
 
@@ -96,26 +147,73 @@
   display: flex;
   justify-content: center;
   flex-grow: 1;
+  position: relative;
+  padding: 0 2rem;
+  
+  // 减小中央装饰元素
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;  // 从40px改为30px
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(var(--primary), 0.3),
+      transparent
+    );
+    opacity: 0.5;  // 更淡一些
+  }
 }
 
 .navItemWrapper {
   position: relative;
+  
+  // 大幅减小悬停区域指示器
+  &::before {
+    content: "";
+    position: absolute;
+    top: -4px;     // 从-8px改为-4px
+    left: -4px;    // 从-8px改为-4px
+    right: -4px;   // 从-8px改为-4px
+    bottom: -4px;  // 从-8px改为-4px
+    border-radius: 8px;  // 从12px改为8px
+    background: rgba(var(--primary), 0.04);  // 更淡
+    opacity: 0;
+    transition: opacity 0.15s ease;  // 更快响应
+    z-index: -1;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+  }
 }
 
 .navItemLink {
   text-decoration: none;
+  display: block;
+  padding: 6px 10px;  // 减小padding
+  border-radius: 6px;  // 更小圆角
+  transition: all 0.15s ease;  // 更快
 }
 
 .navItem {
-  margin: 0 15px;
+  margin: 0 6px;  // 从8px改为6px
   cursor: pointer;
   color: rgb(var(--foreground));
   text-decoration: none;
-  font-size: 16px;
-  transition: color 0.2s ease;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);  // 更快
+  position: relative;
 
   &:hover {
     color: rgb(var(--primary));
+    transform: translateY(-1px);
   }
 }
 
@@ -129,10 +227,17 @@
   position: absolute;
   width: 0;
   height: 2px;
-  bottom: 0;
-  left: 0;
-  background-color: currentColor;
-  transition: width 0.3s ease;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    rgba(var(--primary), 0.6),
+    rgba(var(--primary), 1),
+    rgba(var(--primary), 0.6)
+  );
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);  // 更快
+  border-radius: 1px;
 }
 
 .underlineAnimation:hover::after {
@@ -140,34 +245,62 @@
 }
 
 .glowAnimation {
+  transition: all 0.2s ease;  // 更快
 }
 
-@keyframes glow {
+@keyframes enhanced-glow {
   0% {
-    text-shadow: 0 0 10px rgba(var(--primary), 0.5);
+    text-shadow: 
+      0 0 5px rgba(var(--primary), 0.3),
+      0 0 10px rgba(var(--primary), 0.2);
   }
   50% {
-    text-shadow: 0 0 20px rgba(var(--primary), 1);
+    text-shadow: 
+      0 0 10px rgba(var(--primary), 0.6),
+      0 0 20px rgba(var(--primary), 0.4),
+      0 0 30px rgba(var(--primary), 0.2);
   }
   100% {
-    text-shadow: 0 0 10px rgba(var(--primary), 0.5);
+    text-shadow: 
+      0 0 5px rgba(var(--primary), 0.3),
+      0 0 10px rgba(var(--primary), 0.2);
   }
 }
 
 .glowAnimation:hover {
-  animation: glow 1s forwards;
+  animation: enhanced-glow 1s ease-in-out;  // 更快
   color: rgb(var(--primary));
 }
 
 .navbarContent {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;  // 从16px改为14px，更紧凑
 }
 
 .searchWrapper, .githubWrapper, .themeToggleWrapper, .loginButtonWrapper {
   display: flex;
   align-items: center;
+  position: relative;
+}
+
+// 减小按钮悬停效果范围
+.searchWrapper, .githubWrapper, .themeToggleWrapper {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -4px;  // 从-6px改为-4px
+    border-radius: 50%;
+    background: rgba(var(--primary), 0.08);  // 更淡
+    opacity: 0;
+    transition: all 0.15s ease;  // 更快
+    z-index: -1;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+    transform: scale(1.05);  // 更小的缩放
+  }
 }
 
 .search {
@@ -181,10 +314,23 @@
   border: none;
   cursor: pointer;
   color: rgb(var(--foreground));
-  transition: color 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);  // 更快
+  padding: 6px;  // 从8px改为6px
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;  // 从36px改为32px
+  height: 32px; // 从36px改为32px
 
   &:hover {
     color: rgb(var(--primary));
+    transform: translateY(-1px) scale(1.03);  // 更小的缩放
+    box-shadow: 0 4px 12px rgba(var(--primary), 0.2);
+  }
+  
+  &:active {
+    transform: translateY(0) scale(0.95);
   }
 }
 
@@ -192,44 +338,114 @@
   color: rgb(var(--foreground));
   margin: auto 0;
   cursor: pointer;
-  border: rgba(var(--foreground), 0.05) 1px solid;
-  transition: background-color 0.2s ease;
+  border: 1px solid rgba(var(--foreground), 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);  // 更快
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(var(--primary), 0.1),
+      transparent
+    );
+    transition: left 0.3s ease;  // 更快
+  }
 
   &:hover {
-    background-color: rgba(var(--primary), 0.2);
+    background-color: rgba(var(--primary), 0.08);
+    border-color: rgba(var(--primary), 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--primary), 0.15);
+    
+    &::before {
+      left: 100%;
+    }
   }
 }
 
 .submenu {
   position: absolute;
-  width: 6em;
-  margin-top: 1.7em;
+  width: 8em;
+  margin-top: 1.5em;
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(var(--background), 0.7);
-  backdrop-filter: blur(10px);
-  // -webkit-backdrop-filter: blur(5px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: var(--radius);
-  padding: 8px 0;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--background), 0.95) 0%,
+    rgba(var(--background), 0.98) 100%
+  );
+  backdrop-filter: blur(16px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(var(--foreground), 0.05);
+  border-radius: 12px;
+  padding: 6px;  // 从8px改为6px，更紧凑
   z-index: 10;
+  
+  // 添加顶部装饰三角形
+  &::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 6px;
+    background: inherit;
+    border-radius: 2px 2px 0 0;
+  }
 }
 
 .submenuItemWrapper {
   text-decoration: none;
+  margin: 1px 0;  // 从2px改为1px
+  border-radius: 6px;  // 从8px改为6px
+  overflow: hidden;
 }
 
 .submenuItem {
   display: block;
-  padding: 8px 16px;
-  margin: 4px 0;
+  padding: 8px 14px;  // 从10px 16px改为8px 14px
   color: rgb(var(--foreground));
   text-align: center;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);  // 更快
+  border-radius: 4px;  // 从6px改为4px
+  font-weight: 400;
+  position: relative;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--primary), 0.1),
+      rgba(var(--primary), 0.05)
+    );
+    transition: width 0.2s ease;  // 更快
+  }
 
   &:hover {
-    background-color: rgba(var(--primary), 0.1);
+    background-color: rgba(var(--primary), 0.08);
+    color: rgb(var(--primary));
+    transform: translateX(1px);  // 从2px改为1px，更微妙
+    
+    &::before {
+      width: 2px;  // 从3px改为2px
+    }
   }
 }
 
@@ -251,7 +467,12 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, rgba(var(--primary), 0.1) 0%, rgba(var(--background), 0.1) 100%);
+  background: radial-gradient(
+    circle at center,
+    rgba(var(--primary), 0.03) 0%,
+    rgba(var(--primary), 0.01) 50%,
+    transparent 100%
+  );
   z-index: 1;
   pointer-events: none;
 }

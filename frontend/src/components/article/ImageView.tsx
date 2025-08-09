@@ -3,23 +3,16 @@
 import React, {useEffect, useState, useRef} from "react"
 import Image from "next/image"
 import ZoomedImage from "./ZoomedImage"
-
-const setBodyScroll = (isScrollable: boolean) => {
-    document.body.style.overflow = isScrollable ? "auto" : "hidden"
-}
+import useImageZoom from "@/hooks/useImageZoom"
 
 export default function ImageView({src, alt}: { src: string; alt: string }) {
     const [glowColor, setGlowColor] = useState("rgba(var(--foreground), 0.3)")
-    const [isZoomed, setIsZoomed] = useState(false)
+    const {isOpen, triggerElement, openZoom, closeZoom} = useImageZoom()
     const imgRef = useRef<HTMLImageElement>(null)
     const [isMounted, setIsMounted] = useState(false)
 
     useEffect(() => {
         setIsMounted(true)
-        return () => {
-            setIsMounted(false)
-            setBodyScroll(true)
-        }
     }, [])
 
     useEffect(() => {
@@ -65,13 +58,9 @@ export default function ImageView({src, alt}: { src: string; alt: string }) {
     }, [src, isMounted])
 
     const handleImageClick = () => {
-        setIsZoomed(true)
-        setBodyScroll(false)
-    }
-
-    const handleCloseZoom = () => {
-        setIsZoomed(false)
-        setBodyScroll(true)
+        if (imgRef.current) {
+            openZoom(imgRef.current)
+        }
     }
 
     return (
@@ -97,7 +86,14 @@ export default function ImageView({src, alt}: { src: string; alt: string }) {
                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.01)")}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             />
-            {isZoomed && <ZoomedImage src={src} alt={alt} onClose={handleCloseZoom}/>}
+            {isOpen && (
+                <ZoomedImage 
+                    src={src} 
+                    alt={alt} 
+                    onClose={closeZoom}
+                    triggerElement={triggerElement}
+                />
+            )}
         </>
     )
 }

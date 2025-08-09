@@ -6,8 +6,10 @@ import {Heart, MessageCircle, Eye} from 'lucide-react';
 import {ArticlePreview} from '@/types';
 import Link from 'next/link';
 import Image from "next/image";
+import {useWebsiteInfo} from "@/app/website-info-provider";
 
 export default function RecommendCard({item}: { item: ArticlePreview }) {
+    const websiteInfo = useWebsiteInfo();
     return (
         <motion.div
             initial={{opacity: 0, y: 20}}
@@ -30,7 +32,7 @@ export default function RecommendCard({item}: { item: ArticlePreview }) {
                 {item.cover ? (
                     <div className="relative h-16 overflow-hidden">
                         <Image
-                            src={item.cover}
+                            src={websiteInfo.WEBSITE_URL + item.cover}
                             alt={item.title}
                             layout="fill"
                             objectFit="cover"

@@ -17,6 +17,7 @@ import remarkGfm from 'remark-gfm';
 import BackgroundGrid from "@/components/moment/BackgroundGrid";
 import FloatingTocMobile from "@/components/article/FloatingTocMobile";
 import AiSummaryBlock from "@/components/article/AISummaryBlock";
+import CopyrightNotice from "@/components/article/CopyNotice";
 
 export interface MomentView {
     id: string;
@@ -205,6 +206,17 @@ function MomentReadingPage({moment}: { moment: MomentView }) {
                                         上次更新于: {new Date(moment.updatedAt).toLocaleString()}
                                     </div>
                                 )}
+
+                                {
+                                    moment.isOriginal && (
+                                        <CopyrightNotice
+                                            author={moment.authorName}
+                                            year={new Date(moment.createdAt).getFullYear()}
+                                            additionalText={"转载请注明出处并遵循 CC BY 许可协议条款"}
+                                            articleTitle={moment.title}
+                                        />
+                                    )
+                                }
                             </article>
                         </div>
                     </ArticleScrollSync>

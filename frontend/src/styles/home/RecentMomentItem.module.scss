@@ -1,15 +1,41 @@
 .itemCard {
-  backdrop-filter: blur(10px) saturate(180%);
+  background: transparent;
+  backdrop-filter: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
   overflow: hidden;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease-out;
   padding: 1rem;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
+  margin-bottom: 2px;
 
+  // 右边装饰条（使用主题色）
+  &::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 0;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      rgba(var(--primary), 0.6),
+      rgba(var(--primary), 0.8),
+      rgba(var(--primary), 0.6),
+      transparent
+    );
+    transition: height 0.3s ease;
+    border-radius: 1px;
+  }
+
+  // 主要光效层（默认隐藏）
   &::before {
     content: "";
     position: absolute;
@@ -18,25 +44,44 @@
     right: 0;
     bottom: 0;
     background: radial-gradient(
-                    circle 200px at var(--mouse-x) var(--mouse-y),
-                    rgba(204, 204, 204, 0.2),
-                    transparent 40%
+      circle 250px at var(--mouse-x) var(--mouse-y),
+      rgba(var(--foreground), 0.04),
+      transparent 70%
     );
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none;
   }
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    background: rgba(var(--foreground), 0.03);
+    backdrop-filter: blur(30px) saturate(180%);
+    border-color: rgba(var(--foreground), 0.06);
+    box-shadow: 
+      0 2px 8px rgba(var(--foreground), 0.04),
+      0 1px 3px rgba(var(--foreground), 0.08);
+
+    &::after {
+      height: 24px;
+    }
 
     &::before {
       opacity: 1;
     }
 
     .arrowIcon {
-      transform: translateX(5px);
+      transform: translateX(4px);
+      opacity: 0.8;
+    }
+
+    .dateContainer {
+      .day {
+        color: rgba(var(--foreground), 0.95);
+      }
+      
+      .monthYear {
+        opacity: 0.8;
+      }
     }
   }
 }
@@ -44,56 +89,97 @@
 .dateContainer {
   display: flex;
   flex-direction: column;
-  margin-right: 16px;
+  margin-right: 20px;
   position: relative;
-  padding-bottom: 4px;
+  padding: 8px 12px 8px 0;
+  min-width: 64px;
 
+  // 优化的装饰线条
   &::after {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: 6px;
     left: 0;
-    right: 0;
+    right: 8px;
     height: 1px;
-    background-color: var(--foreground);
-    transform: rotate(-12deg);
+    background: linear-gradient(
+      135deg,
+      rgba(var(--foreground), 0.3),
+      rgba(var(--foreground), 0.1)
+    );
+    transform: rotate(-8deg);
     transform-origin: bottom left;
+    transition: all 0.2s ease;
+  }
+
+  // 小装饰点
+  &::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 3px;
+    height: 3px;
+    background: rgba(var(--foreground), 0.2);
+    border-radius: 50%;
+    transition: all 0.2s ease;
   }
 }
 
 .day {
   position: relative;
-  font-size: 24px;
-  color: var(--foreground);
-  font-weight: bold;
-  padding-right: 6px;
-  padding-bottom: 2px;
+  font-size: 28px;
+  color: rgba(var(--foreground), 0.85);
+  font-weight: 700;
+  line-height: 1;
+  padding-right: 8px;
+  padding-bottom: 4px;
+  transition: color 0.2s ease;
+  letter-spacing: -0.02em;
 
+  // 优化的小三角形装饰
   &::after {
     content: '';
     position: absolute;
-    bottom: 2px;
-    right: 0;
+    bottom: 3px;
+    right: 2px;
     width: 6px;
     height: 6px;
-    background-color: var(--background);
+    background: rgba(var(--background), 0.9);
     clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    transition: all 0.2s ease;
   }
 }
 
 .monthYear {
-  font-size: 12px;
-  color: var(--foreground);
-  opacity: 0.6;
+  font-size: 11px;
+  color: rgba(var(--foreground), 0.5);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: opacity 0.2s ease;
 }
 
 .itemTitle {
   font-size: 1rem;
-  font-weight: 500;
-  color: var(--foreground);
+  font-weight: 400;
+  color: rgba(var(--foreground), 0.85);
   margin-right: 1rem;
   flex-grow: 1;
   text-decoration: none;
+  transition: color 0.2s ease;
+  padding-right: 0.5rem;
+  position: relative;
+
+  &::before {
+    content: "\201C";
+    position: absolute;
+    left: -8px;
+    top: -2px;
+    color: rgba(var(--foreground), 0.1);
+    font-size: 1.5rem;
+    font-family: serif;
+  }
 }
 
 .underlineAnimation {
@@ -108,10 +194,9 @@
     height: 1px;
     bottom: -2px;
     left: 0;
-    background-color: var(--foreground);
-    opacity: 0.6;
+    background-color: rgba(var(--foreground), 0.3);
     transform-origin: bottom right;
-    transition: transform 0.3s ease-out;
+    transition: transform 0.25s ease-out;
   }
 
   &:hover::after {
@@ -121,9 +206,8 @@
 }
 
 .arrowIcon {
-  color: var(--foreground);
-  opacity: 0.6;
-  transition: transform 0.3s ease;
-  width: 20px;
-  height: 20px;
+  color: rgba(var(--foreground), 0.4);
+  transition: all 0.2s ease-out;
+  width: 16px;
+  height: 16px;
 }

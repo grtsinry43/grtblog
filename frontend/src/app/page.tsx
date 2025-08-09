@@ -23,12 +23,21 @@ export default async function Home() {
                 <AuthorBanner/>
                 <HomePageMomentShow thinking={latestThinking}/>
             </Container>
-            <div className={"flex justify-center"}>
-                <div className={styles.responsiveContainer}>
-                    <RecentArticle articleList={articleList}/>
-                    <RecentMoment shareList={shareList}/>
+            
+            {/* Recent Content Section */}
+            <section className="relative py-12 overflow-hidden">
+                {/* Background decoration */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background via-foreground/[0.01] to-background" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--foreground),0.02),transparent_70%)]" />
+                
+                <div className={"flex justify-center relative"}>
+                    <div className={styles.responsiveContainer}>
+                        <RecentArticle articleList={articleList}/>
+                        <RecentMoment shareList={shareList}/>
+                    </div>
                 </div>
-            </div>
+            </section>
+            
             <RecommendClient/>
             <FloatingMenu items={[]}/>
         </div>

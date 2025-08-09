@@ -13,7 +13,7 @@ const CommentListSkeleton = () => {
                     transition={{type: "spring", stiffness: 100, delay: index * 0.1}}
                     
                     
-                    className="bg-card rounded-lg p-4 shadow-sm"
+                    className="rounded-lg p-4 shadow-sm"
                 >
                     <div className="flex items-center space-x-2 mb-2">
                         <Skeleton>

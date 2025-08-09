@@ -1,8 +1,13 @@
 'use client'
 
-import {X} from 'lucide-react'
-import {Button, Flex, Dialog, ScrollArea} from "@radix-ui/themes"
 import * as React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { ScrollArea, Theme } from '@radix-ui/themes';
 import CommentArea from "@/components/comment/CommentArea";
 
 interface CommentModalProps {
@@ -12,38 +17,27 @@ interface CommentModalProps {
 }
 
 function CommentModal({isOpen = false, onClose, commentId}: CommentModalProps) {
-    const [shake, setShake] = React.useState(false);
-
-    React.useEffect(() => {
-        if (isOpen) {
-            const timer = setTimeout(() => setShake(false), 500);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen, shake]);
-
     return (
-        <Dialog.Root open={isOpen} onOpenChange={() => setShake(true)}>
-            <Dialog.Content className={shake ? 'shake' : ''} style={{
-                maxWidth: '1000px',
-                background: 'rgba(var(--background), 0.7)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '7px',
-            }}>
-                <Dialog.Title>
-                    <Flex justify="between" align="center">
-                        评论
-                        <Button variant="ghost" onClick={onClose}>
-                            <X/>
-                        </Button>
-                    </Flex>
-                </Dialog.Title>
-                <ScrollArea style={{
-                    maxHeight: 'calc(100vh - 300px)',
-                }}>
-                    <CommentArea id={commentId} isModal={true}/>
-                </ScrollArea>
-            </Dialog.Content>
-        </Dialog.Root>
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent 
+                className="max-w-4xl max-h-[80vh] p-6"
+                style={{
+                    background: 'rgba(var(--background), 0.8)',
+                    backdropFilter: 'blur(50px)',
+                    outline: '1px solid rgba(var(--foreground), 0.1)',
+                    borderRadius: '5px',
+                }}
+            >
+                <Theme>
+                    <DialogHeader className="mb-4">
+                        <DialogTitle>评论</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea style={{ maxHeight: 'calc(80vh - 120px)' }}>
+                        <CommentArea id={commentId} isModal={true}/>
+                    </ScrollArea>
+                </Theme>
+            </DialogContent>
+        </Dialog>
     )
 }
 

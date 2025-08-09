@@ -14,14 +14,14 @@ import { PageContainer, ProCard, ProForm } from '@ant-design/pro-components';
 import {
   Button,
   Card,
-  Col,
+  Col, // 确保导入 Col
   Divider,
   Form,
   Image,
   Input,
   message,
   Modal,
-  Row,
+  Row, // 确保导入 Row
   Select,
   Space,
   Switch,
@@ -36,11 +36,10 @@ import React, { useEffect, useState } from 'react';
 // 导入额外的插件
 import highlight from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
-import Katex from 'katex';
 import 'katex/dist/katex.min.css';
 import mermaid from 'mermaid';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 interface ArticleFormProps {
@@ -87,7 +86,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         type: 'category/initCategoryList',
       });
     }
-  }, []);
+  }, [list, dispatch]); // 修正依赖项
 
   // 表单初始化
   useEffect(() => {
@@ -163,6 +162,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         }
       } catch (error) {
         console.error('Upload failed:', error);
+        message.error('图片上传失败'); // 增加用户反馈
       }
     }
 
@@ -175,6 +175,12 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     reader.onload = (e) => {
       const content = e.target?.result as string;
       setEditorContent(content);
+      // 如果需要，也可以更新 articleInfo.content
+      // onValueChange('content', content); // 如果 MdEditor 的内容也应该同步到 ProForm 的 content 字段
+      message.success('Markdown 文件导入成功');
+    };
+    reader.onerror = () => {
+      message.error('读取 Markdown 文件失败');
     };
     reader.readAsText(file);
     return false; // 阻止默认上传行为
@@ -209,8 +215,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
             },
           }}
         >
-          <Row gutter={24}>
-            <Col span={16}>
+          {/* 使用 Row 和 Col 实现响应式布局 */}
+          <Row gutter={[16, 16]}>
+            {' '}
+            {/* gutter 为列间距 */}
+            {/* 左侧：文章内容编辑区域 */}
+            <Col xs={24} md={16}>
+              {' '}
+              {/* 在超小屏幕(xs)上占满24份，在中等屏幕(md)及以上占16份 */}
               <Card
                 title={
                   <Space>
@@ -234,7 +246,17 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   />
                 </Form.Item>
 
-                <Form.Item label="内容编辑" name="content">
+                {/* 注意: ProForm 本身会收集 Form.Item 的数据。
+                  MdEditor 的内容是通过 editorContent state 管理的，并在 handleSubmit 中手动传递。
+                  如果希望 MdEditor 的内容也通过 ProForm 的字段管理，
+                  可以将 MdEditor 包裹在一个 Form.Item name="content" 中，
+                  并在 MdEditor 的 onChange 中使用 form.setFieldsValue({ content: newContent })。
+                  但目前的设计是将 editorContent 单独处理，然后在提交时合并，这也是一种常见做法。
+                  这里保持原有逻辑，如果需要，可以按上述方式修改。
+                */}
+                <Form.Item label="内容编辑">
+                  {' '}
+                  {/* 移除了 name="content"，因为实际内容由 editorContent 控制 */}
                   <div
                     style={{ border: '1px solid #d9d9d9', borderRadius: '2px' }}
                   >
@@ -242,12 +264,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       modelValue={editorContent}
                       onChange={setEditorContent}
                       id={editorId}
-                      style={{ height: '600px' }}
-                      // 工具栏配置
+                      style={{ height: '600px' }} // 在小屏幕上可能需要调整高度
                       toolbars={[
                         'bold',
                         'italic',
-                        // 'strikethrough',
                         'sub',
                         'sup',
                         'quote',
@@ -270,10 +290,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         'catalog',
                         'github',
                       ]}
-                      // 扩展配置
                       onUploadImg={onUploadImg}
-                      // 代码高亮
-                        // @ts-ignore
+                      // @ts-ignore
                       codeHighlightExtensionMap={{
                         vue: highlight.getLanguage('vue'),
                         typescript: highlight.getLanguage('typescript'),
@@ -285,60 +303,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         python: highlight.getLanguage('python'),
                         rust: highlight.getLanguage('rust'),
                       }}
-                      // 数学公式
                       showCodeRowNumber={true}
-                      // 预览主题
                       previewTheme="vuepress"
-                      // 扩展配置
-                      // extensions={[
-                      //   {
-                      //     name: 'mermaid',
-                      //     level: 'block',
-                      //     tokenizer: (source) => {
-                      //       const match = source.match(
-                      //         /^```mermaid\s+([\s\S]+?)```/,
-                      //       );
-                      //       if (match) {
-                      //         return {
-                      //           type: 'mermaid',
-                      //           raw: match[0],
-                      //           content: match[1].trim(),
-                      //           tokens: [],
-                      //         };
-                      //       }
-                      //       return undefined;
-                      //     },
-                      //     renderer: (token) => {
-                      //       return `<div class="mermaid">${token.content}</div>`;
-                      //     },
-                      //   },
-                      //   {
-                      //     name: 'katex',
-                      //     level: 'inline',
-                      //     tokenizer: (source) => {
-                      //       const match = source.match(/^\$\$(.*?)\$\$/);
-                      //       if (match) {
-                      //         return {
-                      //           type: 'katex',
-                      //           raw: match[0],
-                      //           content: match[1].trim(),
-                      //           tokens: [],
-                      //         };
-                      //       }
-                      //       return undefined;
-                      //     },
-                      //     renderer: (token) => {
-                      //       try {
-                      //         return `<span class="katex">${Katex.renderToString(
-                      //           token.content,
-                      //           { throwOnError: false },
-                      //         )}</span>`;
-                      //       } catch (e) {
-                      //         return `<span class="katex-error">${token.content}</span>`;
-                      //       }
-                      //     },
-                      //   },
-                      // ]}
                     />
                   </div>
                 </Form.Item>
@@ -360,13 +326,15 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 </Space>
               </Card>
             </Col>
-
-            <Col span={8}>
+            {/* 右侧：文章设置区域 */}
+            <Col xs={24} md={8}>
+              {' '}
+              {/* 在超小屏幕(xs)上占满24份，在中等屏幕(md)及以上占8份 */}
               <Card title="文章设置" bordered={false}>
                 <Form.Item
                   label="分类"
                   name="categoryId"
-                  // rules={[{ required: true, message: '请选择分类' }]}
+                  rules={[{ required: true, message: '请选择分类' }]}
                 >
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <Select
@@ -375,6 +343,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       optionFilterProp="children"
                       onChange={(value) => onValueChange('categoryId', value)}
                       style={{ width: '100%' }}
+                      filterOption={(
+                        input,
+                        option, // 添加筛选逻辑
+                      ) =>
+                        (option?.children as unknown as string)
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
                     >
                       {list.map((item: any) => (
                         <Option key={item.id} value={item.id}>
@@ -382,8 +358,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         </Option>
                       ))}
                     </Select>
-                    <Button type="link" onClick={() => setIsModalVisible(true)}>
-                      + 创建新分类
+                    <Button
+                      type="link"
+                      onClick={() => setIsModalVisible(true)}
+                      style={{ paddingLeft: 0 }}
+                    >
+                      {' '}
+                      {/* 调整按钮样式使其更像链接 */}+ 创建新分类
                     </Button>
                   </Space>
                 </Form.Item>
@@ -402,7 +383,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <Form.Item
                   label="标签"
                   name="tags"
-                  rules={[{ required: true, message: '请输入标签' }]}
+                  rules={[{ required: true, message: '请输入标签' }]} // 标签通常是必填的
                 >
                   <Input
                     prefix={<TagOutlined />}
@@ -414,22 +395,31 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <Form.Item label="文章封面" name="cover">
                   {type === 'edit' && articleInfo?.cover && (
                     <Image
-                      src={articleInfo.cover || '/placeholder.svg'}
+                      src={articleInfo.cover || '/placeholder.svg'} // 确保有占位图或处理空字符串
                       width={200}
-                      style={{ marginBottom: '16px' }}
+                      style={{ marginBottom: '16px', display: 'block' }} // 让图片块级显示，避免与其他元素同行问题
                     />
                   )}
                   <Upload
                     listType="picture-card"
                     maxCount={1}
-                    action="/api/v1/upload"
+                    action="/api/v1/upload" // 确保这是你的实际上传API
                     headers={{
                       Authorization: 'Bearer ' + getToken(),
                     }}
                     onChange={(e) => {
                       if (e.file.status === 'done') {
-                        const url = e.file.response.data;
-                        onValueChange('cover', url);
+                        const url = e.file.response?.data; // 安全访问 response
+                        if (url) {
+                          onValueChange('cover', url);
+                          message.success(`${e.file.name} 上传成功`);
+                        } else {
+                          message.error(
+                            `${e.file.name} 上传失败，未获取到图片URL`,
+                          );
+                        }
+                      } else if (e.file.status === 'error') {
+                        message.error(`${e.file.name} 上传失败.`);
                       }
                     }}
                   >
@@ -448,6 +438,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   <Select
                     placeholder="选择文章状态"
                     onChange={(value) => onValueChange('isPublished', value)}
+                    defaultValue={false} // 可以给一个默认值
                   >
                     <Option value={false}>保存为草稿</Option>
                     <Option value={true}>立即发布</Option>
@@ -456,8 +447,11 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
                 <Divider orientation="left">文章属性</Divider>
 
+                {/* 文章属性开关的响应式布局 */}
                 <Row gutter={[16, 16]}>
-                  <Col span={8}>
+                  <Col xs={24} sm={8}>
+                    {' '}
+                    {/* 在超小屏幕(xs)上占满，在小屏幕(sm)及以上各占8份，实现一行三个 */}
                     <Form.Item name="isTop" valuePropName="checked">
                       <div style={{ textAlign: 'center' }}>
                         <Switch
@@ -472,7 +466,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       </div>
                     </Form.Item>
                   </Col>
-                  <Col span={8}>
+                  <Col xs={24} sm={8}>
                     <Form.Item name="isHot" valuePropName="checked">
                       <div style={{ textAlign: 'center' }}>
                         <Switch
@@ -487,7 +481,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       </div>
                     </Form.Item>
                   </Col>
-                  <Col span={8}>
+                  <Col xs={24} sm={8}>
                     <Form.Item name="isOriginal" valuePropName="checked">
                       <div style={{ textAlign: 'center' }}>
                         <Switch
@@ -534,39 +528,50 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         open={isModalVisible}
         onOk={handleAddCategory}
         onCancel={() => setIsModalVisible(false)}
+        // 添加 destroyOnClose 可以在关闭时销毁表单状态，避免再次打开时残留数据
+        destroyOnClose
       >
-        <Form layout="vertical">
+        {/* Modal 内的 Form 也可以使用 Form.useForm() 来管理状态，以方便重置 */}
+        <Form
+          layout="vertical"
+          initialValues={addCategoryForm} // 可以设置初始值，方便重置
+          onValuesChange={(_, allValues) => setAddCategoryForm(allValues)} // 同步状态
+        >
           <Form.Item
             label="分类名称"
-            required
+            name="name" // 配合 Form 使用 name
             rules={[{ required: true, message: '请输入分类名称' }]}
           >
             <Input
               placeholder="请输入分类名称"
-              value={addCategoryForm.name}
-              onChange={(e) =>
-                setAddCategoryForm({
-                  ...addCategoryForm,
-                  name: e.target.value,
-                })
-              }
+              // value={addCategoryForm.name} // 由 Form 控制
+              // onChange={(e) =>
+              //   setAddCategoryForm({
+              //     ...addCategoryForm,
+              //     name: e.target.value,
+              //   })
+              // }
             />
           </Form.Item>
           <Form.Item
             label="分类短链接"
-            required
+            name="shortUrl" // 配合 Form 使用 name
             rules={[{ required: true, message: '请输入分类短链接' }]}
           >
             <Input
               placeholder="请输入分类短链接，如：tech-blog"
-              value={addCategoryForm.shortUrl}
-              onChange={(e) =>
-                setAddCategoryForm({
-                  ...addCategoryForm,
-                  shortUrl: e.target.value,
-                })
-              }
+              // value={addCategoryForm.shortUrl} // 由 Form 控制
+              // onChange={(e) =>
+              //   setAddCategoryForm({
+              //     ...addCategoryForm,
+              //     shortUrl: e.target.value,
+              //   })
+              // }
             />
+          </Form.Item>
+          {/* 隐藏 type 字段，如果需要提交的话 */}
+          <Form.Item name="type" hidden initialValue={1}>
+            <Input />
           </Form.Item>
         </Form>
       </Modal>

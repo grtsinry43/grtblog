@@ -135,83 +135,151 @@ export default function NavBarDesktop({items}: {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // 优化的动画配置 - 更快的响应
+    const springConfig = {
+        type: 'spring' as const,
+        stiffness: 400,  // 增加刚度，更快响应
+        damping: 28,     // 调整阻尼
+        mass: 0.7        // 减小质量，更轻快
+    };
+
+    const smoothTransition = {
+        type: 'spring' as const,
+        stiffness: 300,  // 增加刚度
+        damping: 22      // 调整阻尼
+    };
+
+    // 更快的简单过渡
+    const quickTransition = {
+        duration: 0.2,
+        ease: "easeOut" as const
+    };
+
     return (
         <div className={styles.navbarWrapper} ref={navbarRef}>
-            <motion.div initial={{y: -100}} animate={isInView ? {y: 0} : {y: -100}}
-                        transition={{type: 'spring', stiffness: 120, damping: 20}}>
+            <motion.div 
+                initial={{y: -100}} 
+                animate={isInView ? {y: 0} : {y: -100}}
+                transition={springConfig}
+            >
                 <nav className={clsx(styles.navbar, scrolled ? styles.scrolled : '')}>
                     <div className={styles.navbarContainer}>
-                        <div className={styles.avatarWrapper}>
+                        <motion.div 
+                            className={styles.avatarWrapper}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={smoothTransition}
+                        >
                             <EnhancedAvatar avatarSrc={websiteInfo.WEBSITE_LOGO}/>
-                        </div>
-                        {isTitleVisible ? (
-                            <motion.div initial={{y: 10, opacity: 0}}
-                                        style={{width: '100%'}}
-                                        animate={isTitleVisible ? {y: 0, opacity: 1} : {y: 10, opacity: 0}}
-                                        transition={{type: 'spring', stiffness: 260, damping: 20}}>
-                                <div className={clsx(article_font.className, "w-full")}
-                                     style={{
-                                         paddingLeft: '4rem',
-                                     }}>
-                                    <div className="text-[0.75em]">
-                                        {/* 类型 */}
-                                        <span className="font-bold mr-1">{titleInfo.type}</span>
-                                        {/* 分类 */}
-                                        <span>/</span>
-                                        <span className="ml-1">{titleInfo.categoryName}</span>
-                                    </div>
-                                    {/* 标题 */}
-                                    <div style={{
-                                        lineHeight: '1.2em',
-                                    }}>{titleInfo.title}</div>
-                                </div>
-                            </motion.div>
-                        ) : (
-                            <div>
-                                <motion.div
-                                    initial={{y: -10, opacity: 1}}
+                        </motion.div>
+                        
+                        <AnimatePresence mode="wait">
+                            {isTitleVisible ? (
+                                <motion.div 
+                                    key="title"
+                                    initial={{y: 20, opacity: 0}}
+                                    animate={{y: 0, opacity: 1}}
+                                    exit={{y: -20, opacity: 0}}
+                                    transition={smoothTransition}
                                     style={{width: '100%'}}
-                                    animate={isTitleVisible ? {y: 10, opacity: 0} : {y: 0, opacity: 1}}
-                                    transition={{type: 'spring', stiffness: 260, damping: 20}}
+                                >
+                                    <div className={clsx(article_font.className, "w-full")}
+                                         style={{
+                                             paddingLeft: '4rem',
+                                         }}>
+                                        <motion.div 
+                                            className="text-[0.75em]"
+                                            initial={{x: -10, opacity: 0}}
+                                            animate={{x: 0, opacity: 1}}
+                                            transition={{...smoothTransition, delay: 0.1}}
+                                        >
+                                            {/* 类型 */}
+                                            <span className="font-bold mr-1">{titleInfo.type}</span>
+                                            {/* 分类 */}
+                                            <span>/</span>
+                                            <span className="ml-1">{titleInfo.categoryName}</span>
+                                        </motion.div>
+                                        {/* 标题 */}
+                                        <motion.div 
+                                            style={{
+                                                lineHeight: '1.2em',
+                                            }}
+                                            initial={{x: -10, opacity: 0}}
+                                            animate={{x: 0, opacity: 1}}
+                                            transition={{...smoothTransition, delay: 0.2}}
+                                        >
+                                            {titleInfo.title}
+                                        </motion.div>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="nav"
+                                    initial={{y: -20, opacity: 0}}
+                                    animate={{y: 0, opacity: 1}}
+                                    exit={{y: 20, opacity: 0}}
+                                    transition={smoothTransition}
+                                    style={{width: '100%'}}
                                 >
                                     <div className={styles.navItemContainer}>
-                                        {navItems.map((item) => (
-                                            <div key={item.name} className={styles.navItemWrapper}
-                                                 onMouseEnter={() => handleMouseEnter(item.name)}
-                                                 onMouseLeave={handleMouseLeave}>
+                                        {navItems.map((item, index) => (
+                                            <motion.div 
+                                                key={item.name} 
+                                                className={styles.navItemWrapper}
+                                                onMouseEnter={() => handleMouseEnter(item.name)}
+                                                onMouseLeave={handleMouseLeave}
+                                                initial={{y: -20, opacity: 0}}
+                                                animate={{y: 0, opacity: 1}}
+                                                transition={{...smoothTransition, delay: index * 0.05}}
+                                                whileHover={{ 
+                                                    y: -1,  // 更小的浮动距离
+                                                    transition: { duration: 0.15 }  // 更快的响应
+                                                }}
+                                            >
                                                 <Link href={item.href} passHref>
                                                     <div className={styles.navItemLink}>
                                                         <motion.div whileTap={{scale: 0.95}}>
-                        <span
-                            className={clsx(styles.navItem, styles.underlineAnimation, styles.glowAnimation)}>{item.name}</span>
+                                                            <span
+                                                                className={clsx(styles.navItem, styles.underlineAnimation, styles.glowAnimation)}
+                                                            >
+                                                                {item.name}
+                                                            </span>
                                                         </motion.div>
                                                     </div>
                                                 </Link>
                                                 <AnimatePresence>
                                                     {item.children && item.children.length > 0 && activeItem === item.name && (
-                                                        <motion.div initial={{opacity: 0, y: -10}}
-                                                                    animate={{opacity: 1, y: 0}}
-                                                                    exit={{opacity: 0, y: -10}}
-                                                                    transition={{duration: 0.2}}>
+                                                        <motion.div 
+                                                            initial={{opacity: 0, y: -15, scale: 0.95}}
+                                                            animate={{opacity: 1, y: 0, scale: 1}}
+                                                            exit={{opacity: 0, y: -15, scale: 0.95}}
+                                                            transition={smoothTransition}
+                                                        >
                                                             <div className={styles.submenu}>
                                                                 {item.children.map((child, index) => (
-                                                                    <motion.div key={child.name}
-                                                                                initial={{
-                                                                                    opacity: 0,
-                                                                                    x: -20,
-                                                                                    filter: 'blur(10px)'
-                                                                                }}
-                                                                                animate={{
-                                                                                    opacity: 1,
-                                                                                    x: 0,
-                                                                                    filter: 'blur(0px)'
-                                                                                }}
-                                                                                transition={{delay: index * 0.1}}>
+                                                                    <motion.div 
+                                                                        key={child.name}
+                                                                        initial={{
+                                                                            opacity: 0,
+                                                                            x: -20,
+                                                                            filter: 'blur(10px)'
+                                                                        }}
+                                                                        animate={{
+                                                                            opacity: 1,
+                                                                            x: 0,
+                                                                            filter: 'blur(0px)'
+                                                                        }}
+                                                                        transition={{
+                                                                            ...smoothTransition,
+                                                                            delay: index * 0.05  // 更快的出现延迟
+                                                                        }}
+                                                                    >
                                                                         <Link href={child.href} passHref>
                                                                             <div className={styles.submenuItemWrapper}>
                                                                                 <motion.div whileTap={{scale: 0.95}}>
-                                                                        <span
-                                                                            className={styles.submenuItem}>{child.name}</span>
+                                                                                    <span className={styles.submenuItem}>
+                                                                                        {child.name}
+                                                                                    </span>
                                                                                 </motion.div>
                                                                             </div>
                                                                         </Link>
@@ -221,25 +289,36 @@ export default function NavBarDesktop({items}: {
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>
-                                            </div>
+                                            </motion.div>
                                         ))}
                                     </div>
                                 </motion.div>
-                            </div>
-                        )}
+                            )}
+                        </AnimatePresence>
 
                         <div className={styles.navbarContent}>
                             <div className={styles.searchWrapper}>
-                                <motion.div whileHover={{scale: 1.1}} whileTap={{scale: 0.95}}>
+                                <motion.div 
+                                    whileHover={{scale: 1.05}}  // 更小的缩放
+                                    whileTap={{scale: 0.95}}
+                                    transition={quickTransition}
+                                >
                                     <div className={styles.search}>
-                                        <MagnifyingGlassIcon onClick={() => {
-                                            setIsSearchVisible(true);
-                                        }} className={styles.searchIcon}/>
+                                        <MagnifyingGlassIcon 
+                                            onClick={() => {
+                                                setIsSearchVisible(true);
+                                            }} 
+                                            className={styles.searchIcon}
+                                        />
                                     </div>
                                 </motion.div>
                             </div>
                             <div className={styles.githubWrapper}>
-                                <motion.div whileHover={{scale: 1.1}} whileTap={{scale: 0.95}}>
+                                <motion.div 
+                                    whileHover={{scale: 1.05, rotate: 3}}  // 更小的缩放和旋转
+                                    whileTap={{scale: 0.95}}
+                                    transition={quickTransition}
+                                >
                                     <a href={websiteInfo.AUTHOR_GITHUB} target="_blank"
                                        rel="noopener noreferrer"
                                        className={styles.githubLink}>
@@ -248,18 +327,41 @@ export default function NavBarDesktop({items}: {
                                 </motion.div>
                             </div>
                             <div className={styles.themeToggleWrapper}>
-                                <motion.div whileHover={{scale: 1.1}} whileTap={{scale: 0.95}}>
+                                <motion.div 
+                                    whileHover={{scale: 1.05}}  // 更小的缩放
+                                    whileTap={{scale: 0.95}}
+                                    transition={quickTransition}
+                                >
                                     {mounted && (
-                                        <div onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                                             className={styles.themeToggle}>
-                                            {resolvedTheme === 'dark' ? <SunIcon/> : <MoonIcon/>}
-                                        </div>
+                                        <motion.div 
+                                            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                                            className={styles.themeToggle}
+                                            animate={{ rotate: resolvedTheme === 'dark' ? 180 : 0 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}  // 更快的主题切换
+                                        >
+                                            <AnimatePresence mode="wait">
+                                                <motion.div
+                                                    key={resolvedTheme}
+                                                    initial={{ scale: 0, rotate: -90 }}  // 更小的旋转角度
+                                                    animate={{ scale: 1, rotate: 0 }}
+                                                    exit={{ scale: 0, rotate: 90 }}
+                                                    transition={{ duration: 0.2 }}  // 更快的图标切换
+                                                >
+                                                    {resolvedTheme === 'dark' ? <SunIcon/> : <MoonIcon/>}
+                                                </motion.div>
+                                            </AnimatePresence>
+                                        </motion.div>
                                     )}
                                 </motion.div>
                             </div>
                             <div className={styles.loginButtonWrapper}>
                                 {user.isLogin ? (
-                                    <div className={styles.avatarWrapper}>
+                                    <motion.div 
+                                        className={styles.avatarWrapper}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        transition={smoothTransition}
+                                    >
                                         <DropdownMenu.Root>
                                             <DropdownMenu.Trigger>
                                                 <Avatar
@@ -281,14 +383,6 @@ export default function NavBarDesktop({items}: {
                                                     router.push('/my')
                                                 }}> 用户中心与设置 </DropdownMenu.Item>
 
-                                                {/*<DropdownMenu.Sub>*/}
-                                                {/*    <DropdownMenu.SubTrigger> 更多操作 </DropdownMenu.SubTrigger>*/}
-                                                {/*    <DropdownMenu.SubContent>*/}
-                                                {/*        <DropdownMenu.Item> 设置 </DropdownMenu.Item>*/}
-                                                {/*        /!*<DropdownMenu.Item> 我的收藏 </DropdownMenu.Item>*!/*/}
-                                                {/*    </DropdownMenu.SubContent>*/}
-                                                {/*</DropdownMenu.Sub>*/}
-
                                                 <DropdownMenu.Separator/>
                                                 <DropdownMenu.Item color="red" onClick={() => {
                                                     dispatch({type: 'user/clearUserInfo', payload: null});
@@ -298,9 +392,13 @@ export default function NavBarDesktop({items}: {
                                                 </DropdownMenu.Item>
                                             </DropdownMenu.Content>
                                         </DropdownMenu.Root>
-                                    </div>
+                                    </motion.div>
                                 ) : (
-                                    <motion.div whileHover={{scale: 1.05}} whileTap={{scale: 0.95}}>
+                                    <motion.div 
+                                        whileHover={{scale: 1.03}}  // 更小的缩放
+                                        whileTap={{scale: 0.97}}
+                                        transition={quickTransition}
+                                    >
                                         <Button variant="ghost"
                                                 style={{
                                                     width: '2.3em',
@@ -308,9 +406,14 @@ export default function NavBarDesktop({items}: {
                                                     overflow: 'hidden',
                                                     borderRadius: '50%',
                                                 }}
-                                                    className={styles.loginButton}
-                                                    onClick={openLoginModal}>
-                                            <UserRoundPlusIcon width={16} height={16}/>
+                                                className={styles.loginButton}
+                                                onClick={openLoginModal}>
+                                            <motion.div
+                                                whileHover={{ rotate: 8 }}  // 更小的旋转角度
+                                                transition={{ duration: 0.15 }}  // 更快的响应
+                                            >
+                                                <UserRoundPlusIcon width={16} height={16}/>
+                                            </motion.div>
                                         </Button>
                                     </motion.div>
                                 )}
