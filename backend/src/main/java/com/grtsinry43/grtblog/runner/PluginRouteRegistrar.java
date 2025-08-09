@@ -1,7 +1,7 @@
 package com.grtsinry43.grtblog.runner;
 
 import com.grtblog.BlogPlugin;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.pf4j.spring.SpringPluginManager;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
