@@ -22,14 +22,24 @@ const CommentArea = ({id, isModal}: { id: string, isModal?: boolean }) => {
                     <span className="ml-4 self-end text-sm opacity-60"> 来这里畅所欲言吧！</span>
                 </div>
                 <CommentForm id={id}/>
-                <ScrollArea style={{
-                    transition: 'all 0.3s',
-                    paddingRight: '1rem',
-                    height: 'fit-content',
-                    maxHeight: isModal ? '100%' : 'calc(100vh - 13rem)',
-                }}>
-                    <CommentList id={id} isModal={isModal}/>
-                </ScrollArea>
+                {isModal ? (
+                    <div style={{
+                        paddingLeft: '1rem',
+                        paddingRight: '1rem',
+                    }}>
+                        <CommentList id={id} isModal={isModal}/>
+                    </div>
+                ) : (
+                    <ScrollArea style={{
+                        transition: 'all 0.3s',
+                        paddingLeft: '1rem',
+                        paddingRight: '1rem',
+                        height: 'fit-content',
+                        maxHeight: 'calc(100vh - 13rem)',
+                    }}>
+                        <CommentList id={id} isModal={isModal}/>
+                    </ScrollArea>
+                )}
             </div>
             {!isModal && <div style={{
                 height: '100%',

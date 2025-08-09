@@ -1,10 +1,32 @@
+'use client';
+
 import AlbumController from '@/services/album/AlbumController';
-import { PlusOutlined } from '@ant-design/icons';
+import {
+  CameraOutlined,
+  ClockCircleOutlined,
+  EnvironmentOutlined,
+  FileTextOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
-import { Button, DatePicker, Form, Input, message, Upload } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Form,
+  Input,
+  message,
+  Row,
+  Space,
+  Typography,
+  Upload,
+} from 'antd';
 import EXIF from 'exif-js';
-import moment, { Moment } from 'moment';
+import moment, { type Moment } from 'moment';
 import { useRef, useState } from 'react';
+
+const { Title, Text } = Typography;
 
 const AddPhoto = () => {
   const [photoInfo, setPhotoInfo] = useState({
@@ -15,6 +37,8 @@ const AddPhoto = () => {
     time: null as Moment | null,
     shade: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
 
   const formRef = useRef<any>(null);
 
@@ -23,7 +47,6 @@ const AddPhoto = () => {
       ...prevPhotoInfo,
       [key]: value,
     }));
-    console.log(photoInfo);
   };
 
   const getMainColor = (img: HTMLImageElement) => {
@@ -52,156 +75,294 @@ const AddPhoto = () => {
     color.g = Math.floor(color.g / count);
     color.b = Math.floor(color.b / count);
 
-    console.log(color);
-    return `#${color.r.toString(16)}${color.g.toString(16)}${color.b.toString(
-      16,
-    )}`;
+    // Ensure proper hex format with padding
+    const r = color.r.toString(16).padStart(2, '0');
+    const g = color.g.toString(16).padStart(2, '0');
+    const b = color.b.toString(16).padStart(2, '0');
+
+    return `#${r}${g}${b}`;
   };
 
   const handleFileChange = (e: any) => {
-    console.log(e);
+    if (e.file.status === 'uploading') {
+      setLoading(true);
+      return;
+    }
+
     if (e.file.status === 'done') {
+      setLoading(false);
       const url = e.file.response.data;
+      setPreviewImage(location.protocol + '//' + location.host + url);
+
       setPhotoInfo((prevPhotoInfo) => ({
         ...prevPhotoInfo,
         url,
       }));
 
       const img = new Image();
+      img.crossOrigin = 'anonymous';
       img.src = location.protocol + '//' + location.host + url;
-      console.log(img);
+
       img.onload = () => {
         // @ts-ignore
         EXIF.getData(img, function (this: any) {
           const exifData = EXIF.getAllTags(this);
-          const dateTimeOriginal = moment(
-            exifData.DateTimeOriginal,
-            'YYYY:MM:DD HH:mm:ss',
-          );
+          const dateTimeOriginal = exifData.DateTimeOriginal
+            ? moment(exifData.DateTimeOriginal, 'YYYY:MM:DD HH:mm:ss')
+            : null;
+
+          const deviceInfo =
+            exifData.Make && exifData.Model
+              ? `${exifData.Make} ${exifData.Model}`
+              : '';
+
+          const locationInfo =
+            exifData.GPSLatitude && exifData.GPSLongitude
+              ? `${exifData.GPSLatitude}, ${exifData.GPSLongitude}`
+              : '';
 
           formRef.current?.setFieldsValue({
-            device: exifData.Make + ' ' + exifData.Model,
+            device: deviceInfo,
             time: dateTimeOriginal,
-            location: `${exifData.GPSLatitude}, ${exifData.GPSLongitude}`,
+            location: locationInfo,
           });
 
           const mainColor = getMainColor(img);
 
           setPhotoInfo((prevPhotoInfo) => ({
             ...prevPhotoInfo,
-            device: exifData.Make + ' ' + exifData.Model,
+            device: deviceInfo,
             time: dateTimeOriginal,
-            location: `${exifData.GPSLatitude}, ${exifData.GPSLongitude}`,
+            location: locationInfo,
             shade: mainColor,
           }));
         });
       };
     }
-  };
 
-  const submitHandle = () => {
-    if (
-      !photoInfo.url ||
-      !photoInfo.device ||
-      !photoInfo.location ||
-      !photoInfo.description ||
-      !photoInfo.time
-    ) {
-      message.error('请填写完整信息');
-    } else {
-      AlbumController.uploadPhoto({
-        ...photoInfo,
-        time: photoInfo.time?.format('YYYY-MM-DDTHH:mm:ss'),
-      }).then((response) => {
-        if (response.data) {
-          message.success('上传成功');
-        } else {
-          message.error(response.msg);
-        }
-      });
+    if (e.file.status === 'error') {
+      setLoading(false);
+      message.error('上传失败，请重试');
     }
   };
 
+  const submitHandle = () => {
+    formRef.current?.validateFields().then(() => {
+      setLoading(true);
+
+      AlbumController.uploadPhoto({
+        ...photoInfo,
+        time: photoInfo.time?.format('YYYY-MM-DDTHH:mm:ss') || '',
+      })
+        .then((response) => {
+          if (response.data) {
+            message.success('上传成功');
+            formRef.current?.resetFields();
+            setPhotoInfo({
+              url: '',
+              device: '',
+              location: '',
+              description: '',
+              time: null,
+              shade: '',
+            });
+            setPreviewImage('');
+          } else {
+            message.error(response.msg || '上传失败');
+          }
+        })
+        .catch((err) => {
+          message.error('上传失败: ' + (err.message || '未知错误'));
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    });
+  };
+
+  const uploadButton = (
+    <div>
+      <PlusOutlined />
+      <div style={{ marginTop: 8 }}>上传照片</div>
+    </div>
+  );
+
   return (
-    <PageContainer>
-      <Form ref={formRef} onFinish={submitHandle}>
-        <Form.Item
-          label="设备名"
-          name="device"
-          rules={[{ required: true, message: '请输入设备名' }]}
-        >
-          <Input
-            value={photoInfo.device}
-            onChange={(e) => onValueChange('device', e.target.value)}
-          />
-        </Form.Item>
-        <Form.Item
-          label="拍摄地点"
-          name="location"
-          rules={[{ required: true, message: '请输入拍摄地点' }]}
-        >
-          <Input
-            value={photoInfo.location}
-            onChange={(e) => onValueChange('location', e.target.value)}
-          />
-        </Form.Item>
-        <Form.Item
-          label="图片描述"
-          name={'description'}
-          rules={[{ required: true, message: '请输入图片描述' }]}
-        >
-          <Input
-            value={photoInfo.description}
-            onChange={(e) => onValueChange('description', e.target.value)}
-          />
-        </Form.Item>
-        <Form.Item
-          label="选择时间"
-          name={'time'}
-          rules={[{ required: true, message: '请选择时间' }]}
-        >
-          <DatePicker
-            showTime
-            value={photoInfo.time}
-            onChange={(date) => onValueChange('time', date)}
-          />
-        </Form.Item>
-        <Form.Item label="上传照片">
-          <Upload
-            listType="picture-card"
-            maxCount={1}
-            action="/api/v1/upload"
-            onChange={handleFileChange}
-          >
-            <div>
-              <PlusOutlined />
-              <div style={{ marginTop: '8px' }}> 图片可选</div>
+    <PageContainer title="添加照片" subTitle="上传照片并填写相关信息">
+      <Card bordered={false} className="photo-upload-card">
+        <Row gutter={[24, 0]}>
+          <Col xs={24} md={12}>
+            <div className="upload-preview-container">
+              <Form.Item label="上传照片" required>
+                <Upload
+                  name="file"
+                  listType="picture-card"
+                  maxCount={1}
+                  action="/api/v1/upload"
+                  onChange={handleFileChange}
+                  showUploadList={false}
+                >
+                  {previewImage ? (
+                    <img
+                      src={previewImage || '/placeholder.svg'}
+                      alt="预览图"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    uploadButton
+                  )}
+                </Upload>
+              </Form.Item>
+
+              {photoInfo.shade && (
+                <div className="color-preview">
+                  <Text>主色调: {photoInfo.shade}</Text>
+                  <div
+                    className="color-box"
+                    style={{
+                      backgroundColor: photoInfo.shade,
+                      width: '24px',
+                      height: '24px',
+                      marginLeft: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #d9d9d9',
+                    }}
+                  />
+                </div>
+              )}
             </div>
-          </Upload>
-        </Form.Item>
-        {photoInfo.shade && (
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div> 计算出的图片主色调为 {photoInfo.shade}</div>
-            <div
-              style={{
-                width: '10px',
-                height: '10px',
-                marginLeft: '10px',
-                backgroundColor: photoInfo.shade,
-              }}
-            ></div>
-          </div>
-        )}
-        <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            style={{ marginTop: '10px' }}
-          >
-            提交
-          </Button>
-        </Form.Item>
-      </Form>
+          </Col>
+
+          <Col xs={24} md={12}>
+            <Form
+              ref={formRef}
+              layout="vertical"
+              onFinish={submitHandle}
+              initialValues={photoInfo}
+            >
+              <Form.Item
+                label={
+                  <Space>
+                    <CameraOutlined /> 设备名
+                  </Space>
+                }
+                name="device"
+                rules={[{ required: true, message: '请输入设备名' }]}
+              >
+                <Input
+                  placeholder="相机/手机型号"
+                  value={photoInfo.device}
+                  onChange={(e) => onValueChange('device', e.target.value)}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={
+                  <Space>
+                    <EnvironmentOutlined /> 拍摄地点
+                  </Space>
+                }
+                name="location"
+                rules={[{ required: true, message: '请输入拍摄地点' }]}
+              >
+                <Input
+                  placeholder="拍摄地点"
+                  value={photoInfo.location}
+                  onChange={(e) => onValueChange('location', e.target.value)}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={
+                  <Space>
+                    <FileTextOutlined /> 图片描述
+                  </Space>
+                }
+                name="description"
+                rules={[{ required: true, message: '请输入图片描述' }]}
+              >
+                <Input.TextArea
+                  rows={4}
+                  placeholder="描述这张照片..."
+                  value={photoInfo.description}
+                  onChange={(e) => onValueChange('description', e.target.value)}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={
+                  <Space>
+                    <ClockCircleOutlined /> 拍摄时间
+                  </Space>
+                }
+                name="time"
+                rules={[{ required: true, message: '请选择时间' }]}
+              >
+                <DatePicker
+                  showTime
+                  style={{ width: '100%' }}
+                  placeholder="选择拍摄时间"
+                  value={photoInfo.time}
+                  onChange={(date) => onValueChange('time', date)}
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  size="large"
+                >
+                  提交
+                </Button>
+              </Form.Item>
+            </Form>
+          </Col>
+        </Row>
+      </Card>
+
+      <style jsx global>{`
+        .photo-upload-card {
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .upload-preview-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          padding: 16px;
+        }
+
+        .color-preview {
+          display: flex;
+          align-items: center;
+          margin-top: 16px;
+          padding: 8px 16px;
+          background-color: #f5f5f5;
+          border-radius: 4px;
+        }
+
+        .ant-upload.ant-upload-select-picture-card {
+          width: 240px;
+          height: 240px;
+          margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+          .ant-upload.ant-upload-select-picture-card {
+            width: 180px;
+            height: 180px;
+          }
+        }
+      `}</style>
     </PageContainer>
   );
 };

@@ -10,42 +10,36 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
+      staggerChildren: 0.1,
     },
   },
 };
 
 const itemMotion = {
-  hidden: {
-    opacity: 0,
-    y: 20,
-    rotateX: -90,
-    filter: 'blur(10px)',
-    boxShadow: '0 0 10px rgba(var(--foreground), 0.5)',
+  hidden: { 
+    opacity: 0, 
+    y: 8,
   },
   visible: {
     opacity: 1,
     y: 0,
-    rotateX: 0,
-    filter: 'blur(0px)',
-    border: 'none',
-    boxShadow: 'none',
     transition: {
-      duration: 1,
+      duration: 0.4,
+      ease: "easeOut",
     },
   },
 };
 
-interface RecentMomentMomentProps {
+interface RecentMomentMotionProps {
   list: StatusUpdate[];
 }
 
-const RecentMomentMotion = ({ list }: RecentMomentMomentProps) => {
+export default function RecentMomentMotion({ list }: RecentMomentMotionProps) {
   const ref = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
+  
   const inView = useInView(ref, {
     once: true,
+    margin: "-20px",
   });
 
   return (
@@ -55,17 +49,16 @@ const RecentMomentMotion = ({ list }: RecentMomentMomentProps) => {
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
     >
-      <div>
+      <div className="space-y-0">
         {list.map((item: StatusUpdate, index: number) => (
-          <motion.div key={index} variants={itemMotion}>
-            <div className="relative">
-              <RecentMomentItem key={item.id} statusUpdate={item} />
-            </div>
+          <motion.div 
+            key={`${item.id}-${index}`} 
+            variants={itemMotion}
+          >
+            <RecentMomentItem statusUpdate={item} />
           </motion.div>
         ))}
       </div>
     </motion.div>
   );
-};
-
-export default RecentMomentMotion;
+}

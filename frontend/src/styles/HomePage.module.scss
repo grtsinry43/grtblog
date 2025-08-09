@@ -1,12 +1,76 @@
 .responsiveContainer {
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  max-width: 1440px;
-  padding: 2rem;
+  width: 100%;
+  max-width: 1200px; // 从1400px减少到1200px
+  margin: 0 auto;
+  gap: 2rem; // 从3rem减少到2rem
+  padding: 2rem 1rem;
+  align-items: flex-start;
+  position: relative;
 
+  // 添加微妙的分隔线
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 2rem;
+    bottom: 2rem;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      rgba(var(--foreground), 0.08),
+      rgba(var(--foreground), 0.12),
+      rgba(var(--foreground), 0.08),
+      transparent
+    );
+    transform: translateX(-50%);
+    opacity: 0.6;
+  }
+
+  // 平板尺寸优化
+  @media (max-width: 1024px) {
+    gap: 1.5rem; // 从2rem减少到1.5rem
+    padding: 1.5rem 1rem;
+  }
+
+  // 移动端改为上下布局
   @media (max-width: 768px) {
     flex-direction: column;
+    gap: 3rem;
     padding: 1rem;
+
+    &::before {
+      display: none;
+    }
+
+    // 移动端添加水平分隔线
+    &::after {
+      content: '';
+      position: absolute;
+      left: 2rem;
+      right: 2rem;
+      top: 50%;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(var(--foreground), 0.1),
+        transparent
+      );
+      transform: translateY(-50%);
+    }
+  }
+
+  // 小屏幕优化
+  @media (max-width: 480px) {
+    gap: 2rem;
+    padding: 0.75rem;
+
+    &::after {
+      left: 1rem;
+      right: 1rem;
+    }
   }
 }

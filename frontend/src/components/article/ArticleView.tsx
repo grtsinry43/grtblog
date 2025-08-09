@@ -25,6 +25,8 @@ import 'rehype-callouts/theme/github'
 import rehypeReact from "rehype-react";
 import UserReadReporter from "@/components/article/UserReadReporter";
 import AiSummaryBlock from "@/components/article/AISummaryBlock";
+import CopyrightNotice from "@/components/article/CopyNotice";
+import ArticleOutdatedNotice from "@/components/article/ArticleOutdatedNotice";
 
 export type Post = {
     id: string;
@@ -40,6 +42,7 @@ export type Post = {
     likes: number;
     comments: number;
     commentId: string;
+    isOriginal: boolean;
     createdAt: string;
     updatedAt: string;
 };
@@ -75,6 +78,8 @@ const ArticleView = ({post}: { post: Post }) => {
                             readingTime={readingTime}
                         />
                         <UserReadReporter articleId={post.id}/>
+                        <ArticleOutdatedNotice publishDate={post.createdAt}
+                                               lastUpdated={post.updatedAt}/>
                         <AiSummaryBlock aiSummary={post.aiSummary}/>
                         <ReactMarkdown
                             className={styles.markdown}
@@ -158,11 +163,27 @@ const ArticleView = ({post}: { post: Post }) => {
                                 blockquote({...props}) {
                                     return <blockquote className={styles.blockquote} {...props} />;
                                 },
+                                ul({node, ...props}) {
+                                    return <ul className={styles.ul} {...props} />;
+                                },
+                                li({node, ...props}) {
+                                    return <li className={styles.li} {...props} />;
+                                }
                             }}
                         >
                             {post.content}
                         </ReactMarkdown>
                     </ArticleScrollSync>
+                    {
+                        post.isOriginal && (
+                            <CopyrightNotice
+                                author={post.authorName}
+                                year={new Date(post.createdAt).getFullYear()}
+                                additionalText={"转载请注明出处并遵循 CC BY 许可协议条款"}
+                                articleTitle={post.title}
+                            />
+                        )
+                    }
                 </main>
             </div>
         </div>

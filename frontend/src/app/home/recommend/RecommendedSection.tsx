@@ -23,7 +23,39 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({recommendations}
             animate={{opacity: 1, y: 0}}
             transition={{duration: 0.5}}
         >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* 移动端：横向滚动布局 */}
+            <div className="block md:hidden overflow-hidden -mx-4">
+                <div 
+                    className="flex gap-3 overflow-x-auto pb-4 px-4 scrollbar-hide"
+                    style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                        WebkitOverflowScrolling: 'touch',
+                    }}
+                >
+                    {recommendations?.map((item, index) => (
+                        <motion.div
+                            key={item.id}
+                            className="flex-none w-60"
+                            initial={{opacity: 0, x: 20}}
+                            animate={{opacity: 1, x: 0}}
+                            transition={{
+                                type: "spring",
+                                stiffness: 100,
+                                damping: 10,
+                                delay: index * 0.1,
+                            }}
+                        >
+                            <RecommendationCard item={item} isMobile={true}/>
+                        </motion.div>
+                    ))}
+                    {/* 移动端添加最后的间距 */}
+                    <div className="w-4 flex-none" />
+                </div>
+            </div>
+
+            {/* 桌面端：网格布局 */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-4 lg:gap-5">
                 {recommendations?.map((item, index) => (
                     <motion.div
                         key={item.id}
@@ -34,10 +66,10 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({recommendations}
                             stiffness: 100,
                             damping: 10,
                             delay: index * 0.1,
-                            bounce: 0.3,
+                            bounce: 0.2,
                         }}
                     >
-                        <RecommendationCard item={item}/>
+                        <RecommendationCard item={item} isMobile={false}/>
                     </motion.div>
                 ))}
             </div>

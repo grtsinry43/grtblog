@@ -1,0 +1,488 @@
+// 主色调
+@primary-color: #1890ff;
+@success-color: #52c41a;
+@warning-color: #faad14;
+@error-color: #f5222d;
+
+// 动画
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 容器样式
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  padding: 40px 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.initContent {
+  width: 100%;
+  max-width: 1000px;
+}
+
+// 步骤导航
+.stepsCard {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background-color: #fff;
+}
+
+.steps {
+  padding: 24px 0 8px;
+
+  :global {
+    .ant-steps-item-icon {
+      background: #f0f5ff;
+      border-color: @primary-color;
+    }
+
+    .ant-steps-item-active .ant-steps-item-icon {
+      background: @primary-color;
+    }
+
+    .ant-steps-item-finish .ant-steps-item-icon {
+      background: #f6ffed;
+      border-color: @success-color;
+    }
+
+    .ant-steps-item-title {
+      font-weight: 500;
+    }
+  }
+}
+
+// 步骤内容
+.stepsContent {
+  margin-top: 16px;
+  margin-bottom: 24px;
+  min-height: 400px;
+  display: flex;
+  justify-content: center;
+}
+
+.fadeIn {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+// 步骤操作按钮
+.stepsAction {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  gap: 16px;
+}
+
+.prevButton {
+  min-width: 100px;
+  height: 40px;
+  border-radius: 6px;
+}
+
+.nextButton, .finishButton {
+  min-width: 100px;
+  height: 40px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, @primary-color, #36cfc9);
+  border: none;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
+  }
+}
+
+// 欢迎页样式
+.welcomeCard {
+  width: 100%;
+  max-width: 800px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.welcomeContent {
+  padding: 0;
+}
+
+.welcomeHeader {
+  text-align: center;
+  padding: 32px 24px 24px;
+}
+
+.welcomeLogo {
+  margin-bottom: 24px;
+}
+
+.logoCircle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, @primary-color, #36cfc9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.3);
+}
+
+.logoIcon {
+  font-size: 36px;
+  color: #fff;
+}
+
+.welcomeTitle {
+  margin-bottom: 8px !important;
+  color: #262626;
+  font-weight: 600;
+}
+
+.welcomeSubtitle {
+  font-size: 16px;
+  color: #8c8c8c;
+  margin-bottom: 0 !important;
+}
+
+.welcomeImageContainer {
+  position: relative;
+  margin: 0 0 32px;
+  overflow: hidden;
+}
+
+.welcomeImage {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.imageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+.featuresList {
+  padding: 0 32px 32px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  transition: all 0.3s;
+
+  &:hover {
+    background-color: #f0f5ff;
+    transform: translateY(-2px);
+  }
+}
+
+.featureIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, @primary-color, #36cfc9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+
+  :global {
+    .anticon {
+      font-size: 20px;
+      color: #fff;
+    }
+  }
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+
+  :global {
+    .ant-typography {
+      line-height: 1.5;
+    }
+  }
+}
+
+// 表单卡片样式
+.formCard {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.stepTitle {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.stepIcon {
+  margin-right: 8px;
+  color: @primary-color;
+}
+
+.formInput, .formTextarea, .formSelect {
+  border-radius: 6px;
+
+  &:hover, &:focus {
+    border-color: @primary-color;
+  }
+}
+
+.avatarSection {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.avatarPreview {
+  background: linear-gradient(135deg, @primary-color, #36cfc9);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+}
+
+.avatarUpload {
+  margin-left: 24px;
+}
+
+.uploadButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadIcon {
+  font-size: 24px;
+  color: #8c8c8c;
+}
+
+.uploadText {
+  margin-top: 8px;
+}
+
+// 主题选择样式
+.themeCard {
+  width: 100%;
+  max-width: 800px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.themeDescription {
+  margin-bottom: 24px !important;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.themeRadioGroup {
+  width: 100%;
+}
+
+.themeRadio {
+  width: 100%;
+  margin-right: 0;
+
+  :global {
+    .ant-radio {
+      position: absolute;
+      opacity: 0;
+    }
+  }
+}
+
+.themeOption {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s;
+  position: relative;
+  border: 2px solid transparent;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.selectedTheme {
+  border-color: @primary-color;
+  box-shadow: 0 8px 24px rgba(24, 144, 255, 0.2);
+}
+
+.themePreview {
+  height: 160px;
+  overflow: hidden;
+}
+
+.themeHeader {
+  height: 32px;
+  line-height: 32px;
+  padding: 0 16px;
+  font-weight: bold;
+}
+
+.themeContent {
+  display: flex;
+  height: calc(100% - 32px);
+}
+
+.themeSidebar {
+  width: 20%;
+  height: 100%;
+}
+
+.themeMain {
+  width: 80%;
+  height: 100%;
+}
+
+.themeInfo {
+  padding: 12px;
+}
+
+.themeName {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.themeDesc {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.themeSelected {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: @primary-color;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  :global {
+    .anticon {
+      color: #fff;
+      font-size: 14px;
+    }
+  }
+}
+
+// 完成页样式
+.completeCard {
+  width: 100%;
+  max-width: 800px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.successIcon {
+  font-size: 72px;
+  color: @success-color;
+  margin-bottom: 24px;
+}
+
+.successTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.successSubtitle {
+  font-size: 16px;
+  color: #8c8c8c;
+  margin-top: 8px;
+}
+
+.successButton {
+  min-width: 160px;
+  height: 48px;
+  font-size: 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, @success-color, #73d13d);
+  border: none;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(82, 196, 26, 0.4);
+  }
+}
+
+.completeTips {
+  margin-top: 40px;
+}
+
+.tipsTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #595959;
+}
+
+.tipsList {
+  margin-top: 24px;
+}
+
+.tipCard {
+  text-align: center;
+  padding: 24px 16px;
+  border-radius: 8px;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.tipIcon {
+  font-size: 32px;
+  color: @primary-color;
+  margin-bottom: 16px;
+}
+
+.tipTitle {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.tipDesc {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+

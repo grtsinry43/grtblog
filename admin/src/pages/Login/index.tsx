@@ -2,6 +2,7 @@ import UserController from '@/services/user/UserController';
 import { history } from '@@/exports';
 import { Button, Checkbox, Form, Input, message } from 'antd';
 import React, { useState } from 'react';
+import loginBg from '@/assets/login-bg.jpg';
 // @ts-ignore
 import ReactCanvasNest from 'react-canvas-nest';
 import styles from './Index.module.css';
@@ -54,13 +55,23 @@ const Login: React.FC = () => {
         }}
       />
       <div className={styles.formContainer}>
+        <img
+          src={loginBg}
+          alt="login-bg"
+          className={styles.loginBg}
+          style={{
+            zIndex: 0,
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
         <div className={styles.leftContainer}>
-          <div className={styles.title}>Grtblog</div>
-          <div className={styles.subTitle}> 今天，又要书写什么故事呢？</div>
         </div>
         <Form onFinish={onFinish} className={styles.rightContainer}>
-          <div className={styles.rightTitle}> 欢迎登录</div>
-          <div className={styles.rightSubTitle}>Welcome to Grtblog</div>
+          <div className={styles.rightTitle}> 欢迎回来</div>
+          <div className={styles.rightSubTitle}>今天，又要书写什么故事呢？</div>
           <Form.Item
             name="userEmail"
             rules={[{ required: true, message: '请输入用户名' }]}

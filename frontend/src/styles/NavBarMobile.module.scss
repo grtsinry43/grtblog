@@ -6,18 +6,25 @@
 
 .navbar {
   width: 100%;
+  // 参考桌面端的毛玻璃效果
   background-color: rgba(var(--background), 0.3);
   backdrop-filter: blur(10px) saturate(180%);
   -webkit-backdrop-filter: blur(10px) saturate(180%);
   color: rgb(var(--foreground));
-  padding: 10px;
+  padding: 12px 16px;  // 适配移动端
   position: sticky;
   top: 0;
   z-index: 10;
   border-bottom: 1px solid rgba(var(--foreground), 0.1);
   transition: all 0.2s ease;
+  // 增强阴影系统
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03),
+    0 0 0 1px rgba(var(--foreground), 0.02);
 }
 
+// 保留原来的网格背景，稍作优化
 .navbar::before {
   content: "";
   position: absolute;
@@ -37,9 +44,11 @@
   );
   background-size: 20px 20px;
   pointer-events: none;
-  opacity: 1;
+  opacity: 0.1;
+  animation: subtle-drift 20s linear infinite;
 }
 
+// 保留原来的噪声纹理
 .navbar::after {
   content: "";
   position: absolute;
@@ -52,8 +61,18 @@
   pointer-events: none;
 }
 
+@keyframes subtle-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 20px; }
+}
+
 .navbar.scrolled {
   background-color: rgba(var(--background), 0.7);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(var(--foreground), 0.04);
+  border-bottom-color: rgba(var(--foreground), 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -72,194 +91,365 @@
 }
 
 .navbarContainer {
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.avatarWrapper {
-  cursor: pointer;
-}
-
-.avatar {
-  border: 1px solid rgb(var(--border));
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-}
-
-.navItemContainer {
-  display: flex;
-  justify-content: center;
-  flex-grow: 1;
-}
-
-.navItemWrapper {
   position: relative;
 }
 
-.navItemLink {
-  text-decoration: none;
+// 汉堡菜单按钮样式
+.menuButton {
+  position: relative;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 8px;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 10px;
+    background: rgba(var(--primary), 0.08);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: -1;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+  }
 }
 
-.navItem {
-  margin: 0 15px;
+// 按钮组样式
+.buttonGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;  // 移动端更紧凑的间距
+}
+
+// 统一的按钮样式
+.iconButton {
+  position: relative;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 10px;
+    background: rgba(var(--primary), 0.08);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: -1;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+  }
+  
+  &:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 2px 8px rgba(var(--primary), 0.15);
+  }
+  
+  &:active {
+    transform: translateY(0) scale(0.95);
+  }
+}
+
+// 头像包装器
+.avatarWrapper {
   cursor: pointer;
+  position: relative;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, 
+      rgba(var(--primary), 0.08), 
+      rgba(var(--primary), 0.04), 
+      rgba(var(--primary), 0.08)
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: -1;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+    animation: gentle-pulse 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.03); opacity: 0.5; }
+}
+
+// 导航面板样式
+.navigationPanel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--background), 0.95) 0%,
+    rgba(var(--background), 0.98) 100%
+  );
+  backdrop-filter: blur(16px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(var(--foreground), 0.05);
+  border-radius: 0 0 16px 16px;
+  z-index: 40;
+  overflow: hidden;
+  
+  // 添加装饰纹理
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+                    to right,
+                    rgba(255, 255, 255, 0.05) 1px,
+                    transparent 1px
+    ),
+    linear-gradient(
+                    to bottom,
+                    rgba(255, 255, 255, 0.05) 1px,
+                    transparent 1px
+    );
+    background-size: 15px 15px;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+}
+
+// 面板内容
+.panelContent {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 16px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+// 导航项样式
+.navItem {
+  display: block;
+  padding: 12px 8px;
   color: rgb(var(--foreground));
   text-decoration: none;
   font-size: 16px;
-  transition: color 0.2s ease;
-
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  position: relative;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--primary), 0.15),
+      rgba(var(--primary), 0.08)
+    );
+    transition: width 0.25s ease;
+    border-radius: 8px 0 0 8px;
+  }
+  
   &:hover {
     color: rgb(var(--primary));
+    background-color: rgba(var(--primary), 0.06);
+    transform: translateX(4px);
+    
+    &::before {
+      width: 4px;
+    }
   }
 }
 
-.underlineAnimation {
-  position: relative;
-  display: inline-block;
-}
-
-.underlineAnimation::after {
-  content: '';
-  position: absolute;
-  width: 0;
-  height: 2px;
-  bottom: 0;
-  left: 0;
-  background-color: currentColor;
-  transition: width 0.3s ease;
-}
-
-.underlineAnimation:hover::after {
-  width: 100%;
-}
-
-.glowAnimation {
-}
-
-@keyframes glow {
-  0% {
-    text-shadow: 0 0 10px rgba(var(--primary), 0.5);
-  }
-  50% {
-    text-shadow: 0 0 20px rgba(var(--primary), 1);
-  }
-  100% {
-    text-shadow: 0 0 10px rgba(var(--primary), 0.5);
-  }
-}
-
-.glowAnimation:hover {
-  animation: glow 1s forwards;
-  color: rgb(var(--primary));
-}
-
-.navbarContent {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.searchWrapper, .githubWrapper, .themeToggleWrapper, .loginButtonWrapper {
-  display: flex;
-  align-items: center;
-}
-
-.search {
-  position: relative;
-}
-
-.searchIcon {
-  color: rgb(var(--muted-foreground));
-  cursor: pointer;
-}
-
-.githubLink,
-.themeToggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: rgb(var(--foreground));
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: rgb(var(--primary));
-  }
-}
-
-.loginButton {
-  color: var(--foreground);
-  margin: auto 0;
-  cursor: pointer;
-  border: rgba(var(--foreground), 0.1) 1px solid;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: rgba(var(--primary), 0.2);
-  }
-}
-
-.submenu {
-  position: absolute;
-  width: 6em;
-  margin-top: 1.7em;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(var(--background), 0.7);
-  backdrop-filter: blur(10px);
-  // -webkit-backdrop-filter: blur(5px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: var(--radius);
-  padding: 8px 0;
-  z-index: 10;
-}
-
-.submenuItemWrapper {
-  text-decoration: none;
-}
-
-.submenuItem {
+// 子导航项样式
+.subNavItem {
   display: block;
-  padding: 8px 16px;
-  margin: 4px 0;
-  color: rgb(var(--foreground));
-  text-align: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
+  padding: 8px 12px;
+  color: rgb(var(--muted-foreground));
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 400;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  position: relative;
+  margin-left: 16px;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 1px;
+    background: rgba(var(--primary), 0.3);
+    transition: all 0.2s ease;
+  }
+  
   &:hover {
-    background-color: rgba(var(--primary), 0.1);
+    color: rgb(var(--primary));
+    background-color: rgba(var(--primary), 0.04);
+    transform: translateX(2px);
+    
+    &::before {
+      width: 8px;
+      background: rgb(var(--primary));
+    }
   }
 }
 
-.subtitle {
-  position: absolute;
-  top: 220%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.5rem;
-  color: rgb(var(--foreground));
-  text-align: center;
-  padding: 1rem;
-  z-index: 5;
+// 子导航容器
+.subNavContainer {
+  margin-top: 8px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(var(--muted), 0.3);
+  space-y: 4px;
 }
 
+// 用户头像下拉菜单样式
+.userDropdown {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--background), 0.95) 0%,
+    rgba(var(--background), 0.98) 100%
+  );
+  backdrop-filter: blur(16px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(var(--foreground), 0.05);
+  border-radius: 12px;
+  padding: 8px;
+  width: 200px;
+}
+
+// 下拉菜单项
+.dropdownItem {
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  position: relative;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--primary), 0.1),
+      rgba(var(--primary), 0.05)
+    );
+    transition: width 0.2s ease;
+    border-radius: 6px 0 0 6px;
+  }
+  
+  &:hover {
+    background-color: rgba(var(--primary), 0.08);
+    
+    &::before {
+      width: 3px;
+    }
+  }
+  
+  &.destructive:hover {
+    background-color: rgba(var(--destructive), 0.08);
+    color: rgb(var(--destructive));
+    
+    &::before {
+      background: linear-gradient(
+        90deg,
+        rgba(var(--destructive), 0.1),
+        rgba(var(--destructive), 0.05)
+      );
+    }
+  }
+}
+
+// 标题区域样式
+.titleArea {
+  flex: 1;
+  padding-left: 16px;
+  position: relative;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(
+      to bottom,
+      rgba(var(--primary), 0.6),
+      rgba(var(--primary), 0.3)
+    );
+    border-radius: 2px;
+    opacity: 0.8;
+  }
+}
+
+// 标题文本样式
+.titleType {
+  font-size: 12px;
+  color: rgb(var(--muted-foreground));
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.titleText {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(var(--foreground));
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 背景装饰
 .background {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, rgba(var(--primary), 0.1) 0%, rgba(var(--background), 0.1) 100%);
+  background: radial-gradient(
+    circle at center,
+    rgba(var(--primary), 0.02) 0%,
+    rgba(var(--primary), 0.005) 50%,
+    transparent 100%
+  );
   z-index: 1;
   pointer-events: none;
 }
 
-.popupContent {
-  background: rgba(var(--background), 0.7);
-}

@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://blog.grtsinry43.com
+
+# Sitemaps
+Sitemap: https://blog.grtsinry43.com/sitemap.xml

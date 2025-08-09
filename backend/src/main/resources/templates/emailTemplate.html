@@ -5,92 +5,198 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Comment Reply Notification</title>
         <style>
+            :root {
+                --primary-color: #3b82f6;
+                --secondary-color: #1e40af;
+                --text-color: #333;
+                --light-text: #666;
+                --border-color: #e5e7eb;
+                --bg-color: rgba(255, 255, 255, 0.85);
+                --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
             body {
-                font-family: Arial, sans-serif;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 background-image: url("https://dogeoss.grtsinry43.com/background/045.webp");
                 background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                color: var(--text-color);
+                line-height: 1.6;
                 margin: 0;
                 padding: 0;
             }
 
             .bg-container {
-                background-color: rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(5px);
+                background-color: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(8px);
                 min-height: 100vh;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                padding: 30px 15px;
             }
 
             .main-container {
                 width: 700px;
-                min-height: 400px;
-                margin: 20px;
-                padding: 20px 40px;
-                border: 1px solid #ddd;
-                border-radius: 10px;
-                background-color: rgba(249, 249, 249, 0.60);
-                backdrop-filter: blur(10px);
-            }
-
-            @media (max-width: 800px) {
-                .main-container {
-                    max-width: 800px;
-                    padding: 20px;
-                }
+                margin: 0 auto;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: var(--shadow);
             }
 
             .header {
+                background-color: var(--primary-color);
+                color: white;
+                padding: 25px 20px;
                 text-align: center;
-                margin-bottom: 20px;
+                position: relative;
+            }
+
+            .header-content {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 15px;
             }
 
             .header img {
-                height: 50px;
-                width: 50px;
+                height: 60px;
+                width: 60px;
                 border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
             }
 
             .header h1 {
                 font-size: 24px;
-                margin: 10px 0;
+                font-weight: 600;
+                margin: 0;
             }
 
             .content {
-                margin-bottom: 20px;
+                background-color: var(--bg-color);
+                padding: 30px;
+                border-bottom: 1px solid var(--border-color);
             }
 
-            .footer {
-                text-align: center;
-                font-size: 12px;
-                color: #777;
+            .notification-title {
+                font-size: 18px;
+                font-weight: 500;
+                margin-bottom: 20px;
+                color: var(--secondary-color);
+                padding-bottom: 10px;
+                border-bottom: 1px solid var(--border-color);
             }
 
             .user-info {
                 display: flex;
                 align-items: center;
-                font-size: small;
+                margin: 20px 0;
+                padding: 12px;
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
 
             .user-avatar {
-                height: 30px;
-                width: 30px;
+                height: 40px;
+                width: 40px;
                 border-radius: 50%;
+                border: 2px solid var(--primary-color);
+            }
+
+            .user-details {
+                margin-left: 15px;
+                font-size: 14px;
+                color: var(--light-text);
+            }
+
+            .comment-section {
+                background-color: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 15px 0;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            }
+
+            .comment-label {
+                font-size: 14px;
+                color: var(--light-text);
+                margin-bottom: 8px;
+            }
+
+            .comment-content {
+                padding: 10px;
+                background-color: #f9fafb;
+                border-radius: 6px;
+                margin-top: 5px;
+                font-size: 15px;
             }
 
             .action-container {
                 text-align: center;
-                margin-top: 20px;
+                margin: 25px 0 10px;
             }
 
             .more-button {
-                padding: 5px 10px;
-                border: 1px solid #007bff;
-                border-radius: 5px;
-                background-color: #007bff;
-                color: inherit;
+                display: inline-block;
+                padding: 10px 24px;
+                background-color: var(--primary-color);
+                color: white;
                 text-decoration: none;
-                cursor: pointer;
+                border-radius: 8px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .more-button:hover {
+                background-color: var(--secondary-color);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            }
+
+            .footer {
+                background-color: #f9fafb;
+                padding: 20px;
+                text-align: center;
+                font-size: 13px;
+                color: var(--light-text);
+            }
+
+            .footer p {
+                margin: 5px 0;
+            }
+
+            .footer a {
+                color: var(--primary-color);
+                text-decoration: none;
+                font-weight: 500;
+            }
+
+            .footer a:hover {
+                text-decoration: underline;
+            }
+
+            @media (max-width: 768px) {
+                .main-container {
+                    width: 100%;
+                }
+
+                .header-content {
+                    flex-direction: column;
+                }
+
+                .content {
+                    padding: 20px;
+                }
             }
         </style>
     </head>
@@ -98,38 +204,46 @@
         <div class="bg-container">
             <div class="main-container">
                 <div class="header">
-                    <img src="https://dogeoss.grtsinry43.com/img/author.jpeg" alt="Logo">
-                    <h1>Grtsinry43's Blog | 邮件通知 </h1>
+                    <div class="header-content">
+                        <img src="https://dogeoss.grtsinry43.com/img/author.jpeg" alt="Logo">
+                        <h1>Grtsinry43's Blog | 邮件通知</h1>
+                    </div>
                 </div>
+
                 <div class="content">
-                    <h2 style="font-size: medium"> 亲爱的朋友 <span th:text="${name}"></span>, 您在
-                        <span th:text="${type}"></span>「
-                        <span th:text="${title}"></span>」的评论收到了新的回复哇 </h2>
+                    <h2 class="notification-title">
+                        亲爱的朋友 <span th:text="${name}"></span>,
+                        您在 <span th:text="${type}"></span>「<span th:text="${title}"></span>」的评论收到了新的回复
+                    </h2>
+
                     <div class="user-info">
-                        <img class="user-avatar" th:src="${avatarUrl}" alt="Logo">
-                        <div style="margin-left: 10px"><span th:text="${replyName}"></span> 在 <span
-                                th:text="${replyTime}"></span> 回复了您的评论
+                        <img class="user-avatar" th:src="${avatarUrl}" alt="用户头像">
+                        <div class="user-details">
+                            <span th:text="${replyName}"></span> 在 <span th:text="${replyTime}"></span> 回复了您的评论
                         </div>
                     </div>
-                    <div style="margin-top: 10px">
-                        <span th:utext="${replyContent}"></span>
+
+                    <div class="comment-section">
+                        <div class="comment-label">回复内容：</div>
+                        <div class="comment-content" th:utext="${replyContent}"></div>
                     </div>
-                    <div>
-                        <span> 您的原评论内容：</span>
-                        <div style="margin-top: 10px">
-                            <span th:utext="${commentContent}"></span>
-                        </div>
+
+                    <div class="comment-section">
+                        <div class="comment-label">您的原评论内容：</div>
+                        <div class="comment-content" th:utext="${commentContent}"></div>
                     </div>
+
                     <div class="action-container">
                         <a class="more-button" th:href="${url}">
                             点击查看详情
                         </a>
                     </div>
                 </div>
+
                 <div class="footer">
                     <p>Powered by Grtblog. 此邮件由系统自动发出，请勿回复。</p>
                     <p>Copyright &copy; 2022-2025 Grtsinry43's Blog. All rights reserved.</p>
-                    <p><a href="https://blog.grtsinry43.com"> 前往主站 </a></p>
+                    <p><a href="https://blog.grtsinry43.com">前往主站</a></p>
                 </div>
             </div>
         </div>

@@ -10,20 +10,22 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
+      staggerChildren: 0.1,
     },
   },
 };
 
 const itemMotion = {
-  hidden: { opacity: 0, x: -20, filter: 'blur(10px)', boxShadow: '0 0 10px rgba(var(--foreground), 0.5)' },
+  hidden: { 
+    opacity: 0, 
+    y: 8,
+  },
   visible: {
     opacity: 1,
-    filter: 'blur(0px)',
-    boxShadow: 'none',
-    x: 0,
+    y: 0,
     transition: {
-      duration: 1,
+      duration: 0.4,
+      ease: "easeOut",
     },
   },
 };
@@ -34,10 +36,10 @@ interface RecentArticleMotionProps {
 
 export default function RecentArticleMotion({ list }: RecentArticleMotionProps) {
   const ref = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
+  
   const inView = useInView(ref, {
     once: true,
+    margin: "-20px",
   });
 
   return (
@@ -47,12 +49,13 @@ export default function RecentArticleMotion({ list }: RecentArticleMotionProps) 
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
     >
-      <div className="relative">
+      <div className="space-y-0">
         {list.map((item: Article, index: number) => (
-          <motion.div key={index} variants={itemMotion}>
-            <div className="relative">
-              <RecentArticleItem article={item} />
-            </div>
+          <motion.div 
+            key={`${item.id}-${index}`} 
+            variants={itemMotion}
+          >
+            <RecentArticleItem article={item} />
           </motion.div>
         ))}
       </div>

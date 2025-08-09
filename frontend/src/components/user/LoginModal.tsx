@@ -3,8 +3,8 @@
 import React, {useEffect, useState} from 'react';
 import {AnimatePresence, motion} from 'framer-motion';
 import {Button, IconButton, TextField, Tooltip} from '@radix-ui/themes';
+import { X } from 'lucide-react';
 import styles from '@/styles/LoginModal.module.scss';
-import {CloseIcon} from 'next/dist/client/components/react-dev-overlay/internal/icons/CloseIcon';
 import {clsx} from 'clsx';
 import {varela_round, noto_sans_sc} from '@/app/fonts/font';
 import {MailIcon} from 'lucide-react';
@@ -127,7 +127,7 @@ const LoginModal = ({isOpen, onClose}: { isOpen: boolean; onClose: () => void })
                                 }}>
                                     <motion.div whileHover={{scale: 1.05}} whileTap={{scale: 0.95}}>
                                         <Button variant="ghost" onClick={onClose}>
-                                            <CloseIcon/>
+                                            <X/>
                                         </Button>
                                     </motion.div>
                                 </div>
@@ -258,8 +258,7 @@ const LoginModal = ({isOpen, onClose}: { isOpen: boolean; onClose: () => void })
                                                     <div className="text-sm text-center">
                                                         忘记密码了？ <Link
                                                         href="/my/reset-password-request"
-                                                        color={"#184aff"}
-                                                        onClick={() => onClose()}> 点击这里重置密码 </Link>
+                                                        color={"#184aff"}> 点击这里重置密码 </Link>
                                                     </div>
                                                     <div className={styles.formActions}>
                                                         <Button style={{

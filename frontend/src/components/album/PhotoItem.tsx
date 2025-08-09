@@ -18,8 +18,8 @@ const PhotoItem = forwardRef<HTMLDivElement, PhotoItemProps>(({photo, setIsOpene
             initial={{opacity: 0, scale: 0.9}}
             animate={{opacity: 1, scale: 1}}
             transition={{type: "spring", stiffness: 300, damping: 20}}
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
+            
+            
             className="relative aspect-[4/3] overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
             style={{backgroundColor: photo.shade}}
             onClick={() => setIsOpened(true)}
@@ -30,8 +30,8 @@ const PhotoItem = forwardRef<HTMLDivElement, PhotoItemProps>(({photo, setIsOpene
                         initial={{opacity: 1}}
                         exit={{opacity: 0}}
                         transition={{duration: 0.5}}
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
+                        
+                        
                         className="absolute inset-0 flex items-center justify-center"
                     >
                         <div
@@ -56,8 +56,8 @@ const PhotoItem = forwardRef<HTMLDivElement, PhotoItemProps>(({photo, setIsOpene
                     clipPath: {duration: 1, ease: "easeInOut"},
                     filter: {duration: 0.8, ease: "easeOut"},
                 }}
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
+                
+                
                 className="w-full h-full"
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -37,3 +37,7 @@ src/main/resources/application-secret.yml
 
 # Logs
 logs
+
+uploads/
+
+plugins/

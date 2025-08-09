@@ -1,12 +1,11 @@
-import React from 'react';
-import {getThinkingList, Thinking} from "@/api/thinkings";
-import ThinkingNote from "@/components/thinking/ThinkingNote";
-import {clsx} from "clsx";
-import {noto_serif_sc_bold} from "@/app/fonts/font";
-import FloatingMenu from "@/components/menu/FloatingMenu";
+import {getThinkingList, type Thinking} from "@/api/thinkings"
+import ThinkingNote from "@/components/thinking/ThinkingNote"
+import {clsx} from "clsx"
+import {noto_serif_sc_bold} from "@/app/fonts/font"
+import FloatingMenu from "@/components/menu/FloatingMenu"
 
 const AllThinkingPage = async () => {
-    const thinkingData: Thinking[] = await getThinkingList({next: {revalidate: 60}});
+    const thinkingData: Thinking[] = await getThinkingList({next: {revalidate: 60}})
     return (
         <div className="min-h-screen p-8">
             <h1 className="text-4xl font-bold text-center mb-4"> 思考 </h1>
@@ -22,4 +21,4 @@ const AllThinkingPage = async () => {
     );
 };
 
-export default AllThinkingPage;
+export default AllThinkingPage

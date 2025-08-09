@@ -1,45 +1,143 @@
 .tableAuto {
-  border-collapse: collapse;
-  margin: 0 auto; /* Center the table */
-  border-radius: 0.5em;
-  padding: 1em;
-  max-width: 100%; /* Set maximum width */
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.5rem 0;
+  width: auto;
+  max-width: fit-content;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: rgba(var(--foreground), 0.03);
+  transition: all 0.2s ease;
 }
 
-.tableAuto tr {
-  border-radius: 0.5em;
+.tableAuto thead {
+  position: relative;
 }
 
-.tableAuto th,
-.tableAuto td {
-  border: 1px solid var(--foreground);
-  padding: 3px 20px;
-  min-width: 100px; /* Set minimum width */
-  max-width: 300px; /* Set maximum width */
-  word-wrap: break-word; /* Allow word wrapping */
-  text-align: left; /* Align text to the left */
-}
-
-.tableAuto th:first-child,
-.tableAuto td:first-child {
-  border-radius: 0.5em 0 0 0;
-}
-
-.tableAuto th:last-child,
-.tableAuto td:last-child {
-  border-radius: 0 0.5em 0 0;
+.tableAuto thead::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+          rgba(var(--primary), 0) 0%,
+          rgba(var(--primary), 0.5) 50%,
+          rgba(var(--primary), 0) 100%
+  );
 }
 
 .tableAuto th {
-  background-color: rgba(var(--primary), 0.3);
-  text-align: center;
+  background-color: rgba(var(--primary), 0.15);
+  color: rgb(var(--foreground));
+  font-weight: 600;
+  text-align: left;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
   transition: background-color 0.3s ease;
+  position: relative;
 }
 
-.tableAuto tr:hover {
+.tableAuto th:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: 0;
+  height: 50%;
+  width: 1px;
   background-color: rgba(var(--foreground), 0.1);
 }
 
-.tableAuto {
-  background: rgba(var(--foreground), 0.05);
+.tableAuto td {
+  padding: 0.875rem 1.25rem;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(var(--foreground), 0.08);
+  transition: background-color 0.2s ease;
+  min-width: 100px;
+  max-width: 300px;
+  word-wrap: break-word;
+  vertical-align: middle;
 }
+
+.tableAuto tr:last-child td {
+  border-bottom: none;
+}
+
+.tableAuto td:not(:last-child) {
+  border-right: 1px solid rgba(var(--foreground), 0.05);
+}
+
+.tableAuto tbody tr {
+  transition: all 0.2s ease;
+}
+
+.tableAuto tbody tr:hover {
+  background-color: rgba(var(--primary), 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(var(--primary), 0.1);
+}
+
+/* Rounded corners for specific cells */
+.tableAuto thead th:first-child {
+  border-top-left-radius: 0.75rem;
+}
+
+.tableAuto thead th:last-child {
+  border-top-right-radius: 0.75rem;
+}
+
+.tableAuto tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 0.75rem;
+}
+
+.tableAuto tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tableAuto {
+    border-radius: 0.5rem;
+    margin: 0.5rem auto;
+  }
+
+  .tableAuto th,
+  .tableAuto td {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .tableAuto th {
+    white-space: nowrap;
+  }
+}
+
+/* Dark mode enhancements */
+.dark .tableAuto {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+}
+
+.dark .tableAuto th {
+  background-color: rgba(var(--primary), 0.2);
+}
+
+.dark .tableAuto tbody tr:hover {
+  background-color: rgba(var(--primary), 0.1);
+}
+
+/* Empty cell styling */
+.tableAuto td:empty::before {
+  content: "—";
+  color: rgba(var(--foreground), 0.3);
+}
+
+/* Zebra striping (optional - uncomment if desired) */
+/*
+.tableAuto tbody tr:nth-child(even) {
+  background-color: rgba(var(--foreground), 0.02);
+}
+*/

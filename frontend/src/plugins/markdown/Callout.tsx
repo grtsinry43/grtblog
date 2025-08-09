@@ -16,7 +16,7 @@ const customCalloutRemarkPlugin = () => {
                         title: title || "提示",
                     },
                 };
-                console.log(node);
+                // console.log(node);
             }
             if (node.type === "containerDirective" && node.name === "warning") {
                 const {title} = node.attributes || {};
@@ -27,7 +27,7 @@ const customCalloutRemarkPlugin = () => {
                         title: title || "提示",
                     },
                 };
-                console.log(node);
+                // console.log(node);
             }
             // console.log(tree);
         });

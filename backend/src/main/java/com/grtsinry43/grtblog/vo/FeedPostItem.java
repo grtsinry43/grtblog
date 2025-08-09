@@ -1,5 +1,6 @@
 package com.grtsinry43.grtblog.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.grtsinry43.grtblog.entity.Article;
 import com.grtsinry43.grtblog.entity.Page;
 import com.grtsinry43.grtblog.entity.StatusUpdate;
@@ -25,6 +26,12 @@ public class FeedPostItem {
     private String url;
     private LocalDateTime publishedAt;
     private String cover;
+
+    @JsonProperty("publishedAt")
+    public String getPublishedAt() {
+        // 格式化时间：2024-10-27 19:43:00
+        return publishedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
 
     public static List<FeedPostItem> buildFeed(List<Article> articles, List<StatusUpdate> statusUpdates, List<Page> pages, String websiteUrl) {
         List<FeedPostItem> feedPostItems = new ArrayList<>();

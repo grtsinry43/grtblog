@@ -72,6 +72,27 @@
         transition-duration: 200ms;
         transition-timing-function: ease-in-out;
     }
+
+    /* 推荐区域滚动条隐藏 */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* 推荐卡片hover效果增强 */
+    .recommend-card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .recommend-card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .dark .recommend-card-hover:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    }
 }
 
 .anchorFocus {
@@ -120,6 +141,39 @@
         mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
         -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
     }
+    
+    /* 文章列表精致样式 */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .article-item-elegant {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .article-item-elegant::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(var(--primary), 0.03),
+            transparent
+        );
+        transition: left 0.5s;
+    }
+    
+    .article-item-elegant:hover::before {
+        left: 100%;
+    }
 }
 
 @layer base {
@@ -136,3 +190,169 @@
     background-color: rgba(var(--primary), 0.3) !important;
     text-shadow: 1px 1px 2px rgba(129, 129, 129, 0.3);
 }
+
+@keyframes blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+.typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background-color: currentColor;
+    margin-left: 2px;
+    animation: blink 1s step-end infinite;
+}
+
+.mask-image-fade {
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+}
+
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(var(--primary), 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(var(--primary), 0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shimmer-effect {
+    background: linear-gradient(
+            90deg,
+            rgba(var(--primary), 0.1) 25%,
+            rgba(var(--primary), 0.2) 50%,
+            rgba(var(--primary), 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite;
+}
+
+.nav-item-hover {
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-item-hover::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: rgb(var(--primary));
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+}
+
+.nav-item-hover:hover::after {
+    transform: translateX(0);
+}
+
+.glass-effect {
+    background: rgba(var(--background), 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(var(--border), 0.1);
+}
+
+.floating-animation {
+    animation: float 3s ease-in-out infinite;
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+/* 文章流优雅动画 */
+@keyframes elegant-entrance {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+        filter: blur(5px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+.elegant-entrance {
+    animation: elegant-entrance 0.6s ease-out;
+}
+
+/* 文章项目悬浮光晕效果 */
+@keyframes subtle-glow {
+    0% {
+        text-shadow: 0 0 5px rgba(var(--primary), 0);
+    }
+    100% {
+        text-shadow: 0 0 10px rgba(var(--primary), 0.3);
+    }
+}
+
+.article-title-glow:hover {
+    animation: subtle-glow 0.3s ease-out forwards;
+}
+
+/* 背景装饰动画 */
+@keyframes blob {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+.animate-blob {
+    animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+    animation-delay: 4s;
+}
+
+

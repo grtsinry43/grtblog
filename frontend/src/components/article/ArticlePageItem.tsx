@@ -34,87 +34,139 @@ const ArticlePageItem = ({post, isSummaryShow}: { post: ArticlePreview, isSummar
 
     return (
         <div className={article_font.className}>
-            <motion.div
-                style={{width: '100%', margin: '0 auto', perspective: '1000px', padding: '1em'}}
-                whileTap={{scale: 0.95}}
+            <motion.article
+                className="group relative py-8 transition-all duration-500 ease-out"
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
                 whileHover={{
-                    scale: 1.03,
-                    backgroundColor: 'rgba(var(--primary), 0.05)',
-                    borderRadius: '0.5em',
-                    padding: '1em',
-                    transition: {duration: 0.2},
+                    x: 8,
+                    transition: { duration: 0.3, ease: "easeOut" }
                 }}
-                transition={{type: 'spring', stiffness: 300, mass: 0.3}}
+                style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(var(--primary), 0.015) 100%)',
+                    borderLeft: '1px solid transparent',
+                }}
+                onHoverStart={() => {}}
+                onHoverEnd={() => {}}
             >
-                <Link href={`/posts/${post.shortUrl}`}>
-                    <h1 className="text-xl font-bold transition">{post.title}</h1>
+                {/* 悬浮时的左侧装饰线 */}
+                <motion.div
+                    className="absolute left-0 top-0 h-full w-0.5 bg-gradient-to-b from-transparent via-blue-500/60 to-transparent opacity-0 group-hover:opacity-100"
+                    initial={{scaleY: 0}}
+                    whileHover={{scaleY: 1}}
+                    transition={{duration: 0.4, ease: "easeOut"}}
+                />
+                
+                {/* 置顶标识 */}
+                {post.isTop && (
+                    <motion.div
+                        className="absolute -top-2 right-0 flex items-center text-amber-500 dark:text-amber-400"
+                        initial={{opacity: 0, scale: 0.8}}
+                        animate={{opacity: 1, scale: 1}}
+                        transition={{delay: 0.2}}
+                    >
+                        <PinTopIcon className="w-4 h-4 mr-1" />
+                        <span className="text-xs font-medium">置顶</span>
+                    </motion.div>
+                )}
+
+                <Link href={`/posts/${post.shortUrl}`} className="block group-hover:no-underline">
+                    {/* 标题 */}
+                    <motion.h2 
+                        className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
+                        whileHover={{
+                            textShadow: "0 0 8px rgba(59, 130, 246, 0.3)"
+                        }}
+                    >
+                        {post.title}
+                    </motion.h2>
+
+                    {/* 摘要 */}
                     <AnimatePresence>
                         {isSummaryShow && (
                             <motion.div
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-expect-error
-                                className="text-gray-500 text-sm mt-2"
-                                initial={{opacity: 0, y: -10}}
-                                animate={{opacity: 1, y: 0}}
-                                exit={{opacity: 0, y: -10}}
-                                transition={{duration: 0.3}}
+                                className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4 text-sm"
+                                initial={{opacity: 0, height: 0}}
+                                animate={{opacity: 1, height: 'auto'}}
+                                exit={{opacity: 0, height: 0}}
+                                transition={{duration: 0.3, ease: "easeInOut"}}
                             >
-                                {isMobile ? post.summary.length > 100 ? post.summary.slice(0, 100) + '...' : post.summary : post.summary}
+                                <span className="line-clamp-2">
+                                    {isMobile ? post.summary.length > 100 ? post.summary.slice(0, 100) + '...' : post.summary : post.summary}
+                                </span>
                             </motion.div>
                         )}
                     </AnimatePresence>
-                    <div className="commentMeta mt-2 text-sm text-gray-700 dark:text-gray-300">
-                        <div className="flex flex-wrap">
-                            <div className="flex items-center mr-4 mb-2">
-                                {
-                                    post.categoryShortUrl ? (
-                                        <Link href={`/categories/${post.categoryShortUrl}`}
-                                              className="underlineAnimation">
-                                            <HashtagIcon width={12} height={12} className="inline-block mr-1"/>
-                                            <span>{post.categoryName}</span>
-                                        </Link>
-                                    ) : (
-                                        <>
-                                            <HashtagIcon width={12} height={12} className="inline-block mr-1"/>
-                                            <span>{post.categoryName}</span>
-                                        </>
-                                    )
-                                }
-                            </div>
-                            <div className="flex items-center mr-4 mb-2">
-                                <Calendar width={12} height={12} className="inline-block mr-1"/>
-                                <span> {formattedCreatedDate}</span>
-                                {post.createdAt !== post.updatedAt &&
-                                    <span
-                                        className="text-xs text-gray-450 dark:text-gray-550"> （更新于 {formattedUpdatedDate}）</span>}
-                            </div>
-                            {post.tags && post.tags.split(',').map((tag, index) => (
-                                <Link href={`/tags/${tag}`} key={index}>
-                                    <div className="flex items-center mr-4 mb-2">
-                                        <TagIcon width={12} height={12} className="inline-block mr-1"/>
-                                        <span className="underlineAnimation"> {tag}</span>
-                                    </div>
+
+                    {/* 元数据 */}
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                        {/* 分类 */}
+                        <motion.div 
+                            className="flex items-center group/category"
+                            whileHover={{scale: 1.05}}
+                        >
+                            {post.categoryShortUrl ? (
+                                <Link href={`/categories/${post.categoryShortUrl}`}
+                                      className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <HashtagIcon className="w-3 h-3 mr-1" />
+                                    <span className="font-medium">{post.categoryName}</span>
                                 </Link>
-                            ))}
-                            <div className="flex items-center mr-4 mb-2">
-                                <Eye width={12} height={12} className="inline-block mr-1"/>
-                                <span> {post.views}</span>
+                            ) : (
+                                <div className="flex items-center">
+                                    <HashtagIcon className="w-3 h-3 mr-1" />
+                                    <span className="font-medium">{post.categoryName}</span>
+                                </div>
+                            )}
+                        </motion.div>
+
+                        {/* 时间 */}
+                        <div className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            <span>{formattedCreatedDate}</span>
+                            {post.createdAt !== post.updatedAt && (
+                                <span className="ml-1 text-gray-400 dark:text-gray-500">
+                                    (更新于 {formattedUpdatedDate})
+                                </span>
+                            )}
+                        </div>
+
+                        {/* 标签 */}
+                        {post.tags && post.tags.split(',').map((tag, index) => (
+                            <motion.div key={index} whileHover={{scale: 1.05}}>
+                                <Link href={`/tags/${tag}`} 
+                                      className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <TagIcon className="w-3 h-3 mr-1" />
+                                    <span>{tag}</span>
+                                </Link>
+                            </motion.div>
+                        ))}
+
+                        {/* 统计信息 */}
+                        <div className="flex items-center gap-3 ml-auto">
+                            <div className="flex items-center">
+                                <Eye className="w-3 h-3 mr-1" />
+                                <span>{post.views}</span>
                             </div>
-                            <div className="flex items-center mr-4 mb-2">
-                                <AiOutlineComment width={12} height={12} className="inline-block mr-1"/>
-                                <span> {post.comments}</span>
+                            <div className="flex items-center">
+                                <AiOutlineComment className="w-3 h-3 mr-1" />
+                                <span>{post.comments}</span>
                             </div>
-                            <div className="flex items-center mr-4 mb-2">
-                                <ThumbsUpIcon width={12} height={12} className="inline-block mr-1"/>
-                                <span> {post.likes}</span>
+                            <div className="flex items-center">
+                                <ThumbsUpIcon className="w-3 h-3 mr-1" />
+                                <span>{post.likes}</span>
                             </div>
                         </div>
                     </div>
-                    {post.isTop && (
-                        <PinTopIcon width={16} height={16} className="absolute right-4 bottom-4"/>
-                    )}
                 </Link>
-            </motion.div>
+
+                {/* 底部分隔线 - 更subtle的效果 */}
+                <motion.div 
+                    className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200/30 dark:via-gray-700/20 to-transparent"
+                    initial={{scaleX: 0}}
+                    animate={{scaleX: 1}}
+                    transition={{delay: 0.2, duration: 0.5}}
+                />
+            </motion.article>
         </div>
     );
 };

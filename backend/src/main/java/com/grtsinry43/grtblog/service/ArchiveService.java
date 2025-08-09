@@ -1,5 +1,6 @@
 package com.grtsinry43.grtblog.service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.grtsinry43.grtblog.entity.Article;
 import com.grtsinry43.grtblog.entity.StatusUpdate;
 import com.grtsinry43.grtblog.service.impl.ArticleServiceImpl;
@@ -121,6 +122,11 @@ public class ArchiveService {
         private String title;
         private String shortUrl;
         private String category;
-        private LocalDateTime createdAt;
+        private transient LocalDateTime createdAt;
+
+        @JsonProperty("createdAt")
+        public String getFormattedCreatedAt() {
+            return createdAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        }
     }
 }
