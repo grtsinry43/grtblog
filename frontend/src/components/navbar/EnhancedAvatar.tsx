@@ -5,6 +5,7 @@ import {motion, AnimatePresence, LayoutGroup} from "framer-motion"
 import {Avatar} from "@radix-ui/themes"
 import {format} from "date-fns"
 import Link from "next/link" // 引入 Link 组件
+import {createPortal} from "react-dom"
 
 // 假设这些是你项目中的本地模块
 // 如果路径不同，请相应修改
@@ -45,7 +46,7 @@ const SharedAvatar = ({
     >
         {/* 【链接修复】使用 Link 包裹 Avatar */}
         <Link href="/" aria-label="前往主页" className="block w-full h-full">
-            <Avatar size="3" radius="full" src={src} fallback="A" className="w-full h-full"/>
+            <Avatar size="3" radius="full" src={src} fallback="A" className="w-full h-full rounded-full"/>
         </Link>
 
         <AnimatePresence>
@@ -72,7 +73,13 @@ export function EnhancedAvatar({avatarSrc}: EnhancedAvatarProps) {
     const [userActivity, setUserActivity] = useState<UserActivity>({ok: 0})
     const [isOnline, setIsOnline] = useState<boolean>(false)
     const [showInfo, setShowInfo] = useState<boolean>(false)
+    const [mounted, setMounted] = useState(false)
     const isMobile = useIsMobile()
+
+    // 挂载状态
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // --- 数据获取和事件处理 ---
     useEffect(() => {
@@ -151,38 +158,39 @@ export function EnhancedAvatar({avatarSrc}: EnhancedAvatarProps) {
     const isExpandedCapsule = isOnline && !showInfo
 
     return (
-        <LayoutGroup>
-            {/* 1. 布局占位符 */}
-            <motion.div
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={handleClick}
-                data-enhanced-avatar-container
-                className="relative h-12 flex items-center cursor-pointer"
-                animate={{width: isExpandedCapsule ? 170 : 48}}
-                transition={transition}
-            >
-                {/* 2. 视觉层 */}
-                <AnimatePresence initial={false} mode="wait">
-                    {showInfo && isOnline ? (
-                        // --- 状态三：详情卡片（在线）---
-                        <motion.div
-                            key="card"
-                            className="absolute top-1/2 -translate-y-1/2 left-0 z-50 w-[calc(100vw-32px)] max-w-sm bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-2xl rounded-2xl"
-                            initial={{opacity: 0, scale: 0.85}}
-                            animate={{opacity: 1, scale: 1, transition}}
-                            exit={{opacity: 0, scale: 0.85, transition: {duration: 0.2}}}
-                        >
-                            <div className="p-4 space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <SharedAvatar src={avatarSrc} isOnline={isOnline} showDot={true}/>
-                                    <div className="flex-1">
-                                        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                                            当前在线
-                                        </h3>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400"> 康康他在干什么 👀 </p>
-                                    </div>
-                                    {isMobile && (
+        <>
+            {/* Portal 渲染的移动端卡片 */}
+            {mounted && isMobile && createPortal(
+                <AnimatePresence>
+                    {showInfo && isOnline && (
+                        <>
+                            {/* 移动端遮罩层 */}
+                            <motion.div
+                                key="backdrop"
+                                className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+                                initial={{opacity: 0}}
+                                animate={{opacity: 1}}
+                                exit={{opacity: 0}}
+                                onClick={() => setShowInfo(false)}
+                            />
+                            
+                            {/* 移动端卡片 */}
+                            <motion.div
+                                key="mobile-card"
+                                className="fixed bottom-4 left-4 right-4 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-2xl rounded-2xl max-h-[70vh] overflow-y-auto"
+                                initial={{opacity: 0, y: 100}}
+                                animate={{opacity: 1, y: 0, transition}}
+                                exit={{opacity: 0, y: 100, transition: {duration: 0.2}}}
+                            >
+                                <div className="p-4 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <SharedAvatar src={avatarSrc} isOnline={isOnline} showDot={true}/>
+                                        <div className="flex-1">
+                                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                                                当前在线
+                                            </h3>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400"> 康康他在干什么 👀 </p>
+                                        </div>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation()
@@ -192,80 +200,157 @@ export function EnhancedAvatar({avatarSrc}: EnhancedAvatarProps) {
                                         >
                                             ✕
                                         </button>
-                                    )}
-                                </div>
+                                    </div>
 
-                                <div>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                                        <span
-                                            className="font-medium text-gray-900 dark:text-white">grtsinry43</span>{" "}
-                                        正在使用 {" "}
-                                        <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      {userActivity.process || "未知应用"}
-                    </span>
-                                    </p>
-                                    {userActivity.extend && (
-                                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                            {userActivity.extend}
+                                    <div>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            <span className="font-medium text-gray-900 dark:text-white">grtsinry43</span>{" "}
+                                            正在使用 {" "}
+                                            <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                                {userActivity.process || "未知应用"}
+                                            </span>
                                         </p>
+                                        {userActivity.extend && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                {userActivity.extend}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {userActivity.media?.title && (
+                                        <div className="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-white/5 rounded-xl">
+                                            <img
+                                                src={userActivity.media.thumbnail || "/placeholder.svg"}
+                                                alt={userActivity.media.title}
+                                                className="w-12 h-12 rounded-lg object-cover shadow-md"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+                                                    {userActivity.media.title}
+                                                </p>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                                    {userActivity.media.artist}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {userActivity.timestamp && (
+                                        <div className="text-xs text-gray-400 dark:text-gray-500 pt-3 border-t border-gray-200/60 dark:border-white/10">
+                                            最后活跃于 {" "}
+                                            {format(new Date(userActivity.timestamp * 1000), "yyyy-MM-dd HH:mm:ss")}
+                                        </div>
                                     )}
                                 </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
-                                {userActivity.media?.title && (
-                                    <div
-                                        className="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-white/5 rounded-xl">
-                                        <img
-                                            src={userActivity.media.thumbnail || "/placeholder.svg"}
-                                            alt={userActivity.media.title}
-                                            className="w-12 h-12 rounded-lg object-cover shadow-md"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
-                                                {userActivity.media.title}
-                                            </p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                                {userActivity.media.artist}
-                                            </p>
+            {/* 头像本体 */}
+            <LayoutGroup>
+                <motion.div
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    onClick={handleClick}
+                    data-enhanced-avatar-container
+                    className="relative h-12 flex items-center cursor-pointer"
+                    animate={{width: isExpandedCapsule ? 170 : 48}}
+                    transition={transition}
+                >
+                    {/* 2. 视觉层 */}
+                    <AnimatePresence initial={false} mode="wait">
+                        {showInfo && isOnline && !isMobile ? (
+                            // --- 桌面端：详情卡片（在线）---
+                            <motion.div
+                                key="desktop-card"
+                                className="absolute top-1/2 -translate-y-1/2 left-0 z-50 w-[calc(100vw-32px)] max-w-sm bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-2xl rounded-2xl"
+                                initial={{opacity: 0, scale: 0.85}}
+                                animate={{opacity: 1, scale: 1, transition}}
+                                exit={{opacity: 0, scale: 0.85, transition: {duration: 0.2}}}
+                            >
+                                <div className="p-4 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <SharedAvatar src={avatarSrc} isOnline={isOnline} showDot={true}/>
+                                        <div className="flex-1">
+                                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                                                当前在线
+                                            </h3>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400"> 康康他在干什么 👀 </p>
                                         </div>
                                     </div>
-                                )}
 
-                                {userActivity.timestamp && (
-                                    <div
-                                        className="text-xs text-gray-400 dark:text-gray-500 pt-3 border-t border-gray-200/60 dark:border-white/10">
-                                        最后活跃于 {" "}
-                                        {format(new Date(userActivity.timestamp * 1000), "yyyy-MM-dd HH:mm:ss")}
+                                    <div>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            <span className="font-medium text-gray-900 dark:text-white">grtsinry43</span>{" "}
+                                            正在使用 {" "}
+                                            <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                                {userActivity.process || "未知应用"}
+                                            </span>
+                                        </p>
+                                        {userActivity.extend && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                {userActivity.extend}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {userActivity.media?.title && (
+                                        <div className="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-white/5 rounded-xl">
+                                            <img
+                                                src={userActivity.media.thumbnail || "/placeholder.svg"}
+                                                alt={userActivity.media.title}
+                                                className="w-12 h-12 rounded-lg object-cover shadow-md"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+                                                    {userActivity.media.title}
+                                                </p>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                                    {userActivity.media.artist}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {userActivity.timestamp && (
+                                        <div className="text-xs text-gray-400 dark:text-gray-500 pt-3 border-t border-gray-200/60 dark:border-white/10">
+                                            最后活跃于 {" "}
+                                            {format(new Date(userActivity.timestamp * 1000), "yyyy-MM-dd HH:mm:ss")}
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        ) : (
+                            // --- 状态一 & 二：圆形头像 或 胶囊 ---
+                            <motion.div
+                                key="capsule"
+                                className="absolute inset-0 flex items-center bg-white/90 dark:bg-gray-950/20 backdrop-blur-md border border-gray-200/80 dark:border-white/5 shadow-lg rounded-full p-1"
+                                initial={{opacity: 0}}
+                                animate={{opacity: 1}}
+                                exit={{opacity: 0, transition: {duration: 0.1}}}
+                            >
+                                <SharedAvatar src={avatarSrc} isOnline={isOnline} showDot={!isExpandedCapsule}/>
+                                {isExpandedCapsule && (
+                                    <div className="pl-2 pr-3 min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <span className="text-green-500 dark:text-green-400 text-xs font-bold">●</span>
+                                            <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                                                在线
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                            {userActivity.process || "摸鱼中..."}
+                                        </p>
                                     </div>
                                 )}
-                            </div>
-                        </motion.div>
-                    ) : (
-                        // --- 状态一 & 二：圆形头像 或 胶囊 ---
-                        <motion.div
-                            key="capsule"
-                            className="absolute inset-0 flex items-center bg-white/90 dark:bg-gray-950/20 backdrop-blur-md border border-gray-200/80 dark:border-white/5 shadow-lg rounded-full p-1"
-                            initial={{opacity: 0}}
-                            animate={{opacity: 1}}
-                            exit={{opacity: 0, transition: {duration: 0.1}}}
-                        >
-                            <SharedAvatar src={avatarSrc} isOnline={isOnline} showDot={!isExpandedCapsule}/>
-                            {isExpandedCapsule && (
-                                <div className="pl-2 pr-3 min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                        <span className="text-green-500 dark:text-green-400 text-xs font-bold">●</span>
-                                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                      在线
-                    </span>
-                                    </div>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                        {userActivity.process || "摸鱼中..."}
-                                    </p>
-                                </div>
-                            )}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-        </LayoutGroup>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+            </LayoutGroup>
+        </>
     )
 }

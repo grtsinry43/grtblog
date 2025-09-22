@@ -205,7 +205,12 @@ export default function Toc({
                     <AnimatePresence>
                         {item.isSelect && item.children && item.children.length > 0 && (
                             <motion.ul initial="hidden" animate="visible" exit="hidden" variants={containerVariants}>
-                                <ul className="mt-1 ml-2 border-l border-primary/30 pl-1 transition">
+                                <ul className={clsx(
+                                    "mt-1 ml-2 pl-3 relative transition border-l-2",
+                                    isDark 
+                                        ? "border-l-primary/30" 
+                                        : "border-l-primary/25"
+                                )}>
                                     {renderTocItems(item.children)}
                                 </ul>
                             </motion.ul>
@@ -234,11 +239,45 @@ export default function Toc({
     return (
         <nav className="relative">
             <ReadingProgress/>
-            <div className="flex items-center justify-between mb-2 mt-2">
-                <h3 className={clsx("font-medium text-sm", isDark ? "text-gray-200" : "text-gray-700")}>目录</h3>
-                <Button variant="ghost" size="sm" onClick={() => setIsCollapsed(!isCollapsed)} className="p-1 h-auto">
-                    <BookOpen className="w-4 h-4"/>
-                </Button>
+            
+            {/* 标题栏 */}
+            <div className="flex items-center justify-between mb-3 mt-2 relative">
+                <div className="flex items-center space-x-2">
+                    <div className={clsx(
+                        "w-1 h-4 rounded-full bg-gradient-to-b",
+                        isDark 
+                            ? "from-primary/60 to-primary/30" 
+                            : "from-primary/50 to-primary/20"
+                    )}/>
+                    <h3 className={clsx(
+                        "font-medium text-sm tracking-wide",
+                        isDark ? "text-gray-200" : "text-gray-700"
+                    )}>
+                        目录
+                    </h3>
+                </div>
+                <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setIsCollapsed(!isCollapsed)} 
+                        className={clsx(
+                            "p-1.5 h-auto rounded-md transition-all duration-200",
+                            "hover:bg-primary/10 hover:text-primary",
+                            isDark ? "text-gray-400" : "text-gray-500"
+                        )}
+                    >
+                        <motion.div
+                            animate={{ rotate: isCollapsed ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <BookOpen className="w-4 h-4"/>
+                        </motion.div>
+                    </Button>
+                </motion.div>
             </div>
 
             <AnimatePresence>
@@ -247,9 +286,7 @@ export default function Toc({
                         initial={{height: 0, opacity: 0}}
                         animate={{height: "auto", opacity: 1}}
                         exit={{height: 0, opacity: 0}}
-                        transition={{duration: 0.3}}
-
-
+                        transition={{duration: 0.3, ease: "easeInOut"}}
                         className="overflow-hidden"
                     >
                         <div
@@ -271,32 +308,40 @@ export default function Toc({
                 )}
             </AnimatePresence>
 
-            <div
-                className={clsx(
-                    article_font.className,
-                    "flex items-center justify-start space-x-3 mt-4 pt-3 border-t",
-                    isDark ? "border-gray-800" : "border-gray-200",
-                )}
-            >
+            {/* 操作按钮区域 */}
+            <div className={clsx(
+                article_font.className,
+                "flex items-center justify-start space-x-4 mt-4 pt-3 relative",
+                "before:absolute before:top-0 before:left-0 before:right-8 before:h-px",
+                "before:bg-gradient-to-r before:from-transparent before:via-gray-300/50 before:to-transparent",
+                isDark ? "before:via-gray-700/50" : "before:via-gray-300/50"
+            )}>
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
-                                onClick={likeHandle}
-                                variant="ghost"
-                                size="sm"
-                                className={clsx(
-                                    "flex items-center space-x-2 transition-all duration-300 p-0 h-auto",
-                                    liked
-                                        ? "text-red-500 hover:text-red-600"
-                                        : isDark
-                                            ? "text-gray-400 hover:text-gray-200"
-                                            : "text-gray-500 hover:text-gray-800",
-                                )}
+                            <motion.div
+                                whileHover={{ scale: 1.05, y: -1 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="relative"
                             >
-                                <Heart className={clsx("w-4 h-4", liked && "fill-current")}/>
-                                <span className="text-sm font-medium">{likesNum}</span>
-                            </Button>
+                                <Button
+                                    onClick={likeHandle}
+                                    variant="ghost"
+                                    size="sm"
+                                    className={clsx(
+                                        "flex items-center space-x-1.5 transition-all duration-200 p-1.5 h-auto rounded-lg",
+                                        "hover:bg-red-50 hover:shadow-sm",
+                                        liked
+                                            ? "text-red-500 hover:text-red-600"
+                                            : isDark
+                                                ? "text-gray-400 hover:text-red-400 hover:bg-red-950/30"
+                                                : "text-gray-500 hover:text-red-500",
+                                    )}
+                                >
+                                    <Heart className={clsx("w-4 h-4 transition-all", liked && "fill-current")}/>
+                                    <span className="text-sm font-medium">{likesNum}</span>
+                                </Button>
+                            </motion.div>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>{liked ? "你已经点过赞了，感谢支持" : "点赞"}</p>
@@ -305,18 +350,26 @@ export default function Toc({
 
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
-                                onClick={() => setIsCommentOpen(true)}
-                                variant="ghost"
-                                size="sm"
-                                className={clsx(
-                                    "flex items-center space-x-2 transition-all duration-300 p-0 h-auto",
-                                    isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-800",
-                                )}
+                            <motion.div
+                                whileHover={{ scale: 1.05, y: -1 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                <MessageCircle className="w-4 h-4"/>
-                                <span className="text-sm font-medium">{comments}</span>
-                            </Button>
+                                <Button
+                                    onClick={() => setIsCommentOpen(true)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className={clsx(
+                                        "flex items-center space-x-1.5 transition-all duration-200 p-1.5 h-auto rounded-lg",
+                                        "hover:bg-blue-50 hover:shadow-sm",
+                                        isDark 
+                                            ? "text-gray-400 hover:text-blue-400 hover:bg-blue-950/30" 
+                                            : "text-gray-500 hover:text-blue-600"
+                                    )}
+                                >
+                                    <MessageCircle className="w-4 h-4"/>
+                                    <span className="text-sm font-medium">{comments}</span>
+                                </Button>
+                            </motion.div>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>评论</p>
@@ -325,20 +378,28 @@ export default function Toc({
 
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(window.location.href)
-                                    toast("链接已复制到剪贴板！")
-                                }}
-                                variant="ghost"
-                                size="sm"
-                                className={clsx(
-                                    "transition-all duration-300 p-0 h-auto",
-                                    isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-800",
-                                )}
+                            <motion.div
+                                whileHover={{ scale: 1.05, y: -1 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                <Share2 className="w-4 h-4"/>
-                            </Button>
+                                <Button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(window.location.href)
+                                        toast("链接已复制到剪贴板！")
+                                    }}
+                                    variant="ghost"
+                                    size="sm"
+                                    className={clsx(
+                                        "transition-all duration-200 p-1.5 h-auto rounded-lg",
+                                        "hover:bg-green-50 hover:shadow-sm",
+                                        isDark 
+                                            ? "text-gray-400 hover:text-green-400 hover:bg-green-950/30" 
+                                            : "text-gray-500 hover:text-green-600"
+                                    )}
+                                >
+                                    <Share2 className="w-4 h-4"/>
+                                </Button>
+                            </motion.div>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>复制链接以分享</p>

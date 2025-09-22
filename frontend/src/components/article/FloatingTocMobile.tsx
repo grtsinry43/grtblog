@@ -4,11 +4,11 @@ import React, {useState, useEffect, useCallback} from 'react';
 import {FloatingPanel, Search, ConfigProvider} from 'react-vant';
 import 'react-vant/lib/index.css';
 import '@vant/touch-emulator';
-import {IconButton} from '@radix-ui/themes';
+import {Button} from '@/components/ui/button';
 import {TocItem} from '@/components/article/Toc';
 import {MessageCircleIcon, TableOfContentsIcon} from 'lucide-react';
 import useIsMobile from '@/hooks/useIsMobile';
-import {motion} from 'framer-motion';
+import {motion, AnimatePresence} from 'framer-motion';
 import emitter from '@/utils/eventBus';
 import {HeartIcon, PinTopIcon} from "@radix-ui/react-icons";
 import {likeRequest} from "@/api/like";
@@ -25,7 +25,6 @@ const FloatingTocMobile = ({toc, targetId, type}: { toc: TocItem[], targetId: st
 
     const showPanelHandle = () => {
         setShowPanel(true);
-        setAnchors([320, window.innerHeight * 0.8]);
         document.body.style.overflow = 'hidden';
     };
 
@@ -36,7 +35,7 @@ const FloatingTocMobile = ({toc, targetId, type}: { toc: TocItem[], targetId: st
 
     const themeVars = {
         '--rv-floating-panel-z-index': 1001,
-        '--rv-floating-panel-background-color': 'rgba(var(--background), 0.8)',
+        '--rv-floating-panel-background-color': 'rgba(var(--background), 1)',
         '--rv-floating-panel-header-background-color': 'var(--rv-background)',
         '--rv-floating-panel-header-padding': '8px',
         '--rv-floating-panel-thumb-background-color': 'var(--rv-gray-5)',
@@ -183,57 +182,101 @@ const FloatingTocMobile = ({toc, targetId, type}: { toc: TocItem[], targetId: st
 
     return isMobile ? (
         <>
-            {isTopIconShowed && <IconButton
-                variant={'ghost'}
+            {/* 从右下角模糊到左上角清晰的背景遮罩 */}
+            {isUtilIconShowed && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        bottom: 0,
+                        right: 0,
+                        width: '15rem',
+                        height: isTopIconShowed ? '20rem' : '16rem',
+                        backdropFilter: 'blur(4px) saturate(180%) contrast(120%)',
+                        WebkitBackdropFilter: 'blur(4px) saturate(180%) contrast(120%)',
+                        background: `
+                            radial-gradient(ellipse 120% 100% at bottom right, 
+                                rgba(var(--background), 0.9) 0%, 
+                                rgba(var(--background), 0.8) 20%, 
+                                rgba(var(--background), 0.6) 35%, 
+                                rgba(var(--background), 0.4) 50%, 
+                                rgba(var(--background), 0.2) 65%, 
+                                rgba(var(--background), 0.1) 80%, 
+                                transparent 100%
+                            )
+                        `,
+                        maskImage: `
+                            radial-gradient(ellipse 150% 120% at bottom right, 
+                                black 0%, 
+                                black 15%, 
+                                rgba(0,0,0,0.9) 25%, 
+                                rgba(0,0,0,0.7) 40%, 
+                                rgba(0,0,0,0.5) 55%, 
+                                rgba(0,0,0,0.3) 70%, 
+                                rgba(0,0,0,0.1) 85%, 
+                                transparent 100%
+                            )
+                        `,
+                        WebkitMaskImage: `
+                            radial-gradient(ellipse 150% 120% at bottom right, 
+                                black 0%, 
+                                black 15%, 
+                                rgba(0,0,0,0.9) 25%, 
+                                rgba(0,0,0,0.7) 40%, 
+                                rgba(0,0,0,0.5) 55%, 
+                                rgba(0,0,0,0.3) 70%, 
+                                rgba(0,0,0,0.1) 85%, 
+                                transparent 100%
+                            )
+                        `,
+                        zIndex: 9,
+                        transition: 'all 0.3s ease-in-out',
+                        pointerEvents: 'none',
+                    }}
+                />
+            )}
+
+            {isTopIconShowed && <Button
+                size="icon"
+                className="rounded-full bg-background text-foreground"
                 style={{
                     position: 'fixed',
-                    bottom: '13em',
-                    right: isUtilIconShowed ? '2em' : '0em',
+                    bottom: '13rem',
+                    right: isUtilIconShowed ? '1rem' : '-3rem',
                     transition: 'right 0.3s ease-in-out',
                     zIndex: 1000,
-                    backgroundColor: 'rgba(var(--background), 0.6)',
-                    backdropFilter: 'blur(10px)',
-                    color: 'var(--primary)',
-                    borderRadius: '50%',
                     border: '1px solid rgba(var(--foreground), 0.1)',
                 }}
                 onClick={() => {
                     window.scrollTo({top: 0, behavior: 'smooth'})
                 }}
             >
-                <PinTopIcon height={18} width={18}/>
-            </IconButton>
+                <PinTopIcon className="h-6 w-6"/>
+            </Button>
             }
-            <IconButton
-                variant={'ghost'}
+            <Button
+                size="icon"
+                className="rounded-full bg-background text-foreground"
                 style={{
                     position: 'fixed',
-                    bottom: '10em',
-                    right: isUtilIconShowed ? '2em' : '0em',
-                    color: 'var(--primary)',
-                    borderRadius: '50%',
+                    bottom: '10rem',
+                    right: isUtilIconShowed ? '1rem' : '-3rem',
                     transition: 'right 0.3s ease-in-out',
                     zIndex: 1000,
-                    backgroundColor: 'rgba(var(--background), 0.6)',
-                    backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(var(--foreground), 0.1)',
                 }}
                 onClick={likeHandle}
             >
-                <HeartIcon height={18} width={18}/>
-            </IconButton>
-            <IconButton
-                variant={'ghost'}
+                <HeartIcon className="h-6 w-6"/>
+            </Button>
+            <Button
+                size="icon"
+                className="rounded-full bg-background text-foreground"
                 style={{
                     position: 'fixed',
-                    bottom: '7em',
-                    right: isUtilIconShowed ? '2em' : '0em',
+                    bottom: '7rem',
+                    right: isUtilIconShowed ? '1rem' : '-3rem',
                     transition: 'right 0.3s ease-in-out',
-                    color: 'var(--primary)',
-                    borderRadius: '50%',
                     zIndex: 1000,
-                    backgroundColor: 'rgba(var(--background), 0.6)',
-                    backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(var(--foreground), 0.1)',
                 }}
                 onClick={() => {
@@ -243,50 +286,89 @@ const FloatingTocMobile = ({toc, targetId, type}: { toc: TocItem[], targetId: st
                     });
                 }}
             >
-                <MessageCircleIcon height={18} width={18}/>
-            </IconButton>
-            <IconButton
-                variant={'ghost'}
+                <MessageCircleIcon className="h-6 w-6"/>
+            </Button>
+            <Button
+                size="icon"
+                className="rounded-full bg-background text-foreground"
                 style={{
                     position: 'fixed',
-                    bottom: '4em',
-                    right: isUtilIconShowed ? '2em' : '0em',
+                    bottom: '4rem',
+                    right: isUtilIconShowed ? '1rem' : '-3rem',
                     transition: 'right 0.3s ease-in-out',
                     zIndex: 1000,
-                    backgroundColor: 'rgba(var(--background), 0.6)',
-                    backdropFilter: 'blur(10px)',
-                    color: 'var(--primary)',
-                    borderRadius: '50%',
                     border: '1px solid rgba(var(--foreground), 0.1)',
                 }}
                 onClick={showPanelHandle}
             >
-                <TableOfContentsIcon height={18} width={18}/>
-            </IconButton>
-            {showPanel && (
-                <>
-                    <div
-                        style={{
-                            position: 'fixed',
-                            overflow: 'hidden',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            zIndex: 1000,
-                        }}
-                        onClick={hidePanelHandle}
-                    />
-                    <ConfigProvider themeVars={themeVars}>
-                        <FloatingPanel style={{
-                            overflow: 'hidden',
-                            backdropFilter: 'blur(10px)',
-                        }} anchors={anchors}>
-                            <Search/>
+                <TableOfContentsIcon className="h-6 w-6"/>
+            </Button>
+            <AnimatePresence>
+                {showPanel && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            style={{
+                                position: 'fixed',
+                                overflow: 'hidden',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                zIndex: 1000,
+                            }}
+                            onClick={hidePanelHandle}
+                        />
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ 
+                                type: 'spring',
+                                stiffness: 300,
+                                damping: 30
+                            }}
+                            style={{
+                                position: 'fixed',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                zIndex: 1001,
+                                backgroundColor: 'rgba(var(--background), 1)',
+                                borderTopLeftRadius: '20px',
+                                borderTopRightRadius: '20px',
+                                maxHeight: '80vh',
+                                overflow: 'hidden',
+                                backdropFilter: 'blur(10px)',
+                                WebkitBackdropFilter: 'blur(10px)',
+                                border: '1px solid rgba(var(--foreground), 0.1)',
+                                borderBottom: 'none',
+                            }}
+                        >
+                            <div style={{ 
+                                display: 'flex',
+                                justifyContent: 'center',
+                                padding: '8px',
+                                borderBottom: '1px solid rgba(var(--foreground), 0.1)'
+                            }}>
+                                <div style={{
+                                    width: '20px',
+                                    height: '4px',
+                                    backgroundColor: 'rgba(var(--foreground), 0.3)',
+                                    borderRadius: '2px'
+                                }}></div>
+                            </div>
+                            <ConfigProvider themeVars={themeVars}>
+                                <Search style={{ padding: '10px' }}/>
+                            </ConfigProvider>
                             <motion.ul
                                 style={{
-                                    overflow: 'hidden',
+                                    overflow: 'auto',
                                     padding: '20px',
+                                    maxHeight: 'calc(80vh - 120px)',
                                 }}
                                 initial="hidden"
                                 animate="visible"
@@ -294,10 +376,10 @@ const FloatingTocMobile = ({toc, targetId, type}: { toc: TocItem[], targetId: st
                             >
                                 {toc.length > 0 && renderTocItems(toc)}
                             </motion.ul>
-                        </FloatingPanel>
-                    </ConfigProvider>
-                </>
-            )}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </>
     ) : null;
 };

@@ -186,12 +186,18 @@ const NavBarMobile = ({items}: { items: NavItem[] }) => {
                                     exit={{y: 20, opacity: 0}}
                                     transition={smoothTransition}
                                     className={styles.buttonGroup}
+                                    style={{
+                                        width: '100%',
+                                    }}
                                 >
                                     <motion.div 
                                         className={styles.avatarWrapper}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         transition={smoothTransition}
+                                        style={{
+                                            margin: '0 auto',
+                                        }}
                                     >
                                         <EnhancedAvatar avatarSrc={websiteInfo.WEBSITE_LOGO}/>
                                     </motion.div>

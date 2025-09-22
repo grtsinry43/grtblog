@@ -15,14 +15,9 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(var(--foreground), 0.1);
+  border-bottom: 1px solid rgba(var(--foreground), 0.01);
   // 加快切换速度
   transition: all 0.2s ease;
-  // 增强阴影系统
-  box-shadow: 
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 2px 8px rgba(0, 0, 0, 0.03),
-    0 0 0 1px rgba(var(--foreground), 0.02);
 }
 
 // 保留原来的网格背景，稍作优化
@@ -69,11 +64,10 @@
 
 .navbar.scrolled {
   background-color: rgba(var(--background), 0.7);
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(var(--foreground), 0.04);
-  border-bottom-color: rgba(var(--foreground), 0.12);
+  box-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.05),
+          0 2px 8px rgba(0, 0, 0, 0.03),
+          0 0 0 1px rgba(var(--foreground), 0.02);
 }
 
 @media (prefers-color-scheme: dark) {
