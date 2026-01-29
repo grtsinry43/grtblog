@@ -22,12 +22,12 @@
 			</p>
 		</div>
 	</div>
-    <div class="hero-motto font-serif text-2xl ml-6">
+    <div class="hero-motto font-serif text-2xl ml-4">
         热衷于在逻辑与感性的缝隙中构建数字花园。<br/>
         也许，代码是现代的诗歌，而文字是思想的快照。
     </div>
 
-    <div class="social-container ml-5 flex items-center gap-6">
+    <div class="social-container ml-4 flex items-center gap-6">
         <!-- Social Items -->
         <SocialItem icon="github" name="GitHub" href="https://github.com/grtinry43" />
         <SocialItem icon="mail" name="Email" href="mailto:grtsinry43@outlook.com" />
