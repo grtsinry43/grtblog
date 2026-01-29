@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Search, Sparkles, ArrowRight } from 'lucide-svelte';
-	import Card from '$lib/components/Card.svelte';
+	import Card from '$lib/components/ui/card/Card.svelte';
 	import Button from '$lib/components/ui/button/Button.svelte';
-	import Input from '$lib/components/Input.svelte';
-	import Badge from '$lib/components/Badge.svelte';
-	import Tag from '$lib/components/Tag.svelte';
-	import Divider from '$lib/components/Divider.svelte';
+	import Input from '$lib/components/ui/input/Input.svelte';
+	import Badge from '$lib/components/ui/badge/Badge.svelte';
+	import Tag from '$lib/components/ui/tag/Tag.svelte';
+	import Divider from '$lib/components/ui/divider/Divider.svelte';
 
 	// Mock Data for Preview
 	const featuredPost = {

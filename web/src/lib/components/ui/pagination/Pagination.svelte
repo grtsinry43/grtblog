@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from './ui/button/Button.svelte';
+	import Button from '$lib/components/ui/button/Button.svelte';
 	import { ArrowLeft, ArrowRight } from 'lucide-svelte';
 
 	interface Props {
@@ -24,30 +24,32 @@
 	<ArrowRight size={12} class="ml-1.5" />
 {/snippet}
 
-<nav class="pagination {className}">
+<nav class={`flex items-center justify-center gap-3 ${className}`}>
 	<Button
 		variant="ghost"
 		disabled={current <= 1}
 		onclick={() => onPageChange(current - 1)}
-		class="nav-btn"
+		class="h-8 !bg-transparent px-2 font-mono text-[10px] tracking-widest uppercase hover:!text-jade-600"
 		content={prevContent}
 	/>
 
-	<div class="page-numbers">
+	<div class="flex items-center gap-1.5">
 		{#each pages as page}
 			{#if page === current}
-				<span class="page-num active">
+				<span
+					class="flex h-7 w-7 items-center justify-center rounded-md bg-jade-800 font-mono text-[11px] font-bold text-white shadow-sm"
+				>
 					{page}
 				</span>
 			{:else if page === 1 || page === total || (page >= current - 1 && page <= current + 1)}
 				<Button
 					variant="ghost"
 					onclick={() => onPageChange(page)}
-					class="page-num-btn"
+					class="h-7 w-7 rounded-md !p-0 font-mono text-[11px] text-ink-400 hover:text-ink-900"
 					content={() => page}
 				/>
 			{:else if (page === current - 2 && page > 1) || (page === current + 2 && page < total)}
-				<span class="ellipsis">...</span>
+				<span class="select-none px-0.5 font-mono text-[9px] text-ink-300">...</span>
 			{/if}
 		{/each}
 	</div>
@@ -56,39 +58,7 @@
 		variant="ghost"
 		disabled={current >= total}
 		onclick={() => onPageChange(current + 1)}
-		class="nav-btn"
+		class="h-8 !bg-transparent px-2 font-mono text-[10px] tracking-widest uppercase hover:!text-jade-600"
 		content={nextContent}
 	/>
 </nav>
-
-<style>
-	@reference "../../routes/layout.css";
-
-	.pagination {
-		@apply flex items-center justify-center gap-3;
-	}
-
-	.nav-btn {
-		@apply h-8 !bg-transparent px-2 font-mono text-[10px] tracking-widest uppercase hover:!text-jade-600;
-	}
-
-	.page-numbers {
-		@apply flex items-center gap-1.5;
-	}
-
-	.page-num {
-		@apply flex h-7 w-7 items-center justify-center font-mono text-[11px] font-bold transition-all;
-	}
-
-	.page-num.active {
-		@apply rounded-md bg-jade-800 text-white shadow-sm;
-	}
-
-	.page-num-btn {
-		@apply h-7 w-7 rounded-md !p-0 font-mono text-[11px] text-ink-400 hover:text-ink-900;
-	}
-
-	.ellipsis {
-		@apply px-0.5 font-mono text-[9px] text-ink-300 select-none;
-	}
-</style>

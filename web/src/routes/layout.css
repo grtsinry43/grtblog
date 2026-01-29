@@ -75,6 +75,9 @@
     --color-bamboo-900: #14532d;
     --color-bamboo-950: #052e16;
 
+    /* Textures */
+    --texture-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+
     /* Shadows */
     --shadow-glass: 0 8px 32px 0 rgba(100, 100, 100, 0.05);
     --shadow-glass-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
@@ -164,11 +167,32 @@ body {
     pointer-events: none;
     z-index: 99998;
     opacity: 0.04;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-image: var(--texture-noise);
 }
 
 :root[class~="dark"] .bg-noise {
     opacity: 0.035;
+    filter: invert(1) sepia(10%) hue-rotate(10deg);
+}
+
+/* Noise overlay for glass surfaces */
+.noise-surface {
+    position: relative;
+}
+
+.noise-surface::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image: var(--texture-noise);
+    opacity: 0.2;
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+}
+
+:root[class~="dark"] .noise-surface::after {
+    opacity: 0.16;
     filter: invert(1) sepia(10%) hue-rotate(10deg);
 }
 

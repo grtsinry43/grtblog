@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DynamicLucideIcon from '../icons/DynamicLucideIcon.svelte';
+	import DynamicLucideIcon from '$lib/components/icons/DynamicLucideIcon.svelte';
 	import { resolveTheme, themeManager } from '$lib/shared/theme.svelte';
 
 	const theme = themeManager;
@@ -47,23 +47,16 @@
 
 <button
 	type="button"
-	class="theme-btn"
 	data-theme={resolved}
 	aria-label={`Switch to ${resolved === 'dark' ? 'light' : 'dark'} theme`}
 	onclick={toggleTheme}
+	class="rounded-default hover:bg-ink-200 dark:hover:bg-ink-800 p-2"
 >
-	<DynamicLucideIcon name={iconName} size={18} className="theme-icon" />
+	<DynamicLucideIcon name={iconName} className="theme-icon w-6 h-6" />
 </button>
 
 <style lang="postcss">
 	@reference "$routes/layout.css";
-
-	.theme-btn {
-		@apply relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border
-		 border-ink-200 dark:border-ink-700 bg-ink-200/80 dark:bg-ink-700/80 text-ink-200 transition-colors duration-300;
-		@apply hover:border-ink-300 hover:bg-ink-300/70 hover:dark:border-ink-600 hover:dark:bg-ink-600/70;
-		@apply text-ink-900 dark:text-ink-100;
-	}
 
 	.theme-icon {
 		@apply relative z-10 ;

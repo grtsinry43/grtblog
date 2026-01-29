@@ -7,6 +7,7 @@
 		size?: 'sm' | 'md' | 'lg';
 		fullWidth?: boolean;
 		content?: Snippet;
+		children?: Snippet;
 		icon?: Snippet;
 		loading?: boolean;
 		disabled?: boolean;
@@ -39,6 +40,7 @@
 		size = 'md',
 		fullWidth = false,
 		content,
+		children,
 		icon,
 		loading = false,
 		disabled = false,
@@ -80,6 +82,8 @@
 		{/if}
 		{#if content}
 			{@render content()}
+		{:else if children}
+			{@render children()}
 		{/if}
 	</Button.Root>
 {:else}
@@ -100,6 +104,8 @@
 		{/if}
 		{#if content}
 			{@render content()}
+		{:else if children}
+			{@render children()}
 		{/if}
 	</Button.Root>
 {/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
-	import ClientOnly from '$lib/components/ClientOnly.svelte';
+	import ClientOnly from '$lib/components/common/ClientOnly.svelte';
 	import type { QueryClientConfig } from '@tanstack/svelte-query';
 
 import type { Component } from 'svelte';

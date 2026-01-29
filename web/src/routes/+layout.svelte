@@ -1,10 +1,11 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import Sidebar from '$lib/components/sidebar/Sidebar.svelte';
+	import Sidebar from '$lib/components/features/sidebar/Sidebar.svelte';
 	import { initTheme, startThemeSync, themeManager } from '$lib/shared/theme.svelte';
 	import { onMount } from 'svelte';
 	import { consoleLogInfo } from '$lib/features/console-info/index';
+	import Toaster from '$lib/components/ui/toaster/Toaster.svelte';
 
 	let { children, data } = $props();
 
@@ -58,6 +59,8 @@
 		{@render children()}
 	</div>
 </main>
+
+<Toaster />
 
 <style lang="postcss">
 	@reference "./layout.css";

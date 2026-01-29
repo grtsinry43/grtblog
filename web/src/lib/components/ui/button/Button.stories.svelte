@@ -1,12 +1,12 @@
 <script module>
     import {defineMeta} from '@storybook/addon-svelte-csf';
 
-    import Button from '../lib/components/ui/button/Button.svelte';
+    import Button from './Button.svelte';
 
     const {Story} = defineMeta({
         component: Button,
         args: {
-            label: 'Button',
+            children: 'Button',
             variant: 'primary',
             size: 'md',
             fullWidth: false,
@@ -14,7 +14,7 @@
             disabled: false
         },
         argTypes: {
-            label: {control: 'text'},
+            children: {control: 'text'},
             variant: {control: 'select', options: ['primary', 'secondary', 'ghost', 'icon']},
             size: {control: 'select', options: ['sm', 'md', 'lg']},
             fullWidth: {control: 'boolean'},
@@ -24,6 +24,8 @@
     });
 </script>
 
-<Story name="Primary" let:args>
-    <Button {...args} content={args.label} />
+<Story name="Primary">
+    {#snippet template(args)}
+        <Button {...args}>{args.children}</Button>
+    {/snippet}
 </Story>
