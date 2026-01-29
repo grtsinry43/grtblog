@@ -1,6 +1,6 @@
 <script lang="ts">
-	import DynamicLucideIcon from '$lib/components/icons/DynamicLucideIcon.svelte';
-	import { resolveTheme, themeManager } from '$lib/shared/theme.svelte';
+	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
+	import { resolveTheme, themeManager } from '$lib/shared/theme/theme.svelte';
 
 	const theme = themeManager;
 	const resolved = $derived.by(() => resolveTheme(theme.current));

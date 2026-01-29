@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Toaster as SonnerToaster } from 'svelte-sonner';
-	import { resolveTheme, themeManager } from '$lib/shared/theme.svelte';
+	import { resolveTheme, themeManager } from '$lib/shared/theme/theme.svelte';
 
 	const theme = themeManager;
 	const resolvedTheme = $derived(resolveTheme(theme.current));

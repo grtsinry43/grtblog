@@ -7,6 +7,7 @@ import Feather from 'lucide-svelte/icons/feather';
 import Hash from 'lucide-svelte/icons/hash';
 import Archive from 'lucide-svelte/icons/archive';
 import Ellipsis from 'lucide-svelte/icons/ellipsis';
+import { Github, Mail, Rss } from 'lucide-svelte';
 
 export type LucideIconComponent = ComponentType<{
 	size?: number;
@@ -23,7 +24,10 @@ const lucideIcons = {
 	feather: Feather,
 	hash: Hash,
 	archive: Archive,
-	ellipsis: Ellipsis
+	ellipsis: Ellipsis,
+	github: Github,
+	mail: Mail,
+	rss: Rss
 } as const;
 
 export type LucideIconKey = keyof typeof lucideIcons;

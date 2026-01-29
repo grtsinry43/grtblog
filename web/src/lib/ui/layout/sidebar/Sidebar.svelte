@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NavMenuItem } from '$lib/features/navigation/types';
-	import DynamicLucideIcon from '$lib/components/icons/DynamicLucideIcon.svelte';
+	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import ThemeIcon from './ThemeIcon.svelte';
 	import { page } from '$app/state';
 	import { fly } from 'svelte/transition';
@@ -144,6 +144,6 @@
 	}
 	.nav-author-avatar:hover::before {
 		content: '';
-		@apply absolute inset-0 -z-10 translate-x-0.5 translate-y-0.5 transition rounded-default border border-ink-300 dark:border-ink-900/30;
+		@apply absolute inset-0 -z-10 translate-x-0.5 translate-y-0.5 rounded-default border border-ink-300 transition dark:border-ink-900/30;
 	}
 </style>
