@@ -6,6 +6,7 @@
 	import { browser } from '$app/environment';
     import {SvelteURL} from "svelte/reactivity";
 	import { postDetailCtx } from './post-detail-context.js';
+	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 	let socket: WebSocket | null = null;
@@ -15,8 +16,6 @@
 	const { updateModelData } = postDetailCtx.useModelActions();
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? null);
 	const contentHashStore = postDetailCtx.selectModelData((data) => data?.contentHash ?? null);
-
-	const showUpdateHint = writable(false);
 
 	$effect(() => {
 		postDetailCtx.syncModelData(postDetailStore, data.post ?? null);
@@ -52,18 +51,12 @@
 			triggerUpdateHint();
 		} catch {
 			// Ignore check failures and keep the initial SSR content.
+			toast.error('检查文章更新时出错了，请检查您的网络连接', { duration: 5000 });
 		}
 	};
 
 	const triggerUpdateHint = () => {
-		showUpdateHint.set(true);
-		if (updateHintTimer) {
-			clearTimeout(updateHintTimer);
-		}
-		updateHintTimer = setTimeout(() => {
-			showUpdateHint.set(false);
-			updateHintTimer = null;
-		}, 2400);
+		toast.success('作者修改了内容，已为您自动更新了呀！', { duration: 3000 });
 	};
 
 	const connectToPostUpdates = (postId: number | null) => {
@@ -135,4 +128,4 @@
 	});
 </script>
 
-<PostDetail updated={showUpdateHint} />
+<PostDetail />

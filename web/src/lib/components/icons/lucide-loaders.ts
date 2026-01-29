@@ -1,4 +1,12 @@
 import type { ComponentType } from 'svelte';
+import Moon from 'lucide-svelte/icons/moon';
+import Sun from 'lucide-svelte/icons/sun';
+import BookOpen from 'lucide-svelte/icons/book-open';
+import Aperture from 'lucide-svelte/icons/aperture';
+import Feather from 'lucide-svelte/icons/feather';
+import Hash from 'lucide-svelte/icons/hash';
+import Archive from 'lucide-svelte/icons/archive';
+import Ellipsis from 'lucide-svelte/icons/ellipsis';
 
 export type LucideIconComponent = ComponentType<{
 	size?: number;
@@ -7,18 +15,17 @@ export type LucideIconComponent = ComponentType<{
 }>;
 
 // Manual whitelist for tree-shaking in SSR/client bundles.
-const lucideLoaders = {
-	moon: () => import('lucide-svelte/icons/moon'),
-	sun: () => import('lucide-svelte/icons/sun'),
-	'book-open': () => import('lucide-svelte/icons/book-open'),
-	aperture: () => import('lucide-svelte/icons/aperture'),
-	feather: () => import('lucide-svelte/icons/feather'),
-	hash: () => import('lucide-svelte/icons/hash'),
-	archive: () => import('lucide-svelte/icons/archive'),
-	ellipsis: () => import('lucide-svelte/icons/ellipsis')
+const lucideIcons = {
+	moon: Moon,
+	sun: Sun,
+	'book-open': BookOpen,
+	aperture: Aperture,
+	feather: Feather,
+	hash: Hash,
+	archive: Archive,
+	ellipsis: Ellipsis
 } as const;
 
-export type LucideIconKey = keyof typeof lucideLoaders;
-export type LucideIconLoader = (typeof lucideLoaders)[LucideIconKey];
+export type LucideIconKey = keyof typeof lucideIcons;
 
-export default lucideLoaders;
+export default lucideIcons;

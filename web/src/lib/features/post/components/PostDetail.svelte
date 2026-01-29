@@ -6,15 +6,14 @@
 	import { mountMarkdownComponents } from '$lib/shared/markdown/components';
 	import { Calendar, Clock, Share2, ArrowLeft } from 'lucide-svelte';
 	import Button from '$lib/components/ui/button/Button.svelte';
-	import Badge from '$lib/components/Badge.svelte';
-	import Tag from '$lib/components/Tag.svelte';
-	import Divider from '$lib/components/Divider.svelte';
+	import Badge from '$lib/components/ui/badge/Badge.svelte';
+	import Tag from '$lib/components/ui/tag/Tag.svelte';
+	import Divider from '$lib/components/ui/divider/Divider.svelte';
 	import '$lib/shared/markdown/components/register';
 	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
-	import QueryRoot from '$lib/shared/query/QueryRoot.svelte';
+	import QueryRoot from '$lib/components/common/QueryRoot.svelte';
 
 	const postStore = postDetailCtx.selectModelData((data) => data as PostDetail | null);
-	let { updated = false } = $props<{ updated?: boolean }>();
 	let contentRoot: HTMLElement | null = $state(null);
 	let activeAnchor = $state<string | null>(null);
 	let observer: IntersectionObserver | null = null;
@@ -134,9 +133,6 @@
 						浏览 {$postStore.metrics?.views ?? 0} · 喜欢 {$postStore.metrics?.likes ?? 0} · 评论
 						{$postStore.metrics?.comments ?? 0}
 					</span>
-					{#if updated}
-						<Badge variant="soft" class="animate-pulse">内容已更新</Badge>
-					{/if}
 					{#snippet fallback()}
 						<span>加载中...</span>
 					{/snippet}
