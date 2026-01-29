@@ -6,9 +6,9 @@
 
 @theme {
     /* Fonts */
-    --font-sans: "Inter", "Noto Sans SC", -apple-system, sans-serif;
+    --font-sans: "Google Sans", system-ui, -apple-system, PingFang SC, "Microsoft YaHei", Segoe UI, Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     --font-serif: "Noto Serif SC", "Georgia", serif;
-    --font-mono: "JetBrains Mono", monospace;
+    --font-mono: "Victor Mono", "JetBrains Mono", monospace;
 
     /* Colors: Ink (Warm Grayscale) */
     --color-ink-0: #ffffff;

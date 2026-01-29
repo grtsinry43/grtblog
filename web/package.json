@@ -58,6 +58,9 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@fontsource-variable/victor-mono": "^5.2.8",
+		"@fontsource/google-sans": "^5.2.1",
+		"@fontsource/noto-serif-sc": "^5.2.9",
 		"@tanstack/svelte-query": "^6.0.18",
 		"bits-ui": "^2.15.4",
 		"lucide-svelte": "^0.562.0",

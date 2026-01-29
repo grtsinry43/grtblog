@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { onDestroy, tick } from 'svelte';
 	import type { PostDetail } from '$lib/features/post/types';
-	import { renderMarkdown } from '$lib/shared/markdown';
+	import { renderMarkdown } from '$lib/shared/markdown/markdown';
 	import type { TOCNode } from '$lib/features/post/types';
 	import { mountMarkdownComponents } from '$lib/shared/markdown/components';
 	import { Calendar, Clock, Share2, ArrowLeft } from 'lucide-svelte';
-	import Button from '$lib/components/ui/button/Button.svelte';
-	import Badge from '$lib/components/ui/badge/Badge.svelte';
-	import Tag from '$lib/components/ui/tag/Tag.svelte';
-	import Divider from '$lib/components/ui/divider/Divider.svelte';
+	import Button from '$lib/ui/ui/button/Button.svelte';
+	import Badge from '$lib/ui/ui/badge/Badge.svelte';
+	import Tag from '$lib/ui/ui/tag/Tag.svelte';
+	import Divider from '$lib/ui/ui/divider/Divider.svelte';
 	import '$lib/shared/markdown/components/register';
 	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
-	import QueryRoot from '$lib/components/common/QueryRoot.svelte';
+	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
 
 	const postStore = postDetailCtx.selectModelData((data) => data as PostDetail | null);
 	let contentRoot: HTMLElement | null = $state(null);

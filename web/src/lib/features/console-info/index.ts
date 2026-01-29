@@ -1,4 +1,4 @@
-import { brand } from '$lib/shared/brand';
+import { brand } from '$lib/shared/brand/brand';
 
 export const consoleLogInfo = (): void => {
     const fontMono = 'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;';

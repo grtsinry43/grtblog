@@ -1,11 +1,15 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import Sidebar from '$lib/components/features/sidebar/Sidebar.svelte';
-	import { initTheme, startThemeSync, themeManager } from '$lib/shared/theme.svelte';
+	import Sidebar from '$lib/ui/layout/sidebar/Sidebar.svelte';
+	import { initTheme, startThemeSync, themeManager } from '$lib/shared/theme/theme.svelte.js';
 	import { onMount } from 'svelte';
 	import { consoleLogInfo } from '$lib/features/console-info/index';
-	import Toaster from '$lib/components/ui/toaster/Toaster.svelte';
+	import Toaster from '$lib/ui/ui/toaster/Toaster.svelte';
+
+	import "@fontsource/google-sans";
+	import "@fontsource/noto-serif-sc";
+	import "@fontsource-variable/victor-mono";
 
 	let { children, data } = $props();
 
@@ -54,7 +58,7 @@
 <!-- noise background -->
 <div class="bg-noise" aria-hidden="true"></div>
 
-<main class="page-wrapper max-w-[960px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+<main class="page-wrapper max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
 	<div class="content-container">
 		{@render children()}
 	</div>
