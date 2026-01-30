@@ -2,6 +2,7 @@ package websiteinfo
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
@@ -17,13 +18,17 @@ func NewService(repo config.WebsiteInfoRepository) *Service {
 }
 
 type CreateCmd struct {
-	Key   string
-	Value string
+	Key      string
+	Name     *string
+	Value    *string
+	InfoJSON *json.RawMessage
 }
 
 type UpdateCmd struct {
-	Key   string
-	Value string
+	Key      string
+	Name     *string
+	Value    *string
+	InfoJSON *json.RawMessage
 }
 
 func (s *Service) List(ctx context.Context) ([]config.WebsiteInfo, error) {
@@ -32,8 +37,10 @@ func (s *Service) List(ctx context.Context) ([]config.WebsiteInfo, error) {
 
 func (s *Service) Create(ctx context.Context, cmd CreateCmd) (*config.WebsiteInfo, error) {
 	info := &config.WebsiteInfo{
-		Key:   strings.TrimSpace(cmd.Key),
-		Value: cmd.Value,
+		Key:      strings.TrimSpace(cmd.Key),
+		Name:     trimPtr(cmd.Name),
+		Value:    cmd.Value,
+		InfoJSON: rawMessageOrNil(cmd.InfoJSON),
 	}
 	if err := s.repo.Create(ctx, info); err != nil {
 		return nil, err
@@ -42,10 +49,17 @@ func (s *Service) Create(ctx context.Context, cmd CreateCmd) (*config.WebsiteInf
 }
 
 func (s *Service) Update(ctx context.Context, cmd UpdateCmd) (*config.WebsiteInfo, error) {
-	info := &config.WebsiteInfo{
-		Key:   strings.TrimSpace(cmd.Key),
-		Value: cmd.Value,
+	key := strings.TrimSpace(cmd.Key)
+	info, err := s.repo.GetByKey(ctx, key)
+	if err != nil {
+		return nil, err
 	}
+	info.Key = key
+	if cmd.Name != nil {
+		info.Name = trimPtr(cmd.Name)
+	}
+	info.Value = cmd.Value
+	info.InfoJSON = rawMessageOrNil(cmd.InfoJSON)
 	if err := s.repo.Update(ctx, info); err != nil {
 		return nil, err
 	}
@@ -58,4 +72,21 @@ func (s *Service) Delete(ctx context.Context, key string) error {
 
 func (s *Service) Get(ctx context.Context, key string) (*config.WebsiteInfo, error) {
 	return s.repo.GetByKey(ctx, strings.TrimSpace(key))
+}
+
+func trimPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	return &trimmed
+}
+
+func rawMessageOrNil(value *json.RawMessage) json.RawMessage {
+	if value == nil {
+		return nil
+	}
+	copied := make(json.RawMessage, len(*value))
+	copy(copied, *value)
+	return copied
 }

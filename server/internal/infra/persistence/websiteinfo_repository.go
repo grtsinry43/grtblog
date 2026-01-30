@@ -2,8 +2,10 @@ package persistence
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
@@ -61,7 +63,9 @@ func (r *WebsiteInfoRepository) Create(ctx context.Context, info *config.Website
 
 func (r *WebsiteInfoRepository) Update(ctx context.Context, info *config.WebsiteInfo) error {
 	updates := map[string]any{
-		"value": info.Value,
+		"name":      info.Name,
+		"value":     info.Value,
+		"info_json": info.InfoJSON,
 	}
 	result := r.db.WithContext(ctx).
 		Model(&model.WebsiteInfo{}).
@@ -91,7 +95,9 @@ func mapWebsiteInfoToDomain(rec model.WebsiteInfo) config.WebsiteInfo {
 	return config.WebsiteInfo{
 		ID:        rec.ID,
 		Key:       rec.InfoKey,
+		Name:      rec.Name,
 		Value:     rec.Value,
+		InfoJSON:  json.RawMessage(rec.InfoJSON),
 		CreatedAt: rec.CreatedAt,
 		UpdatedAt: rec.UpdatedAt,
 	}
@@ -99,8 +105,10 @@ func mapWebsiteInfoToDomain(rec model.WebsiteInfo) config.WebsiteInfo {
 
 func mapWebsiteInfoToModel(info config.WebsiteInfo) model.WebsiteInfo {
 	return model.WebsiteInfo{
-		ID:      info.ID,
-		InfoKey: info.Key,
-		Value:   info.Value,
+		ID:       info.ID,
+		InfoKey:  info.Key,
+		Name:     info.Name,
+		Value:    info.Value,
+		InfoJSON: datatypes.JSON(info.InfoJSON),
 	}
 }

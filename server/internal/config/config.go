@@ -67,7 +67,7 @@ type GeoIPConfig struct {
 func Load() Config {
 	return Config{
 		App: AppConfig{
-			Name: getEnv("APP_NAME", "grtblog-api"),
+			Name: getEnv("APP_NAME", "grtblog-server"),
 			Port: getEnv("APP_PORT", "8080"),
 			Env:  strings.ToLower(getEnv("APP_ENV", "development")),
 		},

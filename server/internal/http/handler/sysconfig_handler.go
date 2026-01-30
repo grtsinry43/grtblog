@@ -90,17 +90,17 @@ func (h *SysConfigHandler) UpdateSysConfig(c *fiber.Ctx) error {
 		}
 		updates = append(updates, sysconfig.UpdateItem{
 			Key:          key,
-			Value:        item.Value,
+			Value:        contract.RawMessagePtr(item.Value),
 			IsSensitive:  item.IsSensitive,
 			GroupPath:    item.GroupPath,
 			Label:        item.Label,
 			Description:  item.Description,
 			ValueType:    item.ValueType,
-			EnumOptions:  item.EnumOptions,
-			DefaultValue: item.DefaultValue,
-			VisibleWhen:  item.VisibleWhen,
+			EnumOptions:  contract.RawMessagePtr(item.EnumOptions),
+			DefaultValue: contract.RawMessagePtr(item.DefaultValue),
+			VisibleWhen:  contract.RawMessagePtr(item.VisibleWhen),
 			Sort:         item.Sort,
-			Meta:         item.Meta,
+			Meta:         contract.RawMessagePtr(item.Meta),
 		})
 	}
 

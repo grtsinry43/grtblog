@@ -6,16 +6,20 @@ import (
 )
 
 type WebsiteInfoResp struct {
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	Key       string  `json:"key"`
+	Name      *string `json:"name"`
+	Value     *string `json:"value"`
+	InfoJSON  JSONRaw `json:"infoJson,omitempty" swaggertype:"object"`
+	CreatedAt string  `json:"createdAt"`
+	UpdatedAt string  `json:"updatedAt"`
 }
 
 func ToWebsiteInfoResp(info config.WebsiteInfo) WebsiteInfoResp {
 	return WebsiteInfoResp{
 		Key:       info.Key,
+		Name:      info.Name,
 		Value:     info.Value,
+		InfoJSON:  JSONRaw(info.InfoJSON),
 		CreatedAt: info.CreatedAt.Format(response.TimeLayout),
 		UpdatedAt: info.UpdatedAt.Format(response.TimeLayout),
 	}
