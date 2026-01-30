@@ -366,7 +366,10 @@ func (r *ContentRepository) UpdateArticleViews(ctx context.Context, articleID in
 	return r.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "article_id"}},
-			DoUpdates: clause.Assignments(map[string]any{"views": gorm.Expr("views + 1"), "updated_at": time.Now()}),
+			DoUpdates: clause.Assignments(map[string]any{
+				"views":      gorm.Expr("article_metrics.views + 1"),
+				"updated_at": time.Now(),
+			}),
 		}).
 		Create(&rec).Error
 }
@@ -407,7 +410,10 @@ func (r *ContentRepository) UpdateMomentViews(ctx context.Context, momentID int6
 	return r.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "moment_id"}},
-			DoUpdates: clause.Assignments(map[string]any{"views": gorm.Expr("views + 1"), "updated_at": time.Now()}),
+			DoUpdates: clause.Assignments(map[string]any{
+				"views":      gorm.Expr("moment_metrics.views + 1"),
+				"updated_at": time.Now(),
+			}),
 		}).
 		Create(&rec).Error
 }

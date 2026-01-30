@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { PostSummary } from '$lib/features/post/types';
-	import Card from '$lib/ui/ui/card/Card.svelte';
 	import Pagination from '$lib/ui/ui/pagination/Pagination.svelte';
-	import Tag from '$lib/ui/ui/tag/Tag.svelte';
-	import { ArrowRight, FileText, Calendar, Sparkles } from 'lucide-svelte';
+	import { FileText, Sparkles } from 'lucide-svelte';
+	import ArticleItem from '$lib/features/post/components/ArticleItem.svelte';
 	import { postContext } from '$routes/posts/post-context';
 	import { goto } from '$app/navigation';
+
+	import { spring } from 'svelte/motion';
 
 	type PaginationData = {
 		total: number;
@@ -23,6 +24,41 @@
 	let page = pageStore;
 	let size = sizeStore;
 
+	// Fluid Hover State
+	let hoveredIndex: number | null = $state(null);
+	let listContainer: HTMLElement;
+
+	// Spring stores for smooth animation
+	const hoverCoords = spring(
+		{ top: 0, height: 0 },
+		{
+			stiffness: 0.15,
+			damping: 0.7
+		}
+	);
+	const hoverOpacity = spring(0, {
+		stiffness: 0.1,
+		damping: 0.5
+	});
+
+	function handleMouseEnter(index: number, event: MouseEvent) {
+		hoveredIndex = index;
+		const target = event.currentTarget as HTMLElement;
+		const parentRect = listContainer.getBoundingClientRect();
+		const targetRect = target.getBoundingClientRect();
+
+		hoverCoords.set({
+			top: targetRect.top - parentRect.top,
+			height: targetRect.height
+		});
+		hoverOpacity.set(1);
+	}
+
+	function handleMouseLeave() {
+		hoveredIndex = null;
+		hoverOpacity.set(0);
+	}
+
 	const pagination: PaginationData = $derived({
 		total: $total,
 		page: $page,
@@ -36,11 +72,6 @@
 	const onPageChange = (page: number) => {
 		const safePage = Number.isFinite(page) && page > 1 ? page : 1;
 		goto(safePage === 1 ? '/posts/' : `/posts/page/${safePage}/`);
-	};
-
-	const formatDate = (dateStr: string) => {
-		const date = new Date(dateStr);
-		return `${date.getFullYear()} . ${String(date.getMonth() + 1).padStart(2, '0')} . ${String(date.getDate()).padStart(2, '0')}`;
 	};
 </script>
 
@@ -66,81 +97,30 @@
 
 	<!-- Content List -->
 	{#if $posts && $posts.length > 0}
-		<div class="flex flex-col gap-4">
+		<div
+			class="flex flex-col relative isolate max-w-3xl mx-auto"
+			bind:this={listContainer}
+			onmouseleave={handleMouseLeave}
+			role="list"
+			aria-label="文章列表"
+		>
+			<!-- Fluid Background -->
+			<div
+				class="absolute left-0 w-full bg-[#E9EEE8] dark:bg-jade-800/20 rounded-default pointer-events-none -z-10"
+				style:top="{$hoverCoords.top}px"
+				style:height="{$hoverCoords.height}px"
+				style:opacity={$hoverOpacity}
+			></div>
+
 			{#each $posts as post, i}
-				<!-- 使用 animate-in 实现简单的交错入场效果 (需 tailwindcss-animate 插件，若无则忽略) -->
-				<a
-					href="/posts/{post.shortUrl}"
-					class="group block relative outline-none rounded-2xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-jade-500"
+				<div
+					class="article-enter rounded-default transition-colors duration-300 opacity-0"
+					role="listitem"
+					style="animation-delay: {i * 100}ms; animation-fill-mode: forwards;"
+					onmouseenter={(e) => handleMouseEnter(i, e)}
 				>
-					<Card
-						variant="seamless"
-						class="!p-0 overflow-hidden bg-white dark:bg-ink-950 border border-ink-100 dark:border-ink-900 shadow-sm hover:shadow-md hover:border-jade-200 dark:hover:border-jade-900/50 transition-all duration-300"
-					>
-						<div class="flex flex-col sm:flex-row sm:items-stretch">
-							<!-- Left Decorator (Mobile hidden, Desktop visual anchor) -->
-							<div
-								class="hidden sm:block w-1.5 bg-ink-50 dark:bg-ink-900 group-hover:bg-jade-500 transition-colors duration-300"
-							></div>
-
-							<div class="flex-1 p-5 sm:p-7 flex flex-col sm:flex-row gap-5 sm:items-center">
-								<!-- Main Content -->
-								<div class="flex-1 space-y-3 min-w-0">
-									<!-- Meta Row -->
-									<div
-										class="flex items-center gap-3 text-[10px] sm:text-xs font-mono tracking-widest text-ink-400 uppercase"
-									>
-										{#if post.createdAt}
-											<div class="flex items-center gap-1.5">
-												<Calendar size={12} class="opacity-70" />
-												<time datetime={post.createdAt} class="mt-0.5"
-													>{formatDate(post.createdAt)}</time
-												>
-											</div>
-										{/if}
-
-										<span class="text-ink-200 dark:text-ink-800">|</span>
-
-										<Tag
-											variant="jade"
-											class="!py-0.5 !px-2 !text-[9px] !h-auto border border-jade-200 dark:border-jade-900 bg-jade-50 dark:bg-jade-950/30 text-jade-700 dark:text-jade-400"
-										>
-											专栏
-										</Tag>
-									</div>
-
-									<!-- Title -->
-									<h3
-										class="font-serif text-lg sm:text-xl md:text-2xl font-medium text-ink-900 dark:text-ink-100 group-hover:text-jade-700 dark:group-hover:text-jade-400 transition-colors duration-200 truncate pr-4"
-									>
-										{post.title || '无标题文章'}
-									</h3>
-
-									<!-- Summary -->
-									<p
-										class="text-xs sm:text-sm leading-relaxed text-ink-500 dark:text-ink-400/80 line-clamp-2 sm:line-clamp-1 group-hover:text-ink-600 dark:group-hover:text-ink-300 transition-colors"
-									>
-										{post.summary || '这篇文章还没有摘要，点击阅读详情。'}
-									</p>
-								</div>
-
-								<!-- Action Arrow (Right side) -->
-								<div
-									class="hidden sm:flex shrink-0 items-center justify-center pl-4 border-l border-transparent group-hover:border-ink-50 dark:group-hover:border-ink-900/50 transition-colors"
-								>
-									<div
-										class="h-10 w-10 flex items-center justify-center rounded-full bg-ink-50 dark:bg-ink-900/50 text-ink-400 group-hover:bg-jade-500 group-hover:text-white group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-jade-500/30 transition-all duration-300"
-									>
-										<ArrowRight
-											size={18}
-											class="group-hover:-rotate-45 transition-transform duration-300"
-										/>
-									</div>
-								</div>
-							</div>
-						</div>
-					</Card>
-				</a>
+					<ArticleItem {post} />
+				</div>
 			{/each}
 		</div>
 

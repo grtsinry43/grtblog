@@ -14,4 +14,10 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 
 	htmlSnapshotHandler := handler.NewHTMLSnapshotHandler(htmlSnapshotSvc)
 	public.Post("/html/posts/refresh", htmlSnapshotHandler.RefreshPostsHTML)
+
+	articleHandler := newArticleHandler(deps)
+	public.Get("/articles/recent", articleHandler.ListRecentPublicArticles)
+
+	momentHandler := newMomentHandler(deps)
+	public.Get("/moments/recent", momentHandler.ListRecentPublicMoments)
 }

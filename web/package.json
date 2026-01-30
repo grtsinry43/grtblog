@@ -68,6 +68,7 @@
 		"markdown-it": "^14.1.0",
 		"markdown-it-container": "^4.0.0",
 		"ofetch": "^1.5.1",
+		"shiki": "^3.21.0",
 		"svatoms": "^0.1.0",
 		"svelte-sonner": "^1.0.7"
 	}
