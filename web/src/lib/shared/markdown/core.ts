@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 
 import { componentBlockExtension } from './extensions/comp-block';
+import { markdownElementsExtension } from './extensions/elements';
 
 import type { MarkdownConfig } from './types';
 
@@ -31,6 +32,7 @@ export const createMarkdownIt = (config: MarkdownConfig = {}) => {
 	});
 
 	componentBlockExtension(md);
+	markdownElementsExtension(md);
 	config.extensions?.forEach((extension) => extension(md));
 	applyHeadingAnchorRule(md);
 

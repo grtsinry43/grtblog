@@ -3,21 +3,21 @@
 	import type { PostDetail } from '$lib/features/post/types';
 	import { renderMarkdown } from '$lib/shared/markdown/markdown';
 	import type { TOCNode } from '$lib/features/post/types';
-	import { mountMarkdownComponents } from '$lib/shared/markdown/components';
+	import { markdownComponents } from '$lib/shared/actions/markdown-components';
 	import { Calendar, Clock, Share2, ArrowLeft } from 'lucide-svelte';
 	import Button from '$lib/ui/ui/button/Button.svelte';
 	import Badge from '$lib/ui/ui/badge/Badge.svelte';
 	import Tag from '$lib/ui/ui/tag/Tag.svelte';
 	import Divider from '$lib/ui/ui/divider/Divider.svelte';
-	import '$lib/shared/markdown/components/register';
+	import '$lib/ui/markdown/register';
 	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
 	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
+	import ArticleStickyHeader from '$lib/features/post/components/ArticleStickyHeader.svelte';
 
 	const postStore = postDetailCtx.selectModelData((data) => data as PostDetail | null);
 	let contentRoot: HTMLElement | null = $state(null);
 	let activeAnchor = $state<string | null>(null);
 	let observer: IntersectionObserver | null = null;
-	let cleanupComponents: (() => void) | null = null;
 
 	const flattenTOC = (nodes?: TOCNode[]) => {
 		if (!nodes?.length) return [];
@@ -60,8 +60,6 @@
 	const refreshObserver = async () => {
 		await tick();
 		setupObserver();
-		cleanupComponents?.();
-		if (contentRoot) cleanupComponents = mountMarkdownComponents(contentRoot);
 	};
 
 	const scrollToAnchor = (anchor: string, event: MouseEvent) => {
@@ -80,7 +78,6 @@
 
 	onDestroy(() => {
 		observer?.disconnect();
-		cleanupComponents?.();
 	});
 
 	const formatDate = (value?: string) => {
@@ -104,6 +101,8 @@
 	{#snippet topContent()}
 		返回顶部
 	{/snippet}
+
+	<ArticleStickyHeader />
 
 	<article class="article-container">
 		<!-- Header -->
@@ -155,6 +154,7 @@
 				<div
 					class="markdown-preview markdown-body prose prose-ink dark:prose-invert"
 					bind:this={contentRoot}
+					use:markdownComponents
 				>
 					{@html contentHtml}
 				</div>
@@ -310,7 +310,7 @@
 	}
 
 	.desktop-sidebar {
-		@apply hidden lg:block;
+		@apply hidden slide-in-right lg:block;
 	}
 
 	.sidebar-sticky {
@@ -363,21 +363,6 @@
 
 	.empty-article {
 		@apply py-24 text-center font-serif text-sm text-ink-400 italic;
-	}
-
-	.article-enter {
-		animation: article-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-	}
-
-	@keyframes article-enter {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
 	}
 
 	:global(.markdown-body h1, .markdown-body h2, .markdown-body h3) {

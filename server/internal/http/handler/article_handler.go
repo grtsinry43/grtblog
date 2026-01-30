@@ -273,6 +273,43 @@ func (h *ArticleHandler) ListArticles(c *fiber.Ctx) error {
 	return response.Success(c, listResponse)
 }
 
+// ListRecentPublicArticles godoc
+// @Summary 获取最近公开文章
+// @Tags Public
+// @Produce json
+// @Success 200 {object} contract.ArticleListResp
+// @Router /public/articles/recent [get]
+func (h *ArticleHandler) ListRecentPublicArticles(c *fiber.Ctx) error {
+	const page = 1
+	const size = 5
+	published := true
+
+	articles, total, err := h.svc.ListArticles(c.Context(), content.ArticleListOptionsInternal{
+		Page:      page,
+		PageSize:  size,
+		Published: &published,
+	})
+	if err != nil {
+		return err
+	}
+
+	articleResponses := make([]contract.ArticleListItemResp, len(articles))
+	for i, art := range articles {
+		resp, err := h.toArticleListItemResp(c.Context(), art)
+		if err != nil {
+			return err
+		}
+		articleResponses[i] = *resp
+	}
+
+	return response.Success(c, contract.ArticleListResp{
+		Items: articleResponses,
+		Total: total,
+		Page:  page,
+		Size:  size,
+	})
+}
+
 // CheckArticleLatest godoc
 // @Summary 校验文章是否最新
 // @Tags Article

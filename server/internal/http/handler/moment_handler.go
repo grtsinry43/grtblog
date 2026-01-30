@@ -288,6 +288,43 @@ func (h *MomentHandler) ListMoments(c *fiber.Ctx) error {
 	return response.Success(c, listResponse)
 }
 
+// ListRecentPublicMoments godoc
+// @Summary 获取最近公开手记
+// @Tags Public
+// @Produce json
+// @Success 200 {object} contract.MomentListResp
+// @Router /public/moments/recent [get]
+func (h *MomentHandler) ListRecentPublicMoments(c *fiber.Ctx) error {
+	const page = 1
+	const size = 5
+	published := true
+
+	moments, total, err := h.svc.ListMoments(c.Context(), content.MomentListOptionsInternal{
+		Page:      page,
+		PageSize:  size,
+		Published: &published,
+	})
+	if err != nil {
+		return err
+	}
+
+	momentResponses := make([]contract.MomentListItemResp, len(moments))
+	for i, item := range moments {
+		resp, err := h.toMomentListItemResp(c.Context(), item)
+		if err != nil {
+			return err
+		}
+		momentResponses[i] = *resp
+	}
+
+	return response.Success(c, contract.MomentListResp{
+		Items: momentResponses,
+		Total: total,
+		Page:  page,
+		Size:  size,
+	})
+}
+
 // CheckMomentLatest godoc
 // @Summary 校验手记是否最新
 // @Tags Moment

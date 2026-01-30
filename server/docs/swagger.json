@@ -2676,6 +2676,25 @@
                 }
             }
         },
+        "/public/articles/recent": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public"
+                ],
+                "summary": "获取最近公开文章",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ArticleListResp"
+                        }
+                    }
+                }
+            }
+        },
         "/public/html/posts/refresh": {
             "post": {
                 "produces": [
@@ -2689,6 +2708,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {}
+                    }
+                }
+            }
+        },
+        "/public/moments/recent": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public"
+                ],
+                "summary": "获取最近公开手记",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MomentListResp"
+                        }
                     }
                 }
             }
