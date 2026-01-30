@@ -33,8 +33,13 @@ export const unregisterMarkdownComponent = (name: string) => {
 	registry.delete(name);
 };
 
+type MountedInstance = {
+	el: HTMLElement;
+	instance: unknown;
+};
+
 export const mountMarkdownComponents = (root: HTMLElement) => {
-	const instances: Array<unknown> = [];
+	const instances: MountedInstance[] = [];
 	const mounted = new WeakSet<HTMLElement>();
 
 	const depthOf = (el: HTMLElement) => {
@@ -50,7 +55,7 @@ export const mountMarkdownComponents = (root: HTMLElement) => {
 	const mountIn = (container: HTMLElement) => {
 		const placeholders = Array.from(
 			container.querySelectorAll<HTMLElement>('.md-component-placeholder')
-		).filter((el) => !mounted.has(el));
+		).filter((el) => !mounted.has(el) && el.dataset.mounted !== 'true');
 
 		placeholders.sort((a, b) => depthOf(b) - depthOf(a));
 
@@ -63,16 +68,16 @@ export const mountMarkdownComponents = (root: HTMLElement) => {
 			if (!Component) {
 				renderUnsupported(el, name, props);
 				mounted.add(el);
+				el.dataset.mounted = 'true';
 				continue;
 			}
 
+			el.dataset.contentHtml = contentHtml;
 			el.innerHTML = '';
-			el.classList.remove('md-component-placeholder');
-			el.removeAttribute('data-component');
-			el.removeAttribute('data-props');
 			const instance = mount(Component, { target: el, props: { ...props, contentHtml } });
-			instances.push(instance);
+			instances.push({ el, instance });
 			mounted.add(el);
+			el.dataset.mounted = 'true';
 
 			mountIn(el);
 		}
@@ -81,8 +86,13 @@ export const mountMarkdownComponents = (root: HTMLElement) => {
 	mountIn(root);
 
 	return () => {
-		for (const instance of instances) {
+		for (const { el, instance } of instances) {
 			unmount(instance as never);
+			const fallback = el.dataset.contentHtml;
+			if (typeof fallback === 'string') {
+				el.innerHTML = fallback;
+			}
+			el.dataset.mounted = 'false';
 		}
 	};
 };
