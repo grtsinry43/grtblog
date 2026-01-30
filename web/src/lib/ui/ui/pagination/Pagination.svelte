@@ -37,7 +37,7 @@
 		{#each pages as page}
 			{#if page === current}
 				<span
-					class="flex h-7 w-7 items-center justify-center rounded-md bg-jade-800 font-mono text-[11px] font-bold text-white shadow-sm"
+					class="flex h-7 w-7 items-center justify-center rounded-default bg-jade-800 font-mono text-[11px] font-bold text-ink-200 dark:text-ink-800 shadow-sm"
 				>
 					{page}
 				</span>
@@ -45,9 +45,9 @@
 				<Button
 					variant="ghost"
 					onclick={() => onPageChange(page)}
-					class="h-7 w-7 rounded-md !p-0 font-mono text-[11px] text-ink-400 hover:text-ink-900"
-					content={() => page}
-				/>
+					class="h-7 w-7 rounded-default font-mono text-[11px] text-ink-800 hover:text-ink-900"
+					>{page}</Button
+				>
 			{:else if (page === current - 2 && page > 1) || (page === current + 2 && page < total)}
 				<span class="select-none px-0.5 font-mono text-[9px] text-ink-300">...</span>
 			{/if}

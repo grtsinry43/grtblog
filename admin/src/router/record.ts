@@ -260,14 +260,34 @@ export const routeRecordRaw: MenuMixedOptions[] = [
   },
   {
     path: 'settings',
-    name: 'systemSettings',
+    name: 'settings',
     icon: 'iconify ph--gear-six',
-    label: '系统设置',
-    meta: {
-      componentName: 'SystemSettings',
-      showTab: true,
-    },
-    component: 'sysconfig/index',
+    label: '设置',
+    redirect: 'settings/site-info',
+    children: [
+      {
+        path: 'site-info',
+        name: 'siteInfo',
+        label: '站点信息',
+        icon: 'iconify ph--globe-hemisphere-west',
+        meta: {
+          componentName: 'SiteInfo',
+          showTab: true,
+        },
+        component: 'settings/site-info/index',
+      },
+      {
+        path: 'system',
+        name: 'systemSettings',
+        label: '系统设置',
+        icon: 'iconify ph--gear',
+        meta: {
+          componentName: 'SystemSettings',
+          showTab: true,
+        },
+        component: 'sysconfig/index',
+      },
+    ],
   },
   {
     path: 'advanced',

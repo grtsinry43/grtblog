@@ -10,8 +10,28 @@
 	import "@fontsource/google-sans";
 	import "@fontsource/noto-serif-sc";
 	import "@fontsource-variable/victor-mono";
+	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
 
 	let { children, data } = $props();
+
+	console.log('Layout data:', data);
+
+	const websiteInfoStore = websiteInfoCtx.mountModelData(data.websiteInfo ?? null);
+
+	$effect(() => {
+		websiteInfoCtx.syncModelData(websiteInfoStore, data.websiteInfo ?? null);
+	});
+
+	const websiteName = websiteInfoCtx.selectModelData((data) => data?.website_name || 'grtBlog');
+	const keywords = websiteInfoCtx.selectModelData((data) => data?.keywords || 'blog, programming, technology, software development, web development, coding');
+	const description = websiteInfoCtx.selectModelData((data) => data?.description || 'grtBlog - A personal blog about programming, technology, and software development.');
+	const siteFavicon = websiteInfoCtx.selectModelData((data) => data?.favicon || favicon);
+	const ogTitle = websiteInfoCtx.selectModelData((data) => data?.og_title || 'grtBlog');
+	const ogType = websiteInfoCtx.selectModelData((data) => data?.og_type || 'website');
+	const ogDescription = websiteInfoCtx.selectModelData((data) => data?.og_description || 'grtBlog - A personal blog about programming, technology, and software development.');
+	const ogImage = websiteInfoCtx.selectModelData((data) => data?.og_image || '');
+	const ogUrl = websiteInfoCtx.selectModelData((data) => data?.og_url || '');
+
 
 	// Initialize theme on mount
 	const theme = themeManager;
@@ -25,21 +45,21 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
-	<title>GRTBlog</title>
+	<link rel="icon" href={$siteFavicon} />
+	<title>{$websiteName}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta name="description" content="GRTBlog - A personal blog about programming, technology, and software development." />
-	<meta name="keywords" content="blog, programming, technology, software development, web development, coding" />
-	<meta name="author" content="GRTinry43" />
-	<meta property="og:title" content="GRTBlog" />
-	<meta property="og:description" content="GRTBlog - A personal blog about programming, technology, and software development." />
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="" />
-	<meta property="og:image" content="" />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content="GRTBlog" />
-	<meta name="twitter:description" content="GRTBlog - A personal blog about programming, technology, and software development." />
-	<meta name="twitter:image" content="" />
+	<meta name="description" content={$description} />
+	<meta name="keywords" content={$keywords} />
+	<meta name="author" content="grtinry43" />
+	<meta property="og:title" content={$ogTitle} />
+	<meta property="og:description" content={$ogDescription} />
+	<meta property="og:type" content={$ogType} />
+	<meta property="og:url" content={$ogUrl} />
+	<meta property="og:image" content={$ogImage} />
+	<meta name="twitter:card" content={$ogImage ? 'summary_large_image' : 'summary'} />
+	<meta name="twitter:title" content={$ogTitle} />
+	<meta name="twitter:description" content={$ogDescription} />
+	<meta name="twitter:image" content={$ogImage} />
 	<script>
 		// Inline script to prevent theme flash (fallback before Svelte hydrates)
 		(function () {

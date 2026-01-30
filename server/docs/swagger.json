@@ -2725,7 +2725,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/contract.WebsiteInfoListRespEnvelope"
+                            "$ref": "#/definitions/contract.GenericMessageEnvelope"
                         }
                     }
                 }
@@ -3098,42 +3098,6 @@
                         }
                     }
                 }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "WebsiteInfo"
-                ],
-                "summary": "新增网站信息",
-                "parameters": [
-                    {
-                        "description": "网站配置",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/contract.WebsiteInfoReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/contract.WebsiteInfoDetailRespEnvelope"
-                        }
-                    }
-                }
             }
         },
         "/website-info/{key}": {
@@ -3176,37 +3140,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.WebsiteInfoDetailRespEnvelope"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "WebsiteInfo"
-                ],
-                "summary": "删除网站信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "配置键",
-                        "name": "key",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/contract.GenericMessageEnvelope"
                         }
                     }
                 }
@@ -4919,7 +4852,18 @@
             }
         },
         "contract.SysConfigBatchUpdateReq": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SysConfigUpdateItem"
+                    }
+                }
+            }
         },
         "contract.SysConfigGroupResp": {
             "type": "object",
@@ -5014,6 +4958,51 @@
                     "items": {
                         "$ref": "#/definitions/contract.SysConfigItemResp"
                     }
+                }
+            }
+        },
+        "contract.SysConfigUpdateItem": {
+            "type": "object",
+            "required": [
+                "key"
+            ],
+            "properties": {
+                "defaultValue": {
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enumOptions": {
+                    "type": "object"
+                },
+                "groupPath": {
+                    "type": "string"
+                },
+                "isSensitive": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string",
+                    "maxLength": 45
+                },
+                "label": {
+                    "type": "string"
+                },
+                "meta": {
+                    "type": "object"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "object"
+                },
+                "valueType": {
+                    "type": "string"
+                },
+                "visibleWhen": {
+                    "type": "object"
                 }
             }
         },
@@ -5642,7 +5631,13 @@
         "contract.WebsiteInfoReq": {
             "type": "object",
             "properties": {
+                "infoJson": {
+                    "type": "object"
+                },
                 "key": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "value": {
@@ -5656,7 +5651,13 @@
                 "createdAt": {
                     "type": "string"
                 },
+                "infoJson": {
+                    "type": "object"
+                },
                 "key": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "updatedAt": {

@@ -20,9 +20,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	websiteInfo := adminGroup.Group("/website-info")
 	websiteInfo.Get("", websiteInfoHandler.List)
-	websiteInfo.Post("", websiteInfoHandler.Create)
 	websiteInfo.Put("/:key", websiteInfoHandler.Update)
-	websiteInfo.Delete("/:key", websiteInfoHandler.Delete)
 
 	navMenus := adminGroup.Group("/admin/nav-menus")
 	navMenus.Get("", navMenuHandler.ListAdmin)

@@ -26,7 +26,9 @@ type SysConfig struct {
 type WebsiteInfo struct {
 	ID        int64
 	Key       string
-	Value     string
+	Name      *string
+	Value     *string
+	InfoJSON  json.RawMessage
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+@plugin 'tailwindcss-animate';
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -101,7 +102,7 @@ body {
 }
 
 :root[class~="dark"] body {
-    background-color: var(--color-ink-950);
+    background-color: var(--color-ink-900);
     color: var(--color-ink-200);
 }
 

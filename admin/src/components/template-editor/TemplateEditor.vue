@@ -82,10 +82,12 @@ watch(
 }
 
 :deep(.cm-scroller),
+:deep(.cm-editor),
 :deep(.cm-content),
-:deep(.cm-line) {
+:deep(.cm-line),
+:deep(.cm-gutters) {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+    'Liberation Mono', 'Courier New', monospace !important;
 }
 
 :deep(.cm-template-token) {

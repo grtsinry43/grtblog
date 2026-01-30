@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -30,6 +31,8 @@ func main() {
 	// 现在 config.Load() 才能读到 .env 里的值
 	cfg := config.Load()
 
+	log.Println(startupBanner(cfg))
+
 	db, err := database.New(cfg.Database)
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
@@ -55,4 +58,37 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("graceful shutdown failed: %v", err)
 	}
+}
+
+func startupBanner(cfg config.Config) string {
+	const apiBasePath = "/api/v2"
+	version := buildVersion()
+	return "\n" +
+		"================================================================\n" +
+		"> " + cfg.App.Name + " " + version + "\n" +
+		"> " + "不仅是博客，也是全新的内容基础设施。\n" +
+		"\n" +
+		"by @grtsinry43 · github.com/grtsinry43\n" +
+		"“代码是写给人看的，顺便在机器上运行的。”\n" +
+		"\n" +
+		"- API 前缀: " + apiBasePath + "\n" +
+		"- 监听端口: :" + cfg.App.Port + "\n" +
+		"- 运行环境: " + cfg.App.Env + "\n" +
+		"================================================================"
+}
+
+func buildVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok || info == nil {
+		return "dev"
+	}
+	if info.Main.Version != "" {
+		return info.Main.Version
+	}
+	for _, setting := range info.Settings {
+		if setting.Key == "vcs.revision" {
+			return setting.Value
+		}
+	}
+	return "dev"
 }
