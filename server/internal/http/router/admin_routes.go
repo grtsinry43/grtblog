@@ -16,7 +16,8 @@ import (
 )
 
 func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, navMenuHandler *handler.NavMenuHandler, sysCfgSvc *sysconfig.Service) {
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin())
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))
 
 	websiteInfo := adminGroup.Group("/website-info")
 	websiteInfo.Get("", websiteInfoHandler.List)

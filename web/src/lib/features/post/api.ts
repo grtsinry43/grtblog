@@ -40,3 +40,9 @@ export const checkPostLatest = async (
 	});
 	return result ?? null;
 };
+
+export const getRecentPosts = async (fetcher?: typeof fetch): Promise<PostListResponse> => {
+	const api = getApi(fetcher);
+	const result = await api<PostListResponse>('/public/articles/recent');
+	return result ?? { items: [], total: 0, page: 1, size: 5 };
+};

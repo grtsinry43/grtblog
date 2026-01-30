@@ -211,49 +211,40 @@ func (h *ArticleHandler) GetArticleByShortURL(c *fiber.Ctx) error {
 // @Success 200 {object} contract.ArticleListResp
 // @Router /articles [get]
 func (h *ArticleHandler) ListArticles(c *fiber.Ctx) error {
-	query := contract.ListArticlesReq{
-		Page:     1,
-		PageSize: 10,
-	}
+	query := buildArticleListQuery(c)
 
-	// 解析查询参数
-	if page, err := strconv.Atoi(c.Query("page", "1")); err == nil && page > 0 {
-		query.Page = page
-	}
-	if pageSize, err := strconv.Atoi(c.Query("pageSize", "10")); err == nil && pageSize > 0 && pageSize <= 100 {
-		query.PageSize = pageSize
-	}
-	if categoryID, err := strconv.ParseInt(c.Query("categoryId"), 10, 64); err == nil {
-		query.CategoryID = &categoryID
-	}
-	if tagID, err := strconv.ParseInt(c.Query("tagId"), 10, 64); err == nil {
-		query.TagID = &tagID
-	}
-	if search := c.Query("search"); search != "" {
-		query.Search = &search
-	}
+	// 公共接口只返回已发布
+	published := true
+	query.Published = &published
 
-	// 只有管理员可以查看未发布的文章
-	_, hasAuth := middleware.GetClaims(c)
-	if hasAuth {
-		// TODO: 检查是否有管理员权限
-		if publishedStr := c.Query("published"); publishedStr != "" {
-			if published, err := strconv.ParseBool(publishedStr); err == nil {
-				query.Published = &published
-			}
-		}
-	} else {
-		// 非登录用户只能看发布的文章
-		published := true
-		query.Published = &published
-	}
+	return h.listArticlesWithQuery(c, query)
+}
 
+// ListArticlesAdmin godoc
+// @Summary 获取文章列表（管理员）
+// @Tags Article
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Param categoryId query int false "分类ID"
+// @Param tagId query int false "标签ID"
+// @Param authorId query int false "作者ID"
+// @Param published query bool false "是否发布"
+// @Param search query string false "搜索关键词"
+// @Success 200 {object} contract.ArticleListResp
+// @Security BearerAuth
+// @Router /admin/articles [get]
+func (h *ArticleHandler) ListArticlesAdmin(c *fiber.Ctx) error {
+	query := buildArticleListQuery(c)
+	return h.listArticlesWithQuery(c, query)
+}
+
+func (h *ArticleHandler) listArticlesWithQuery(c *fiber.Ctx, query contract.ListArticlesReq) error {
 	articles, total, err := h.svc.ListArticles(c.Context(), content.ArticleListOptionsInternal(query))
 	if err != nil {
 		return err
 	}
 
-	// 转换为响应DTO
 	articleResponses := make([]contract.ArticleListItemResp, len(articles))
 	for i, art := range articles {
 		resp, err := h.toArticleListItemResp(c.Context(), art)
@@ -271,6 +262,39 @@ func (h *ArticleHandler) ListArticles(c *fiber.Ctx) error {
 	}
 
 	return response.Success(c, listResponse)
+}
+
+func buildArticleListQuery(c *fiber.Ctx) contract.ListArticlesReq {
+	query := contract.ListArticlesReq{
+		Page:     1,
+		PageSize: 10,
+	}
+
+	if page, err := strconv.Atoi(c.Query("page", "1")); err == nil && page > 0 {
+		query.Page = page
+	}
+	if pageSize, err := strconv.Atoi(c.Query("pageSize", "10")); err == nil && pageSize > 0 && pageSize <= 100 {
+		query.PageSize = pageSize
+	}
+	if categoryID, err := strconv.ParseInt(c.Query("categoryId"), 10, 64); err == nil {
+		query.CategoryID = &categoryID
+	}
+	if tagID, err := strconv.ParseInt(c.Query("tagId"), 10, 64); err == nil {
+		query.TagID = &tagID
+	}
+	if authorID, err := strconv.ParseInt(c.Query("authorId"), 10, 64); err == nil {
+		query.AuthorID = &authorID
+	}
+	if publishedStr := c.Query("published"); publishedStr != "" {
+		if published, err := strconv.ParseBool(publishedStr); err == nil {
+			query.Published = &published
+		}
+	}
+	if search := c.Query("search"); search != "" {
+		query.Search = &search
+	}
+
+	return query
 }
 
 // ListRecentPublicArticles godoc

@@ -8,6 +8,14 @@ export interface CategoryItem {
   updatedAt: string
 }
 
+export interface ColumnItem {
+  id: number
+  name: string
+  shortUrl: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface TagItem {
   id: number
   name: string
@@ -21,6 +29,12 @@ export function listCategories() {
   })
 }
 
+export function listColumns() {
+  return request<ColumnItem[]>('/columns', {
+    method: 'GET',
+  })
+}
+
 export function listTags() {
   return request<TagItem[]>('/tags', {
     method: 'GET',
@@ -29,6 +43,13 @@ export function listTags() {
 
 export function createCategory(payload: { name: string; shortUrl: string }) {
   return request<CategoryItem>('/admin/categories', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function createColumn(payload: { name: string; shortUrl: string }) {
+  return request<ColumnItem>('/admin/columns', {
     method: 'POST',
     body: payload,
   })

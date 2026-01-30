@@ -4,14 +4,16 @@
 	import ClientOnly from '$lib/ui/common/ClientOnly.svelte';
 	import type { QueryClientConfig } from '@tanstack/svelte-query';
 
-import type { Component } from 'svelte';
+	import type { Component } from 'svelte';
 
-type LoaderComponent = Component<Record<string, never>>;
-	let { children, options, fallback, loader } = $props<{
+	type LoaderProps = Record<string, unknown>;
+	type LoaderComponent = Component<any>;
+	let { children, options, fallback, loader, loaderProps } = $props<{
 		children?: Snippet;
 		options?: QueryClientConfig;
 		fallback?: Snippet;
 		loader?: () => Promise<{ default: LoaderComponent }>;
+		loaderProps?: LoaderProps;
 	}>();
 	let Provider = $state<null | typeof import('@tanstack/svelte-query').QueryClientProvider>(null);
 	let client = $state<null | import('@tanstack/svelte-query').QueryClient>(null);
@@ -36,7 +38,7 @@ type LoaderComponent = Component<Record<string, never>>;
 	{#if ready && Provider && client}
 		<Provider client={client}>
 			{#if Loaded}
-				<Loaded />
+				<Loaded {...loaderProps} />
 			{:else}
 				{@render children?.()}
 			{/if}

@@ -81,6 +81,36 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         },
         component: 'notes/index',
       },
+      {
+        path: 'edit/new',
+        name: 'noteCreate',
+        label: '新建手记',
+        show: false,
+        meta: {
+          componentName: 'NoteEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle() {
+            return '新建手记'
+          },
+        },
+        component: 'notes/edit',
+      },
+      {
+        path: 'edit/:id',
+        name: 'noteEdit',
+        label: '编辑手记',
+        show: false,
+        meta: {
+          componentName: 'NoteEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle({ id }) {
+            return `编辑手记${id ? `-${id}` : ''}`
+          },
+        },
+        component: 'notes/edit',
+      },
     ],
   },
   {

@@ -231,39 +231,35 @@ func (h *MomentHandler) GetMomentByShortURL(c *fiber.Ctx) error {
 // @Success 200 {object} contract.MomentListResp
 // @Router /moments [get]
 func (h *MomentHandler) ListMoments(c *fiber.Ctx) error {
-	query := contract.ListMomentsReq{
-		Page:     1,
-		PageSize: 10,
-	}
+	query := buildMomentListQuery(c)
 
-	if page, err := strconv.Atoi(c.Query("page", "1")); err == nil && page > 0 {
-		query.Page = page
-	}
-	if pageSize, err := strconv.Atoi(c.Query("pageSize", "10")); err == nil && pageSize > 0 && pageSize <= 100 {
-		query.PageSize = pageSize
-	}
-	if columnID, err := strconv.ParseInt(c.Query("columnId"), 10, 64); err == nil {
-		query.ColumnID = &columnID
-	}
-	if topicID, err := strconv.ParseInt(c.Query("topicId"), 10, 64); err == nil {
-		query.TopicID = &topicID
-	}
-	if search := c.Query("search"); search != "" {
-		query.Search = &search
-	}
+	// 公共接口只返回已发布
+	published := true
+	query.Published = &published
 
-	_, hasAuth := middleware.GetClaims(c)
-	if hasAuth {
-		if publishedStr := c.Query("published"); publishedStr != "" {
-			if published, err := strconv.ParseBool(publishedStr); err == nil {
-				query.Published = &published
-			}
-		}
-	} else {
-		published := true
-		query.Published = &published
-	}
+	return h.listMomentsWithQuery(c, query)
+}
 
+// ListMomentsAdmin godoc
+// @Summary 获取手记列表（管理员）
+// @Tags Moment
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Param columnId query int false "分区ID"
+// @Param topicId query int false "话题ID"
+// @Param authorId query int false "作者ID"
+// @Param published query bool false "是否发布"
+// @Param search query string false "搜索关键词"
+// @Success 200 {object} contract.MomentListResp
+// @Security BearerAuth
+// @Router /admin/moments [get]
+func (h *MomentHandler) ListMomentsAdmin(c *fiber.Ctx) error {
+	query := buildMomentListQuery(c)
+	return h.listMomentsWithQuery(c, query)
+}
+
+func (h *MomentHandler) listMomentsWithQuery(c *fiber.Ctx, query contract.ListMomentsReq) error {
 	moments, total, err := h.svc.ListMoments(c.Context(), content.MomentListOptionsInternal(query))
 	if err != nil {
 		return err
@@ -286,6 +282,39 @@ func (h *MomentHandler) ListMoments(c *fiber.Ctx) error {
 	}
 
 	return response.Success(c, listResponse)
+}
+
+func buildMomentListQuery(c *fiber.Ctx) contract.ListMomentsReq {
+	query := contract.ListMomentsReq{
+		Page:     1,
+		PageSize: 10,
+	}
+
+	if page, err := strconv.Atoi(c.Query("page", "1")); err == nil && page > 0 {
+		query.Page = page
+	}
+	if pageSize, err := strconv.Atoi(c.Query("pageSize", "10")); err == nil && pageSize > 0 && pageSize <= 100 {
+		query.PageSize = pageSize
+	}
+	if columnID, err := strconv.ParseInt(c.Query("columnId"), 10, 64); err == nil {
+		query.ColumnID = &columnID
+	}
+	if topicID, err := strconv.ParseInt(c.Query("topicId"), 10, 64); err == nil {
+		query.TopicID = &topicID
+	}
+	if authorID, err := strconv.ParseInt(c.Query("authorId"), 10, 64); err == nil {
+		query.AuthorID = &authorID
+	}
+	if publishedStr := c.Query("published"); publishedStr != "" {
+		if published, err := strconv.ParseBool(publishedStr); err == nil {
+			query.Published = &published
+		}
+	}
+	if search := c.Query("search"); search != "" {
+		query.Search = &search
+	}
+
+	return query
 }
 
 // ListRecentPublicMoments godoc
