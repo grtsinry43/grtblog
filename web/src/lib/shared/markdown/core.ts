@@ -1,7 +1,9 @@
 import MarkdownIt from 'markdown-it';
+import footnote from 'markdown-it-footnote';
 
 import { componentBlockExtension } from './extensions/comp-block';
 import { markdownElementsExtension } from './extensions/elements';
+import { footnoteLinkCardExtension } from './extensions/footnote-link-card';
 
 import type { MarkdownConfig } from './types';
 
@@ -31,8 +33,10 @@ export const createMarkdownIt = (config: MarkdownConfig = {}) => {
 		...config.options
 	});
 
+	md.use(footnote);
 	componentBlockExtension(md);
 	markdownElementsExtension(md);
+	footnoteLinkCardExtension(md);
 	config.extensions?.forEach((extension) => extension(md));
 	applyHeadingAnchorRule(md);
 

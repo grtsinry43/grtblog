@@ -33,7 +33,11 @@
 	};
 
 	let contentHtml = $derived(
-		$postStore ? renderMarkdown($postStore.content ?? '', flattenTOC($postStore.toc)) : ''
+		$postStore
+			? renderMarkdown($postStore.content ?? '', flattenTOC($postStore.toc), {
+					origin: typeof window !== 'undefined' ? window.location.origin : undefined
+				})
+			: ''
 	);
 
 	const setupObserver = () => {
