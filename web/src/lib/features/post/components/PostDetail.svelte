@@ -175,6 +175,19 @@
 						content={topContent}
 					/>
 				</footer>
+
+				<!-- Comments Section -->
+				{#snippet commentFallback()}
+					<div class="py-10 text-center text-sm text-ink-300">加载评论区...</div>
+				{/snippet}
+				<QueryRoot
+					loader={() => import('$lib/features/comment/components/CommentAreaClient.svelte')}
+					loaderProps={{
+						areaId: $postStore.commentAreaId,
+						commentsCount: $postStore.metrics?.comments ?? 0
+					}}
+					fallback={commentFallback}
+				/>
 			</main>
 
 			<!-- Sidebar / TOC -->

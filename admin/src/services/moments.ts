@@ -1,17 +1,17 @@
 import { request } from './http'
 
-export interface ArticleListItem {
+export interface MomentListItem {
   id: number
   title: string
   shortUrl: string
   authorName?: string
   summary: string
   avatar?: string
-  cover?: string
+  image?: string[]
   views: number
-  categoryName?: string
-  categoryShortUrl?: string
-  tags: string[]
+  columnName?: string
+  columnShortUrl?: string
+  topics: string[]
   likes: number
   comments: number
   isTop: boolean
@@ -21,57 +21,55 @@ export interface ArticleListItem {
   updatedAt: string
 }
 
-export interface ArticleListResponse {
-  items: ArticleListItem[]
+export interface MomentListResponse {
+  items: MomentListItem[]
   total: number
   page: number
   size: number
 }
 
-export interface ArticleTag {
+export interface MomentTopic {
   id: number
   name: string
 }
 
-export interface ArticleDetail {
+export interface MomentDetail {
   id: number
   title: string
   summary: string
   aiSummary?: string | null
-  leadIn?: string | null
   content: string
   contentHash: string
   authorId: number
-  cover?: string | null
-  categoryId?: number | null
+  image?: string[]
+  columnId?: number | null
   shortUrl: string
   isPublished: boolean
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
-  tags?: ArticleTag[]
+  topics?: MomentTopic[]
   createdAt: string
   updatedAt: string
 }
 
-export interface ListArticlesParams {
+export interface ListMomentsParams {
   page?: number
   pageSize?: number
-  categoryId?: number
-  tagId?: number
+  columnId?: number
+  topicId?: number
   authorId?: number
   published?: boolean
   search?: string
 }
 
-export interface CreateArticlePayload {
+export interface CreateMomentPayload {
   title: string
   summary: string
-  leadIn?: string | null
   content: string
-  cover?: string | null
-  categoryId?: number | null
-  tagIds?: number[]
+  image?: string[]
+  columnId?: number | null
+  topicIds?: number[]
   shortUrl?: string | null
   isPublished: boolean
   isTop: boolean
@@ -80,14 +78,13 @@ export interface CreateArticlePayload {
   createdAt?: string | null
 }
 
-export interface UpdateArticlePayload {
+export interface UpdateMomentPayload {
   title: string
   summary: string
-  leadIn?: string | null
   content: string
-  cover?: string | null
-  categoryId?: number | null
-  tagIds?: number[]
+  image?: string[]
+  columnId?: number | null
+  topicIds?: number[]
   shortUrl: string
   isPublished: boolean
   isTop: boolean
@@ -103,28 +100,28 @@ function stripEmpty<T extends Record<string, unknown>>(value: T) {
   ) as T
 }
 
-export function listArticles(params: ListArticlesParams) {
-  return request<ArticleListResponse>('/admin/articles', {
+export function listMoments(params: ListMomentsParams) {
+  return request<MomentListResponse>('/admin/moments', {
     method: 'GET',
     query: stripEmpty(params),
   })
 }
 
-export function getArticle(id: number) {
-  return request<ArticleDetail>(`/articles/${id}`, {
+export function getMoment(id: number) {
+  return request<MomentDetail>(`/moments/${id}`, {
     method: 'GET',
   })
 }
 
-export function createArticle(payload: CreateArticlePayload) {
-  return request<ArticleDetail>('/articles', {
+export function createMoment(payload: CreateMomentPayload) {
+  return request<MomentDetail>('/moments', {
     method: 'POST',
     body: payload,
   })
 }
 
-export function updateArticle(id: number, payload: UpdateArticlePayload) {
-  return request<ArticleDetail>(`/articles/${id}`, {
+export function updateMoment(id: number, payload: UpdateMomentPayload) {
+  return request<MomentDetail>(`/moments/${id}`, {
     method: 'PUT',
     body: payload,
   })

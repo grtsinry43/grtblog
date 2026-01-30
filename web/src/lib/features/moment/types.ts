@@ -1,16 +1,16 @@
-export type PostSummary = {
+export type MomentSummary = {
 	id: number;
 	title: string;
 	shortUrl: string;
 	authorName?: string;
 	summary: string;
 	avatar?: string;
-	cover?: string;
+	image?: string[];
 	views: number;
-	categoryName?: string;
-	categoryShortUrl?: string;
+	columnName?: string;
+	columnShortUrl?: string;
 	commentAreaId?: number | null;
-	tags: string[];
+	topics: string[];
 	likes: number;
 	comments: number;
 	isTop: boolean;
@@ -20,22 +20,21 @@ export type PostSummary = {
 	updatedAt: string;
 };
 
-export type PostDetail = {
+export type MomentDetail = {
 	id: number;
 	title: string;
 	summary: string;
 	aiSummary?: string | null;
 	content: string;
 	contentHash: string;
-	leadIn?: string | null;
 	toc?: TOCNode[];
 	authorId: number;
 	shortUrl: string;
-	cover?: string;
-	categoryId?: number | null;
+	image?: string[];
+	columnId?: number | null;
 	commentAreaId?: number | null;
 	isPublished: boolean;
-	tags?: Tag[];
+	topics?: TopicTag[];
 	metrics?: {
 		views: number;
 		likes: number;
@@ -54,30 +53,30 @@ export type TOCNode = {
 	children?: TOCNode[];
 };
 
-export type Tag = {
+export type TopicTag = {
 	id: number;
 	name: string;
 };
 
-export type PostLatestCheckResponse = {
+export type MomentLatestCheckResponse = {
 	latest: boolean;
 	contentHash: string;
 	title?: string;
-	leadIn?: string | null;
+	summary?: string;
 	toc?: TOCNode[];
 	content?: string;
 };
 
-export type PostContentPayload = {
+export type MomentContentPayload = {
 	contentHash: string;
 	title?: string;
-	leadIn?: string | null;
+	summary?: string;
 	toc?: TOCNode[];
 	content?: string;
 };
 
-export type PostListResponse = {
-	items: PostSummary[];
+export type MomentListResponse = {
+	items: MomentSummary[];
 	total: number;
 	page: number;
 	size: number;

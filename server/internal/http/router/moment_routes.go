@@ -26,6 +26,10 @@ func registerMomentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	authGroup.Post("/", momentHandler.CreateMoment)      // POST /api/v2/moments
 	authGroup.Put("/:id", momentHandler.UpdateMoment)    // PUT /api/v2/moments/123
 	authGroup.Delete("/:id", momentHandler.DeleteMoment) // DELETE /api/v2/moments/123
+
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))
+	adminGroup.Get("/admin/moments", momentHandler.ListMomentsAdmin) // GET /api/v2/admin/moments
 }
 
 func newMomentHandler(deps Dependencies) *handler.MomentHandler {

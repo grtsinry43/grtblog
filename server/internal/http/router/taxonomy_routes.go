@@ -19,7 +19,8 @@ func registerTaxonomyPublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 func registerTaxonomyAdminRoutes(v2 fiber.Router, deps Dependencies) {
 	taxHandler := newTaxonomyHandler(deps)
-	admin := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin())
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
+	admin := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))
 
 	admin.Post("/admin/categories", taxHandler.CreateCategory)
 	admin.Put("/admin/categories/:id", taxHandler.UpdateCategory)

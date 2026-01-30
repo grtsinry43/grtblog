@@ -6,13 +6,15 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/webhook"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
+	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 )
 
 func registerWebhookAdminRoutes(v2 fiber.Router, deps Dependencies, webhookSvc *webhook.Service) {
 	if webhookSvc == nil {
 		return
 	}
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin())
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))
 	webhookHandler := handler.NewWebhookHandler(webhookSvc)
 
 	admin := adminGroup.Group("/admin")

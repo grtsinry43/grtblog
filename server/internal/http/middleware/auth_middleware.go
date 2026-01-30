@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/jwt"
 )
@@ -33,14 +34,24 @@ func RequireAuth(manager *jwt.Manager) fiber.Handler {
 	}
 }
 
-// RequireAdmin 要求当前用户是管理员。
-func RequireAdmin() fiber.Handler {
+// RequireAdmin 要求当前用户是管理员（基于数据库二次校验）。
+func RequireAdmin(repo identity.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		claims, ok := getClaims(c)
 		if !ok {
 			return response.ErrorFromBiz[any](c, response.NotLogin)
 		}
 		if !claims.IsAdmin {
+			return response.ErrorWithMsg[any](c, response.Unauthorized, "需要管理员权限")
+		}
+		user, err := repo.FindByID(c.Context(), claims.UserID)
+		if err != nil {
+			if errors.Is(err, identity.ErrUserNotFound) {
+				return response.ErrorWithMsg[any](c, response.Unauthorized, "需要管理员权限")
+			}
+			return err
+		}
+		if !user.IsAdmin {
 			return response.ErrorWithMsg[any](c, response.Unauthorized, "需要管理员权限")
 		}
 		return c.Next()
