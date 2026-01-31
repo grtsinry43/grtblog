@@ -55,6 +55,7 @@ func (s *Service) CreatePage(ctx context.Context, cmd CreatePageCmd) (*content.P
 		ShortURL:    shortURL,
 		IsEnabled:   cmd.IsEnabled,
 		IsBuiltin:   cmd.IsBuiltin,
+		ExtInfo:     cmd.ExtInfo,
 		CreatedAt:   createdAt,
 	}
 
@@ -102,6 +103,7 @@ func (s *Service) UpdatePage(ctx context.Context, cmd UpdatePageCmd) (*content.P
 	existing.ShortURL = shortURL
 	existing.IsEnabled = cmd.IsEnabled
 	existing.IsBuiltin = cmd.IsBuiltin
+	existing.ExtInfo = cmd.ExtInfo
 
 	if err := s.repo.UpdatePage(ctx, existing); err != nil {
 		return nil, err

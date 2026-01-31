@@ -59,6 +59,8 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@iconify/icons-simple-icons": "^1.2.1",
+		"@iconify/utils": "^3.0.0",
 		"@fontsource-variable/victor-mono": "^5.2.8",
 		"@fontsource/google-sans": "^5.2.1",
 		"@fontsource/noto-serif-sc": "^5.2.9",

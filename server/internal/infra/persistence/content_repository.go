@@ -365,7 +365,7 @@ func (r *ContentRepository) UpdateArticleViews(ctx context.Context, articleID in
 	}
 	return r.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "article_id"}},
+			Columns: []clause.Column{{Name: "article_id"}},
 			DoUpdates: clause.Assignments(map[string]any{
 				"views":      gorm.Expr("article_metrics.views + 1"),
 				"updated_at": time.Now(),
@@ -409,7 +409,7 @@ func (r *ContentRepository) UpdateMomentViews(ctx context.Context, momentID int6
 	}
 	return r.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "moment_id"}},
+			Columns: []clause.Column{{Name: "moment_id"}},
 			DoUpdates: clause.Assignments(map[string]any{
 				"views":      gorm.Expr("moment_metrics.views + 1"),
 				"updated_at": time.Now(),
@@ -524,6 +524,7 @@ func (r *ContentRepository) CreateArticle(ctx context.Context, article *content.
 		IsTop:       article.IsTop,
 		IsHot:       article.IsHot,
 		IsOriginal:  article.IsOriginal,
+		ExtInfo:     article.ExtInfo,
 		CreatedAt:   article.CreatedAt,
 	}
 
@@ -614,6 +615,7 @@ func (r *ContentRepository) UpdateArticle(ctx context.Context, article *content.
 		"is_top":       article.IsTop,
 		"is_hot":       article.IsHot,
 		"is_original":  article.IsOriginal,
+		"ext_info":     article.ExtInfo,
 		"updated_at":   now,
 	}
 	if err := r.db.WithContext(ctx).
@@ -802,6 +804,7 @@ func (r *ContentRepository) CreateMoment(ctx context.Context, moment *content.Mo
 		IsTop:       moment.IsTop,
 		IsHot:       moment.IsHot,
 		IsOriginal:  moment.IsOriginal,
+		ExtInfo:     moment.ExtInfo,
 		CreatedAt:   moment.CreatedAt,
 	}
 
@@ -891,6 +894,7 @@ func (r *ContentRepository) UpdateMoment(ctx context.Context, moment *content.Mo
 		"is_top":       moment.IsTop,
 		"is_hot":       moment.IsHot,
 		"is_original":  moment.IsOriginal,
+		"ext_info":     moment.ExtInfo,
 		"updated_at":   now,
 	}
 	if err := r.db.WithContext(ctx).
@@ -1040,6 +1044,7 @@ func (r *ContentRepository) CreatePage(ctx context.Context, page *content.Page) 
 		ShortURL:    page.ShortURL,
 		IsEnabled:   page.IsEnabled,
 		IsBuiltin:   page.IsBuiltin,
+		ExtInfo:     page.ExtInfo,
 		CreatedAt:   page.CreatedAt,
 	}
 
@@ -1125,6 +1130,7 @@ func (r *ContentRepository) UpdatePage(ctx context.Context, page *content.Page) 
 		"short_url":    page.ShortURL,
 		"is_enabled":   page.IsEnabled,
 		"is_builtin":   page.IsBuiltin,
+		"ext_info":     page.ExtInfo,
 		"updated_at":   now,
 	}
 	if err := r.db.WithContext(ctx).
@@ -1266,6 +1272,7 @@ func (r *ContentRepository) modelToArticle(am *model.Article) *content.Article {
 		IsTop:       am.IsTop,
 		IsHot:       am.IsHot,
 		IsOriginal:  am.IsOriginal,
+		ExtInfo:     am.ExtInfo,
 		CreatedAt:   am.CreatedAt,
 		UpdatedAt:   am.UpdatedAt,
 		DeletedAt:   timeToTimePtr(am.DeletedAt.Time),
@@ -1296,6 +1303,7 @@ func (r *ContentRepository) modelToMoment(mm *model.Moment) *content.Moment {
 		IsTop:       mm.IsTop,
 		IsHot:       mm.IsHot,
 		IsOriginal:  mm.IsOriginal,
+		ExtInfo:     mm.ExtInfo,
 		CreatedAt:   mm.CreatedAt,
 		UpdatedAt:   mm.UpdatedAt,
 		DeletedAt:   timeToTimePtr(mm.DeletedAt.Time),
@@ -1321,6 +1329,7 @@ func (r *ContentRepository) modelToPage(pm *model.Page) *content.Page {
 		ShortURL:    pm.ShortURL,
 		IsEnabled:   pm.IsEnabled,
 		IsBuiltin:   pm.IsBuiltin,
+		ExtInfo:     pm.ExtInfo,
 		CreatedAt:   pm.CreatedAt,
 		UpdatedAt:   pm.UpdatedAt,
 		DeletedAt:   timeToTimePtr(pm.DeletedAt.Time),

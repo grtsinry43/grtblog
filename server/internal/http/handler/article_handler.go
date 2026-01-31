@@ -51,11 +51,16 @@ func (h *ArticleHandler) CreateArticle(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	extInfo, err := parseExtInfo(req.ExtInfo)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
+	}
 
 	var cmd article.CreateArticleCmd
 	if err := copier.Copy(&cmd, req); err != nil {
 		return response.NewBizErrorWithMsg(response.ParamsError, "请求体映射失败")
 	}
+	cmd.ExtInfo = extInfo
 
 	createdArticle, err := h.svc.CreateArticle(c.Context(), claims.UserID, cmd)
 	if err != nil {
@@ -111,12 +116,17 @@ func (h *ArticleHandler) UpdateArticle(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	extInfo, err := parseExtInfo(req.ExtInfo)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
+	}
 
 	var cmd article.UpdateArticleCmd
 	if err := copier.Copy(&cmd, req); err != nil {
 		return response.NewBizErrorWithMsg(response.ParamsError, "请求体映射失败")
 	}
 	cmd.ID = id
+	cmd.ExtInfo = extInfo
 
 	updatedArticle, err := h.svc.UpdateArticle(c.Context(), cmd)
 	if err != nil {
@@ -430,6 +440,7 @@ func (h *ArticleHandler) toArticleResp(ctx context.Context, article *content.Art
 		return nil, err
 	}
 	resp.TOC = mapTOCNodes(article.TOC)
+	resp.ExtInfo = jsonRawFromBytes(article.ExtInfo)
 
 	if len(tags) > 0 {
 		resp.Tags = make([]contract.TagResp, len(tags))

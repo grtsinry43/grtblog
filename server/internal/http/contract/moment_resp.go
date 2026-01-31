@@ -20,6 +20,7 @@ type MomentResp struct {
 	IsTop       bool         `json:"isTop"`
 	IsHot       bool         `json:"isHot"`
 	IsOriginal  bool         `json:"isOriginal"`
+	ExtInfo     *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
 	Topics      []TagResp    `json:"topics,omitempty"`
 	Metrics     *MetricsResp `json:"metrics,omitempty"`
 	CreatedAt   time.Time    `json:"createdAt"`

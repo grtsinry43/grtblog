@@ -4,6 +4,7 @@ import type { Component } from 'svelte';
 type ComponentConstructor = Component<Record<string, any>>;
 
 const registry = new Map<string, ComponentConstructor>();
+const mountedInstances = new WeakMap<HTMLElement, unknown>();
 
 const parseProps = (raw?: string) => {
 	if (!raw) {
@@ -33,15 +34,35 @@ export const unregisterMarkdownComponent = (name: string) => {
 	registry.delete(name);
 };
 
-type MountedInstance = {
-	el: HTMLElement;
-	instance: unknown;
+const collectPlaceholders = (root: HTMLElement) => {
+	const placeholders = root.matches('.md-component-placeholder')
+		? [root]
+		: [];
+	for (const el of root.querySelectorAll<HTMLElement>('.md-component-placeholder')) {
+		placeholders.push(el);
+	}
+	return placeholders;
+};
+
+export const unmountMarkdownComponent = (el: HTMLElement) => {
+	const instance = mountedInstances.get(el);
+	if (!instance) return;
+	unmount(instance as never);
+	const fallback = el.dataset.contentHtml;
+	if (typeof fallback === 'string') {
+		el.innerHTML = fallback;
+	}
+	el.dataset.mounted = 'false';
+	mountedInstances.delete(el);
+};
+
+export const unmountMarkdownComponentsIn = (root: HTMLElement) => {
+	for (const el of collectPlaceholders(root)) {
+		unmountMarkdownComponent(el);
+	}
 };
 
 export const mountMarkdownComponents = (root: HTMLElement) => {
-	const instances: MountedInstance[] = [];
-	const mounted = new WeakSet<HTMLElement>();
-
 	const depthOf = (el: HTMLElement) => {
 		let depth = 0;
 		let current: HTMLElement | null = el.parentElement;
@@ -53,9 +74,9 @@ export const mountMarkdownComponents = (root: HTMLElement) => {
 	};
 
 	const mountIn = (container: HTMLElement) => {
-		const placeholders = Array.from(
-			container.querySelectorAll<HTMLElement>('.md-component-placeholder')
-		).filter((el) => !mounted.has(el) && el.dataset.mounted !== 'true');
+		const placeholders = collectPlaceholders(container).filter(
+			(el) => !mountedInstances.has(el) && el.dataset.mounted !== 'true'
+		);
 
 		placeholders.sort((a, b) => depthOf(b) - depthOf(a));
 
@@ -64,19 +85,27 @@ export const mountMarkdownComponents = (root: HTMLElement) => {
 			const Component = registry.get(name);
 			const props = parseProps(el.dataset.props);
 			const contentHtml = el.innerHTML;
+			const mountTargetSelector = el.dataset.mountTarget;
+			const mountTarget = mountTargetSelector
+				? el.querySelector<HTMLElement>(mountTargetSelector)
+				: null;
 
 			if (!Component) {
 				renderUnsupported(el, name, props);
-				mounted.add(el);
 				el.dataset.mounted = 'true';
 				continue;
 			}
 
 			el.dataset.contentHtml = contentHtml;
-			el.innerHTML = '';
-			const instance = mount(Component, { target: el, props: { ...props, contentHtml } });
-			instances.push({ el, instance });
-			mounted.add(el);
+			if (!mountTarget) {
+				el.innerHTML = '';
+			}
+			const imgEl = name === 'md-image' ? el.querySelector('img') : null;
+			const instance = mount(Component, {
+				target: mountTarget ?? el,
+				props: { ...props, contentHtml, imgEl }
+			});
+			mountedInstances.set(el, instance);
 			el.dataset.mounted = 'true';
 
 			mountIn(el);
@@ -85,14 +114,5 @@ export const mountMarkdownComponents = (root: HTMLElement) => {
 
 	mountIn(root);
 
-	return () => {
-		for (const { el, instance } of instances) {
-			unmount(instance as never);
-			const fallback = el.dataset.contentHtml;
-			if (typeof fallback === 'string') {
-				el.innerHTML = fallback;
-			}
-			el.dataset.mounted = 'false';
-		}
-	};
+	return () => unmountMarkdownComponentsIn(root);
 };

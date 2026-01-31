@@ -1,4 +1,5 @@
 import { request } from './http'
+import type { ContentExtInfo } from '@/types/ext-info'
 
 export interface MomentListItem {
   id: number
@@ -48,6 +49,7 @@ export interface MomentDetail {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  extInfo?: ContentExtInfo | null
   topics?: MomentTopic[]
   createdAt: string
   updatedAt: string
@@ -75,6 +77,7 @@ export interface CreateMomentPayload {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  extInfo?: ContentExtInfo | null
   createdAt?: string | null
 }
 
@@ -90,6 +93,7 @@ export interface UpdateMomentPayload {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  extInfo?: ContentExtInfo | null
 }
 
 function stripEmpty<T extends Record<string, unknown>>(value: T) {

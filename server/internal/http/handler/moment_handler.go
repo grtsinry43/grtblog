@@ -52,6 +52,10 @@ func (h *MomentHandler) CreateMoment(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	extInfo, err := parseExtInfo(req.ExtInfo)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
+	}
 
 	cmd := moment.CreateMomentCmd{
 		Title:       req.Title,
@@ -65,6 +69,7 @@ func (h *MomentHandler) CreateMoment(c *fiber.Ctx) error {
 		IsTop:       req.IsTop,
 		IsHot:       req.IsHot,
 		IsOriginal:  req.IsOriginal,
+		ExtInfo:     extInfo,
 		CreatedAt:   req.CreatedAt,
 	}
 
@@ -122,6 +127,10 @@ func (h *MomentHandler) UpdateMoment(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	extInfo, err := parseExtInfo(req.ExtInfo)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
+	}
 
 	cmd := moment.UpdateMomentCmd{
 		Title:       req.Title,
@@ -135,6 +144,7 @@ func (h *MomentHandler) UpdateMoment(c *fiber.Ctx) error {
 		IsTop:       req.IsTop,
 		IsHot:       req.IsHot,
 		IsOriginal:  req.IsOriginal,
+		ExtInfo:     extInfo,
 	}
 	cmd.ID = id
 
@@ -462,6 +472,7 @@ func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Mo
 		IsTop:       momentItem.IsTop,
 		IsHot:       momentItem.IsHot,
 		IsOriginal:  momentItem.IsOriginal,
+		ExtInfo:     jsonRawFromBytes(momentItem.ExtInfo),
 		CreatedAt:   momentItem.CreatedAt,
 		UpdatedAt:   momentItem.UpdatedAt,
 	}

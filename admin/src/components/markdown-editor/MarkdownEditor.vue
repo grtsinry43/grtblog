@@ -9,6 +9,7 @@ import {
   NSpace,
   NSwitch,
   useThemeVars,
+  useMessage,
 } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 
@@ -16,6 +17,7 @@ import EditorFloatingMenu from '@/components/markdown-editor/EditorFloatingMenu.
 import { useCodeMirror } from '@/composables/markdown-editor/use-codemirror'
 import { useComponentInserter } from '@/composables/markdown-editor/use-component-inserter.ts'
 import { useFloatingMenu } from '@/composables/markdown-editor/use-floating-menu'
+import { uploadFile } from '@/services/uploads'
 import { cah } from '@/utils/chromaHelper'
 
 const props = defineProps<{
@@ -37,6 +39,7 @@ const emit = defineEmits<{
 
 const editorRef = ref<HTMLElement>()
 const themeVars = useThemeVars()
+const message = useMessage()
 
 // 样式定义
 const editorStyle = computed(() => ({
@@ -76,6 +79,16 @@ const { view, onViewUpdate } = useCodeMirror(editorRef, {
   onChange: (val) => emit('update:modelValue', val),
   // 点击图标时，触发 inserter
   onComponentEdit: (payload) => inserter.open(payload),
+  onUploadImage: async (file) => {
+    try {
+      const result = await uploadFile(file, 'picture')
+      return result.publicUrl
+    } catch (error) {
+      console.error(error)
+      message.error('图片上传失败')
+      throw error
+    }
+  },
 })
 
 // 2. 挂载组件插入逻辑

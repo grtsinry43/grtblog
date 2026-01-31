@@ -1,4 +1,5 @@
 import { request } from './http'
+import type { ContentExtInfo } from '@/types/ext-info'
 
 export interface ArticleListItem {
   id: number
@@ -49,6 +50,7 @@ export interface ArticleDetail {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  extInfo?: ContentExtInfo | null
   tags?: ArticleTag[]
   createdAt: string
   updatedAt: string
@@ -77,6 +79,7 @@ export interface CreateArticlePayload {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  extInfo?: ContentExtInfo | null
   createdAt?: string | null
 }
 
@@ -93,6 +96,7 @@ export interface UpdateArticlePayload {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  extInfo?: ContentExtInfo | null
 }
 
 function stripEmpty<T extends Record<string, unknown>>(value: T) {

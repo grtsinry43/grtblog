@@ -19,6 +19,7 @@ type CreateMomentReq struct {
 	IsTop       bool       `json:"isTop"`
 	IsHot       bool       `json:"isHot"`
 	IsOriginal  bool       `json:"isOriginal"`
+	ExtInfo     *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
 	CreatedAt   *time.Time `json:"createdAt,omitempty"` // 可以自定义发布时间
 }
 
@@ -34,6 +35,7 @@ type createMomentReqJSON struct {
 	IsTop       bool     `json:"isTop"`
 	IsHot       bool     `json:"isHot"`
 	IsOriginal  bool     `json:"isOriginal"`
+	ExtInfo     *JSONRaw `json:"extInfo" swaggertype:"object"`
 	CreatedAt   *string  `json:"createdAt"`
 }
 
@@ -53,6 +55,7 @@ func (r *CreateMomentReq) UnmarshalJSON(data []byte) error {
 	r.IsTop = aux.IsTop
 	r.IsHot = aux.IsHot
 	r.IsOriginal = aux.IsOriginal
+	r.ExtInfo = aux.ExtInfo
 
 	if aux.CreatedAt == nil {
 		r.CreatedAt = nil
@@ -84,6 +87,7 @@ type UpdateMomentReq struct {
 	IsTop       bool     `json:"isTop"`
 	IsHot       bool     `json:"isHot"`
 	IsOriginal  bool     `json:"isOriginal"`
+	ExtInfo     *JSONRaw `json:"extInfo,omitempty" swaggertype:"object"`
 }
 
 // ListMomentsReq 手记列表查询请求。

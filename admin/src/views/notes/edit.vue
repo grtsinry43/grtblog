@@ -32,7 +32,7 @@ defineOptions({ name: 'NoteEdit' })
 
 const message = useMessage()
 
-const { form, loading, saving, isCreating, fetch, save } = useMomentForm()
+const { form, loading, saving, imageProcessing, isCreating, fetch, save } = useMomentForm()
 
 const {
   columnOptions,
@@ -116,6 +116,12 @@ onMounted(async () => {
         </NButtonGroup>
 
         <div class="flex items-center gap-2">
+          <span
+            v-if="imageProcessing"
+            class="text-xs text-amber-600"
+          >
+            正在处理图片…
+          </span>
           <NButton
             quaternary
             circle
@@ -139,6 +145,7 @@ onMounted(async () => {
             type="primary"
             size="medium"
             :loading="saving"
+            :disabled="saving || imageProcessing"
             @click="save"
             class="px-5 font-medium shadow-sm active:scale-95"
           >

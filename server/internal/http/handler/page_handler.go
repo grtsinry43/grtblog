@@ -41,6 +41,10 @@ func (h *PageHandler) CreatePage(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	extInfo, err := parseExtInfo(req.ExtInfo)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
+	}
 
 	cmd := page.CreatePageCmd{
 		Title:       req.Title,
@@ -49,6 +53,7 @@ func (h *PageHandler) CreatePage(c *fiber.Ctx) error {
 		ShortURL:    req.ShortURL,
 		IsEnabled:   req.IsEnabled,
 		IsBuiltin:   req.IsBuiltin,
+		ExtInfo:     extInfo,
 		CreatedAt:   req.CreatedAt,
 	}
 
@@ -100,6 +105,10 @@ func (h *PageHandler) UpdatePage(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	extInfo, err := parseExtInfo(req.ExtInfo)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
+	}
 
 	cmd := page.UpdatePageCmd{
 		ID:          id,
@@ -109,6 +118,7 @@ func (h *PageHandler) UpdatePage(c *fiber.Ctx) error {
 		ShortURL:    req.ShortURL,
 		IsEnabled:   req.IsEnabled,
 		IsBuiltin:   req.IsBuiltin,
+		ExtInfo:     extInfo,
 	}
 
 	updatedPage, err := h.svc.UpdatePage(c.Context(), cmd)
@@ -351,6 +361,7 @@ func (h *PageHandler) toPageResp(ctx context.Context, pageItem *content.Page) (*
 		ShortURL:    pageItem.ShortURL,
 		IsEnabled:   pageItem.IsEnabled,
 		IsBuiltin:   pageItem.IsBuiltin,
+		ExtInfo:     jsonRawFromBytes(pageItem.ExtInfo),
 		CreatedAt:   pageItem.CreatedAt,
 		UpdatedAt:   pageItem.UpdatedAt,
 	}

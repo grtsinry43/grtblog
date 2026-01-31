@@ -71,6 +71,7 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 		IsTop:       cmd.IsTop,
 		IsHot:       cmd.IsHot,
 		IsOriginal:  cmd.IsOriginal,
+		ExtInfo:     cmd.ExtInfo,
 		CreatedAt:   createdAt,
 	}
 
@@ -154,6 +155,7 @@ func (s *Service) UpdateArticle(ctx context.Context, cmd UpdateArticleCmd) (*con
 	existing.IsTop = cmd.IsTop
 	existing.IsHot = cmd.IsHot
 	existing.IsOriginal = cmd.IsOriginal
+	existing.ExtInfo = cmd.ExtInfo
 
 	if err := s.repo.UpdateArticle(ctx, existing); err != nil {
 		return nil, err
