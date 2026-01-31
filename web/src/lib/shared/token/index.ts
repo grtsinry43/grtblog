@@ -5,3 +5,7 @@ export function setToken(token: string) {
 export function getToken() {
 	return localStorage.getItem('authToken');
 }
+
+export function removeToken() {
+	localStorage.removeItem('authToken');
+}
