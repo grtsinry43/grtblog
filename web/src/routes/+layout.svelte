@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte';
 	import { consoleLogInfo } from '$lib/features/console-info/index';
 	import Toaster from '$lib/ui/ui/toaster/Toaster.svelte';
+	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
 
 	import "@fontsource/google-sans";
 	import "@fontsource/noto-serif-sc";
@@ -83,6 +84,10 @@
 </main>
 
 <Toaster />
+{#snippet authFallback()}
+\t<div></div>
+{/snippet}
+<QueryRoot loader={() => import('$lib/features/auth/components/AuthClient.svelte')} fallback={authFallback} />
 
 <style lang="postcss">
 	@reference "./layout.css";

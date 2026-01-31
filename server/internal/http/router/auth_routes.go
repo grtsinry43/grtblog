@@ -38,6 +38,7 @@ func registerAuthRoutes(v2 fiber.Router, deps Dependencies, sysCfgSvc *sysconfig
 	authGroup.Post("/register", authHandler.Register)
 	authGroup.Post("/login", authHandler.Login)
 	authGroup.Get("/init-state", authHandler.InitState)
+	authGroup.Get("/turnstile", authHandler.TurnstileState)
 	authGroup.Get("/providers", oauthHandler.ListProviders)
 	authGroup.Get("/providers/:provider/authorize", oauthHandler.Authorize)
 	authGroup.Post("/providers/:provider/callback", oauthHandler.Callback)

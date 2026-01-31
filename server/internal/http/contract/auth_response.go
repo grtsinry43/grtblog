@@ -62,6 +62,21 @@ type InitStateResp struct {
 	Initialized bool `json:"initialized"`
 }
 
+// TurnstileStateResp 返回 Turnstile 配置状态。
+type TurnstileStateResp struct {
+	Enabled bool `json:"enabled"`
+	SiteKey string `json:"siteKey,omitempty"`
+}
+
+// TurnstileStateRespEnvelope 仅用于 swagger 展示。
+type TurnstileStateRespEnvelope struct {
+	Code   int              `json:"code"`
+	BizErr string           `json:"bizErr"`
+	Msg    string           `json:"msg"`
+	Data   TurnstileStateResp `json:"data"`
+	Meta   response.Meta    `json:"meta"`
+}
+
 // RegisterRespEnvelope 仅用于 swagger 展示。
 type RegisterRespEnvelope struct {
 	Code   int           `json:"code"`
