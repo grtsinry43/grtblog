@@ -242,3 +242,29 @@ func (h *AuthHandler) InitState(c *fiber.Ctx) error {
 		Initialized: initialized,
 	})
 }
+
+// TurnstileState godoc
+// @Summary 获取 Turnstile 配置状态
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} contract.TurnstileStateRespEnvelope
+// @Router /auth/turnstile [get]
+// TurnstileState 返回 Turnstile 是否启用及站点信息。
+func (h *AuthHandler) TurnstileState(c *fiber.Ctx) error {
+	if h.sysCfg == nil {
+		return response.Success(c, contract.TurnstileStateResp{
+			Enabled: false,
+		})
+	}
+	settings, err := h.sysCfg.Turnstile(c.Context())
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "获取系统配置失败")
+	}
+	resp := contract.TurnstileStateResp{
+		Enabled: settings.Enabled,
+	}
+	if settings.Enabled {
+		resp.SiteKey = settings.SiteKey
+	}
+	return response.Success(c, resp)
+}

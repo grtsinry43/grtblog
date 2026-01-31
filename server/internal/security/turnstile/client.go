@@ -1,6 +1,8 @@
 package turnstile
 
 import (
+	"io"
+	"log"
 	"context"
 	"encoding/json"
 	"errors"
@@ -91,23 +93,44 @@ func (c *Client) Verify(ctx context.Context, token, remoteIP string, cfg Setting
 		form.Set("remoteip", ip.String())
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, verifyURL, strings.NewReader(form.Encode()))
+	doVerify := func(urlToUse string) (int, []byte, verifyResponse, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, urlToUse, strings.NewReader(form.Encode()))
+		if err != nil {
+			return 0, nil, verifyResponse{}, err
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return 0, nil, verifyResponse{}, err
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return resp.StatusCode, nil, verifyResponse{}, err
+		}
+		var vr verifyResponse
+		if err := json.Unmarshal(body, &vr); err != nil {
+			return resp.StatusCode, body, verifyResponse{}, fmt.Errorf("decode turnstile response: %w", err)
+		}
+		return resp.StatusCode, body, vr, nil
+	}
+
+	status, body, vr, err := doVerify(verifyURL)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	var vr verifyResponse
-	if err := json.NewDecoder(resp.Body).Decode(&vr); err != nil {
-		return fmt.Errorf("decode turnstile response: %w", err)
+	if status >= 400 && verifyURL != c.defaultVerifyURL {
+		log.Printf("[turnstile] verify failed status=%d url=%s body=%s", status, verifyURL, string(body))
+		log.Printf("[turnstile] fallback verify url=%s", c.defaultVerifyURL)
+		status, body, vr, err = doVerify(c.defaultVerifyURL)
+		if err != nil {
+			return err
+		}
 	}
 	if !vr.Success {
+		log.Printf("[turnstile] verify failed status=%d codes=%v host=%s action=%s cdata=%s body=%s", status, vr.ErrorCodes, vr.Hostname, vr.Action, vr.CData, string(body))
 		return fmt.Errorf("%w: %v", ErrVerificationFailed, vr.ErrorCodes)
 	}
 	return nil

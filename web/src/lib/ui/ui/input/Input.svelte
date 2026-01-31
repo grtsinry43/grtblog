@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { type Snippet } from 'svelte';
+	import {type Snippet} from 'svelte';
+	import {type FullAutoFill} from "svelte/elements";
 
 	interface Props {
 		value?: string;
 		placeholder?: string;
 		type?: string;
 		name?: string;
-		autocomplete?: string;
+		autocomplete?: FullAutoFill;
 		required?: boolean;
 		disabled?: boolean;
 		icon?: Snippet;
@@ -71,7 +72,7 @@
 		bind:value
 		{type}
 		{name}
-		autocomplete={autocomplete ? 'on' : 'off'}
+		{autocomplete}
 		{required}
 		{disabled}
 		{placeholder}
