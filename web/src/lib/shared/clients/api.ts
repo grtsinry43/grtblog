@@ -1,9 +1,9 @@
 import { ofetch } from 'ofetch';
 import type { FetchOptions } from 'ofetch';
 import { browser } from '$app/environment';
-import { goto } from '$app/navigation';
 import { getToken } from '$lib/shared/token';
 import { type ApiResponse, BusinessError } from '$lib/shared/clients/types';
+import { authModalStore } from '$lib/shared/stores/authModalStore';
 
 const defaults: FetchOptions = {
 	baseURL: '/api/v2',
@@ -13,10 +13,8 @@ const defaults: FetchOptions = {
 	// 响应拦截：统一处理错误
 	async onResponseError({ response }) {
 		if (response.status === 401 && browser) {
-			// 客户端收到 401，跳转登录
-			// 避免在服务端重定向导致循环重定向风险，通常服务端在 load 里处理
-			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			goto('/login');
+			// 客户端收到 401，打开登录弹窗
+			authModalStore.open('unauthorized');
 		}
 
 		if (browser && response.status >= 500) {

@@ -307,6 +307,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         component: 'settings/site-info/index',
       },
       {
+        path: 'login-methods',
+        name: 'loginMethods',
+        label: '登录方式',
+        icon: 'iconify ph--shield-check',
+        meta: {
+          componentName: 'LoginMethods',
+          showTab: true,
+        },
+        component: 'settings/login-methods/index',
+      },
+      {
         path: 'system',
         name: 'systemSettings',
         label: '系统设置',
