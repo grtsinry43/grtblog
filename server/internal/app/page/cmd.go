@@ -10,6 +10,7 @@ type CreatePageCmd struct {
 	ShortURL    *string
 	IsEnabled   bool
 	IsBuiltin   bool
+	ExtInfo     []byte
 	CreatedAt   *time.Time
 }
 
@@ -22,4 +23,5 @@ type UpdatePageCmd struct {
 	ShortURL    string
 	IsEnabled   bool
 	IsBuiltin   bool
+	ExtInfo     []byte
 }

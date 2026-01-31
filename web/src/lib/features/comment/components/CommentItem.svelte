@@ -1,24 +1,28 @@
 <script lang="ts">
 	import { renderMarkdown } from '$lib/shared/markdown/markdown';
 	import type { CommentNode } from '$lib/features/comment/types';
-	import { formatRelativeTime } from '$lib/shared/utils/date';
-	import { MessageSquare, Monitor, Globe } from 'lucide-svelte';
+	import {
+		createRelativeTimeTicker,
+		formatRelativeTimeWithSeconds
+	} from '$lib/shared/utils/relative-time';
+	import { MessageSquare, Monitor } from 'lucide-svelte';
 	import CommentItem from './CommentItem.svelte';
-	import { getContext } from 'svelte';
+	import CommentForm from './CommentForm.svelte';
+	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { fly } from 'svelte/transition';
 
 	let { comment } = $props<{ comment: CommentNode }>();
+	let relativeTime = $state(formatRelativeTimeWithSeconds(comment.createdAt));
 
-	const commentState = getContext<{ setReplyingTo: (n: CommentNode) => void }>('COMMENT_CONTEXT');
+	const replyingToStore = commentAreaCtx.selectModelData((data) => data?.replyingTo ?? null);
+	const { updateModelData } = commentAreaCtx.useModelActions();
 
 	const handleReply = () => {
-		commentState.setReplyingTo(comment);
-		const area = document.getElementById('comment-area');
-		if (area) {
-			area.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			// focus textarea? maybe handled by isFocused logic or user click.
-			// Ideally we focus the textarea.
-			const textarea = area.querySelector('textarea');
+		updateModelData((prev) => (prev ? { ...prev, replyingTo: comment } : prev));
+		const item = document.getElementById(`comment-${comment.id}`);
+		if (item) {
+			item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			const textarea = item.querySelector('textarea');
 			textarea?.focus();
 		}
 	};
@@ -27,6 +31,14 @@
 		// Simple heuristic or mapping if available, otherwise generic
 		return null; // expand later if needed
 	};
+
+	$effect(() => {
+		relativeTime = formatRelativeTimeWithSeconds(comment.createdAt);
+		const stop = createRelativeTimeTicker(comment.createdAt, (value) => {
+			relativeTime = value;
+		});
+		return () => stop();
+	});
 </script>
 
 <div class="flex gap-4 group" id="comment-{comment.id}" in:fly={{ y: 20, duration: 300 }}>
@@ -59,8 +71,8 @@
 					>Author</span
 				>
 			{/if}
-			<span class="text-xs text-ink-400 font-mono">
-				{formatRelativeTime(comment.createdAt)}
+			<span class="text-[8px] text-ink-400 font-mono">
+				{relativeTime}
 			</span>
 			{#if comment.location}
 				<span
@@ -95,6 +107,12 @@
 				</div>
 			{/if}
 		</div>
+
+		{#if $replyingToStore && $replyingToStore.id === comment.id}
+			<div class="mt-3">
+				<CommentForm parentId={comment.id} />
+			</div>
+		{/if}
 
 		<!-- Recursive Children -->
 		{#if comment.children && comment.children.length > 0}

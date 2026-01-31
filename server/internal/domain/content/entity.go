@@ -64,6 +64,7 @@ type Article struct {
 	IsTop       bool
 	IsHot       bool
 	IsOriginal  bool
+	ExtInfo     []byte
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   *time.Time
@@ -94,6 +95,7 @@ type Moment struct {
 	IsTop       bool
 	IsHot       bool
 	IsOriginal  bool
+	ExtInfo     []byte
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   *time.Time
@@ -119,6 +121,7 @@ type Page struct {
 	Content     string
 	ContentHash string
 	CommentID   *int64
+	ExtInfo     []byte
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   *time.Time

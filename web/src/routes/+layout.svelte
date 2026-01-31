@@ -14,8 +14,6 @@
 
 	let { children, data } = $props();
 
-	console.log('Layout data:', data);
-
 	const websiteInfoStore = websiteInfoCtx.mountModelData(data.websiteInfo ?? null);
 
 	$effect(() => {

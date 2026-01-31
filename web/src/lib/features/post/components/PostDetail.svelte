@@ -4,7 +4,9 @@
 	import { renderMarkdown } from '$lib/shared/markdown/markdown';
 	import type { TOCNode } from '$lib/features/post/types';
 	import { markdownComponents } from '$lib/shared/actions/markdown-components';
+	import { buildImageExtInfoState, imageExtInfoCtx } from '$lib/shared/markdown/image-ext-info';
 	import { Calendar, Clock, Share2, ArrowLeft } from 'lucide-svelte';
+	import { page } from '$app/stores';
 	import Button from '$lib/ui/ui/button/Button.svelte';
 	import Badge from '$lib/ui/ui/badge/Badge.svelte';
 	import Tag from '$lib/ui/ui/tag/Tag.svelte';
@@ -15,9 +17,13 @@
 	import ArticleStickyHeader from '$lib/features/post/components/ArticleStickyHeader.svelte';
 
 	const postStore = postDetailCtx.selectModelData((data) => data as PostDetail | null);
+	const imageExtInfoStore = imageExtInfoCtx.mountModelData(
+		buildImageExtInfoState($postStore?.extInfo ?? null)
+	);
 	let contentRoot: HTMLElement | null = $state(null);
 	let activeAnchor = $state<string | null>(null);
 	let observer: IntersectionObserver | null = null;
+	const siteOrigin = $derived($page.url.origin);
 
 	const flattenTOC = (nodes?: TOCNode[]) => {
 		if (!nodes?.length) return [];
@@ -35,7 +41,7 @@
 	let contentHtml = $derived(
 		$postStore
 			? renderMarkdown($postStore.content ?? '', flattenTOC($postStore.toc), {
-					origin: typeof window !== 'undefined' ? window.location.origin : undefined
+					origin: siteOrigin
 				})
 			: ''
 	);
@@ -77,6 +83,7 @@
 	};
 
 	$effect(() => {
+		imageExtInfoCtx.syncModelData(imageExtInfoStore, buildImageExtInfoState($postStore?.extInfo ?? null));
 		void refreshObserver();
 	});
 

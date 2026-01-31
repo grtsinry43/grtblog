@@ -1,9 +1,11 @@
 import { useMessage } from 'naive-ui'
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, toRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useLeaveConfirm } from '@/composables'
 import { createMoment, getMoment, updateMoment } from '@/services/moments'
+import type { ContentExtInfo } from '@/types/ext-info'
+import { useImageExtInfo } from '@/composables/use-image-ext-info'
 
 function joinImages(images?: string[]) {
   return (images ?? []).join('\n')
@@ -47,6 +49,13 @@ export function useMomentForm() {
     isOriginal: true,
   })
 
+  const baseExtInfo = ref<ContentExtInfo | null>(null)
+  const { extInfo, processing } = useImageExtInfo({
+    content: toRef(form, 'content'),
+    extraImages: toRef(form, 'image'),
+    baseExtInfo,
+  })
+
   const takeSnapshot = () => JSON.stringify(form)
   const isDirty = computed(
     () => initialSnapshot.value !== '' && takeSnapshot() !== initialSnapshot.value,
@@ -73,6 +82,7 @@ export function useMomentForm() {
       form.isTop = data.isTop
       form.isHot = data.isHot
       form.isOriginal = data.isOriginal
+      baseExtInfo.value = data.extInfo ?? null
 
       initialSnapshot.value = takeSnapshot()
       return data
@@ -105,6 +115,7 @@ export function useMomentForm() {
         isTop: form.isTop,
         isHot: form.isHot,
         isOriginal: form.isOriginal,
+        extInfo: extInfo.value ?? undefined,
       }
 
       if (isCreating.value) {
@@ -144,6 +155,8 @@ export function useMomentForm() {
     form,
     loading,
     saving,
+    imageProcessing: processing,
+    extInfo,
     isCreating,
     isDirty,
     fetch,

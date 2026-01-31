@@ -69,6 +69,7 @@ func (s *Service) CreateMoment(ctx context.Context, authorID int64, cmd CreateMo
 		IsTop:       cmd.IsTop,
 		IsHot:       cmd.IsHot,
 		IsOriginal:  cmd.IsOriginal,
+		ExtInfo:     cmd.ExtInfo,
 		CreatedAt:   createdAt,
 	}
 
@@ -146,6 +147,7 @@ func (s *Service) UpdateMoment(ctx context.Context, cmd UpdateMomentCmd) (*conte
 	existing.IsTop = cmd.IsTop
 	existing.IsHot = cmd.IsHot
 	existing.IsOriginal = cmd.IsOriginal
+	existing.ExtInfo = cmd.ExtInfo
 
 	if err := s.repo.UpdateMoment(ctx, existing); err != nil {
 		return nil, err

@@ -1,10 +1,9 @@
 <script lang="ts">
-	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import { resolveTheme, themeManager } from '$lib/shared/theme/theme.svelte';
+	import { Moon, Sun } from 'lucide-svelte';
 
 	const theme = themeManager;
 	const resolved = $derived.by(() => resolveTheme(theme.current));
-	const iconName = $derived.by(() => (resolved === 'dark' ? 'Moon' : 'Sun'));
 
 	type ViewTransitionLike = { ready: Promise<void> };
 	type DocumentWithViewTransition = Document & {
@@ -52,7 +51,11 @@
 	onclick={toggleTheme}
 	class="rounded-default hover:bg-ink-200 dark:hover:bg-ink-800 p-2"
 >
-	<DynamicLucideIcon name={iconName} className="theme-icon w-6 h-6" />
+	{#if resolved === 'dark'}
+		<Sun class="theme-icon w-6 h-6 relative z-10" />
+	{:else}
+		<Moon class="theme-icon w-6 h-6 relative z-10" />
+	{/if}
 </button>
 
 <style lang="postcss">

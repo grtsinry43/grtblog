@@ -14,17 +14,19 @@ type CreatePageReq struct {
 	ShortURL    *string    `json:"shortUrl"`
 	IsEnabled   bool       `json:"isEnabled"`
 	IsBuiltin   bool       `json:"isBuiltin"`
+	ExtInfo     *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
 	CreatedAt   *time.Time `json:"createdAt,omitempty"`
 }
 
 type createPageReqJSON struct {
-	Title       string  `json:"title"`
-	Description *string `json:"description"`
-	Content     string  `json:"content"`
-	ShortURL    *string `json:"shortUrl"`
-	IsEnabled   bool    `json:"isEnabled"`
-	IsBuiltin   bool    `json:"isBuiltin"`
-	CreatedAt   *string `json:"createdAt"`
+	Title       string   `json:"title"`
+	Description *string  `json:"description"`
+	Content     string   `json:"content"`
+	ShortURL    *string  `json:"shortUrl"`
+	IsEnabled   bool     `json:"isEnabled"`
+	IsBuiltin   bool     `json:"isBuiltin"`
+	ExtInfo     *JSONRaw `json:"extInfo" swaggertype:"object"`
+	CreatedAt   *string  `json:"createdAt"`
 }
 
 func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
@@ -38,6 +40,7 @@ func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
 	r.ShortURL = aux.ShortURL
 	r.IsEnabled = aux.IsEnabled
 	r.IsBuiltin = aux.IsBuiltin
+	r.ExtInfo = aux.ExtInfo
 
 	if aux.CreatedAt == nil {
 		r.CreatedAt = nil
@@ -58,12 +61,13 @@ func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
 
 // UpdatePageReq 更新页面请求。
 type UpdatePageReq struct {
-	Title       string  `json:"title" validate:"required,max=255"`
-	Description *string `json:"description,omitempty"`
-	Content     string  `json:"content" validate:"required"`
-	ShortURL    string  `json:"shortUrl" validate:"required"`
-	IsEnabled   bool    `json:"isEnabled"`
-	IsBuiltin   bool    `json:"isBuiltin"`
+	Title       string   `json:"title" validate:"required,max=255"`
+	Description *string  `json:"description,omitempty"`
+	Content     string   `json:"content" validate:"required"`
+	ShortURL    string   `json:"shortUrl" validate:"required"`
+	IsEnabled   bool     `json:"isEnabled"`
+	IsBuiltin   bool     `json:"isBuiltin"`
+	ExtInfo     *JSONRaw `json:"extInfo,omitempty" swaggertype:"object"`
 }
 
 // ListPagesReq 页面列表查询请求。

@@ -189,3 +189,37 @@
   color: var(--cm-accent, #3b82f6);
   font-weight: 600;
 }
+
+@keyframes cm-upload-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.cm-uploading-widget {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--cm-tooltip-bg, #ffffff) 70%, transparent);
+  border: 1px solid var(--cm-tooltip-border, #e5e7eb);
+}
+
+.cm-upload-shimmer {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--cm-fg-muted, #64748b);
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.2) 0%,
+    rgba(148, 163, 184, 0.5) 50%,
+    rgba(148, 163, 184, 0.2) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: cm-upload-shimmer 1.4s infinite;
+}

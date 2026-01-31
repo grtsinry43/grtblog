@@ -1,3 +1,5 @@
+import type { ContentExtInfo } from '$lib/shared/markdown/image-ext-info';
+
 export type PostSummary = {
 	id: number;
 	title: string;
@@ -34,6 +36,7 @@ export type PostDetail = {
 	cover?: string;
 	categoryId?: number | null;
 	commentAreaId?: number | null;
+	extInfo?: ContentExtInfo | null;
 	isPublished: boolean;
 	tags?: Tag[];
 	metrics?: {

@@ -1,27 +1,23 @@
 <script lang="ts">
-	import { createQuery } from '@tanstack/svelte-query';
-	import { getCommentTree } from '$lib/features/comment/api';
 	import CommentItem from './CommentItem.svelte';
 	import { Loader2 } from 'lucide-svelte';
+	import { commentAreaCtx } from '$lib/features/comment/context';
 
-	let { areaId } = $props<{ areaId: number }>();
-
-	const query = createQuery(() => ({
-		queryKey: ['comments', areaId],
-		queryFn: () => getCommentTree(undefined, areaId)
-	}));
+	const commentsStore = commentAreaCtx.selectModelData((data) => data?.comments ?? []);
+	const isLoadingStore = commentAreaCtx.selectModelData((data) => data?.isLoading ?? false);
+	const isErrorStore = commentAreaCtx.selectModelData((data) => data?.isError ?? false);
 </script>
 
 <div class="space-y-8 mt-12 mb-20">
-	{#if query.isLoading}
+	{#if $isLoadingStore}
 		<div class="flex justify-center py-10">
 			<Loader2 class="animate-spin text-ink-300" />
 		</div>
-	{:else if query.isError}
+	{:else if $isErrorStore}
 		<div class="text-center py-10 text-sm text-red-500">加载评论失败</div>
-	{:else if query.data && query.data.length > 0}
+	{:else if $commentsStore && $commentsStore.length > 0}
 		<div class="space-y-6">
-			{#each query.data as comment (comment.id)}
+			{#each $commentsStore as comment (comment.id)}
 				<CommentItem {comment} />
 			{/each}
 		</div>

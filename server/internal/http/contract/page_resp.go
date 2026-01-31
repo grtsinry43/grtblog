@@ -15,6 +15,7 @@ type PageResp struct {
 	ShortURL    string       `json:"shortUrl"`
 	IsEnabled   bool         `json:"isEnabled"`
 	IsBuiltin   bool         `json:"isBuiltin"`
+	ExtInfo     *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
 	Metrics     *MetricsResp `json:"metrics,omitempty"`
 	CreatedAt   time.Time    `json:"createdAt"`
 	UpdatedAt   time.Time    `json:"updatedAt"`

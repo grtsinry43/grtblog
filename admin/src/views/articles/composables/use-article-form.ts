@@ -1,9 +1,11 @@
 import { useMessage } from 'naive-ui'
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, toRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useLeaveConfirm } from '@/composables'
 import { createArticle, getArticle, updateArticle, type ArticleDetail } from '@/services/articles'
+import type { ContentExtInfo } from '@/types/ext-info'
+import { useImageExtInfo } from '@/composables/use-image-ext-info'
 
 export function useArticleForm() {
   const route = useRoute()
@@ -39,6 +41,12 @@ export function useArticleForm() {
     isOriginal: true,
   })
 
+  const baseExtInfo = ref<ContentExtInfo | null>(null)
+  const { extInfo, processing } = useImageExtInfo({
+    content: toRef(form, 'content'),
+    baseExtInfo,
+  })
+
   // 脏检查逻辑
   const takeSnapshot = () => JSON.stringify(form)
   const isDirty = computed(
@@ -70,6 +78,7 @@ export function useArticleForm() {
       form.isTop = data.isTop
       form.isHot = data.isHot
       form.isOriginal = data.isOriginal
+      baseExtInfo.value = data.extInfo ?? null
 
       initialSnapshot.value = takeSnapshot()
       return data // 返回完整数据供外部使用（如初始化标签名）
@@ -97,6 +106,7 @@ export function useArticleForm() {
         leadIn: form.leadIn || null,
         cover: form.cover || null,
         shortUrl: form.shortUrl || undefined, //如果是新建，可能允许为空由后端生成？根据原逻辑保持一致
+        extInfo: extInfo.value ?? undefined,
       }
 
       if (isCreating.value) {
@@ -135,6 +145,8 @@ export function useArticleForm() {
     form,
     loading,
     saving,
+    imageProcessing: processing,
+    extInfo,
     isCreating,
     isDirty,
     fetch,

@@ -8,6 +8,76 @@
     },
     "basePath": "/api/v2",
     "paths": {
+        "/admin/articles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Article"
+                ],
+                "summary": "获取文章列表（管理员）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "categoryId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "标签ID",
+                        "name": "tagId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "作者ID",
+                        "name": "authorId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否发布",
+                        "name": "published",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ArticleListResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/categories": {
             "post": {
                 "security": [
@@ -488,6 +558,76 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handler.LogLinesEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/moments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Moment"
+                ],
+                "summary": "获取手记列表（管理员）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分区ID",
+                        "name": "columnId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "话题ID",
+                        "name": "topicId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "作者ID",
+                        "name": "authorId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否发布",
+                        "name": "published",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MomentListResp"
                         }
                     }
                 }
@@ -3297,6 +3437,9 @@
                 "createdAt": {
                     "type": "string"
                 },
+                "extInfo": {
+                    "type": "object"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -3647,6 +3790,9 @@
                     "description": "可以自定义发布时间",
                     "type": "string"
                 },
+                "extInfo": {
+                    "type": "object"
+                },
                 "isHot": {
                     "type": "boolean"
                 },
@@ -3796,6 +3942,9 @@
                     "description": "可以自定义发布时间",
                     "type": "string"
                 },
+                "extInfo": {
+                    "type": "object"
+                },
                 "image": {
                     "type": "array",
                     "items": {
@@ -3864,6 +4013,9 @@
                 },
                 "description": {
                     "type": "string"
+                },
+                "extInfo": {
+                    "type": "object"
                 },
                 "isBuiltin": {
                     "type": "boolean"
@@ -4531,6 +4683,9 @@
                 "createdAt": {
                     "type": "string"
                 },
+                "extInfo": {
+                    "type": "object"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -4785,6 +4940,9 @@
                 },
                 "description": {
                     "type": "string"
+                },
+                "extInfo": {
+                    "type": "object"
                 },
                 "id": {
                     "type": "integer"
@@ -5168,6 +5326,9 @@
                 "cover": {
                     "type": "string"
                 },
+                "extInfo": {
+                    "type": "object"
+                },
                 "isHot": {
                     "type": "boolean"
                 },
@@ -5214,6 +5375,9 @@
                 },
                 "content": {
                     "type": "string"
+                },
+                "extInfo": {
+                    "type": "object"
                 },
                 "image": {
                     "type": "array",
@@ -5284,6 +5448,9 @@
                 },
                 "description": {
                     "type": "string"
+                },
+                "extInfo": {
+                    "type": "object"
                 },
                 "isBuiltin": {
                     "type": "boolean"
