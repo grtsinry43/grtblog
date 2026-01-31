@@ -39,7 +39,7 @@ const createEmptyUser = (): User => ({
   updatedAt: '',
 })
 
-export const useUserStore = defineStore('userStore.ts', () => {
+export const useUserStore = defineStore('userStore', () => {
   const user = useStorage<User>('user', createEmptyUser())
 
   const token = useStorage<string | null>('token', null)
