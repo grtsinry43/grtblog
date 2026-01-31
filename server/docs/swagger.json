@@ -2078,6 +2078,25 @@
                 }
             }
         },
+        "/auth/turnstile": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "获取 Turnstile 配置状态",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.TurnstileStateRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/categories": {
             "get": {
                 "produces": [
@@ -5305,6 +5324,37 @@
                     "$ref": "#/definitions/contract.ThinkingMetrics"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.TurnstileStateResp": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "siteKey": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.TurnstileStateRespEnvelope": {
+            "type": "object",
+            "properties": {
+                "bizErr": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/contract.TurnstileStateResp"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "msg": {
                     "type": "string"
                 }
             }
