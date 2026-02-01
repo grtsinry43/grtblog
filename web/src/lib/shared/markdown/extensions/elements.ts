@@ -1,57 +1,57 @@
-// import { createHighlighterCore } from 'shiki/core';
-// import { createOnigurumaEngine } from 'shiki/engine/oniguruma';
-// import { getWasmInstance } from 'shiki/wasm';
-// import langBash from '@shikijs/langs/bash';
-// import langCss from '@shikijs/langs/css';
-// import langDiff from '@shikijs/langs/diff';
-// import langGo from '@shikijs/langs/go';
-// import langHtml from '@shikijs/langs/html';
-// import langJava from '@shikijs/langs/java';
-// import langJavaScript from '@shikijs/langs/javascript';
-// import langJson from '@shikijs/langs/json';
-// import langKotlin from '@shikijs/langs/kotlin';
-// import langMarkdown from '@shikijs/langs/markdown';
-// import langPhp from '@shikijs/langs/php';
-// import langPython from '@shikijs/langs/python';
-// import langSvelte from '@shikijs/langs/svelte';
-// import langToml from '@shikijs/langs/toml';
-// import langTsx from '@shikijs/langs/tsx';
-// import langTypeScript from '@shikijs/langs/typescript';
-// import langYaml from '@shikijs/langs/yaml';
-// import themeGithubDark from '@shikijs/themes/github-dark';
-// import themeGithubLight from '@shikijs/themes/github-light';
+import { createHighlighterCore } from 'shiki/core';
+import { createOnigurumaEngine } from 'shiki/engine/oniguruma';
+import { getWasmInstance } from 'shiki/wasm';
+import langBash from '@shikijs/langs/bash';
+import langCss from '@shikijs/langs/css';
+import langDiff from '@shikijs/langs/diff';
+import langGo from '@shikijs/langs/go';
+import langHtml from '@shikijs/langs/html';
+import langJava from '@shikijs/langs/java';
+import langJavaScript from '@shikijs/langs/javascript';
+import langJson from '@shikijs/langs/json';
+import langKotlin from '@shikijs/langs/kotlin';
+import langMarkdown from '@shikijs/langs/markdown';
+import langPhp from '@shikijs/langs/php';
+import langPython from '@shikijs/langs/python';
+import langSvelte from '@shikijs/langs/svelte';
+import langToml from '@shikijs/langs/toml';
+import langTsx from '@shikijs/langs/tsx';
+import langTypeScript from '@shikijs/langs/typescript';
+import langYaml from '@shikijs/langs/yaml';
+import themeGithubDark from '@shikijs/themes/github-dark';
+import themeGithubLight from '@shikijs/themes/github-light';
 import type MarkdownIt from 'markdown-it';
 import type { MarkdownExtension } from '../types';
 
-// const langAlias: Record<string, string> = {
-// 	js: 'javascript',
-// 	ts: 'typescript'
-// };
+const langAlias: Record<string, string> = {
+	js: 'javascript',
+	ts: 'typescript'
+};
 
-// const highlighter = await createHighlighterCore({
-// 	themes: [themeGithubLight, themeGithubDark],
-// 	langs: [
-// 		langBash,
-// 		langGo,
-// 		langCss,
-// 		langDiff,
-// 		langHtml,
-// 		langJavaScript,
-// 		langJava,
-// 		langPython,
-// 		langPhp,
-// 		langKotlin,
-// 		langJson,
-// 		langMarkdown,
-// 		langSvelte,
-// 		langTsx,
-// 		langTypeScript,
-// 		langYaml,
-// 		langToml
-// 	],
-// 	engine: createOnigurumaEngine(getWasmInstance),
-// 	langAlias
-// });
+const highlighter = await createHighlighterCore({
+	themes: [themeGithubLight, themeGithubDark],
+	langs: [
+		langBash,
+		langGo,
+		langCss,
+		langDiff,
+		langHtml,
+		langJavaScript,
+		langJava,
+		langPython,
+		langPhp,
+		langKotlin,
+		langJson,
+		langMarkdown,
+		langSvelte,
+		langTsx,
+		langTypeScript,
+		langYaml,
+		langToml
+	],
+	engine: createOnigurumaEngine(getWasmInstance),
+	langAlias
+});
 
 const escapeAttr = (md: MarkdownIt, value: string) => md.utils.escapeHtml(value);
 
@@ -126,30 +126,30 @@ export const markdownElementsExtension: MarkdownExtension = (md) => {
 		const rawLang = info.split(/\s+/)[0] || 'plaintext';
 		const lang = rawLang === 'text' ? 'plaintext' : rawLang;
 		const code = token.content ?? '';
-		// const normalizedLang = langAlias[lang] ?? lang;
-		// const resolvedLang = highlighter.getLoadedLanguages().includes(normalizedLang)
-		// 	? normalizedLang
-		// 	: 'plaintext';
-		// const codeHtml = highlighter.codeToHtml(code, {
-		// 	lang: resolvedLang,
-		// 	themes: {
-		// 		light: 'github-light',
-		// 		dark: 'github-dark'
-		// 	}
-		// });
-		return renderCodeBlock(md, lang, code);
+		const normalizedLang = langAlias[lang] ?? lang;
+		const resolvedLang = highlighter.getLoadedLanguages().includes(normalizedLang)
+			? normalizedLang
+			: 'plaintext';
+		const codeHtml = highlighter.codeToHtml(code, {
+			lang: resolvedLang,
+			themes: {
+				light: 'github-light',
+				dark: 'github-dark'
+			}
+		});
+		return renderCodeBlock(md, lang, codeHtml);
 	};
 
 	md.renderer.rules.code_block = (tokens, idx) => {
 		const token = tokens[idx];
 		const code = token.content ?? '';
-		// const codeHtml = highlighter.codeToHtml(code, {
-		// 	lang: 'plaintext',
-		// 	themes: {
-		// 		light: 'github-light',
-		// 		dark: 'github-dark'
-		// 	}
-		// });
-		return renderCodeBlock(md, 'plaintext', code);
+		const codeHtml = highlighter.codeToHtml(code, {
+			lang: 'plaintext',
+			themes: {
+				light: 'github-light',
+				dark: 'github-dark'
+			}
+		});
+		return renderCodeBlock(md, 'plaintext', codeHtml);
 	};
 };

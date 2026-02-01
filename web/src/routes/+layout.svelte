@@ -10,10 +10,31 @@
 	import Loading from '$lib/ui/common/Loading.svelte';
 	import { navigating } from '$app/stores';
 	import { browser } from '$app/environment';
+	import { onNavigate } from '$app/navigation';
+	import SearchModal from '$lib/ui/search/SearchModal.svelte';
+	import { uiState } from '$lib/shared/stores/ui.svelte';
 
-	import "@fontsource/google-sans";
-	import "@fontsource/noto-serif-sc";
-	import "@fontsource-variable/victor-mono";
+	function handleKeydown(event: KeyboardEvent) {
+		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
+			event.preventDefault();
+			uiState.toggleSearch();
+		}
+	}
+
+	onNavigate((navigation) => {
+		if (!document?.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document?.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
+
+	import '@fontsource/google-sans';
+	import '@fontsource/noto-serif-sc';
+	import '@fontsource-variable/victor-mono';
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
 
 	let { children, data } = $props();
@@ -26,15 +47,26 @@
 	});
 
 	const websiteName = websiteInfoCtx.selectModelData((data) => data?.website_name || 'grtBlog');
-	const keywords = websiteInfoCtx.selectModelData((data) => data?.keywords || 'blog, programming, technology, software development, web development, coding');
-	const description = websiteInfoCtx.selectModelData((data) => data?.description || 'grtBlog - A personal blog about programming, technology, and software development.');
+	const keywords = websiteInfoCtx.selectModelData(
+		(data) =>
+			data?.keywords ||
+			'blog, programming, technology, software development, web development, coding'
+	);
+	const description = websiteInfoCtx.selectModelData(
+		(data) =>
+			data?.description ||
+			'grtBlog - A personal blog about programming, technology, and software development.'
+	);
 	const siteFavicon = websiteInfoCtx.selectModelData((data) => data?.favicon || favicon);
 	const ogTitle = websiteInfoCtx.selectModelData((data) => data?.og_title || 'grtBlog');
 	const ogType = websiteInfoCtx.selectModelData((data) => data?.og_type || 'website');
-	const ogDescription = websiteInfoCtx.selectModelData((data) => data?.og_description || 'grtBlog - A personal blog about programming, technology, and software development.');
+	const ogDescription = websiteInfoCtx.selectModelData(
+		(data) =>
+			data?.og_description ||
+			'grtBlog - A personal blog about programming, technology, and software development.'
+	);
 	const ogImage = websiteInfoCtx.selectModelData((data) => data?.og_image || '');
 	const ogUrl = websiteInfoCtx.selectModelData((data) => data?.og_url || '');
-
 
 	// Initialize theme on mount
 	const theme = themeManager;
@@ -114,20 +146,22 @@
 		aria-live="polite"
 		aria-busy="true"
 	>
-		<Loading
-			size="w-8 h-8"
-			duration={900}
-			class="gap-0"
-			text="正在玩命加载中...莫慌"
-		/>
+		<Loading size="w-8 h-8" duration={900} class="gap-0" text="正在玩命加载中...莫慌" />
 	</div>
 {/if}
 
+<SearchModal />
+<svelte:window onkeydown={handleKeydown} />
+
 <Toaster />
 {#snippet authFallback()}
-\t<div></div>
+	\t
+	<div></div>
 {/snippet}
-<QueryRoot loader={() => import('$lib/features/auth/components/AuthClient.svelte')} fallback={authFallback} />
+<QueryRoot
+	loader={() => import('$lib/features/auth/components/AuthClient.svelte')}
+	fallback={authFallback}
+/>
 
 <style lang="postcss">
 	@reference "./layout.css";
