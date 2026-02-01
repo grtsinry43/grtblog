@@ -35,7 +35,7 @@
 		updateModelData((prev) => (prev ? { ...prev, isLoggedIn: !prev.isLoggedIn } : prev));
 	};
 
-	let displayCount = $derived(() => {
+	let displayCount = $derived.by(() => {
 		if (!$commentAreaModel) return 0;
 		return $commentAreaModel.commentsCount > 0
 			? $commentAreaModel.commentsCount

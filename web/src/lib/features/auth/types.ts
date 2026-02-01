@@ -28,3 +28,40 @@ export type OAuthAuthorizeResp = {
 	state: string;
 	codeChallenge?: string;
 };
+
+/*
+let error = $state('');
+    let loading = $state(false);
+    let token = $state(getToken());
+    let oauthProviders = $state<OAuthProvider[]>([]);
+    let oauthLoadingKey = $state<string | null>(null);
+    let oauthError = $state('');
+    let showPasswordLogin = $state(false);
+    let turnstileEnabled = $state(false);
+    let turnstileSiteKey = $state('');
+    let turnstileToken = $state('');
+    let turnstileError = $state('');
+    let turnstileRequested = $state(false);
+    let canSubmit = $derived(
+        !turnstileEnabled || (turnstileSiteKey.length > 0 && turnstileToken.length > 0)
+    );
+    let hasOAuthProviders = $derived(oauthProviders.length > 0);
+*/
+
+export type AuthApproachState = {
+	turnstile: {
+		enabled: boolean;
+		siteKey: string;
+		error: string;
+	};
+	oauth: {
+		providers: OAuthProvider[];
+		error: string;
+		loadingKey: string | null;
+	};
+	login: {
+		loading: boolean;
+		error: string;
+	};
+	showPasswordLogin: boolean;
+};

@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@plugin '@tailwindcss/forms';
+/*@plugin '@tailwindcss/forms';*/
 @plugin '@tailwindcss/typography';
 @plugin 'tailwindcss-animate';
 
@@ -318,7 +318,7 @@ button {
 .markdown-preview .md-codeblock {
     margin: 1.5rem 0;
     border: 1px solid rgba(17, 24, 39, 0.16);
-    border-radius: 12px;
+    border-radius: 3px;
     overflow: hidden;
     background: rgba(17, 24, 39, 0.02);
 }
@@ -332,7 +332,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 0.75rem;
+    padding: 0.2rem 0.75rem;
     font-size: 0.75rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -347,6 +347,7 @@ button {
 .markdown-preview .md-codeblock__body .shiki {
     margin: 0;
     padding: 0.75rem 1rem;
+    font-size: small;
     overflow-x: auto;
     background: transparent !important;
 }

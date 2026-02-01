@@ -7,6 +7,9 @@
 	import { consoleLogInfo } from '$lib/features/console-info/index';
 	import Toaster from '$lib/ui/ui/toaster/Toaster.svelte';
 	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
+	import Loading from '$lib/ui/common/Loading.svelte';
+	import { navigating } from '$app/stores';
+	import { browser } from '$app/environment';
 
 	import "@fontsource/google-sans";
 	import "@fontsource/noto-serif-sc";
@@ -14,6 +17,7 @@
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
 
 	let { children, data } = $props();
+	let showRouteLoading = $state(false);
 
 	const websiteInfoStore = websiteInfoCtx.mountModelData(data.websiteInfo ?? null);
 
@@ -41,6 +45,27 @@
 	});
 
 	startThemeSync(theme);
+
+	$effect(() => {
+		if (!browser) {
+			return;
+		}
+
+		if ($navigating) {
+			showRouteLoading = false;
+			const timer = setTimeout(() => {
+				if ($navigating) {
+					showRouteLoading = true;
+				}
+			}, 2000);
+
+			return () => {
+				clearTimeout(timer);
+			};
+		}
+
+		showRouteLoading = false;
+	});
 </script>
 
 <svelte:head>
@@ -82,6 +107,21 @@
 		{@render children()}
 	</div>
 </main>
+
+{#if showRouteLoading}
+	<div
+		class="fixed px-12 py-6 left-1/2 top-1/2 z-99999 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-default border border-ink-200/70 bg-ink-50/80 shadow-subtle backdrop-blur-lg dark:border-ink-700/70 dark:bg-ink-900/80"
+		aria-live="polite"
+		aria-busy="true"
+	>
+		<Loading
+			size="w-8 h-8"
+			duration={900}
+			class="gap-0"
+			text="正在玩命加载中...莫慌"
+		/>
+	</div>
+{/if}
 
 <Toaster />
 {#snippet authFallback()}

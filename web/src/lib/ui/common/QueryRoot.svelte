@@ -43,5 +43,9 @@
 				{@render children?.()}
 			{/if}
 		</Provider>
+	{:else}
+		{#if fallback}
+			{@render fallback?.()}
+		{/if}
 	{/if}
 </ClientOnly>
