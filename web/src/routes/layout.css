@@ -179,7 +179,44 @@ body {
     }
 }
 
+@utility animate-settle {
+    animation: settle 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes settle {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@utility animate-sheet-enter {
+    animation: sheet-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes sheet-enter {
+    from {
+        opacity: 0;
+        transform: translateX(20px) scale(0.98);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        filter: blur(0);
+    }
+}
+
 @layer base {
+
     input,
     textarea,
     select {
@@ -361,7 +398,7 @@ button {
     color: var(--shiki-dark) !important;
 }
 
-.markdown-preview :not(pre) > code {
+.markdown-preview :not(pre)>code {
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
     font-size: 0.9em;
@@ -369,7 +406,7 @@ button {
     color: var(--color-jade-800);
 }
 
-.dark .markdown-preview :not(pre) > code {
+.dark .markdown-preview :not(pre)>code {
     background: rgba(20, 184, 166, 0.05);
     color: var(--color-jade-100);
 }
@@ -435,4 +472,46 @@ button {
 .markdown-preview .md-component-fallback__hint {
     font-size: 12px;
     color: rgba(107, 114, 128, 0.9);
+}
+
+/* View Transitions for Moments */
+::view-transition-group(moment-hero) {
+    animation-duration: 0.6s;
+    perspective: 1000px;
+}
+
+::view-transition-old(moment-hero) {
+    animation: flip-out 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+    backface-visibility: hidden;
+    mix-blend-mode: normal;
+}
+
+::view-transition-new(moment-hero) {
+    animation: flip-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+    backface-visibility: hidden;
+    mix-blend-mode: normal;
+}
+
+@keyframes flip-out {
+    from {
+        transform: rotateY(0deg) scale(1);
+        opacity: 1;
+    }
+
+    to {
+        transform: rotateY(-180deg) scale(0.8);
+        opacity: 0;
+    }
+}
+
+@keyframes flip-in {
+    from {
+        transform: rotateY(180deg) scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: rotateY(0deg) scale(1);
+        opacity: 1;
+    }
 }

@@ -14,7 +14,7 @@
 	import '$lib/ui/markdown/register';
 	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
 	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
-	import ArticleStickyHeader from '$lib/features/post/components/ArticleStickyHeader.svelte';
+	import StickyHeader from '$lib/ui/common/StickyHeader.svelte';
 
 	const postStore = postDetailCtx.selectModelData((data) => data as PostDetail | null);
 	const imageExtInfoStore = imageExtInfoCtx.mountModelData(
@@ -83,7 +83,10 @@
 	};
 
 	$effect(() => {
-		imageExtInfoCtx.syncModelData(imageExtInfoStore, buildImageExtInfoState($postStore?.extInfo ?? null));
+		imageExtInfoCtx.syncModelData(
+			imageExtInfoStore,
+			buildImageExtInfoState($postStore?.extInfo ?? null)
+		);
 		void refreshObserver();
 	});
 
@@ -113,7 +116,7 @@
 		返回顶部
 	{/snippet}
 
-	<ArticleStickyHeader />
+	<StickyHeader title={$postStore.title} />
 
 	<article class="article-enter space-y-10">
 		<!-- Header -->
@@ -131,7 +134,9 @@
 			<div class="space-y-4">
 				<div class="flex items-center gap-3">
 					<Badge variant="soft">专题</Badge>
-					<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase">技术与设计</span>
+					<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase"
+						>技术与设计</span
+					>
 				</div>
 
 				<h1
@@ -140,9 +145,12 @@
 					{$postStore.title}
 				</h1>
 
-				<div class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase">
+				<div
+					class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase"
+				>
 					<span class="flex items-center gap-1.5">
-						<Calendar size={12} /> {formatDate($postStore.createdAt)}
+						<Calendar size={12} />
+						{formatDate($postStore.createdAt)}
 					</span>
 					<span class="flex items-center gap-1.5"><Clock size={12} /> 12 分钟阅读</span>
 					<span class="flex items-center gap-1.5">
@@ -186,7 +194,8 @@
 					class="mt-16 flex flex-col items-start justify-between gap-4 border-t border-ink-50 pt-8 md:flex-row md:items-center dark:border-ink-800/30"
 				>
 					<div class="flex items-center gap-3">
-						<span class="font-mono text-[9px] tracking-widest text-ink-400 uppercase">分享此文</span>
+						<span class="font-mono text-[9px] tracking-widest text-ink-400 uppercase">分享此文</span
+						>
 						<Button
 							variant="ghost"
 							class="h-auto p-1.5 text-ink-400 hover:text-jade-600"
