@@ -10,7 +10,7 @@
 	import Button from '$lib/ui/ui/button/Button.svelte';
 	import Badge from '$lib/ui/ui/badge/Badge.svelte';
 	import Tag from '$lib/ui/ui/tag/Tag.svelte';
-	import Divider from '$lib/ui/ui/divider/Divider.svelte';
+	import Loading from '$lib/ui/common/Loading.svelte';
 	import '$lib/ui/markdown/register';
 	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
 	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
@@ -115,36 +115,44 @@
 
 	<ArticleStickyHeader />
 
-	<article class="article-container">
+	<article class="article-enter space-y-10">
 		<!-- Header -->
-		<header class="article-header">
-			<div class="back-nav">
+		<header class="max-w-4xl space-y-6">
+			<div class="flex items-center gap-4">
 				<Button
 					variant="ghost"
-					class="back-btn group"
+					class="!h-auto !p-0 font-mono text-[10px] font-semibold tracking-[0.2em] text-ink-400 uppercase hover:!bg-transparent hover:text-ink-900 group"
 					onclick={() => history.back()}
 					content={backContent}
 				/>
-				<div class="nav-divider"></div>
+				<div class="h-px w-6 bg-ink-200/50 dark:bg-ink-800/50"></div>
 			</div>
 
-			<div class="title-section">
-				<div class="meta-badge-row">
+			<div class="space-y-4">
+				<div class="flex items-center gap-3">
 					<Badge variant="soft">专题</Badge>
-					<span class="meta-label">技术与设计</span>
+					<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase">技术与设计</span>
 				</div>
 
-				<h1 class="article-title">{$postStore.title}</h1>
+				<h1
+					class="font-serif text-2xl leading-[1.2] font-medium tracking-tight text-ink-950 md:text-3xl lg:text-4xl dark:text-ink-50"
+				>
+					{$postStore.title}
+				</h1>
 
-				<div class="meta-info-row">
-					<span class="meta-item"><Calendar size={12} /> {formatDate($postStore.createdAt)}</span>
-					<span class="meta-item"><Clock size={12} /> 12 分钟阅读</span>
-					<span class="meta-item">
+				<div class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase">
+					<span class="flex items-center gap-1.5">
+						<Calendar size={12} /> {formatDate($postStore.createdAt)}
+					</span>
+					<span class="flex items-center gap-1.5"><Clock size={12} /> 12 分钟阅读</span>
+					<span class="flex items-center gap-1.5">
 						浏览 {$postStore.metrics?.views ?? 0} · 喜欢 {$postStore.metrics?.likes ?? 0} · 评论
 						{$postStore.metrics?.comments ?? 0}
 					</span>
 					{#snippet fallback()}
-						<span>加载中...</span>
+						<div class="">
+							<Loading size="w-3 h-3" duration={1000} />
+						</div>
 					{/snippet}
 					<QueryRoot
 						loader={() => import('$lib/features/post/components/PostMetricsClient.svelte')}
@@ -154,30 +162,41 @@
 			</div>
 
 			{#if $postStore.leadIn}
-				<p class="lead-in">{$postStore.leadIn}</p>
+				<p
+					class="border-l-[1px] border-jade-500/20 py-0.5 pl-5 font-serif text-base leading-relaxed font-normal text-ink-600 italic opacity-90 md:text-lg dark:text-ink-400"
+				>
+					{$postStore.leadIn}
+				</p>
 			{/if}
 		</header>
 
 		<!-- Content Grid -->
-		<div class="content-layout">
+		<div class="grid gap-10 lg:grid-cols-[1fr_220px] lg:gap-16">
 			<!-- Main Content -->
-			<main class="main-content">
+			<main class="min-w-0">
 				<div
-					class="markdown-preview markdown-body prose prose-ink dark:prose-invert"
+					class="markdown-preview markdown-body prose prose-ink dark:prose-invert max-w-none text-[15px] leading-[1.8] font-normal text-ink-800 md:text-base dark:text-ink-200 prose-headings:mt-10 prose-headings:mb-4 prose-headings:font-serif prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-ink-950 dark:prose-headings:text-ink-50 prose-h2:text-xl md:prose-h2:text-2xl prose-h3:text-lg md:prose-h3:text-xl prose-p:mb-6 prose-blockquote:my-8 prose-blockquote:border-l-[1px] prose-blockquote:border-jade-500/40 prose-blockquote:py-0.5 prose-blockquote:pl-5 prose-blockquote:text-[0.95em] prose-blockquote:text-ink-600 prose-blockquote:italic prose-blockquote:opacity-90 dark:prose-blockquote:text-ink-400"
 					bind:this={contentRoot}
 					use:markdownComponents
 				>
 					{@html contentHtml}
 				</div>
 
-				<footer class="article-footer">
-					<div class="share-row">
-						<span class="share-label">分享此文</span>
-						<Button variant="ghost" class="share-btn" title="分享" content={shareContent} />
+				<footer
+					class="mt-16 flex flex-col items-start justify-between gap-4 border-t border-ink-50 pt-8 md:flex-row md:items-center dark:border-ink-800/30"
+				>
+					<div class="flex items-center gap-3">
+						<span class="font-mono text-[9px] tracking-widest text-ink-400 uppercase">分享此文</span>
+						<Button
+							variant="ghost"
+							class="h-auto p-1.5 text-ink-400 hover:text-jade-600"
+							title="分享"
+							content={shareContent}
+						/>
 					</div>
 					<Button
 						variant="ghost"
-						class="top-btn"
+						class="!h-auto !p-0 font-mono text-[9px] tracking-[0.2em] text-ink-400 uppercase hover:!bg-transparent hover:text-ink-900"
 						onclick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
 						content={topContent}
 					/>
@@ -185,7 +204,9 @@
 
 				<!-- Comments Section -->
 				{#snippet commentFallback()}
-					<div class="py-10 text-center text-sm text-ink-300">加载评论区...</div>
+					<div class="flex justify-center py-40">
+						<Loading size="w-8 h-8" duration={1000} text="评论区在赶来的路上..." />
+					</div>
 				{/snippet}
 				<QueryRoot
 					loader={() => import('$lib/features/comment/components/CommentAreaClient.svelte')}
@@ -199,26 +220,38 @@
 
 			<!-- Sidebar / TOC -->
 			{#if $postStore.toc?.length}
-				<aside class="desktop-sidebar">
-					<div class="sidebar-sticky">
-						<div class="toc-container">
-							<span class="toc-header">本页目录</span>
-							<ul class="toc-list">
+				<aside class="hidden slide-in-right lg:block">
+					<div class="sticky top-20 space-y-10">
+						<div class="space-y-5">
+							<span
+								class="block border-b border-ink-50 pb-2 font-mono text-[8px] font-bold tracking-[0.4em] text-ink-300 uppercase dark:border-ink-800/30"
+							>
+								本页目录
+							</span>
+							<ul class="space-y-3 font-sans">
 								{#each $postStore.toc as item}
-									<li class="toc-item">
+									<li class="space-y-2">
 										<a
-											class="toc-link {activeAnchor === item.anchor ? 'active' : ''}"
+											class={`block text-[12px] text-ink-500 transition-all hover:translate-x-0.5 hover:text-jade-600 dark:text-ink-400 dark:hover:text-jade-400 ${
+												activeAnchor === item.anchor
+													? 'font-bold text-jade-700 dark:text-jade-400'
+													: ''
+											}`}
 											href={'#' + item.anchor}
 											onclick={(event) => scrollToAnchor(item.anchor, event)}
 										>
 											{item.name}
 										</a>
 										{#if item.children?.length}
-											<ul class="toc-sublist">
+											<ul class="space-y-1.5 border-l border-ink-50 pl-3 dark:border-ink-800/30">
 												{#each item.children as child}
 													<li>
 														<a
-															class="toc-sublink {activeAnchor === child.anchor ? 'active' : ''}"
+															class={`block text-[11px] text-ink-400 transition-all hover:translate-x-0.5 hover:text-jade-500 dark:text-ink-500 ${
+																activeAnchor === child.anchor
+																	? 'font-bold text-jade-600 dark:text-jade-300'
+																	: ''
+															}`}
 															href={'#' + child.anchor}
 															onclick={(event) => scrollToAnchor(child.anchor, event)}
 														>
@@ -233,9 +266,9 @@
 							</ul>
 						</div>
 
-						<div class="sidebar-card">
+						<div class="space-y-2.5 rounded-lg border border-jade-500/10 bg-jade-500/5 p-5">
 							<Tag variant="jade" class="border-none px-0">感悟</Tag>
-							<p class="sidebar-card-text">
+							<p class="text-[10px] leading-relaxed font-normal text-ink-500 dark:text-ink-400">
 								每一篇文章都是漫长探索中的一小步。如果这些文字能引起共鸣，欢迎留下你的思考。
 							</p>
 						</div>
@@ -245,166 +278,7 @@
 		</div>
 	</article>
 {:else}
-	<div class="empty-article">
+	<div class="py-24 text-center font-serif text-sm text-ink-400 italic">
 		<p>请求的内容未能呈现。</p>
 	</div>
 {/if}
-
-<style lang="postcss">
-	@reference "../../../../routes/layout.css";
-
-	.article-container {
-		@apply article-enter space-y-10;
-	}
-
-	.article-header {
-		@apply max-w-4xl space-y-6;
-	}
-
-	.back-nav {
-		@apply flex items-center gap-4;
-	}
-
-	.back-btn {
-		@apply !h-auto !p-0 font-mono text-[10px] font-semibold tracking-[0.2em] text-ink-400 uppercase hover:!bg-transparent hover:text-ink-900;
-	}
-
-	.nav-divider {
-		@apply h-px w-6 bg-ink-200/50 dark:bg-ink-800/50;
-	}
-
-	.title-section {
-		@apply space-y-4;
-	}
-
-	.meta-badge-row {
-		@apply flex items-center gap-3;
-	}
-
-	.meta-label {
-		@apply font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase;
-	}
-
-	.article-title {
-		@apply font-serif text-2xl leading-[1.2] font-medium tracking-tight text-ink-950 md:text-3xl lg:text-4xl dark:text-ink-50;
-	}
-
-	.meta-info-row {
-		@apply flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase;
-	}
-
-	.meta-item {
-		@apply flex items-center gap-1.5;
-	}
-
-	.lead-in {
-		@apply border-l-[1px] border-jade-500/20 py-0.5 pl-5 font-serif text-base leading-relaxed font-normal text-ink-600 italic opacity-90 md:text-lg dark:text-ink-400;
-	}
-
-	.content-layout {
-		@apply grid gap-10 lg:grid-cols-[1fr_220px] lg:gap-16;
-	}
-
-	.main-content {
-		@apply min-w-0;
-	}
-
-	.markdown-body {
-		@apply max-w-none text-[15px] leading-[1.8] font-normal text-ink-800 md:text-base dark:text-ink-200;
-	}
-
-	.article-footer {
-		@apply mt-16 flex flex-col items-start justify-between gap-4 border-t border-ink-50 pt-8 md:flex-row md:items-center dark:border-ink-800/30;
-	}
-
-	.share-row {
-		@apply flex items-center gap-3;
-	}
-
-	.share-label {
-		@apply font-mono text-[9px] tracking-widest text-ink-400 uppercase;
-	}
-
-	.share-btn {
-		@apply h-auto p-1.5 text-ink-400 hover:text-jade-600;
-	}
-
-	.top-btn {
-		@apply !h-auto !p-0 font-mono text-[9px] tracking-[0.2em] text-ink-400 uppercase hover:!bg-transparent hover:text-ink-900;
-	}
-
-	.desktop-sidebar {
-		@apply hidden slide-in-right lg:block;
-	}
-
-	.sidebar-sticky {
-		@apply sticky top-20 space-y-10;
-	}
-
-	.toc-container {
-		@apply space-y-5;
-	}
-
-	.toc-header {
-		@apply block border-b border-ink-50 pb-2 font-mono text-[8px] font-bold tracking-[0.4em] text-ink-300 uppercase dark:border-ink-800/30;
-	}
-
-	.toc-list {
-		@apply space-y-3 font-sans;
-	}
-
-	.toc-item {
-		@apply space-y-2;
-	}
-
-	.toc-link {
-		@apply block text-[12px] text-ink-500 transition-all hover:translate-x-0.5 hover:text-jade-600 dark:text-ink-400 dark:hover:text-jade-400;
-	}
-
-	.toc-link.active {
-		@apply font-bold text-jade-700 dark:text-jade-400;
-	}
-
-	.toc-sublist {
-		@apply space-y-1.5 border-l border-ink-50 pl-3 dark:border-ink-800/30;
-	}
-
-	.toc-sublink {
-		@apply block text-[11px] text-ink-400 transition-all hover:translate-x-0.5 hover:text-jade-500 dark:text-ink-500;
-	}
-
-	.toc-sublink.active {
-		@apply font-bold text-jade-600 dark:text-jade-300;
-	}
-
-	.sidebar-card {
-		@apply space-y-2.5 rounded-lg border border-jade-500/10 bg-jade-500/5 p-5;
-	}
-
-	.sidebar-card-text {
-		@apply text-[10px] leading-relaxed font-normal text-ink-500 dark:text-ink-400;
-	}
-
-	.empty-article {
-		@apply py-24 text-center font-serif text-sm text-ink-400 italic;
-	}
-
-	:global(.markdown-body h1, .markdown-body h2, .markdown-body h3) {
-		@apply mt-10 mb-4 font-serif font-medium tracking-tight text-ink-950 dark:text-ink-50;
-	}
-
-	:global(.markdown-body h2) {
-		@apply text-xl md:text-2xl;
-	}
-	:global(.markdown-body h3) {
-		@apply text-lg md:text-xl;
-	}
-
-	:global(.markdown-body p) {
-		@apply mb-6;
-	}
-
-	:global(.markdown-body blockquote) {
-		@apply my-8 border-l-[1px] border-jade-500/40 py-0.5 pl-5 text-[0.95em] text-ink-600 italic opacity-90 dark:text-ink-400;
-	}
-</style>

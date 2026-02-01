@@ -70,7 +70,7 @@
 
 ## 11. 设计系统与样式约束
 - 全局主题/Token：`src/routes/layout.css`（Tailwind v4 + @theme）。
-- 组件样式优先在 `<style>` 中使用 `@apply`，并用 `@reference` 引入 `layout.css`。
+- 样式优先使用 Tailwind 类名；仅当表达不清晰/复用需要时才在 `<style>` 中使用 `@apply`，并用 `@reference` 引入 `$routes/layout.css`。
 - 视觉风格保持“温暖灰 + jade 主色 + serif/sans/mono”体系，不引入新的风格系统。
 
 ## 12. 禁止事项（硬性）
@@ -79,6 +79,7 @@
 - 不在 SSR 阶段访问 `window/document/navigator`。
 - 不在首屏引入重库；能动态加载就动态加载。
 - 不改 `build/`、`node_modules/`、`design-system/`（除非明确要求）。
+- 禁止臆测：只基于代码/日志/已知事实给出结论与原因，不做凭空推断；不确定时先提出可验证的问题或给出需要的证据。
 
 ## 13. 可选落地路径建议（如需新增模块）
 - DOM actions: `src/lib/shared/actions/*.ts`
@@ -87,5 +88,20 @@
 - UI 组件：`src/lib/ui/*.svelte`
 
 ---
+
+## 14. 变更说明（新增）
+原因：使用 svatoms 的 `selectModelData` 时，selector 返回对象会在 model 细节变动时触发子组件重渲染，影响 action/update 稳定性。  
+改动范围：补充 svatoms 选择器去抖与等价判断用法规范。
+
+## 15. svatoms 选择器用法（新增）
+- `selectModelData(selector, { equals })` 可用于避免 selector 返回派生对象时的无关重渲染。
+- 当 selector 返回对象/数组时，必须提供 `equals`，仅对关心字段做浅比较。
+- 推荐写法：
+```ts
+const store = ctx.selectModelData(
+  (model) => model?.part ?? null,
+  { equals: (a, b) => a?.id === b?.id && a?.status === b?.status }
+);
+```
 
 如需扩展本规范，请先解释原因与改动范围，再调整本文件。

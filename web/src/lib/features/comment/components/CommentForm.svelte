@@ -176,7 +176,7 @@
 			placeholder="在此留下您的思绪..."
 			rows={6}
 			resize="none"
-			textareaClass="text-sm font-sans text-ink-900 dark:text-ink-100 placeholder:text-ink-800/20 dark:placeholder:text-ink-200/20 leading-loose min-h-[140px] p-4"
+			textareaClass="text-sm font-sans bg-ink-100 dark:bg-ink-800/40 text-ink-900 dark:text-ink-100 placeholder:text-ink-800/20 dark:placeholder:text-ink-200/20 leading-loose min-h-[140px] p-4"
 		/>
 
 		<!-- Footer Actions -->

@@ -95,6 +95,7 @@
 		align-items: center;
 		justify-content: center;
 		background: rgba(10, 12, 16, 0.82);
+		overflow: hidden;
 		backdrop-filter: blur(6px);
 	}
 
