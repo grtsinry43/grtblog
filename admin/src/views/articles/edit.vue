@@ -19,11 +19,13 @@ import {
   useMessage,
   NAutoComplete,
 } from 'naive-ui'
-import { computed, onMounted, ref, toRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRaw, toRef, watch } from 'vue'
 
 // 组件
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
+import { listWebsiteInfo } from '@/services/website-info'
+import type { ArticleDetail } from '@/services/articles'
 
 // 逻辑 Hooks
 import { useArticleForm } from './composables/use-article-form'
@@ -35,7 +37,7 @@ defineOptions({ name: 'ArticleEdit' })
 const message = useMessage()
 
 // 1. 初始化表单核心逻辑
-const { form, loading, saving, imageProcessing, isCreating, fetch, save } = useArticleForm()
+const { form, loading, saving, imageProcessing, isCreating, fetch, save, extInfo } = useArticleForm()
 
 // 2. 初始化分类与标签逻辑
 // 将表单中的响应式属性传给 Hook，实现双向绑定
@@ -60,6 +62,13 @@ const { cursorPos, selectionStats, statsIdle, markActivity, handleCursorChange, 
 const showMeta = ref(false)
 const showPreview = ref(false)
 const previewMode = ref<'markdown' | 'page'>('markdown')
+const previewFrameRef = ref<HTMLIFrameElement | null>(null)
+const previewReady = ref(false)
+const publicUrl = ref('')
+const loadedArticle = ref<ArticleDetail | null>(null)
+
+const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
+const PREVIEW_POST_TYPE = 'grtblog-preview:post'
 
 // 5. 计算属性
 const stats = computed(() => getStats(form.content))
@@ -69,18 +78,142 @@ const actionLabel = computed(() => {
 })
 const actionIcon = computed(() => (form.isPublished ? PaperPlaneOutline : SaveOutline))
 const previewUrl = computed(() => {
-  const slug = form.shortUrl?.trim()
-  return slug ? `/posts/${slug}` : ''
+  const base = normalizePublicUrl(publicUrl.value)
+  return base ? `${base}/internal/preview/post` : ''
 })
+
+const previewOrigin = computed(() => {
+  if (!previewUrl.value) return '*'
+  try {
+    return new URL(previewUrl.value).origin
+  } catch {
+    return '*'
+  }
+})
+
+function normalizePublicUrl(value: string) {
+  return value.trim().replace(/\/+$/, '')
+}
+
+async function fetchWebsiteInfo() {
+  try {
+    const list = await listWebsiteInfo()
+    const item = list?.find((info) => info.key === 'public_url')
+    publicUrl.value = item?.value?.trim() ?? ''
+  } catch (err) {
+    message.error(err instanceof Error ? err.message : '加载站点地址失败')
+  }
+}
+
+function buildPreviewPayload() {
+  const nowIso = new Date().toISOString()
+  const safeExtInfo = extInfo.value ? JSON.parse(JSON.stringify(toRaw(extInfo.value))) : null
+  const safeTags = loadedArticle.value?.tags
+    ? JSON.parse(JSON.stringify(toRaw(loadedArticle.value.tags)))
+    : []
+  return {
+    id: loadedArticle.value?.id ?? 0,
+    title: form.title,
+    summary: form.summary,
+    leadIn: form.leadIn || null,
+    content: form.content,
+    contentHash: loadedArticle.value?.contentHash ?? '',
+    shortUrl: form.shortUrl,
+    cover: form.cover || null,
+    categoryId: form.categoryId,
+    commentAreaId: null,
+    extInfo: safeExtInfo,
+    toc: undefined,
+    tags: safeTags,
+    metrics: loadedArticle.value ? { views: 0, likes: 0, comments: 0 } : undefined,
+    isPublished: form.isPublished,
+    isTop: form.isTop,
+    isHot: form.isHot,
+    isOriginal: form.isOriginal,
+    createdAt: loadedArticle.value?.createdAt ?? nowIso,
+    updatedAt: nowIso,
+    authorId: loadedArticle.value?.authorId ?? 0,
+  }
+}
+
+function sendPreviewPayload() {
+  if (!showPreview.value || previewMode.value !== 'page') return
+  if (!previewUrl.value || !previewReady.value) return
+  const frame = previewFrameRef.value
+  if (!frame?.contentWindow) return
+  frame.contentWindow.postMessage(
+    { type: PREVIEW_POST_TYPE, payload: buildPreviewPayload() },
+    previewOrigin.value,
+  )
+}
+
+let previewTimer: number | null = null
+function schedulePreviewPayload() {
+  if (!showPreview.value || previewMode.value !== 'page') return
+  if (!previewUrl.value) return
+  if (previewTimer) window.clearTimeout(previewTimer)
+  previewTimer = window.setTimeout(() => {
+    previewTimer = null
+    sendPreviewPayload()
+  }, 200)
+}
+
+function handlePreviewMessage(event: MessageEvent) {
+  const frame = previewFrameRef.value
+  if (!frame?.contentWindow || event.source !== frame.contentWindow) return
+  const data = event.data as { type?: string } | null
+  if (!data || data.type !== PREVIEW_READY_TYPE) return
+  previewReady.value = true
+  sendPreviewPayload()
+}
+
+function handlePreviewFrameLoad() {
+  previewReady.value = true
+  sendPreviewPayload()
+}
 
 // 6. 生命周期
 onMounted(async () => {
-  // 加载文章数据
-  const data = await fetch()
-  // 如果加载成功且有 tags 数据（带名字），初始化标签 UI
+  window.addEventListener('message', handlePreviewMessage)
+
+  const [data] = await Promise.all([fetch(), fetchWebsiteInfo()])
+  loadedArticle.value = data as ArticleDetail | null
   if (data?.tags) {
     setInitialTags(data.tags)
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', handlePreviewMessage)
+  if (previewTimer) window.clearTimeout(previewTimer)
+})
+
+watch(
+  () => [
+    form.title,
+    form.summary,
+    form.leadIn,
+    form.content,
+    form.cover,
+    form.shortUrl,
+    form.isPublished,
+    form.isTop,
+    form.isHot,
+    form.isOriginal,
+    extInfo.value,
+  ],
+  () => {
+    schedulePreviewPayload()
+  },
+  { deep: true },
+)
+
+watch([showPreview, previewMode, previewUrl], () => {
+  schedulePreviewPayload()
+})
+
+watch(previewUrl, () => {
+  previewReady.value = false
 })
 </script>
 
@@ -272,13 +405,15 @@ onMounted(async () => {
             <iframe
               v-if="previewUrl"
               :src="previewUrl"
+              ref="previewFrameRef"
               class="h-full w-full border-0"
+              @load="handlePreviewFrameLoad"
             />
             <div
               v-else
               class="flex h-full items-center justify-center text-sm opacity-60"
             >
-              请先填写 slug
+              请先在站点信息中设置 public_url
             </div>
           </div>
         </div>

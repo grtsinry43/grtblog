@@ -19,22 +19,24 @@
 
 <a
 	href="/posts/{post.shortUrl}"
-	class="group relative flex flex-col gap-3 px-6 py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 block w-full outline-none"
+	class="group relative flex flex-col gap-3 px-4 py-4 sm:px-6 sm:py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 w-full outline-none"
 >
 	<!-- Title -->
 	<h2
-		class="font-serif text-2xl font-medium text-ink-900 dark:text-ink-100 group-hover:text-jade-600 dark:group-hover:text-jade-400 transition-colors duration-200"
+		class="font-serif text-xl sm:text-2xl font-medium text-ink-900 dark:text-ink-100 group-hover:text-jade-600 dark:group-hover:text-jade-400 transition-colors duration-200"
 	>
 		{post.title}
 	</h2>
 
 	<!-- Excerpt -->
-	<p class="text-ink-500 dark:text-ink-400 text-sm leading-relaxed line-clamp-2">
+	<p class="text-ink-500 dark:text-ink-400 text-xs sm:text-sm leading-relaxed line-clamp-2">
 		{post.summary || '暂无摘要'}
 	</p>
 
 	<!-- Meta Row -->
-	<div class="flex items-center gap-6 text-xs text-ink-400 dark:text-ink-500 mt-2 font-mono">
+	<div
+		class="flex items-center gap-3 sm:gap-6 text-[11px] sm:text-xs text-ink-400 dark:text-ink-500 mt-2 font-mono"
+	>
 		<!-- Date -->
 		<div class="flex items-center gap-1.5">
 			<Calendar size={14} strokeWidth={1.5} />

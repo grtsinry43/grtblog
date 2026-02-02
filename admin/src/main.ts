@@ -7,6 +7,7 @@ import { setupRouterGuard } from '@/router/guard'
 import { pinia } from '@/stores'
 import { setupApiInterceptors } from '@/services/api-interceptors'
 import { checkVersion } from '@/utils/checkVersion'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
 import router from './router'
@@ -25,6 +26,8 @@ async function setupApp() {
   setupRouterGuard(router)
 
   setupEventBus()
+
+  app.use(VueQueryPlugin)
 
   await router.isReady()
 

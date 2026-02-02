@@ -75,14 +75,14 @@
 	};
 </script>
 
-<div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-12">
+<div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12">
 	<!-- Header Section -->
 	<header
-		class="space-y-4 text-center sm:text-left border-b border-ink-100 dark:border-ink-800 pb-8"
+		class="space-y-4 text-center sm:text-left border-b border-ink-100 dark:border-ink-800 pb-6 sm:pb-8"
 	>
 		<div class="flex items-center justify-center sm:justify-start gap-3">
 			<h1
-				class="font-serif text-3xl sm:text-4xl font-medium tracking-tight text-ink-950 dark:text-ink-50"
+				class="font-serif text-2xl sm:text-4xl font-medium tracking-tight text-ink-950 dark:text-ink-50"
 			>
 				文章归档
 			</h1>
@@ -126,14 +126,14 @@
 
 		<!-- Pagination -->
 		{#if totalPages > 1}
-			<div class="flex justify-center pt-8 pb-12">
+			<div class="flex justify-center pt-6 pb-8 sm:pt-8 sm:pb-12">
 				<Pagination current={pagination.page} total={totalPages} {onPageChange} />
 			</div>
 		{/if}
 	{:else}
 		<!-- Empty State -->
 		<div
-			class="flex flex-col items-center justify-center py-32 text-center space-y-4 border-2 border-dashed border-ink-100 dark:border-ink-800/50 rounded-2xl bg-ink-50/50 dark:bg-ink-900/20"
+			class="flex flex-col items-center justify-center py-16 sm:py-32 text-center space-y-4 border-2 border-dashed border-ink-100 dark:border-ink-800/50 rounded-2xl bg-ink-50/50 dark:bg-ink-900/20"
 		>
 			<div class="relative">
 				<div class="absolute -inset-4 bg-jade-500/10 rounded-full blur-xl animate-pulse"></div>

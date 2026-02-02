@@ -114,6 +114,56 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     ],
   },
   {
+    path: 'thinkings',
+    name: 'thinkingManagement',
+    icon: 'iconify ph--lightbulb-filament',
+    label: '思考管理',
+    redirect: 'thinkings/list',
+    children: [
+      {
+        path: 'list',
+        name: 'thinkingList',
+        label: '思考列表',
+        icon: 'iconify ph--list-bullets',
+        meta: {
+          componentName: 'ThinkingList',
+          showTab: true,
+        },
+        component: 'thinking/index',
+      },
+      {
+        path: 'create',
+        name: 'thinkingCreate',
+        label: '新建思考',
+        show: false,
+        meta: {
+          componentName: 'ThinkingEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle() {
+            return '新建思考'
+          },
+        },
+        component: 'thinking/edit',
+      },
+      {
+        path: 'edit/:id',
+        name: 'thinkingEdit',
+        label: '编辑思考',
+        show: false,
+        meta: {
+          componentName: 'ThinkingEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle({ id }) {
+            return `编辑思考${id ? `-${id}` : ''}`
+          },
+        },
+        component: 'thinking/edit',
+      },
+    ],
+  },
+  {
     path: 'pages',
     name: 'pageManagement',
     icon: 'iconify ph--layout',
@@ -130,6 +180,36 @@ export const routeRecordRaw: MenuMixedOptions[] = [
           showTab: true,
         },
         component: 'pages/index',
+      },
+      {
+        path: 'create',
+        name: 'pageCreate',
+        label: '新建页面',
+        show: false,
+        meta: {
+          componentName: 'PageEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle() {
+            return '新建页面'
+          },
+        },
+        component: 'pages/edit',
+      },
+      {
+        path: 'edit/:id',
+        name: 'pageEdit',
+        label: '编辑页面',
+        show: false,
+        meta: {
+          componentName: 'PageEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle({ id }) {
+            return `编辑页面${id ? `-${id}` : ''}`
+          },
+        },
+        component: 'pages/edit',
       },
     ],
   },

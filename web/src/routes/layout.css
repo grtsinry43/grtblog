@@ -328,12 +328,13 @@ button {
 
 .markdown-preview .md-figure {
     margin: 1.5rem 0;
+    overflow: hidden;
 }
 
 .markdown-preview .md-img {
     display: block;
     width: 100%;
-    border-radius: 12px;
+    border-radius: 3px;
     transition: filter 400ms ease, transform 400ms ease, opacity 400ms ease;
     filter: blur(var(--md-img-blur, 18px));
     transform: scale(1.01);

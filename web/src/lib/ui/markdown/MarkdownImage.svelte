@@ -8,6 +8,9 @@
 	}>();
 
 	const extInfoStore = imageExtInfoCtx.selectModelData((data) => data);
+
+	console.log('extInfoStore:', $extInfoStore);
+
 	let imgSrc = $state('');
 	let zoomSrc = $state('');
 	let zoomAlt = $state('');
@@ -65,8 +68,8 @@
 
 	$effect(() => {
 		if (!imgEl) return;
-		if (imageInfo) {
-			applyPlaceholder(imageInfo);
+		if (imageInfo()) {
+			applyPlaceholder(imageInfo());
 		}
 	});
 
