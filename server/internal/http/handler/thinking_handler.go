@@ -151,6 +151,30 @@ func (h *ThinkingHandler) ListThinkings(c *fiber.Ctx) error {
 	})
 }
 
+// GetThinking godoc
+// @Summary 获取单个思考
+// @Tags Thinking
+// @Param id path int true "思考ID"
+// @Success 200 {object} contract.ThinkingResp
+// @Router /thinkings/{id} [get]
+func (h *ThinkingHandler) GetThinking(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的ID")
+	}
+
+	item, err := h.svc.FindByID(c.Context(), id)
+	if err != nil {
+		return h.mapError(c, err)
+	}
+
+	resp, err := h.toThinkingResp(c.Context(), item)
+	if err != nil {
+		return err
+	}
+	return response.Success(c, resp)
+}
+
 // DeleteThinking godoc
 // @Summary 删除思考
 // @Tags Thinking

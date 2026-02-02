@@ -71,7 +71,7 @@ watch(
 <template>
   <div
     ref="editorRef"
-    class="codemirror-wrapper min-h-[220px] w-full overflow-hidden rounded-md border"
+    class="codemirror-wrapper min-h-55 w-full overflow-hidden rounded-md border"
     :style="editorStyle"
   ></div>
 </template>

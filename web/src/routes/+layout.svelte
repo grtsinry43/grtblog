@@ -2,6 +2,7 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import Sidebar from '$lib/ui/layout/sidebar/Sidebar.svelte';
+	import MobileNavBar from '$lib/ui/layout/sidebar/MobileNavBar.svelte';
 	import { initTheme, startThemeSync, themeManager } from '$lib/shared/theme/theme.svelte.js';
 	import { onMount } from 'svelte';
 	import { consoleLogInfo } from '$lib/features/console-info/index';
@@ -130,7 +131,10 @@
 	</script>
 </svelte:head>
 
-<Sidebar menuTree={data.navMenus ?? []} />
+<div class="hidden md:block">
+	<Sidebar menuTree={data.navMenus ?? []} />
+</div>
+<MobileNavBar menuTree={data.navMenus ?? []} />
 <!-- noise background -->
 <div class="bg-noise" aria-hidden="true"></div>
 

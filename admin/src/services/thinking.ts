@@ -1,0 +1,80 @@
+import { request } from './http'
+
+export interface ThinkingMetrics {
+  views: number
+  likes: number
+  comments: number
+}
+
+export interface ThinkingListItem {
+  id: number
+  content: string
+  authorName?: string
+  authorAvatar?: string
+  metrics: ThinkingMetrics
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ThinkingListResponse {
+  items: ThinkingListItem[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface ThinkingDetail extends ThinkingListItem {}
+
+export interface ListThinkingsParams {
+  page?: number
+  pageSize?: number
+}
+
+export interface CreateThinkingPayload {
+  content: string
+}
+
+export interface UpdateThinkingPayload {
+  content: string
+}
+
+function stripEmpty<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      ([, entry]) => entry !== undefined && entry !== null && entry !== '',
+    ),
+  ) as T
+}
+
+export function listThinkings(params: ListThinkingsParams) {
+  return request<ThinkingListResponse>('/thinkings', {
+    method: 'GET',
+    query: stripEmpty(params),
+  })
+}
+
+export function getThinking(id: number) {
+  return request<ThinkingDetail>(`/thinkings/${id}`, {
+    method: 'GET',
+  })
+}
+
+export function createThinking(payload: CreateThinkingPayload) {
+  return request<ThinkingDetail>('/thinkings', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function updateThinking(id: number, payload: UpdateThinkingPayload) {
+  return request<ThinkingDetail>(`/thinkings/${id}`, {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function deleteThinking(id: number) {
+  return request<void>(`/thinkings/${id}`, {
+    method: 'DELETE',
+  })
+}

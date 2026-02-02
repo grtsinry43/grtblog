@@ -33,6 +33,7 @@
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@lezer/highlight": "^1.2.3",
     "@lezer/markdown": "^1.6.3",
+    "@tanstack/vue-query": "^5.92.9",
     "@types/markdown-it": "^14.1.2",
     "@types/markdown-it-container": "^2.0.11",
     "@vicons/fluent": "^0.13.0",

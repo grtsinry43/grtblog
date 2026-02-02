@@ -5,8 +5,9 @@
 	import type { TOCNode } from '$lib/features/post/types';
 	import { markdownComponents } from '$lib/shared/actions/markdown-components';
 	import { buildImageExtInfoState, imageExtInfoCtx } from '$lib/shared/markdown/image-ext-info';
-	import { Calendar, Clock, Share2, ArrowLeft } from 'lucide-svelte';
+	import { Calendar, Clock, Share2, ArrowLeft, Sparkles, ChevronDown } from 'lucide-svelte';
 	import { page } from '$app/stores';
+	import { spring } from 'svelte/motion';
 	import Button from '$lib/ui/ui/button/Button.svelte';
 	import Badge from '$lib/ui/ui/badge/Badge.svelte';
 	import Tag from '$lib/ui/ui/tag/Tag.svelte';
@@ -24,6 +25,13 @@
 	let activeAnchor = $state<string | null>(null);
 	let observer: IntersectionObserver | null = null;
 	const siteOrigin = $derived($page.url.origin);
+	let isAiSummaryExpanded = $state(false);
+	let summaryContentHeight = $state(0);
+	const summaryHeight = spring(60, { stiffness: 0.15, damping: 0.6 });
+
+	$effect(() => {
+		summaryHeight.set(isAiSummaryExpanded ? summaryContentHeight : 60);
+	});
 
 	const flattenTOC = (nodes?: TOCNode[]) => {
 		if (!nodes?.length) return [];
@@ -41,6 +49,14 @@
 	let contentHtml = $derived(
 		$postStore
 			? renderMarkdown($postStore.content ?? '', flattenTOC($postStore.toc), {
+					origin: siteOrigin
+				})
+			: ''
+	);
+
+	let aiSummaryHtml = $derived(
+		$postStore?.aiSummary
+			? renderMarkdown($postStore.aiSummary, [], {
 					origin: siteOrigin
 				})
 			: ''
@@ -182,6 +198,47 @@
 		<div class="grid gap-10 lg:grid-cols-[1fr_220px] lg:gap-16">
 			<!-- Main Content -->
 			<main class="min-w-0">
+				{#if $postStore.aiSummary}
+					<div
+						class="mb-8 overflow-hidden rounded-default border border-jade-500/20 bg-gradient-to-br from-jade-500/5 to-transparent p-4 shadow-sm transition-all dark:border-jade-500/10 dark:from-jade-500/10"
+					>
+						<div class="mb-3 flex items-center justify-between gap-2.5">
+							<div class="flex items-center gap-2">
+								<div
+									class="flex h-5 w-5 items-center justify-center rounded-md bg-jade-500/10 text-jade-700 dark:bg-jade-500/20 dark:text-jade-400"
+								>
+									<Sparkles size={12} strokeWidth={2.5} />
+								</div>
+								<span
+									class="font-mono text-[10px] font-bold tracking-widest text-jade-700 uppercase dark:text-jade-400"
+									>AI 摘要</span
+								>
+							</div>
+							<button
+								class="flex items-center gap-1 text-[10px] font-medium text-jade-600/80 hover:text-jade-600 transition-colors cursor-pointer select-none"
+								onclick={() => (isAiSummaryExpanded = !isAiSummaryExpanded)}
+							>
+								{isAiSummaryExpanded ? '收起' : '展开'}
+								<ChevronDown
+									size={12}
+									class={`transition-transform duration-300 ${isAiSummaryExpanded ? 'rotate-180' : ''}`}
+								/>
+							</button>
+						</div>
+						<div
+							class={`relative overflow-hidden will-change-[height] ${!isAiSummaryExpanded ? 'mask-gradient' : ''}`}
+							style:height="{$summaryHeight}px"
+						>
+							<div
+								bind:clientHeight={summaryContentHeight}
+								class="markdown-preview prose prose-sm max-w-none font-sans text-xs leading-relaxed text-ink-700 dark:prose-invert dark:text-ink-300 [&>p]:mb-1.5 [&>p]:last:mb-0"
+								use:markdownComponents
+							>
+								{@html aiSummaryHtml}
+							</div>
+						</div>
+					</div>
+				{/if}
 				<div
 					class="markdown-preview markdown-body prose prose-ink dark:prose-invert max-w-none text-[15px] leading-[1.8] font-normal text-ink-800 md:text-base dark:text-ink-200 prose-headings:mt-10 prose-headings:mb-4 prose-headings:font-serif prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-ink-950 dark:prose-headings:text-ink-50 prose-h2:text-xl md:prose-h2:text-2xl prose-h3:text-lg md:prose-h3:text-xl prose-p:mb-6 prose-blockquote:my-8 prose-blockquote:border-l-[1px] prose-blockquote:border-jade-500/40 prose-blockquote:py-0.5 prose-blockquote:pl-5 prose-blockquote:text-[0.95em] prose-blockquote:text-ink-600 prose-blockquote:italic prose-blockquote:opacity-90 dark:prose-blockquote:text-ink-400"
 					bind:this={contentRoot}
@@ -212,19 +269,21 @@
 				</footer>
 
 				<!-- Comments Section -->
-				{#snippet commentFallback()}
-					<div class="flex justify-center py-40">
-						<Loading size="w-8 h-8" duration={1000} text="评论区在赶来的路上..." />
-					</div>
-				{/snippet}
-				<QueryRoot
-					loader={() => import('$lib/features/comment/components/CommentAreaClient.svelte')}
-					loaderProps={{
-						areaId: $postStore.commentAreaId,
-						commentsCount: $postStore.metrics?.comments ?? 0
-					}}
-					fallback={commentFallback}
-				/>
+				{#if $postStore.commentAreaId}
+					{#snippet commentFallback()}
+						<div class="flex justify-center py-40">
+							<Loading size="w-8 h-8" duration={1000} text="评论区在赶来的路上..." />
+						</div>
+					{/snippet}
+					<QueryRoot
+						loader={() => import('$lib/features/comment/components/CommentAreaClient.svelte')}
+						loaderProps={{
+							areaId: $postStore.commentAreaId,
+							commentsCount: $postStore.metrics?.comments ?? 0
+						}}
+						fallback={commentFallback}
+					/>
+				{/if}
 			</main>
 
 			<!-- Sidebar / TOC -->
