@@ -271,6 +271,11 @@ func (s *Service) GetArticleTags(ctx context.Context, articleID int64) ([]*conte
 	return s.repo.GetTagsByArticleID(ctx, articleID)
 }
 
+// UpdateHotArticles 根据指标更新热门文章状态
+func (s *Service) UpdateHotArticles(ctx context.Context, viewThreshold, likeThreshold, commentThreshold int64) error {
+	return s.repo.SyncHotArticles(ctx, viewThreshold, likeThreshold, commentThreshold)
+}
+
 // generateShortURL 生成短链接
 func (s *Service) ensureShortURLAvailable(ctx context.Context, shortURL string) (string, error) {
 	shortURL = strings.TrimSpace(shortURL)

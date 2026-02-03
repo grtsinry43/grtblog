@@ -6,6 +6,7 @@
 	import { markdownComponents } from '$lib/shared/actions/markdown-components';
 	import { buildImageExtInfoState, imageExtInfoCtx } from '$lib/shared/markdown/image-ext-info';
 	import { Calendar, Clock, Share2, ArrowLeft, Sparkles, ChevronDown } from 'lucide-svelte';
+	import Icon from '@iconify/svelte';
 	import { page } from '$app/stores';
 	import { spring } from 'svelte/motion';
 	import Button from '$lib/ui/ui/button/Button.svelte';
@@ -164,6 +165,18 @@
 				<div
 					class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase"
 				>
+					{#if $postStore.isHot}
+						{#snippet hotIcon()}
+							<Icon icon="ph:fire-fill" class="size-4 text-red-500" />
+						{/snippet}
+						<Badge
+							variant="soft"
+							class="!border-red-500/20 !bg-red-500/5 !text-red-600 dark:!text-red-400"
+							icon={hotIcon}
+						>
+							热门
+						</Badge>
+					{/if}
 					<span class="flex items-center gap-1.5">
 						<Calendar size={12} />
 						{formatDate($postStore.createdAt)}

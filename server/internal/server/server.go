@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -15,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
@@ -27,10 +29,14 @@ import (
 
 // Server wraps Fiber with configuration and dependencies.
 type Server struct {
-	cfg     config.Config
-	db      *gorm.DB
-	app     *fiber.App
-	logFile *os.File
+	cfg        config.Config
+	db         *gorm.DB
+	app        *fiber.App
+	logFile    *os.File
+	ctx        context.Context
+	cancel     context.CancelFunc
+	articleSvc *article.Service
+	sysCfgSvc  *sysconfig.Service
 }
 
 // New builds a Fiber server with registered routes and middlewares.
@@ -38,7 +44,12 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	logFile := initLogging()
 	sysCfgRepo := persistence.NewSysConfigRepository(db)
 	sysCfgSvc := sysconfig.NewService(sysCfgRepo, cfg.Turnstile)
-	bodyLimit := sysCfgSvc.UploadMaxSizeBytes(context.Background())
+	contentRepo := persistence.NewContentRepository(db)
+	eventBus := infraevent.NewInMemoryBus()
+	articleSvc := article.NewService(contentRepo, eventBus)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	bodyLimit := sysCfgSvc.UploadMaxSizeBytes(ctx)
 
 	app := fiber.New(fiber.Config{
 		AppName:           cfg.App.Name,
@@ -98,9 +109,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		DB:       cfg.Redis.DB,
 	})
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
-	eventBus := infraevent.NewInMemoryBus()
 
-	// 中间件：为每个请求附加 requestId（Meta 用）
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Locals("requestId") == nil {
 			reqID := c.Get("X-Request-ID")
@@ -124,25 +133,65 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	})
 
 	return &Server{
-		cfg:     cfg,
-		db:      db,
-		app:     app,
-		logFile: logFile,
+		cfg:        cfg,
+		db:         db,
+		app:        app,
+		logFile:    logFile,
+		ctx:        ctx,
+		cancel:     cancel,
+		articleSvc: articleSvc,
+		sysCfgSvc:  sysCfgSvc,
 	}
 }
 
-// Start launches the Fiber HTTP server.
+// Start launches the Fiber HTTP server and background workers.
 func (s *Server) Start() error {
+	// 启动热门文章同步任务
+	go s.runHotArticleSyncWorker()
+
 	addr := fmt.Sprintf(":%s", s.cfg.App.Port)
 	return s.app.Listen(addr)
 }
 
-// Shutdown gracefully stops Fiber.
+// Shutdown gracefully stops Fiber and background workers.
 func (s *Server) Shutdown(ctx context.Context) error {
+	s.cancel() // 停止所有后台任务
 	if s.logFile != nil {
 		_ = s.logFile.Close()
 	}
 	return s.app.ShutdownWithContext(ctx)
+}
+
+// runHotArticleSyncWorker 定期同步热门文章状态
+func (s *Server) runHotArticleSyncWorker() {
+	log.Println("[worker] hot article sync worker started")
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+
+	// 启动时立即执行一次
+	s.syncHotArticles()
+
+	for {
+		select {
+		case <-s.ctx.Done():
+			log.Println("[worker] hot article sync worker stopped")
+			return
+		case <-ticker.C:
+			s.syncHotArticles()
+		}
+	}
+}
+
+func (s *Server) syncHotArticles() {
+	// 增加超时控制，防止单次同步阻塞整个 worker
+	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
+	defer cancel()
+
+	thresholds := s.sysCfgSvc.HotArticleThresholds(ctx)
+	err := s.articleSvc.UpdateHotArticles(ctx, thresholds.Views, thresholds.Likes, thresholds.Comments)
+	if err != nil {
+		log.Printf("[worker] failed to sync hot articles: %v", err)
+	}
 }
 
 // App exposes the underlying Fiber instance for testing.
@@ -158,7 +207,6 @@ func logRequestError(c *fiber.Ctx, kind string, detail string) {
 	log.Printf("[error] req=%s %s %s kind=%s %s", reqID, c.Method(), c.Path(), kind, detail)
 }
 
-// initLogging sets a file logger under storage/logs/app.log while keeping stdout.
 func initLogging() *os.File {
 	logDir := filepath.Join("storage", "logs")
 	_ = os.MkdirAll(logDir, 0o755)

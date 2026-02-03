@@ -101,6 +101,47 @@ func (s *Service) Turnstile(ctx context.Context) (turnstile.Settings, error) {
 	return settings, nil
 }
 
+type HotArticleThresholds struct {
+	Views    int64
+	Likes    int64
+	Comments int64
+}
+
+// HotArticleThresholds 返回热门文章判定阈值
+func (s *Service) HotArticleThresholds(ctx context.Context) HotArticleThresholds {
+	const (
+		viewsKey    = "article.hot.views"
+		likesKey    = "article.hot.likes"
+		commentsKey = "article.hot.comments"
+		defaultV    = 100
+		defaultL    = 10
+		defaultC    = 5
+	)
+
+	t := HotArticleThresholds{
+		Views:    defaultV,
+		Likes:    defaultL,
+		Comments: defaultC,
+	}
+
+	if cfg, err := s.repo.GetByKey(ctx, viewsKey); err == nil {
+		if v, err := strconv.ParseInt(cfg.Value, 10, 64); err == nil {
+			t.Views = v
+		}
+	}
+	if cfg, err := s.repo.GetByKey(ctx, likesKey); err == nil {
+		if v, err := strconv.ParseInt(cfg.Value, 10, 64); err == nil {
+			t.Likes = v
+		}
+	}
+	if cfg, err := s.repo.GetByKey(ctx, commentsKey); err == nil {
+		if v, err := strconv.ParseInt(cfg.Value, 10, 64); err == nil {
+			t.Comments = v
+		}
+	}
+	return t
+}
+
 // UploadMaxSizeBytes 返回上传文件的最大大小（字节），范围 1MB~50MB，默认 50MB。
 func (s *Service) UploadMaxSizeBytes(ctx context.Context) int {
 	const (

@@ -18,6 +18,7 @@ export interface ArticleListItem {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  isPublished: boolean
   createdAt: string
   updatedAt: string
 }
@@ -131,5 +132,11 @@ export function updateArticle(id: number, payload: UpdateArticlePayload) {
   return request<ArticleDetail>(`/articles/${id}`, {
     method: 'PUT',
     body: payload,
+  })
+}
+
+export function deleteArticle(id: number) {
+  return request<void>(`/articles/${id}`, {
+    method: 'DELETE',
   })
 }
