@@ -26,6 +26,30 @@ type FriendLink struct {
 	DeletedAt        *time.Time
 }
 
+const (
+	FriendLinkAppStatusPending  = "pending"
+	FriendLinkAppStatusApproved = "approved"
+	FriendLinkAppStatusRejected = "rejected"
+	FriendLinkAppStatusBlocked  = "blocked"
+)
+
+const (
+	FriendLinkApplyChannelUser       = "user"
+	FriendLinkApplyChannelFederation = "federation"
+	FriendLinkApplyChannelAdmin      = "admin"
+)
+
+const (
+	FriendLinkKindManual     = "manual"
+	FriendLinkKindFederation = "federation"
+)
+
+const (
+	FriendLinkSyncModeNone       = "none"
+	FriendLinkSyncModeRSS        = "rss"
+	FriendLinkSyncModeFederation = "federation"
+)
+
 type FriendLinkApplication struct {
 	ID                int64
 	Name              *string

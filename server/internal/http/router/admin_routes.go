@@ -8,6 +8,7 @@ import (
 
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
@@ -63,6 +64,21 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/federation/citations/request", federationAdminHandler.SendCitation)
 	admin.Post("/federation/mentions/notify", federationAdminHandler.SendMention)
 	admin.Get("/federation/remote/check", federationAdminHandler.CheckRemote)
+
+	friendLinkAppRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
+	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
+	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo)
+	friendLinkAdminHandler := handler.NewFriendLinkAdminHandler(friendLinkAdminSvc)
+	admin.Get("/friend-links/applications", friendLinkAdminHandler.ListApplications)
+	admin.Put("/friend-links/applications/:id/approve", friendLinkAdminHandler.ApproveApplication)
+	admin.Put("/friend-links/applications/:id/reject", friendLinkAdminHandler.RejectApplication)
+	admin.Put("/friend-links/applications/:id/block", friendLinkAdminHandler.BlockApplication)
+	admin.Put("/friend-links/applications/:id/status", friendLinkAdminHandler.UpdateApplicationStatus)
+	admin.Get("/friend-links", friendLinkAdminHandler.ListFriendLinks)
+	admin.Post("/friend-links", friendLinkAdminHandler.CreateFriendLink)
+	admin.Put("/friend-links/:id", friendLinkAdminHandler.UpdateFriendLink)
+	admin.Put("/friend-links/:id/block", friendLinkAdminHandler.BlockFriendLink)
+	admin.Delete("/friend-links/:id", friendLinkAdminHandler.DeleteFriendLink)
 
 	logHandler := handler.NewAdminLogHandler("storage/logs/app.log", 200)
 	systemHandler := handler.NewSystemHandler(deps.DB, deps.Redis)

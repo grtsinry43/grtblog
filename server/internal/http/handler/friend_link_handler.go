@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/copier"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
@@ -47,6 +50,9 @@ func (h *FriendLinkHandler) SubmitApplication(c *fiber.Ctx) error {
 	cmd.UserID = &userID
 	result, err := h.svc.Submit(c.Context(), cmd)
 	if err != nil {
+		if errors.Is(err, social.ErrFriendLinkApplicationBlocked) {
+			return response.NewBizErrorWithMsg(response.Unauthorized, "该站点已被封禁，无法提交申请")
+		}
 		return err
 	}
 	msg := "友链申请已提交成功，我们会尽快审核"

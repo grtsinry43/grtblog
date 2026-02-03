@@ -104,14 +104,14 @@ func (h *FederationFriendLinkHandler) RequestFriendLink(c *fiber.Ctx) error {
 		if err := h.ensureFriendLink(c.Context(), instance, payload.RSSURL); err != nil {
 			return err
 		}
-		app.Status = "approved"
+		app.Status = social.FriendLinkAppStatusApproved
 		_ = h.applicationRepo.Update(c.Context(), app)
 		instance.Status = "active"
 		_ = h.instanceRepo.Update(c.Context(), instance)
 	}
 
 	message := "友链申请已提交"
-	if app.Status == "approved" {
+	if app.Status == social.FriendLinkAppStatusApproved {
 		message = "友链申请已通过"
 	} else if !created {
 		message = "友链申请已更新"
@@ -157,6 +157,9 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 	if err != nil && !errors.Is(err, social.ErrFriendLinkApplicationNotFound) {
 		return nil, false, err
 	}
+	if app != nil && app.Status == social.FriendLinkAppStatusBlocked {
+		return nil, false, response.NewBizErrorWithMsg(response.Unauthorized, "已被封禁")
+	}
 
 	manifestPayload := toJSON(manifest)
 	if app == nil {
@@ -164,14 +167,14 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 			Name:              toOptionalString(manifest.Instance.Name),
 			URL:               url,
 			Description:       toOptionalString(manifest.Instance.Description),
-			ApplyChannel:      "federation",
-			RequestedSyncMode: "federation",
+			ApplyChannel:      social.FriendLinkApplyChannelFederation,
+			RequestedSyncMode: social.FriendLinkSyncModeFederation,
 			RSSURL:            toOptionalString(payload.RSSURL),
 			InstanceURL:       toOptionalString(requesterURL),
 			Manifest:          manifestPayload,
 			SignatureKeyID:    toOptionalString(keyID),
 			SignatureVerified: true,
-			Status:            "pending",
+			Status:            social.FriendLinkAppStatusPending,
 		}
 		if err := h.applicationRepo.Create(ctx, app); err != nil {
 			return nil, false, err
@@ -181,14 +184,14 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 
 	app.Name = toOptionalString(manifest.Instance.Name)
 	app.Description = toOptionalString(manifest.Instance.Description)
-	app.ApplyChannel = "federation"
-	app.RequestedSyncMode = "federation"
+	app.ApplyChannel = social.FriendLinkApplyChannelFederation
+	app.RequestedSyncMode = social.FriendLinkSyncModeFederation
 	app.RSSURL = toOptionalString(payload.RSSURL)
 	app.InstanceURL = toOptionalString(requesterURL)
 	app.Manifest = manifestPayload
 	app.SignatureKeyID = toOptionalString(keyID)
 	app.SignatureVerified = true
-	app.Status = "pending"
+	app.Status = social.FriendLinkAppStatusPending
 	if err := h.applicationRepo.Update(ctx, app); err != nil {
 		return nil, false, err
 	}

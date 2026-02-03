@@ -44,12 +44,12 @@ func (s *Service) Submit(ctx context.Context, cmd SubmitCmd) (*SubmitResult, err
 			URL:               url,
 			Logo:              toOptionalString(cmd.Logo),
 			Description:       toOptionalString(cmd.Description),
-			ApplyChannel:      "user",
+			ApplyChannel:      social.FriendLinkApplyChannelUser,
 			RequestedSyncMode: requestedSyncMode(cmd.RSSURL),
 			RSSURL:            toOptionalString(cmd.RSSURL),
 			UserID:            cmd.UserID,
 			Message:           toOptionalString(cmd.Message),
-			Status:            "pending",
+			Status:            social.FriendLinkAppStatusPending,
 		}
 		if err := s.repo.Create(ctx, app); err != nil {
 			return nil, err
@@ -57,15 +57,19 @@ func (s *Service) Submit(ctx context.Context, cmd SubmitCmd) (*SubmitResult, err
 		return &SubmitResult{Application: *app, Created: true}, nil
 	}
 
+	if existing.Status == social.FriendLinkAppStatusBlocked {
+		return nil, social.ErrFriendLinkApplicationBlocked
+	}
+
 	existing.Name = toOptionalString(cmd.Name)
 	existing.Logo = toOptionalString(cmd.Logo)
 	existing.Description = toOptionalString(cmd.Description)
-	existing.ApplyChannel = "user"
+	existing.ApplyChannel = social.FriendLinkApplyChannelUser
 	existing.RequestedSyncMode = requestedSyncMode(cmd.RSSURL)
 	existing.RSSURL = toOptionalString(cmd.RSSURL)
 	existing.Message = toOptionalString(cmd.Message)
 	existing.UserID = cmd.UserID
-	existing.Status = "pending"
+	existing.Status = social.FriendLinkAppStatusPending
 
 	if err := s.repo.Update(ctx, existing); err != nil {
 		return nil, err
@@ -83,7 +87,7 @@ func toOptionalString(val string) *string {
 
 func requestedSyncMode(rssURL string) string {
 	if strings.TrimSpace(rssURL) == "" {
-		return "none"
+		return social.FriendLinkSyncModeNone
 	}
-	return "rss"
+	return social.FriendLinkSyncModeRSS
 }
