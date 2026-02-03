@@ -167,7 +167,7 @@ const getStatusType = (usage: number) => {
                       :show-indicator="false"
                     />
                 </div>
-                <NDescriptions column="2" size="small" label-placement="left" content-style="text-align: right;">
+                <NDescriptions :column="2" size="small" label-placement="left" content-style="text-align: right;">
                    <NDescriptionsItem label="当前分配 (Alloc)">{{ formatBytes(status.memory.alloc) }}</NDescriptionsItem>
                    <NDescriptionsItem label="累积分配 (Total)">{{ formatBytes(status.memory.totalAlloc) }}</NDescriptionsItem>
                    <NDescriptionsItem label="系统占用 (Sys)">{{ formatBytes(status.memory.sys) }}</NDescriptionsItem>
@@ -197,9 +197,9 @@ const getStatusType = (usage: number) => {
                       />
                    </div>
                 </div>
-                 <NDescriptions column="1" size="small" label-placement="left" content-style="text-align: right;">
+                 <NDescriptions :column="1" size="small" label-placement="left" content-style="text-align: right;">
                    <NDescriptionsItem label="挂载路径">
-                      <span class="truncate max-w-[150px] inline-block align-bottom" :title="status.disk.path">{{ status.disk.path }}</span>
+                      <span class="truncate max-w-37.5 inline-block align-bottom" :title="status.disk.path">{{ status.disk.path }}</span>
                    </NDescriptionsItem>
                    <NDescriptionsItem label="容量状态">
                       {{ formatBytes(status.disk.used) }} / {{ formatBytes(status.disk.all) }}
@@ -226,7 +226,7 @@ const getStatusType = (usage: number) => {
                         {{ status.database.status }}
                      </NTag>
                   </div>
-                  <NDescriptions column="2" size="small" label-placement="left">
+                  <NDescriptions :column="2" size="small" label-placement="left">
                      <NDescriptionsItem label="驱动">{{ status.database.driver }}</NDescriptionsItem>
                      <NDescriptionsItem label="打开连接">{{ status.database.poolStats.openConnections }}</NDescriptionsItem>
                      <NDescriptionsItem label="使用中">{{ status.database.poolStats.inUse }}</NDescriptionsItem>
@@ -244,7 +244,7 @@ const getStatusType = (usage: number) => {
                             {{ status.redis.status }}
                         </NTag>
                       </div>
-                      <NDescriptions column="1" size="small" label-placement="left">
+                      <NDescriptions :column="1" size="small" label-placement="left">
                         <NDescriptionsItem label="内存使用">{{ status.redis.usedMemory }}</NDescriptionsItem>
                         <NDescriptionsItem label="状态">
                            {{ status.redis.status === 'connected' ? '连接正常，准备就绪' : '连接失败' }}
