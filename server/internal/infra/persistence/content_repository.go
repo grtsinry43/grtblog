@@ -657,6 +657,32 @@ func (r *ContentRepository) DeleteArticle(ctx context.Context, id int64) error {
 	})
 }
 
+// SyncHotArticles 根据指标同步热门文章状态
+func (r *ContentRepository) SyncHotArticles(ctx context.Context, vT, lT, cT int64) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 1. 将符合条件且当前非热门的文章设为热门
+		err := tx.Exec(`
+			UPDATE article 
+			SET is_hot = true 
+			WHERE id IN (
+				SELECT article_id FROM article_metrics 
+				WHERE views >= ? OR likes >= ? OR comments >= ?
+			) AND is_hot = false`, vT, lT, cT).Error
+		if err != nil {
+			return err
+		}
+
+		// 2. 将不再符合条件且当前是热门的文章取消热门
+		return tx.Exec(`
+			UPDATE article 
+			SET is_hot = false 
+			WHERE id NOT IN (
+				SELECT article_id FROM article_metrics 
+				WHERE views >= ? OR likes >= ? OR comments >= ?
+			) AND is_hot = true`, vT, lT, cT).Error
+	})
+}
+
 // ListArticles 获取文章列表（内部使用，包含未发布）
 func (r *ContentRepository) ListArticles(ctx context.Context, options content.ArticleListOptionsInternal) ([]*content.Article, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Article{})

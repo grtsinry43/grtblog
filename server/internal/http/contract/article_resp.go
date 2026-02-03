@@ -67,6 +67,7 @@ type ArticleListItemResp struct {
 	IsTop            bool      `json:"isTop"`
 	IsHot            bool      `json:"isHot"`
 	IsOriginal       bool      `json:"isOriginal"`
+	IsPublished      bool      `json:"isPublished"`
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 }

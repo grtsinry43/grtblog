@@ -1019,6 +1019,31 @@
                 }
             }
         },
+        "/admin/system/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取包含 CPU、内存、磁盘、数据库和 Redis 在内的详细监控数据。存储占用大小每 5 分钟更新一次。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-System"
+                ],
+                "summary": "获取系统运行状态",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.SystemStatusEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/tags": {
             "post": {
                 "security": [
@@ -3017,6 +3042,29 @@
             }
         },
         "/thinkings/{id}": {
+            "get": {
+                "tags": [
+                    "Thinking"
+                ],
+                "summary": "获取单个思考",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "思考ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ThinkingResp"
+                        }
+                    }
+                }
+            },
             "put": {
                 "security": [
                     {
@@ -3378,6 +3426,9 @@
                     "type": "boolean"
                 },
                 "isOriginal": {
+                    "type": "boolean"
+                },
+                "isPublished": {
                     "type": "boolean"
                 },
                 "isTop": {
@@ -6035,6 +6086,94 @@
                 }
             }
         },
+        "handler.AppInfo": {
+            "type": "object",
+            "properties": {
+                "goVersion": {
+                    "type": "string"
+                },
+                "startTime": {
+                    "type": "string"
+                },
+                "uptime": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.CPUInfo": {
+            "type": "object",
+            "properties": {
+                "cores": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.DBPoolStats": {
+            "type": "object",
+            "properties": {
+                "idle": {
+                    "type": "integer"
+                },
+                "inUse": {
+                    "type": "integer"
+                },
+                "maxIdleClosed": {
+                    "type": "integer"
+                },
+                "maxIdleTimeClosed": {
+                    "type": "integer"
+                },
+                "maxLifetimeClosed": {
+                    "type": "integer"
+                },
+                "maxOpenConnections": {
+                    "type": "integer"
+                },
+                "openConnections": {
+                    "type": "integer"
+                },
+                "waitCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.DatabaseStatus": {
+            "type": "object",
+            "properties": {
+                "driver": {
+                    "type": "string"
+                },
+                "poolStats": {
+                    "$ref": "#/definitions/handler.DBPoolStats"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.DiskInfo": {
+            "type": "object",
+            "properties": {
+                "all": {
+                    "description": "bytes",
+                    "type": "integer"
+                },
+                "free": {
+                    "description": "bytes",
+                    "type": "integer"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "used": {
+                    "description": "bytes",
+                    "type": "integer"
+                }
+            }
+        },
         "handler.LogLinesEnvelope": {
             "type": "object",
             "properties": {
@@ -6055,6 +6194,26 @@
                 },
                 "msg": {
                     "type": "string"
+                }
+            }
+        },
+        "handler.MemoryInfo": {
+            "type": "object",
+            "properties": {
+                "alloc": {
+                    "description": "bytes",
+                    "type": "integer"
+                },
+                "numGC": {
+                    "type": "integer"
+                },
+                "sys": {
+                    "description": "bytes",
+                    "type": "integer"
+                },
+                "totalAlloc": {
+                    "description": "bytes",
+                    "type": "integer"
                 }
             }
         },
@@ -6102,6 +6261,89 @@
                     "type": "string"
                 },
                 "userinfoEndpoint": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.PlatformInfo": {
+            "type": "object",
+            "properties": {
+                "arch": {
+                    "type": "string"
+                },
+                "os": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.RedisStatus": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                },
+                "usedMemory": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.StorageInfo": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "size": {
+                    "description": "bytes",
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.SystemStatus": {
+            "type": "object",
+            "properties": {
+                "app": {
+                    "$ref": "#/definitions/handler.AppInfo"
+                },
+                "cpu": {
+                    "$ref": "#/definitions/handler.CPUInfo"
+                },
+                "database": {
+                    "$ref": "#/definitions/handler.DatabaseStatus"
+                },
+                "disk": {
+                    "$ref": "#/definitions/handler.DiskInfo"
+                },
+                "memory": {
+                    "$ref": "#/definitions/handler.MemoryInfo"
+                },
+                "platform": {
+                    "$ref": "#/definitions/handler.PlatformInfo"
+                },
+                "redis": {
+                    "$ref": "#/definitions/handler.RedisStatus"
+                },
+                "storage": {
+                    "$ref": "#/definitions/handler.StorageInfo"
+                }
+            }
+        },
+        "handler.SystemStatusEnvelope": {
+            "type": "object",
+            "properties": {
+                "bizErr": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/handler.SystemStatus"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "msg": {
                     "type": "string"
                 }
             }

@@ -474,16 +474,17 @@ func (h *ArticleHandler) toArticleListItemResp(ctx context.Context, article *con
 	}
 
 	resp := contract.ArticleListItemResp{
-		ID:         article.ID,
-		Title:      article.Title,
-		ShortURL:   article.ShortURL,
-		Summary:    article.Summary,
-		IsTop:      article.IsTop,
-		IsHot:      article.IsHot,
-		IsOriginal: article.IsOriginal,
-		CreatedAt:  article.CreatedAt,
-		UpdatedAt:  article.UpdatedAt,
-		Tags:       []string{},
+		ID:          article.ID,
+		Title:       article.Title,
+		ShortURL:    article.ShortURL,
+		Summary:     article.Summary,
+		IsTop:       article.IsTop,
+		IsHot:       article.IsHot,
+		IsOriginal:  article.IsOriginal,
+		IsPublished: article.IsPublished,
+		CreatedAt:   article.CreatedAt,
+		UpdatedAt:   article.UpdatedAt,
+		Tags:        []string{},
 	}
 	resp.CommentID = article.CommentID
 

@@ -65,6 +65,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Get("/federation/remote/check", federationAdminHandler.CheckRemote)
 
 	logHandler := handler.NewAdminLogHandler("storage/logs/app.log", 200)
+	systemHandler := handler.NewSystemHandler(deps.DB, deps.Redis)
 	adminLogs := adminGroup.Group("/admin")
 	adminLogs.Get("/logs", logHandler.List)
+	adminLogs.Get("/system/status", systemHandler.GetStatus)
 }

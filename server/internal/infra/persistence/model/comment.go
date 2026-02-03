@@ -7,13 +7,14 @@ import (
 )
 
 type CommentArea struct {
-	ID        int64     `gorm:"column:id;primaryKey"`
-	AreaName  string    `gorm:"column:area_name;size:255;not null"`
-	AreaType  string    `gorm:"column:area_type;size:20;not null"`
-	ContentID *int64    `gorm:"column:content_id"`
-	IsClosed  bool      `gorm:"column:is_closed"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	ID        int64          `gorm:"column:id;primaryKey"`
+	AreaName  string         `gorm:"column:area_name;size:255;not null"`
+	AreaType  string         `gorm:"column:area_type;size:20;not null"`
+	ContentID *int64         `gorm:"column:content_id"`
+	IsClosed  bool           `gorm:"column:is_closed"`
+	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (CommentArea) TableName() string { return "comment_area" }
