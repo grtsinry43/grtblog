@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
@@ -28,6 +29,7 @@ type FederationCitationHandler struct {
 	linkRepo     social.FriendLinkRepository
 	resolver     *fedinfra.Resolver
 	verifier     *fedinfra.Verifier
+	events       appEvent.Bus
 }
 
 func NewFederationCitationHandler(
@@ -38,7 +40,11 @@ func NewFederationCitationHandler(
 	linkRepo social.FriendLinkRepository,
 	resolver *fedinfra.Resolver,
 	verifier *fedinfra.Verifier,
+	events appEvent.Bus,
 ) *FederationCitationHandler {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &FederationCitationHandler{
 		cfgSvc:       cfgSvc,
 		contentRepo:  contentRepo,
@@ -47,6 +53,7 @@ func NewFederationCitationHandler(
 		linkRepo:     linkRepo,
 		resolver:     resolver,
 		verifier:     verifier,
+		events:       events,
 	}
 }
 
@@ -147,6 +154,17 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 		Status:     status,
 	}
 	log.Printf("[federation] 入站 引用申请 source=%s target_post=%s citation_id=%d status=%s key_id=%s", payload.SourceInstanceURL, payload.TargetPostID, citation.ID, status, signature.KeyID)
+	_ = h.events.Publish(c.Context(), appEvent.Generic{
+		EventName: "federation.citation.received",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"CitationID":        citation.ID,
+			"SourceInstanceURL": payload.SourceInstanceURL,
+			"TargetPostID":      payload.TargetPostID,
+			"Status":            status,
+			"KeyID":             signature.KeyID,
+		},
+	})
 	return response.Success(c, resp)
 }
 

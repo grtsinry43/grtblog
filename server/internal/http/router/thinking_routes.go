@@ -29,7 +29,7 @@ func registerThinkingAuthRoutes(v2 fiber.Router, deps Dependencies) {
 func newThinkingHandler(deps Dependencies) *handler.ThinkingHandler {
 	thinkingRepo := persistence.NewThinkingRepository(deps.DB)
 	commentRepo := persistence.NewCommentRepository(deps.DB)
-	thinkingSvc := thinking.NewService(thinkingRepo, commentRepo)
+	thinkingSvc := thinking.NewService(thinkingRepo, commentRepo, deps.EventBus)
 	userRepo := persistence.NewIdentityRepository(deps.DB)
 	return handler.NewThinkingHandler(thinkingSvc, commentRepo, userRepo)
 }

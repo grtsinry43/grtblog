@@ -13,6 +13,7 @@ import (
 	"time"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	domainwebhook "github.com/grtsinry43/grtblog-v2/server/internal/domain/webhook"
 )
 
@@ -21,23 +22,19 @@ const (
 	maxResponseBodyBytes   = 256 * 1024
 )
 
-type TemplateData struct {
-	Name       string
-	OccurredAt time.Time
-	Event      any
-}
-
 type Sender struct {
-	repo    domainwebhook.Repository
-	client  *http.Client
-	timeout time.Duration
+	repo        domainwebhook.Repository
+	client      *http.Client
+	timeout     time.Duration
+	websiteInfo domainconfig.WebsiteInfoRepository
 }
 
-func NewSender(repo domainwebhook.Repository, timeout time.Duration) *Sender {
+func NewSender(repo domainwebhook.Repository, timeout time.Duration, websiteInfo domainconfig.WebsiteInfoRepository) *Sender {
 	return &Sender{
-		repo:    repo,
-		client:  &http.Client{Timeout: timeout},
-		timeout: timeout,
+		repo:        repo,
+		client:      &http.Client{Timeout: timeout},
+		timeout:     timeout,
+		websiteInfo: websiteInfo,
 	}
 }
 
@@ -45,11 +42,7 @@ func (s *Sender) Send(ctx context.Context, hook *domainwebhook.Webhook, eventNam
 	if hook == nil {
 		return errors.New("webhook is nil")
 	}
-	data := TemplateData{
-		Name:       eventName,
-		OccurredAt: event.OccurredAt(),
-		Event:      event,
-	}
+	data := s.buildTemplateData(ctx, eventName, event)
 	payload, err := renderTemplate(hook.PayloadTemplate, data)
 	if err != nil {
 		s.recordHistory(ctx, hook, eventName, payload, hook.Headers, 0, nil, "", err.Error(), isTest)
@@ -71,11 +64,7 @@ func (s *Sender) RecordHistoryFromEvent(ctx context.Context, hook *domainwebhook
 	if hook == nil || event == nil {
 		return
 	}
-	data := TemplateData{
-		Name:       eventName,
-		OccurredAt: event.OccurredAt(),
-		Event:      event,
-	}
+	data := s.buildTemplateData(ctx, eventName, event)
 	payload, err := renderTemplate(hook.PayloadTemplate, data)
 	if err != nil {
 		reason = err.Error()
@@ -162,7 +151,7 @@ func flattenHeaders(headers http.Header) map[string]string {
 	return result
 }
 
-func renderTemplate(tmpl string, data TemplateData) (string, error) {
+func renderTemplate(tmpl string, data map[string]any) (string, error) {
 	content := strings.TrimSpace(tmpl)
 	if content == "" {
 		content = defaultPayloadTemplate
@@ -174,7 +163,7 @@ func renderTemplate(tmpl string, data TemplateData) (string, error) {
 	return rendered, nil
 }
 
-func renderHeaders(headers map[string]string, data TemplateData) (map[string]string, error) {
+func renderHeaders(headers map[string]string, data map[string]any) (map[string]string, error) {
 	if len(headers) == 0 {
 		return map[string]string{}, nil
 	}
@@ -189,7 +178,7 @@ func renderHeaders(headers map[string]string, data TemplateData) (map[string]str
 	return out, nil
 }
 
-func executeTemplate(tmpl string, data TemplateData) (string, error) {
+func executeTemplate(tmpl string, data map[string]any) (string, error) {
 	t, err := template.New("tpl").
 		Option("missingkey=error").
 		Funcs(template.FuncMap{
@@ -210,4 +199,19 @@ func executeTemplate(tmpl string, data TemplateData) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func (s *Sender) buildTemplateData(ctx context.Context, eventName string, event appEvent.Event) map[string]any {
+	data := map[string]any{
+		"Name":       eventName,
+		"OccurredAt": event.OccurredAt(),
+		"Event":      event,
+		"eventName":  eventName,
+		"occurredAt": event.OccurredAt().Format(time.RFC3339),
+	}
+	global := appEvent.BuildGlobalTemplateVariables(ctx, s.websiteInfo)
+	for key, value := range global {
+		data[key] = value
+	}
+	return data
 }

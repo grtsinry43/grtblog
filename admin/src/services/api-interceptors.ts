@@ -12,7 +12,7 @@ export function setupApiInterceptors() {
 
   addResponseInterceptor(({ envelope }) => {
     if (envelope.msg && envelope.msg !== 'success' && envelope.msg !== 'ok') {
-      message.success(envelope.msg)
+      // message.success(envelope.msg)
     }
   })
 

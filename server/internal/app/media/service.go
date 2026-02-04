@@ -13,22 +13,28 @@ import (
 	"strings"
 	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/media"
 )
 
 type Service struct {
 	repo      media.Repository
 	uploadDir string
+	events    appEvent.Bus
 }
 
-func NewService(repo media.Repository, uploadDir string) *Service {
+func NewService(repo media.Repository, uploadDir string, events appEvent.Bus) *Service {
 	trimmed := strings.TrimSpace(uploadDir)
 	if trimmed == "" {
 		trimmed = filepath.Join("storage", "uploads")
 	}
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &Service{
 		repo:      repo,
 		uploadDir: trimmed,
+		events:    events,
 	}
 }
 
@@ -93,6 +99,17 @@ func (s *Service) Upload(ctx context.Context, file *multipart.FileHeader, fileTy
 	if err := s.repo.Create(ctx, record); err != nil {
 		return nil, err
 	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "media.uploaded",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":   record.ID,
+			"Name": record.Name,
+			"Path": record.Path,
+			"Type": record.Type,
+			"Size": record.Size,
+		},
+	})
 	return &UploadResult{File: *record, Created: true}, nil
 }
 
@@ -157,6 +174,17 @@ func (s *Service) Delete(ctx context.Context, id int64) (*media.UploadFile, erro
 	if err := s.repo.DeleteByID(ctx, id); err != nil {
 		return nil, err
 	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "media.deleted",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":   file.ID,
+			"Name": file.Name,
+			"Path": file.Path,
+			"Type": file.Type,
+			"Size": file.Size,
+		},
+	})
 	return file, nil
 }
 

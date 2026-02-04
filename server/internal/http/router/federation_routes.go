@@ -37,7 +37,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	app.Get("/.well-known/blog-federation/endpoints.json", wellKnownHandler.Endpoints)
 
 	federationGroup := app.Group("/api/federation")
-	friendLinkHandler := handler.NewFederationFriendLinkHandler(cfgSvc, instanceRepo, linkRepo, appRepo, resolver, verifier)
+	friendLinkHandler := handler.NewFederationFriendLinkHandler(cfgSvc, instanceRepo, linkRepo, appRepo, resolver, verifier, deps.EventBus)
 	federationGroup.Post("/friendlinks/request", friendLinkHandler.RequestFriendLink)
 
 	timelineHandler := handler.NewFederationTimelineHandler(contentRepo, userRepo, cfgSvc)
@@ -46,9 +46,9 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	postHandler := handler.NewFederationPostHandler(contentRepo, userRepo, postCacheRepo, cfgSvc)
 	federationGroup.Get("/posts/:id", postHandler.GetPostDetail)
 
-	citationHandler := handler.NewFederationCitationHandler(cfgSvc, contentRepo, instanceRepo, citationRepo, linkRepo, resolver, verifier)
+	citationHandler := handler.NewFederationCitationHandler(cfgSvc, contentRepo, instanceRepo, citationRepo, linkRepo, resolver, verifier, deps.EventBus)
 	federationGroup.Post("/citations/request", citationHandler.RequestCitation)
 
-	mentionHandler := handler.NewFederationMentionHandler(cfgSvc, instanceRepo, mentionRepo, userRepo, resolver, verifier)
+	mentionHandler := handler.NewFederationMentionHandler(cfgSvc, instanceRepo, mentionRepo, userRepo, resolver, verifier, deps.EventBus)
 	federationGroup.Post("/mentions/notify", mentionHandler.NotifyMention)
 }

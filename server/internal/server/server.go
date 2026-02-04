@@ -45,10 +45,10 @@ type Server struct {
 func New(cfg config.Config, db *gorm.DB) *Server {
 	logFile := initLogging()
 	sysCfgRepo := persistence.NewSysConfigRepository(db)
-	sysCfgSvc := sysconfig.NewService(sysCfgRepo, cfg.Turnstile)
+	eventBus := infraevent.NewInMemoryBus()
+	sysCfgSvc := sysconfig.NewService(sysCfgRepo, cfg.Turnstile, eventBus)
 	contentRepo := persistence.NewContentRepository(db)
 	commentRepo := persistence.NewCommentRepository(db)
-	eventBus := infraevent.NewInMemoryBus()
 	articleSvc := article.NewService(contentRepo, commentRepo, eventBus)
 
 	ctx, cancel := context.WithCancel(context.Background())

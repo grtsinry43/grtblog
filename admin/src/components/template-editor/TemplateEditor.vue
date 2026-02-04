@@ -8,6 +8,7 @@ import { cah } from '@/utils/chromaHelper'
 const props = defineProps<{
   modelValue: string
   readonly?: boolean
+  validVariables?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -48,7 +49,7 @@ const editorStyle = computed(() => ({
   borderColor: themeVars.value.borderColor,
 }))
 
-const { view } = useTemplateCodeMirror(editorRef, {
+const { view, setVariables } = useTemplateCodeMirror(editorRef, {
   initialDoc: props.modelValue,
   readonly: props.readonly,
   onChange: (val) => {
@@ -65,6 +66,16 @@ watch(
       })
     }
   },
+)
+
+watch(
+  () => props.validVariables,
+  (newVal) => {
+    if (newVal) {
+      setVariables(newVal)
+    }
+  },
+  { immediate: true },
 )
 </script>
 

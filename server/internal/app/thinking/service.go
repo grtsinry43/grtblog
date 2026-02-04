@@ -2,7 +2,9 @@ package thinking
 
 import (
 	"context"
+	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	domainthinking "github.com/grtsinry43/grtblog-v2/server/internal/domain/thinking"
 )
@@ -10,12 +12,17 @@ import (
 type Service struct {
 	repo        domainthinking.ThinkingRepository
 	commentRepo comment.CommentRepository
+	events      appEvent.Bus
 }
 
-func NewService(repo domainthinking.ThinkingRepository, commentRepo comment.CommentRepository) *Service {
+func NewService(repo domainthinking.ThinkingRepository, commentRepo comment.CommentRepository, events appEvent.Bus) *Service {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &Service{
 		repo:        repo,
 		commentRepo: commentRepo,
+		events:      events,
 	}
 }
 
@@ -36,6 +43,12 @@ func (s *Service) Create(ctx context.Context, cmd CreateThinkingCmd) (*domainthi
 			return nil, err
 		}
 	}
+	_ = s.events.Publish(ctx, ThinkingCreated{
+		ID:       t.ID,
+		AuthorID: t.AuthorID,
+		Content:  t.Content,
+		At:       time.Now(),
+	})
 
 	return t, nil
 }
@@ -57,6 +70,15 @@ func (s *Service) Update(ctx context.Context, cmd UpdateThinkingCmd) (*domainthi
 			return nil, err
 		}
 	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "thinking.updated",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":       t.ID,
+			"AuthorID": t.AuthorID,
+			"Content":  t.Content,
+		},
+	})
 	return t, nil
 }
 
@@ -69,7 +91,18 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, t.ID)
+	if err := s.repo.Delete(ctx, t.ID); err != nil {
+		return err
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "thinking.deleted",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":       t.ID,
+			"AuthorID": t.AuthorID,
+		},
+	})
+	return nil
 }
 
 func (s *Service) FindByID(ctx context.Context, id int64) (*domainthinking.Thinking, error) {

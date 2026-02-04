@@ -15,12 +15,14 @@ import (
 	"golang.org/x/sys/unix"
 	"gorm.io/gorm"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
 type SystemHandler struct {
 	db          *gorm.DB
 	redisClient *redis.Client
+	events      appEvent.Bus
 
 	// 静态/缓存数据，减少分配
 	version           string
@@ -29,11 +31,15 @@ type SystemHandler struct {
 	mu                sync.RWMutex
 }
 
-func NewSystemHandler(db *gorm.DB, redisClient *redis.Client) *SystemHandler {
+func NewSystemHandler(db *gorm.DB, redisClient *redis.Client, events appEvent.Bus) *SystemHandler {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	h := &SystemHandler{
 		db:          db,
 		redisClient: redisClient,
 		version:     initBuildVersion(),
+		events:      events,
 	}
 	return h
 }
@@ -153,6 +159,16 @@ func (h *SystemHandler) GetStatus(c *fiber.Ctx) error {
 			Arch: runtime.GOARCH,
 		},
 	}
+	if status.Database.Status != "connected" || (status.Redis.Status != "ok" && status.Redis.Status != "not_configured") {
+		_ = h.events.Publish(c.UserContext(), appEvent.Generic{
+			EventName: "system.monitor.alert",
+			At:        time.Now(),
+			Payload: map[string]any{
+				"DatabaseStatus": status.Database.Status,
+				"RedisStatus":    status.Redis.Status,
+			},
+		})
+	}
 
 	return response.Success(c, status)
 }
@@ -244,7 +260,7 @@ func (h *SystemHandler) getDatabaseStatus(ctx context.Context) DatabaseStatus {
 	status := "connected"
 	// 设置 Ping 超时，防止数据库挂起导致 API 卡死
 
-pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	if err := sqlDB.PingContext(pingCtx); err != nil {
@@ -273,8 +289,7 @@ func (h *SystemHandler) getRedisStatus(ctx context.Context) RedisStatus {
 		return RedisStatus{Status: "not_configured"}
 	}
 
-
-pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	if err := h.redisClient.Ping(pingCtx).Err(); err != nil {

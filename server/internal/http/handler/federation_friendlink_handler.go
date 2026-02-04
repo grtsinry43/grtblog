@@ -6,9 +6,11 @@ import (
 	"errors"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
@@ -24,6 +26,7 @@ type FederationFriendLinkHandler struct {
 	applicationRepo social.FriendLinkApplicationRepository
 	resolver        *fedinfra.Resolver
 	verifier        *fedinfra.Verifier
+	events          appEvent.Bus
 }
 
 func NewFederationFriendLinkHandler(
@@ -33,7 +36,11 @@ func NewFederationFriendLinkHandler(
 	applicationRepo social.FriendLinkApplicationRepository,
 	resolver *fedinfra.Resolver,
 	verifier *fedinfra.Verifier,
+	events appEvent.Bus,
 ) *FederationFriendLinkHandler {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &FederationFriendLinkHandler{
 		cfgSvc:          cfgSvc,
 		instanceRepo:    instanceRepo,
@@ -41,6 +48,7 @@ func NewFederationFriendLinkHandler(
 		applicationRepo: applicationRepo,
 		resolver:        resolver,
 		verifier:        verifier,
+		events:          events,
 	}
 }
 
@@ -123,6 +131,16 @@ func (h *FederationFriendLinkHandler) RequestFriendLink(c *fiber.Ctx) error {
 		Message:       message,
 	}
 	log.Printf("[federation] 入站 友链申请 base=%s app_id=%d status=%s key_id=%s", requesterURL, app.ID, app.Status, signature.KeyID)
+	_ = h.events.Publish(c.Context(), appEvent.Generic{
+		EventName: "federation.friendlink.received",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"RequesterURL":  requesterURL,
+			"ApplicationID": app.ID,
+			"Status":        app.Status,
+			"KeyID":         signature.KeyID,
+		},
+	})
 	return response.Success(c, resp)
 }
 

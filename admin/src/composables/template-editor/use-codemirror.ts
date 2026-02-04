@@ -6,7 +6,12 @@ import { type Ref, shallowRef, onMounted, onUnmounted } from 'vue'
 import { codeMirrorTheme } from '@/composables/markdown-editor/codemirror-theme'
 import '@/composables/markdown-editor/editor.css'
 import { templateJsonLintExtension } from './json-lint'
-import { templateHighlightExtension, templateTooltipExtension } from './template-highlight'
+import {
+  setTemplateVariables,
+  templateHighlightExtension,
+  templateTooltipExtension,
+  templateVariablesField,
+} from './template-highlight'
 
 import type { ViewUpdate } from '@codemirror/view'
 
@@ -36,6 +41,13 @@ export function useTemplateCodeMirror(container: Ref<HTMLElement | undefined>, p
     }
   })
 
+  // Expose method to update valid variables
+  const setVariables = (variables: string[]) => {
+    view.value?.dispatch({
+      effects: setTemplateVariables.of(variables),
+    })
+  }
+
   onMounted(() => {
     if (!container.value) return
 
@@ -47,6 +59,7 @@ export function useTemplateCodeMirror(container: Ref<HTMLElement | undefined>, p
         EditorView.lineWrapping,
         codeMirrorTheme,
         readonlyConfig.of(EditorState.readOnly.of(!!props.readonly)),
+        templateVariablesField,
         templateHighlightExtension,
         templateTooltipExtension,
         templateJsonLintExtension,
@@ -69,5 +82,6 @@ export function useTemplateCodeMirror(container: Ref<HTMLElement | undefined>, p
   return {
     view,
     onViewUpdate,
+    setVariables,
   }
 }

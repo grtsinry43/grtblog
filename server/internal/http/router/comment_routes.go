@@ -54,6 +54,6 @@ func newCommentHandler(deps Dependencies) *handler.CommentHandler {
 		}
 	}
 
-	commentSvc := comment.NewService(commentRepo, identityRepo, friendLinkRepo, deps.SysConfig, clientInfoResolver, geoResolver)
+	commentSvc := comment.NewService(commentRepo, identityRepo, friendLinkRepo, deps.SysConfig, clientInfoResolver, geoResolver, deps.EventBus)
 	return handler.NewCommentHandler(commentSvc)
 }

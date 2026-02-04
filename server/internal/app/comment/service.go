@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
@@ -39,6 +41,7 @@ type Service struct {
 	clientInfo     ClientInfoResolver
 	geoIP          GeoIPResolver
 	maxDepthLimit  int
+	events         appEvent.Bus
 }
 
 func NewService(
@@ -48,7 +51,11 @@ func NewService(
 	sysCfg *sysconfig.Service,
 	clientInfo ClientInfoResolver,
 	geoIP GeoIPResolver,
+	events appEvent.Bus,
 ) *Service {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &Service{
 		repo:           repo,
 		userRepo:       userRepo,
@@ -57,6 +64,7 @@ func NewService(
 		clientInfo:     clientInfo,
 		geoIP:          geoIP,
 		maxDepthLimit:  defaultMaxDepth,
+		events:         events,
 	}
 }
 
@@ -135,6 +143,17 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 	if err := s.repo.Create(ctx, commentEntity); err != nil {
 		return nil, err
 	}
+	_ = s.events.Publish(ctx, CommentCreated{
+		ID:       commentEntity.ID,
+		AreaID:   commentEntity.AreaID,
+		ParentID: commentEntity.ParentID,
+		AuthorID: commentEntity.AuthorID,
+		NickName: toValue(commentEntity.NickName),
+		Email:    toValue(commentEntity.Email),
+		Content:  commentEntity.Content,
+		Status:   string(commentEntity.Status),
+		At:       time.Now(),
+	})
 	return commentEntity, nil
 }
 
@@ -184,6 +203,17 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 	if err := s.repo.Create(ctx, commentEntity); err != nil {
 		return nil, err
 	}
+	_ = s.events.Publish(ctx, CommentCreated{
+		ID:       commentEntity.ID,
+		AreaID:   commentEntity.AreaID,
+		ParentID: commentEntity.ParentID,
+		AuthorID: commentEntity.AuthorID,
+		NickName: toValue(commentEntity.NickName),
+		Email:    toValue(commentEntity.Email),
+		Content:  commentEntity.Content,
+		Status:   string(commentEntity.Status),
+		At:       time.Now(),
+	})
 	return commentEntity, nil
 }
 
@@ -307,18 +337,49 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 	if err := s.repo.Create(ctx, reply); err != nil {
 		return nil, err
 	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "comment.created",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":       reply.ID,
+			"AreaID":   reply.AreaID,
+			"ParentID": reply.ParentID,
+			"AuthorID": reply.AuthorID,
+			"NickName": toValue(reply.NickName),
+			"Email":    toValue(reply.Email),
+			"Content":  reply.Content,
+			"Status":   string(reply.Status),
+		},
+	})
 	return reply, nil
 }
 
 func (s *Service) UpdateCommentStatus(ctx context.Context, cmd UpdateCommentStatusCmd) error {
-	if _, err := s.repo.FindByID(ctx, cmd.ID); err != nil {
+	commentEntity, err := s.repo.FindByID(ctx, cmd.ID)
+	if err != nil {
 		return err
 	}
 	status := normalizeCommentStatus(cmd.Status)
 	if status == "" {
 		return domaincomment.ErrCommentStatusInvalid
 	}
-	return s.repo.UpdateStatus(ctx, cmd.ID, status)
+	if err := s.repo.UpdateStatus(ctx, cmd.ID, status); err != nil {
+		return err
+	}
+	eventName := "comment.updated"
+	if status == domaincomment.CommentStatusBlocked {
+		eventName = "comment.blocked"
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: eventName,
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":     cmd.ID,
+			"AreaID": commentEntity.AreaID,
+			"Status": status,
+		},
+	})
+	return nil
 }
 
 func (s *Service) SetCommentAuthor(ctx context.Context, cmd SetCommentAuthorCmd) error {
@@ -336,10 +397,23 @@ func (s *Service) SetCommentTop(ctx context.Context, cmd SetCommentTopCmd) error
 }
 
 func (s *Service) DeleteComment(ctx context.Context, id int64) error {
-	if _, err := s.repo.FindByID(ctx, id); err != nil {
+	commentEntity, err := s.repo.FindByID(ctx, id)
+	if err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "comment.deleted",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":     commentEntity.ID,
+			"AreaID": commentEntity.AreaID,
+			"Status": string(commentEntity.Status),
+		},
+	})
+	return nil
 }
 
 func (s *Service) applyRequestMeta(commentEntity *domaincomment.Comment, meta RequestMeta) {

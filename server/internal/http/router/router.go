@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
@@ -53,16 +54,16 @@ func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api")
 	v2 := api.Group("/v2")
 
-	sysCfgSvc := deps.SysConfig
-	if sysCfgSvc == nil {
-		sysCfgRepo := persistence.NewSysConfigRepository(deps.DB)
-		sysCfgSvc = sysconfig.NewService(sysCfgRepo, deps.Config.Turnstile)
-	}
-	deps.SysConfig = sysCfgSvc
 	eventBus := deps.EventBus
 	if eventBus == nil {
 		eventBus = infraevent.NewInMemoryBus()
 	}
+	sysCfgSvc := deps.SysConfig
+	if sysCfgSvc == nil {
+		sysCfgRepo := persistence.NewSysConfigRepository(deps.DB)
+		sysCfgSvc = sysconfig.NewService(sysCfgRepo, deps.Config.Turnstile, eventBus)
+	}
+	deps.SysConfig = sysCfgSvc
 	wsManager := ws.NewManager(ws.Config{
 		CacheSize:       3,
 		RoomTTL:         30 * time.Second,
@@ -76,11 +77,29 @@ func Register(app *fiber.App, deps Dependencies) {
 	if err != nil {
 		log.Printf("webhook settings error: %v", err)
 	}
+	websiteInfoRepo := persistence.NewWebsiteInfoRepository(deps.DB)
 	webhookRepo := persistence.NewWebhookRepository(deps.DB)
-	webhookSender := webhook.NewSender(webhookRepo, webhookSettings.Timeout)
+	webhookSender := webhook.NewSender(webhookRepo, webhookSettings.Timeout, websiteInfoRepo)
 	webhookDispatcher := webhook.NewDispatcher(webhookRepo, webhookSender, webhookSettings.Workers, webhookSettings.QueueSize)
 	webhookSvc := webhook.NewService(webhookRepo, webhookSender)
 	webhook.RegisterSubscribers(eventBus, webhookDispatcher)
+
+	emailSettings, err := sysCfgSvc.EmailSettings(context.Background())
+	if err != nil {
+		log.Printf("email settings error: %v", err)
+	}
+	emailRepo := persistence.NewEmailRepository(deps.DB)
+	emailSender := email.NewSender(sysCfgSvc)
+	emailDispatcher := email.NewDispatcher(
+		emailRepo,
+		emailSender,
+		websiteInfoRepo,
+		emailSettings.Workers,
+		emailSettings.QueueSize,
+		emailSettings.MaxRetries,
+		2*time.Second,
+	)
+	email.RegisterSubscribers(eventBus, emailDispatcher)
 
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, "")
@@ -97,8 +116,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	fedOutbound := appfed.NewOutboundService(fedCfgSvc, fedResolver, fedInstanceRepo)
 	appfed.RegisterSubscribers(eventBus, fedOutbound)
 
-	websiteInfoRepo := persistence.NewWebsiteInfoRepository(deps.DB)
-	websiteInfoSvc := websiteinfo.NewService(websiteInfoRepo)
+	websiteInfoSvc := websiteinfo.NewService(websiteInfoRepo, eventBus)
 	websiteInfoHandler := handler.NewWebsiteInfoHandler(websiteInfoSvc)
 
 	navMenuRepo := persistence.NewNavMenuRepository(deps.DB)
@@ -112,6 +130,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	deps.Analytics = analyticsSvc
 
 	registerPublicRoutes(v2, deps, websiteInfoHandler, htmlSnapshotSvc, navMenuHandler)
+	registerEmailPublicRoutes(v2, deps, sysCfgSvc)
 	registerAuthRoutes(v2, deps, sysCfgSvc)
 	deps.EventBus = eventBus
 	registerWSRoutes(v2, wsManager, deps)

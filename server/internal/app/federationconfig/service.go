@@ -23,7 +23,7 @@ type Service struct {
 
 func NewService(repo domainconfig.SysConfigRepository) *Service {
 	return &Service{
-		core: sysconfig.NewService(repo, config.TurnstileConfig{}),
+		core: sysconfig.NewService(repo, config.TurnstileConfig{}, nil),
 		repo: repo,
 	}
 }

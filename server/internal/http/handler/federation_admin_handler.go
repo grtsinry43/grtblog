@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
@@ -20,14 +21,19 @@ type FederationAdminHandler struct {
 	contentRepo content.Repository
 	outbound    *appfed.OutboundService
 	resolver    *fedinfra.Resolver
+	events      appEvent.Bus
 }
 
-func NewFederationAdminHandler(cfgSvc *federationconfig.Service, contentRepo content.Repository, outbound *appfed.OutboundService, resolver *fedinfra.Resolver) *FederationAdminHandler {
+func NewFederationAdminHandler(cfgSvc *federationconfig.Service, contentRepo content.Repository, outbound *appfed.OutboundService, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &FederationAdminHandler{
 		cfgSvc:      cfgSvc,
 		contentRepo: contentRepo,
 		outbound:    outbound,
 		resolver:    resolver,
+		events:      events,
 	}
 }
 
@@ -57,6 +63,15 @@ func (h *FederationAdminHandler) RequestFriendLink(c *fiber.Ctx) error {
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
 	}
+	_ = h.events.Publish(c.Context(), appEvent.Generic{
+		EventName: "federation.friendlink.requested",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"TargetURL":   target,
+			"StatusCode":  resp.StatusCode,
+			"ResponseRaw": string(raw),
+		},
+	})
 	return response.Success(c, contract.FederationAdminProxyResp{
 		StatusCode: resp.StatusCode,
 		Body:       string(raw),
@@ -111,6 +126,15 @@ func (h *FederationAdminHandler) SendCitation(c *fiber.Ctx) error {
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
 	}
+	_ = h.events.Publish(c.Context(), appEvent.Generic{
+		EventName: "federation.citation.requested",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"TargetInstanceURL": target,
+			"TargetPostID":      ev.TargetPostID,
+			"StatusCode":        resp.StatusCode,
+		},
+	})
 	return response.Success(c, contract.FederationAdminProxyResp{
 		StatusCode: resp.StatusCode,
 		Body:       string(raw),
@@ -165,6 +189,15 @@ func (h *FederationAdminHandler) SendMention(c *fiber.Ctx) error {
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
 	}
+	_ = h.events.Publish(c.Context(), appEvent.Generic{
+		EventName: "federation.mention.requested",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"TargetInstanceURL": target,
+			"MentionedUser":     ev.TargetUser,
+			"StatusCode":        resp.StatusCode,
+		},
+	})
 	return response.Success(c, contract.FederationAdminProxyResp{
 		StatusCode: resp.StatusCode,
 		Body:       string(raw),

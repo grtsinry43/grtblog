@@ -28,26 +28,31 @@ import {
   NTable,
   NTag,
   NTabs,
+  NCollapse,
+  NCollapseItem,
   useMessage,
 } from 'naive-ui'
-import { computed, h, onMounted, reactive, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 
 import { ScrollContainer } from '@/components'
+
 import TemplateEditor from '@/components/template-editor/TemplateEditor.vue'
+
 import { formatTemplateJson } from '@/composables/template-editor/json-lint'
 import {
   createWebhook,
   deleteWebhook,
-  listWebhookEvents,
   listWebhooks,
   listWebhookHistory,
   replayWebhookHistory,
   testWebhook,
   updateWebhook,
 } from '@/services/webhooks'
+import { listEvents, getEventCatalogItem } from '@/services/events'
 
 import type { DataTableColumns, SelectOption } from 'naive-ui'
 import type { WebhookHistoryItem, WebhookItem } from '@/services/webhooks'
+import type { AdminEventGroupResp, AdminEventFieldResp } from '@/services/events'
 
 type HeaderRow = {
   key: string
@@ -62,7 +67,7 @@ const message = useMessage()
 
 const activeTab = ref('list')
 const webhooks = ref<WebhookItem[]>([])
-const events = ref<string[]>([])
+const eventGroups = ref<AdminEventGroupResp[]>([])
 const loading = ref(false)
 const historyLoading = ref(false)
 
@@ -91,6 +96,32 @@ const form = reactive({
   isEnabled: true,
 })
 
+const currentEventFields = ref<AdminEventFieldResp[]>([])
+
+// Logic to fetch fields when events change
+watch(
+  () => form.events,
+  async (newEvents) => {
+    if (newEvents && newEvents.length > 0) {
+      // Fetch details for the newly selected event (or the last one in list)
+      // Since it's a checkbox group, the order depends on user interaction order if naive-ui preserves it,
+      // or strictly definition order.
+      // Usually users want to see variables for what they just clicked.
+      // We'll pick the last one. If multiple, it's ambiguous, but better than nothing.
+      const lastEvent = newEvents[newEvents.length - 1]
+      try {
+        const item = await getEventCatalogItem(lastEvent)
+        currentEventFields.value = item.fields
+      } catch (e) {
+        console.error(e)
+      }
+    } else {
+      currentEventFields.value = []
+    }
+  },
+  { deep: true }
+)
+
 const listFilters = reactive({
   keyword: '',
   status: 'all' as 'all' | 'enabled' | 'disabled',
@@ -104,9 +135,14 @@ const historyFilters = reactive({
 })
 
 const eventOptions = computed<SelectOption[]>(() =>
-  events.value.map((item) => ({
-    label: item,
-    value: item,
+  eventGroups.value.map((group) => ({
+    type: 'group',
+    label: group.category.toUpperCase(),
+    key: group.category,
+    children: group.events.map((e) => ({
+      label: e,
+      value: e,
+    })),
   })),
 )
 
@@ -174,6 +210,15 @@ const detailStatus = computed(() => {
     label: success ? `成功 ${status}` : `失败 ${status}`,
     type: success ? 'success' : 'error',
   }
+})
+
+const validVariables = computed(() => {
+  // Base variables
+  const vars = ['eventName', 'OccurredAt']
+  currentEventFields.value.forEach((f) => {
+    vars.push(f.name)
+  })
+  return vars
 })
 
 const filteredWebhooks = computed(() => {
@@ -406,6 +451,7 @@ function openCreate() {
   resetForm()
   ensureHeaderRow()
   formDrawerVisible.value = true
+  currentEventFields.value = []
 }
 
 function openEdit(item: WebhookItem) {
@@ -449,8 +495,8 @@ async function fetchWebhooks() {
 }
 
 async function fetchEvents() {
-  const result = await listWebhookEvents()
-  events.value = result.events || []
+  const { groups } = await listEvents('webhook')
+  eventGroups.value = groups
 }
 
 async function fetchHistory() {
@@ -849,7 +895,7 @@ onMounted(async () => {
     <NDrawer
       v-model:show="formDrawerVisible"
       placement="right"
-      width="680"
+      width="min(680px, 100%)"
     >
       <NDrawerContent
         :title="formTitle"
@@ -882,24 +928,37 @@ onMounted(async () => {
               </NGi>
             </NGrid>
 
-            <NDivider>事件订阅</NDivider>
-            <NFormItem label="订阅事件">
-              <NCheckboxGroup v-model:value="form.events">
-                <NGrid
-                  cols="1 640:2"
-                  x-gap="16"
-                  y-gap="8"
+            <NDivider class="!mb-0 !-mx-4 max-sm:!-mx-2 !w-[calc(100%+2rem)] max-sm:!w-[calc(100%+1rem)]">事件订阅</NDivider>
+            <NFormItem label="订阅事件" :show-label="false">
+              <NCheckboxGroup v-model:value="form.events" class="w-full">
+                <NCollapse
+                  arrow-placement="right"
+                  class="mt-4 w-full"
                 >
-                  <NGi
-                    v-for="item in events"
-                    :key="item"
+                  <NCollapseItem
+                    v-for="group in eventGroups"
+                    :key="group.category"
+                    :title="group.category"
+                    :name="group.category"
                   >
-                    <NCheckbox
-                      :value="item"
-                      :label="item"
-                    />
-                  </NGi>
-                </NGrid>
+                    <NGrid
+                      cols="1 640:2"
+                      x-gap="16"
+                      y-gap="8"
+                      class="pl-6"
+                    >
+                      <NGi
+                        v-for="item in group.events"
+                        :key="item"
+                      >
+                        <NCheckbox
+                          :value="item"
+                          :label="item"
+                        />
+                      </NGi>
+                    </NGrid>
+                  </NCollapseItem>
+                </NCollapse>
               </NCheckboxGroup>
             </NFormItem>
             <NFormItem label="启用">
@@ -957,15 +1016,32 @@ onMounted(async () => {
                     格式化
                   </NButton>
                 </div>
-                <TemplateEditor v-model="form.payloadTemplate" />
-                <NAlert
-                  type="info"
-                  :show-icon="false"
+                <TemplateEditor v-model="form.payloadTemplate" :valid-variables="validVariables" />
+                <div
+                  v-if="validVariables.length > 0"
+                  class="rounded border bg-gray-50 p-3 text-xs dark:border-neutral-700 dark:bg-neutral-800"
                 >
-                  可用变量：<span class="template-code" v-pre>{{.Name}}</span>、
-                  <span class="template-code" v-pre>{{.OccurredAt}}</span>、
-                  <span class="template-code" v-pre>{{ toJSON .Event }}</span>。
-                </NAlert>
+                  <div class="mb-2 text-gray-500">可用变量：</div>
+                  <NSpace size="small">
+                    <NTag
+                      v-for="v in validVariables"
+                      :key="v"
+                      size="small"
+                      type="info"
+                      dashed
+                      :bordered="false"
+                      class="cursor-pointer select-all bg-white dark:bg-neutral-900"
+                    >
+                      {{ v }}
+                    </NTag>
+                  </NSpace>
+                </div>
+                <div
+                  v-else
+                  class="rounded border bg-gray-50 p-3 text-xs text-gray-400 dark:border-neutral-700 dark:bg-neutral-800"
+                >
+                  * 选择上方事件以查看特定事件变量
+                </div>
               </div>
             </NFormItem>
           </NForm>

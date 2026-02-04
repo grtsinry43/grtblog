@@ -1,7 +1,6 @@
 package webhook
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
@@ -10,21 +9,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/page"
 )
 
-var AvailableEventNames = []string{
-	article.ArticleCreated{}.Name(),
-	article.ArticleUpdated{}.Name(),
-	article.ArticlePublished{}.Name(),
-	article.ArticleUnpublished{}.Name(),
-	article.ArticleDeleted{}.Name(),
-	moment.MomentCreated{}.Name(),
-	moment.MomentUpdated{}.Name(),
-	moment.MomentPublished{}.Name(),
-	moment.MomentUnpublished{}.Name(),
-	moment.MomentDeleted{}.Name(),
-	page.PageCreated{}.Name(),
-	page.PageUpdated{}.Name(),
-	page.PageDeleted{}.Name(),
-}
+var AvailableEventNames = appEvent.NamesByChannel(appEvent.ChannelWebhook)
 
 func IsValidEventName(name string) bool {
 	for _, item := range AvailableEventNames {
@@ -65,6 +50,13 @@ func SampleEvent(name string) (appEvent.Event, error) {
 	case page.PageDeleted{}.Name():
 		return page.PageDeleted{ID: 1, Title: "Sample Page", ShortURL: "sample-page", At: now}, nil
 	default:
-		return nil, fmt.Errorf("unknown event: %s", name)
+		return appEvent.Generic{
+			EventName: name,
+			At:        now,
+			Payload: map[string]any{
+				"eventName": name,
+				"sample":    true,
+			},
+		}, nil
 	}
 }

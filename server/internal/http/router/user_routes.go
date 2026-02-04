@@ -25,13 +25,13 @@ func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *
 	authenticated.Get("/auth/oauth-bindings", authHandler.ListOAuthBindings)
 
 	friendLinkRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
-	friendLinkSvc := friendlink.NewService(friendLinkRepo)
+	friendLinkSvc := friendlink.NewService(friendLinkRepo, deps.EventBus)
 	friendLinkHandler := handler.NewFriendLinkHandler(friendLinkSvc)
 	friendLinks := authenticated.Group("/friend-links")
 	friendLinks.Post("/applications", friendLinkHandler.SubmitApplication)
 
 	uploadRepo := persistence.NewUploadFileRepository(deps.DB)
-	uploadSvc := mediaapp.NewService(uploadRepo, "")
+	uploadSvc := mediaapp.NewService(uploadRepo, "", deps.EventBus)
 	uploadHandler := handler.NewUploadHandler(uploadSvc)
 	authenticated.Post("/upload", uploadHandler.UploadFile)
 	authenticated.Get("/uploads", uploadHandler.ListUploads)
