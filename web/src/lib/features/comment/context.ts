@@ -12,6 +12,10 @@ export type CommentAreaModel = {
 	guestEmail: string;
 	guestSite: string;
 	commentsCount: number;
+	total: number;
+	page: number;
+	size: number;
+	isClosed: boolean;
 };
 
 export const commentAreaCtx = createModelDataContext<CommentAreaModel>({
@@ -26,6 +30,10 @@ export const commentAreaCtx = createModelDataContext<CommentAreaModel>({
 		guestName: '',
 		guestEmail: '',
 		guestSite: '',
-		commentsCount: 0
+		commentsCount: 0,
+		total: 0,
+		page: 1,
+		size: 10,
+		isClosed: false
 	}
 });

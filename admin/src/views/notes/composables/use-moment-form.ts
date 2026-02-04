@@ -45,8 +45,8 @@ export function useMomentForm() {
     shortUrl: '',
     isPublished: false,
     isTop: false,
-    isHot: false,
     isOriginal: true,
+    allowComment: true,
   })
 
   const baseExtInfo = ref<ContentExtInfo | null>(null)
@@ -80,8 +80,8 @@ export function useMomentForm() {
       form.shortUrl = data.shortUrl
       form.isPublished = data.isPublished
       form.isTop = data.isTop
-      form.isHot = data.isHot
       form.isOriginal = data.isOriginal
+      form.allowComment = data.allowComment
       baseExtInfo.value = data.extInfo ?? null
 
       initialSnapshot.value = takeSnapshot()
@@ -113,8 +113,8 @@ export function useMomentForm() {
         topicIds: form.topicIds.length ? form.topicIds : undefined,
         isPublished: form.isPublished,
         isTop: form.isTop,
-        isHot: form.isHot,
         isOriginal: form.isOriginal,
+        allowComment: form.allowComment,
         extInfo: extInfo.value ?? undefined,
       }
 

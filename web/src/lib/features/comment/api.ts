@@ -8,11 +8,12 @@ import type {
 
 export const getCommentTree = async (
 	fetcher: typeof fetch | undefined,
-	areaId: number
-): Promise<CommentNode[]> => {
+	areaId: number,
+	page = 1,
+	size = 10
+): Promise<CommentListResponse | null> => {
 	const api = getApi(fetcher);
-	const result = await api<CommentNode[]>(`/comments/areas/${areaId}`);
-	return result ?? [];
+	return api<CommentListResponse>(`/comments/areas/${areaId}?page=${page}&size=${size}`);
 };
 
 export const createCommentLogin = async (

@@ -15,6 +15,7 @@
 	let relativeTime = $state(formatRelativeTimeWithSeconds(comment.createdAt));
 
 	const replyingToStore = commentAreaCtx.selectModelData((data) => data?.replyingTo ?? null);
+	const isClosedStore = commentAreaCtx.selectModelData((data) => data?.isClosed ?? false);
 	const { updateModelData } = commentAreaCtx.useModelActions();
 
 	const handleReply = () => {
@@ -90,13 +91,15 @@
 		</div>
 
 		<div class="flex items-center gap-4 mt-2 mb-4">
-			<button
-				onclick={handleReply}
-				class="flex items-center gap-1 text-xs text-ink-400 hover:text-jade-600 transition-colors"
-			>
-				<MessageSquare size={12} />
-				<span>回复</span>
-			</button>
+			{#if !$isClosedStore}
+				<button
+					onclick={handleReply}
+					class="flex items-center gap-1 text-xs text-ink-400 hover:text-jade-600 transition-colors"
+				>
+					<MessageSquare size={12} />
+					<span>回复</span>
+				</button>
+			{/if}
 			{#if comment.browser || comment.platform}
 				<div
 					class="flex items-center gap-2 text-[10px] text-ink-300 dark:text-ink-600 opacity-0 group-hover:opacity-100 transition-opacity"

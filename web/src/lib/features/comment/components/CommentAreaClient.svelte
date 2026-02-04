@@ -3,7 +3,7 @@
 	import { getCommentTree } from '$lib/features/comment/api';
 	import CommentForm from './CommentForm.svelte';
 	import CommentList from './CommentList.svelte';
-	import { MessageSquare, Globe } from 'lucide-svelte';
+	import { MessageSquare, Globe, ChevronLeft, ChevronRight, Lock } from 'lucide-svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 
 	let { areaId, commentsCount = 0 } = $props<{ areaId: number; commentsCount?: number }>();
@@ -19,12 +19,19 @@
 		guestName: '',
 		guestEmail: '',
 		guestSite: '',
-		commentsCount
+		commentsCount,
+		total: 0,
+		page: 1,
+		size: 10,
+		isClosed: false
 	};
 
+	let currentPage = $state(1);
+	const pageSize = 10;
+
 	const query = createQuery(() => ({
-		queryKey: ['comments', areaId],
-		queryFn: () => getCommentTree(undefined, areaId)
+		queryKey: ['comments', areaId, currentPage],
+		queryFn: () => getCommentTree(undefined, areaId, currentPage, pageSize)
 	}));
 
 	commentAreaCtx.mountModelData(initialModel);
@@ -43,15 +50,29 @@
 	});
 
 	$effect(() => {
+		const data = query.data;
 		updateModelData((prev) => ({
 			...(prev ?? initialModel),
 			areaId,
-			comments: query.data ?? [],
+			comments: data?.items ?? [],
 			isLoading: query.isLoading,
 			isError: query.isError,
-			commentsCount
+			commentsCount: data?.total ?? commentsCount,
+			total: data?.total ?? 0,
+			page: data?.page ?? 1,
+			size: data?.size ?? 10,
+			isClosed: data?.isClosed ?? false
 		}));
 	});
+
+	const totalPages = $derived(Math.ceil(($commentAreaModel?.total ?? 0) / pageSize));
+
+	const handlePageChange = (page: number) => {
+		if (page < 1 || page > totalPages) return;
+		currentPage = page;
+		// Scroll to top of comment area
+		document.getElementById('comment-area')?.scrollIntoView({ behavior: 'smooth' });
+	};
 </script>
 
 <div class="mt-16 pt-10 border-t border-ink-100 dark:border-ink-800/50">
@@ -76,11 +97,50 @@
 		</div>
 
 		<div class="mb-16">
-			<CommentForm />
+			{#if $commentAreaModel?.isClosed}
+				<div
+					class="flex flex-col items-center justify-center p-8 rounded-default bg-ink-50 dark:bg-ink-900/30 border border-ink-100 dark:border-ink-800 text-ink-400 dark:text-ink-600 space-y-3"
+				>
+					<div class="p-3 rounded-full bg-ink-100 dark:bg-ink-800">
+						<Lock size={20} />
+					</div>
+					<span class="text-sm font-serif tracking-widest">评论已关闭</span>
+				</div>
+			{:else}
+				<CommentForm />
+			{/if}
 		</div>
 	</div>
 
 	<CommentList />
+
+	{#if totalPages > 1}
+		<div class="flex items-center justify-center gap-2 mt-8 mb-12">
+			<button
+				class="p-2 rounded-lg text-ink-500 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				disabled={currentPage === 1}
+				onclick={() => handlePageChange(currentPage - 1)}
+				aria-label="上一页"
+			>
+				<ChevronLeft size={16} />
+			</button>
+
+			<div class="flex items-center gap-1 font-mono text-xs text-ink-600 dark:text-ink-400">
+				<span>{currentPage}</span>
+				<span class="text-ink-300 dark:text-ink-700">/</span>
+				<span>{totalPages}</span>
+			</div>
+
+			<button
+				class="p-2 rounded-lg text-ink-500 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				disabled={currentPage === totalPages}
+				onclick={() => handlePageChange(currentPage + 1)}
+				aria-label="下一页"
+			>
+				<ChevronRight size={16} />
+			</button>
+		</div>
+	{/if}
 
 	<!-- Fediverse Section (Collapsible) -->
 	<div class="mb-20 mt-12">
