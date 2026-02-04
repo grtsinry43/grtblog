@@ -19,6 +19,7 @@ export interface ArticleListItem {
   isHot: boolean
   isOriginal: boolean
   isPublished: boolean
+  allowComment: boolean
   createdAt: string
   updatedAt: string
 }
@@ -51,6 +52,7 @@ export interface ArticleDetail {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo | null
   tags?: ArticleTag[]
   createdAt: string
@@ -78,8 +80,8 @@ export interface CreateArticlePayload {
   shortUrl?: string | null
   isPublished: boolean
   isTop: boolean
-  isHot: boolean
   isOriginal: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo | null
   createdAt?: string | null
 }
@@ -95,8 +97,8 @@ export interface UpdateArticlePayload {
   shortUrl: string
   isPublished: boolean
   isTop: boolean
-  isHot: boolean
   isOriginal: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo | null
 }
 

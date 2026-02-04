@@ -32,6 +32,7 @@ func registerCommentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 func newCommentHandler(deps Dependencies) *handler.CommentHandler {
 	commentRepo := persistence.NewCommentRepository(deps.DB)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
+	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
 	clientInfoResolver := clientinfo.NewUAParser()
 
 	var geoResolver comment.GeoIPResolver
@@ -53,6 +54,6 @@ func newCommentHandler(deps Dependencies) *handler.CommentHandler {
 		}
 	}
 
-	commentSvc := comment.NewService(commentRepo, identityRepo, clientInfoResolver, geoResolver)
+	commentSvc := comment.NewService(commentRepo, identityRepo, friendLinkRepo, deps.SysConfig, clientInfoResolver, geoResolver)
 	return handler.NewCommentHandler(commentSvc)
 }

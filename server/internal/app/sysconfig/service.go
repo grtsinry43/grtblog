@@ -107,6 +107,33 @@ type HotArticleThresholds struct {
 	Comments int64
 }
 
+type CommentSettings struct {
+	Disabled          bool
+	RequireModeration bool
+}
+
+// CommentSettings 返回评论开关配置。
+// 约定 key：
+// - comment.disabled: 全站禁评
+// - comment.requireModeration: 全站评论需要审核
+func (s *Service) CommentSettings(ctx context.Context) CommentSettings {
+	settings := CommentSettings{
+		Disabled:          false,
+		RequireModeration: false,
+	}
+	if cfg, err := s.repo.GetByKey(ctx, "comment.disabled"); err == nil {
+		if val, parseErr := strconv.ParseBool(strings.TrimSpace(cfg.Value)); parseErr == nil {
+			settings.Disabled = val
+		}
+	}
+	if cfg, err := s.repo.GetByKey(ctx, "comment.requireModeration"); err == nil {
+		if val, parseErr := strconv.ParseBool(strings.TrimSpace(cfg.Value)); parseErr == nil {
+			settings.RequireModeration = val
+		}
+	}
+	return settings
+}
+
 // HotArticleThresholds 返回热门文章判定阈值
 func (s *Service) HotArticleThresholds(ctx context.Context) HotArticleThresholds {
 	const (

@@ -8,19 +8,21 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/contentutil"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 )
 
 type Service struct {
-	repo   content.Repository
-	events appEvent.Bus
+	repo        content.Repository
+	commentRepo domaincomment.CommentRepository
+	events      appEvent.Bus
 }
 
-func NewService(repo content.Repository, events appEvent.Bus) *Service {
+func NewService(repo content.Repository, commentRepo domaincomment.CommentRepository, events appEvent.Bus) *Service {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
-	return &Service{repo: repo, events: events}
+	return &Service{repo: repo, commentRepo: commentRepo, events: events}
 }
 
 // CreateArticle 创建文章
@@ -69,13 +71,16 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 		ShortURL:    shortURL,
 		IsPublished: cmd.IsPublished,
 		IsTop:       cmd.IsTop,
-		IsHot:       cmd.IsHot,
+		IsHot:       false,
 		IsOriginal:  cmd.IsOriginal,
 		ExtInfo:     cmd.ExtInfo,
 		CreatedAt:   createdAt,
 	}
 
 	if err := s.repo.CreateArticle(ctx, article); err != nil {
+		return nil, err
+	}
+	if err := s.applyCommentAreaStatus(ctx, article.CommentID, cmd.AllowComment); err != nil {
 		return nil, err
 	}
 
@@ -153,11 +158,13 @@ func (s *Service) UpdateArticle(ctx context.Context, cmd UpdateArticleCmd) (*con
 	existing.ShortURL = shortURL
 	existing.IsPublished = cmd.IsPublished
 	existing.IsTop = cmd.IsTop
-	existing.IsHot = cmd.IsHot
 	existing.IsOriginal = cmd.IsOriginal
 	existing.ExtInfo = cmd.ExtInfo
 
 	if err := s.repo.UpdateArticle(ctx, existing); err != nil {
+		return nil, err
+	}
+	if err := s.applyCommentAreaStatus(ctx, existing.CommentID, cmd.AllowComment); err != nil {
 		return nil, err
 	}
 
@@ -326,4 +333,11 @@ func (s *Service) ensureTagsExist(ctx context.Context, tagIDs []int64) error {
 		return content.ErrTagNotFound
 	}
 	return nil
+}
+
+func (s *Service) applyCommentAreaStatus(ctx context.Context, areaID *int64, allowComment *bool) error {
+	if s.commentRepo == nil || areaID == nil || *areaID <= 0 || allowComment == nil {
+		return nil
+	}
+	return s.commentRepo.SetAreaClosed(ctx, *areaID, !*allowComment)
 }

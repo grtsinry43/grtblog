@@ -234,15 +234,15 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     ],
   },
   {
-    path: 'interactions',
-    name: 'commentInteraction',
+    path: 'comments',
+    name: 'commentManagement',
     icon: 'iconify ph--chat-circle-text',
-    label: '评论与互动',
+    label: '评论管理',
     meta: {
-      componentName: 'CommentInteraction',
+      componentName: 'CommentList',
       showTab: true,
     },
-    component: 'interactions/index',
+    component: 'comments/index',
   },
   {
     path: 'friend-links',

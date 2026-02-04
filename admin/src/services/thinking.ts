@@ -11,6 +11,7 @@ export interface ThinkingListItem {
   content: string
   authorName?: string
   authorAvatar?: string
+  allowComment: boolean
   metrics: ThinkingMetrics
   createdAt: string
   updatedAt: string
@@ -23,7 +24,7 @@ export interface ThinkingListResponse {
   size: number
 }
 
-export interface ThinkingDetail extends ThinkingListItem {}
+export interface ThinkingDetail extends ThinkingListItem { }
 
 export interface ListThinkingsParams {
   page?: number
@@ -32,10 +33,12 @@ export interface ListThinkingsParams {
 
 export interface CreateThinkingPayload {
   content: string
+  allowComment?: boolean
 }
 
 export interface UpdateThinkingPayload {
   content: string
+  allowComment?: boolean
 }
 
 function stripEmpty<T extends Record<string, unknown>>(value: T) {

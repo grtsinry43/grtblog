@@ -38,6 +38,7 @@ export interface PageDetail {
   shortUrl: string
   isEnabled: boolean
   isBuiltin: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo
   metrics: PageMetrics
   createdAt: string
@@ -55,6 +56,7 @@ export interface CreatePagePayload {
   content: string
   shortUrl: string
   isEnabled: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo
   createdAt?: string // Optional for setting creation time
 }
@@ -65,6 +67,7 @@ export interface UpdatePagePayload {
   content: string
   shortUrl: string
   isEnabled: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo
 }
 

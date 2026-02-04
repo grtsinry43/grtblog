@@ -8,37 +8,37 @@ import (
 
 // CreateArticleReq 创建文章请求。
 type CreateArticleReq struct {
-	Title       string     `json:"title" validate:"required,max=255"`
-	Summary     string     `json:"summary"`
-	LeadIn      *string    `json:"leadIn,omitempty"`
-	Content     string     `json:"content" validate:"required"`
-	Cover       *string    `json:"cover,omitempty"`
-	CategoryID  *int64     `json:"categoryId,omitempty"`
-	TagIDs      []int64    `json:"tagIds,omitempty"`
-	ShortURL    *string    `json:"shortUrl"`
-	IsPublished bool       `json:"isPublished" validate:"required"`
-	IsTop       bool       `json:"isTop"`
-	IsHot       bool       `json:"isHot"`
-	IsOriginal  bool       `json:"isOriginal"`
-	ExtInfo     *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
-	CreatedAt   *time.Time `json:"createdAt,omitempty"` // 可以自定义发布时间
+	Title        string     `json:"title" validate:"required,max=255"`
+	Summary      string     `json:"summary"`
+	LeadIn       *string    `json:"leadIn,omitempty"`
+	Content      string     `json:"content" validate:"required"`
+	Cover        *string    `json:"cover,omitempty"`
+	CategoryID   *int64     `json:"categoryId,omitempty"`
+	TagIDs       []int64    `json:"tagIds,omitempty"`
+	ShortURL     *string    `json:"shortUrl"`
+	IsPublished  bool       `json:"isPublished" validate:"required"`
+	IsTop        bool       `json:"isTop"`
+	AllowComment *bool      `json:"allowComment,omitempty"`
+	IsOriginal   bool       `json:"isOriginal"`
+	ExtInfo      *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
+	CreatedAt    *time.Time `json:"createdAt,omitempty"` // 可以自定义发布时间
 }
 
 type createArticleReqJSON struct {
-	Title       string   `json:"title"`
-	Summary     string   `json:"summary"`
-	LeadIn      *string  `json:"leadIn"`
-	Content     string   `json:"content"`
-	Cover       *string  `json:"cover"`
-	CategoryID  *int64   `json:"categoryId"`
-	TagIDs      []int64  `json:"tagIds"`
-	ShortURL    *string  `json:"shortUrl"`
-	IsPublished bool     `json:"isPublished"`
-	IsTop       bool     `json:"isTop"`
-	IsHot       bool     `json:"isHot"`
-	IsOriginal  bool     `json:"isOriginal"`
-	ExtInfo     *JSONRaw `json:"extInfo" swaggertype:"object"`
-	CreatedAt   *string  `json:"createdAt"`
+	Title        string   `json:"title"`
+	Summary      string   `json:"summary"`
+	LeadIn       *string  `json:"leadIn"`
+	Content      string   `json:"content"`
+	Cover        *string  `json:"cover"`
+	CategoryID   *int64   `json:"categoryId"`
+	TagIDs       []int64  `json:"tagIds"`
+	ShortURL     *string  `json:"shortUrl"`
+	IsPublished  bool     `json:"isPublished"`
+	IsTop        bool     `json:"isTop"`
+	AllowComment *bool    `json:"allowComment"`
+	IsOriginal   bool     `json:"isOriginal"`
+	ExtInfo      *JSONRaw `json:"extInfo" swaggertype:"object"`
+	CreatedAt    *string  `json:"createdAt"`
 }
 
 func (r *CreateArticleReq) UnmarshalJSON(data []byte) error {
@@ -56,7 +56,7 @@ func (r *CreateArticleReq) UnmarshalJSON(data []byte) error {
 	r.ShortURL = aux.ShortURL
 	r.IsPublished = aux.IsPublished
 	r.IsTop = aux.IsTop
-	r.IsHot = aux.IsHot
+	r.AllowComment = aux.AllowComment
 	r.IsOriginal = aux.IsOriginal
 	r.ExtInfo = aux.ExtInfo
 
@@ -79,19 +79,19 @@ func (r *CreateArticleReq) UnmarshalJSON(data []byte) error {
 
 // UpdateArticleReq 更新文章请求。
 type UpdateArticleReq struct {
-	Title       string   `json:"title" validate:"required,max=255"`
-	Summary     string   `json:"summary"`
-	LeadIn      *string  `json:"leadIn,omitempty"`
-	Content     string   `json:"content" validate:"required"`
-	Cover       *string  `json:"cover,omitempty"`
-	CategoryID  *int64   `json:"categoryId,omitempty"`
-	TagIDs      []int64  `json:"tagIds,omitempty"`
-	ShortURL    string   `json:"shortUrl" validate:"required"`
-	IsPublished bool     `json:"isPublished"`
-	IsTop       bool     `json:"isTop"`
-	IsHot       bool     `json:"isHot"`
-	IsOriginal  bool     `json:"isOriginal"`
-	ExtInfo     *JSONRaw `json:"extInfo,omitempty" swaggertype:"object"`
+	Title        string   `json:"title" validate:"required,max=255"`
+	Summary      string   `json:"summary"`
+	LeadIn       *string  `json:"leadIn,omitempty"`
+	Content      string   `json:"content" validate:"required"`
+	Cover        *string  `json:"cover,omitempty"`
+	CategoryID   *int64   `json:"categoryId,omitempty"`
+	TagIDs       []int64  `json:"tagIds,omitempty"`
+	ShortURL     string   `json:"shortUrl" validate:"required"`
+	IsPublished  bool     `json:"isPublished"`
+	IsTop        bool     `json:"isTop"`
+	AllowComment *bool    `json:"allowComment,omitempty"`
+	IsOriginal   bool     `json:"isOriginal"`
+	ExtInfo      *JSONRaw `json:"extInfo,omitempty" swaggertype:"object"`
 }
 
 // ListArticlesReq 文章列表查询请求。

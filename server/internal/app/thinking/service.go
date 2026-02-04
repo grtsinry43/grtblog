@@ -31,6 +31,11 @@ func (s *Service) Create(ctx context.Context, cmd CreateThinkingCmd) (*domainthi
 	if err := s.repo.Create(ctx, t); err != nil {
 		return nil, err
 	}
+	if cmd.AllowComment != nil {
+		if err := s.commentRepo.SetAreaClosed(ctx, t.CommentID, !*cmd.AllowComment); err != nil {
+			return nil, err
+		}
+	}
 
 	return t, nil
 }
@@ -46,6 +51,11 @@ func (s *Service) Update(ctx context.Context, cmd UpdateThinkingCmd) (*domainthi
 	t.Content = cmd.Content
 	if err := s.repo.Update(ctx, t); err != nil {
 		return nil, err
+	}
+	if cmd.AllowComment != nil {
+		if err := s.commentRepo.SetAreaClosed(ctx, t.CommentID, !*cmd.AllowComment); err != nil {
+			return nil, err
+		}
 	}
 	return t, nil
 }

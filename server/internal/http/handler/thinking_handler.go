@@ -9,6 +9,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/thinking"
+	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	domainthinking "github.com/grtsinry43/grtblog-v2/server/internal/domain/thinking"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -16,14 +17,16 @@ import (
 )
 
 type ThinkingHandler struct {
-	svc      *thinking.Service
-	userRepo identity.Repository
+	svc         *thinking.Service
+	commentRepo domaincomment.CommentRepository
+	userRepo    identity.Repository
 }
 
-func NewThinkingHandler(svc *thinking.Service, userRepo identity.Repository) *ThinkingHandler {
+func NewThinkingHandler(svc *thinking.Service, commentRepo domaincomment.CommentRepository, userRepo identity.Repository) *ThinkingHandler {
 	return &ThinkingHandler{
-		svc:      svc,
-		userRepo: userRepo,
+		svc:         svc,
+		commentRepo: commentRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -48,8 +51,9 @@ func (h *ThinkingHandler) CreateThinking(c *fiber.Ctx) error {
 	}
 
 	created, err := h.svc.Create(c.Context(), thinking.CreateThinkingCmd{
-		Content:  req.Content,
-		AuthorID: claims.UserID,
+		Content:      req.Content,
+		AuthorID:     claims.UserID,
+		AllowComment: req.AllowComment,
 	})
 	if err != nil {
 		return h.mapError(c, err)
@@ -95,8 +99,9 @@ func (h *ThinkingHandler) UpdateThinking(c *fiber.Ctx) error {
 	}
 
 	_, err = h.svc.Update(c.Context(), thinking.UpdateThinkingCmd{
-		ID:      id,
-		Content: req.Content,
+		ID:           id,
+		Content:      req.Content,
+		AllowComment: req.AllowComment,
 	})
 	if err != nil {
 		return h.mapError(c, err)
@@ -218,10 +223,12 @@ func (h *ThinkingHandler) mapError(c *fiber.Ctx, err error) error {
 
 func (h *ThinkingHandler) toThinkingResp(ctx context.Context, t *domainthinking.Thinking) (*contract.ThinkingResp, error) {
 	resp := &contract.ThinkingResp{
-		ID:        t.ID,
-		CommentID: t.CommentID,
-		Content:   t.Content,
-		AuthorID:  t.AuthorID,
+		ID:           t.ID,
+		CommentID:    t.CommentID,
+		Content:      t.Content,
+		AuthorID:     t.AuthorID,
+		IsHot:        false,
+		AllowComment: h.allowCommentByAreaID(ctx, t.CommentID),
 		Metrics: contract.ThinkingMetrics{
 			Views:    t.Metrics.Views,
 			Likes:    t.Metrics.Likes,
@@ -242,4 +249,15 @@ func (h *ThinkingHandler) toThinkingResp(ctx context.Context, t *domainthinking.
 		}
 	}
 	return resp, nil
+}
+
+func (h *ThinkingHandler) allowCommentByAreaID(ctx context.Context, areaID int64) bool {
+	if h.commentRepo == nil || areaID <= 0 {
+		return true
+	}
+	area, err := h.commentRepo.GetAreaByID(ctx, areaID)
+	if err != nil || area == nil {
+		return false
+	}
+	return !area.IsClosed
 }

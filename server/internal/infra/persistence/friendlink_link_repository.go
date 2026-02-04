@@ -48,6 +48,20 @@ func (r *FriendLinkRepository) FindByURL(ctx context.Context, url string) (*soci
 	return &entity, nil
 }
 
+func (r *FriendLinkRepository) ExistsActiveByUserID(ctx context.Context, userID int64) (bool, error) {
+	if userID <= 0 {
+		return false, nil
+	}
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&model.FriendLink{}).
+		Where("user_id = ? AND is_active = ?", userID, true).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (r *FriendLinkRepository) Create(ctx context.Context, link *social.FriendLink) error {
 	rec := mapFriendLinkToModel(link)
 	if err := r.repo.Create(ctx, &rec); err != nil {

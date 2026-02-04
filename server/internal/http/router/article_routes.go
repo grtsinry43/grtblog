@@ -34,7 +34,8 @@ func registerArticleAuthRoutes(v2 fiber.Router, deps Dependencies) {
 
 func newArticleHandler(deps Dependencies) *handler.ArticleHandler {
 	contentRepo := persistence.NewContentRepository(deps.DB)
+	commentRepo := persistence.NewCommentRepository(deps.DB)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	articleSvc := article.NewService(contentRepo, deps.EventBus)
-	return handler.NewArticleHandler(articleSvc, contentRepo, identityRepo)
+	articleSvc := article.NewService(contentRepo, commentRepo, deps.EventBus)
+	return handler.NewArticleHandler(articleSvc, contentRepo, commentRepo, identityRepo)
 }

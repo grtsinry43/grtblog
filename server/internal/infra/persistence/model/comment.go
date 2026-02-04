@@ -36,6 +36,7 @@ type Comment struct {
 	IsAuthor  bool           `gorm:"column:is_author"`
 	IsViewed  bool           `gorm:"column:is_viewed"`
 	IsTop     bool           `gorm:"column:is_top"`
+	Status    string         `gorm:"column:status;size:20;not null"`
 	ParentID  *int64         `gorm:"column:parent_id"`
 	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time      `gorm:"column:updated_at;autoUpdateTime"`

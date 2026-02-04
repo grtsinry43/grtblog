@@ -300,6 +300,361 @@
                 }
             }
         },
+        "/admin/comments": {
+            "get": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "获取评论列表（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论区ID",
+                        "name": "areaId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "状态 pending/approved/rejected/blocked",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "仅返回未查看",
+                        "name": "onlyUnviewed",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.AdminCommentListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/comments/areas/{areaId}/close": {
+            "put": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "关闭/开启评论区（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论区ID",
+                        "name": "areaId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "评论区开关参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.SetCommentAreaCloseReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmptyRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/comments/viewed": {
+            "put": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "批量标记评论已读/未读（管理端）",
+                "parameters": [
+                    {
+                        "description": "批量已读参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.MarkCommentsViewedReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmptyRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/comments/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "删除评论（软删除，管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmptyRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/comments/{id}/author": {
+            "put": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "标记评论为作者评论（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "作者标记参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.SetCommentAuthorReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmptyRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/comments/{id}/reply": {
+            "post": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "快捷回复评论（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "父评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "回复参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.ReplyCommentReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.CreateCommentResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/comments/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "更新评论状态（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "状态参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.UpdateCommentStatusReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmptyRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/comments/{id}/top": {
+            "put": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "置顶/取消置顶评论（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "置顶参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.SetCommentTopReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmptyRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/federation/citations/request": {
             "post": {
                 "security": [
@@ -952,6 +1307,57 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.FriendLinkResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/hitokoto": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "从 hitokoto 官方接口获取随机一言，并使用 Redis 做短期缓存。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Stats"
+                ],
+                "summary": "获取一言（管理员）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "分类，支持单个或逗号分隔多个(a-l)",
+                        "name": "c",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "最小长度",
+                        "name": "min_length",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "最大长度",
+                        "name": "max_length",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "返回编码",
+                        "name": "charset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.AdminHitokotoEnvelope"
                         }
                     }
                 }
@@ -2617,7 +3023,7 @@
                 "tags": [
                     "Comment"
                 ],
-                "summary": "获取评论树",
+                "summary": "获取评论树（公开，根评论分页）",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2625,16 +3031,27 @@
                         "name": "areaId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/contract.CommentNodeResp"
-                            }
+                            "$ref": "#/definitions/contract.PublicCommentListResp"
                         }
                     }
                 }
@@ -4244,9 +4661,118 @@
                 }
             }
         },
+        "contract.AdminCommentListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminCommentResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.AdminCommentResp": {
+            "type": "object",
+            "properties": {
+                "areaClosed": {
+                    "type": "boolean"
+                },
+                "areaId": {
+                    "type": "integer"
+                },
+                "areaName": {
+                    "type": "string"
+                },
+                "areaRefId": {
+                    "type": "integer"
+                },
+                "areaTitle": {
+                    "type": "string"
+                },
+                "areaType": {
+                    "type": "string"
+                },
+                "authorId": {
+                    "type": "integer"
+                },
+                "browser": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "isAuthor": {
+                    "type": "boolean"
+                },
+                "isDeleted": {
+                    "type": "boolean"
+                },
+                "isFriend": {
+                    "type": "boolean"
+                },
+                "isOwner": {
+                    "type": "boolean"
+                },
+                "isTop": {
+                    "type": "boolean"
+                },
+                "isViewed": {
+                    "type": "boolean"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "parentId": {
+                    "type": "integer"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.ArticleListItemResp": {
             "type": "object",
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "authorName": {
                     "type": "string"
                 },
@@ -4337,6 +4863,9 @@
             "properties": {
                 "aiSummary": {
                     "type": "string"
+                },
+                "allowComment": {
+                    "type": "boolean"
                 },
                 "authorId": {
                     "type": "integer"
@@ -4659,6 +5188,9 @@
                 "isAuthor": {
                     "type": "boolean"
                 },
+                "isDeleted": {
+                    "type": "boolean"
+                },
                 "isFriend": {
                     "type": "boolean"
                 },
@@ -4683,6 +5215,9 @@
                 "platform": {
                     "type": "string"
                 },
+                "status": {
+                    "type": "string"
+                },
                 "updatedAt": {
                     "type": "string"
                 },
@@ -4699,6 +5234,9 @@
                 "title"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "categoryId": {
                     "type": "integer"
                 },
@@ -4714,9 +5252,6 @@
                 },
                 "extInfo": {
                     "type": "object"
-                },
-                "isHot": {
-                    "type": "boolean"
                 },
                 "isOriginal": {
                     "type": "boolean"
@@ -4786,6 +5321,9 @@
                 "isAuthor": {
                     "type": "boolean"
                 },
+                "isDeleted": {
+                    "type": "boolean"
+                },
                 "isFriend": {
                     "type": "boolean"
                 },
@@ -4808,6 +5346,9 @@
                     "type": "integer"
                 },
                 "platform": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 },
                 "updatedAt": {
@@ -4854,6 +5395,9 @@
                 "title"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "columnId": {
                     "type": "integer"
                 },
@@ -4872,9 +5416,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "isHot": {
-                    "type": "boolean"
                 },
                 "isOriginal": {
                     "type": "boolean"
@@ -4927,6 +5468,9 @@
                 "title"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "content": {
                     "type": "string"
                 },
@@ -4960,6 +5504,9 @@
                 "content"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "content": {
                     "type": "string"
                 }
@@ -5705,6 +6252,20 @@
                 }
             }
         },
+        "contract.MarkCommentsViewedReq": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "isViewed": {
+                    "type": "boolean"
+                }
+            }
+        },
         "contract.MetricsResp": {
             "type": "object",
             "properties": {
@@ -5722,6 +6283,9 @@
         "contract.MomentListItemResp": {
             "type": "object",
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "authorName": {
                     "type": "string"
                 },
@@ -5812,6 +6376,9 @@
             "properties": {
                 "aiSummary": {
                     "type": "string"
+                },
+                "allowComment": {
+                    "type": "boolean"
                 },
                 "authorId": {
                     "type": "integer"
@@ -6010,6 +6577,9 @@
         "contract.PageListItemResp": {
             "type": "object",
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "commentAreaId": {
                     "type": "integer"
                 },
@@ -6029,6 +6599,9 @@
                     "type": "boolean"
                 },
                 "isEnabled": {
+                    "type": "boolean"
+                },
+                "isHot": {
                     "type": "boolean"
                 },
                 "likes": {
@@ -6074,6 +6647,9 @@
                 "aiSummary": {
                     "type": "string"
                 },
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "commentAreaId": {
                     "type": "integer"
                 },
@@ -6099,6 +6675,9 @@
                     "type": "boolean"
                 },
                 "isEnabled": {
+                    "type": "boolean"
+                },
+                "isHot": {
                     "type": "boolean"
                 },
                 "metrics": {
@@ -6141,6 +6720,29 @@
                 },
                 "msg": {
                     "type": "string"
+                }
+            }
+        },
+        "contract.PublicCommentListResp": {
+            "type": "object",
+            "properties": {
+                "isClosed": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.CommentNodeResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -6192,6 +6794,41 @@
                     "items": {
                         "$ref": "#/definitions/contract.NavMenuOrderItem"
                     }
+                }
+            }
+        },
+        "contract.ReplyCommentReq": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.SetCommentAreaCloseReq": {
+            "type": "object",
+            "properties": {
+                "isClosed": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "contract.SetCommentAuthorReq": {
+            "type": "object",
+            "properties": {
+                "isAuthor": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "contract.SetCommentTopReq": {
+            "type": "object",
+            "properties": {
+                "isTop": {
+                    "type": "boolean"
                 }
             }
         },
@@ -6428,6 +7065,9 @@
         "contract.ThinkingResp": {
             "type": "object",
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "authorId": {
                     "type": "integer"
                 },
@@ -6448,6 +7088,9 @@
                 },
                 "id": {
                     "type": "integer"
+                },
+                "isHot": {
+                    "type": "boolean"
                 },
                 "metrics": {
                     "$ref": "#/definitions/contract.ThinkingMetrics"
@@ -6521,6 +7164,9 @@
                 "title"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "categoryId": {
                     "type": "integer"
                 },
@@ -6532,9 +7178,6 @@
                 },
                 "extInfo": {
                     "type": "object"
-                },
-                "isHot": {
-                    "type": "boolean"
                 },
                 "isOriginal": {
                     "type": "boolean"
@@ -6566,6 +7209,17 @@
                 }
             }
         },
+        "contract.UpdateCommentStatusReq": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.UpdateMomentReq": {
             "type": "object",
             "required": [
@@ -6574,6 +7228,9 @@
                 "title"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "columnId": {
                     "type": "integer"
                 },
@@ -6588,9 +7245,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "isHot": {
-                    "type": "boolean"
                 },
                 "isOriginal": {
                     "type": "boolean"
@@ -6647,6 +7301,9 @@
                 "title"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "content": {
                     "type": "string"
                 },
@@ -6677,6 +7334,9 @@
                 "content"
             ],
             "properties": {
+                "allowComment": {
+                    "type": "boolean"
+                },
                 "content": {
                     "type": "string"
                 }
@@ -7115,6 +7775,26 @@
                 }
             }
         },
+        "handler.AdminHitokotoEnvelope": {
+            "type": "object",
+            "properties": {
+                "bizErr": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/hitokoto.Result"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.AdminOAuthProviderEnvelope": {
             "type": "object",
             "properties": {
@@ -7487,6 +8167,55 @@
                     "$ref": "#/definitions/response.Meta"
                 },
                 "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "hitokoto.Result": {
+            "type": "object",
+            "properties": {
+                "cached": {
+                    "type": "boolean"
+                },
+                "sentence": {
+                    "$ref": "#/definitions/hitokoto.Sentence"
+                }
+            }
+        },
+        "hitokoto.Sentence": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "creator": {
+                    "type": "string"
+                },
+                "creator_uid": {
+                    "type": "integer"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "from_who": {
+                    "type": "string"
+                },
+                "hitokoto": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "length": {
+                    "type": "integer"
+                },
+                "reviewer": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "uuid": {
                     "type": "string"
                 }
             }

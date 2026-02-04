@@ -34,7 +34,8 @@ func registerMomentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 
 func newMomentHandler(deps Dependencies) *handler.MomentHandler {
 	contentRepo := persistence.NewContentRepository(deps.DB)
+	commentRepo := persistence.NewCommentRepository(deps.DB)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	momentSvc := moment.NewService(contentRepo, deps.EventBus)
-	return handler.NewMomentHandler(momentSvc, contentRepo, identityRepo)
+	momentSvc := moment.NewService(contentRepo, commentRepo, deps.EventBus)
+	return handler.NewMomentHandler(momentSvc, contentRepo, commentRepo, identityRepo)
 }

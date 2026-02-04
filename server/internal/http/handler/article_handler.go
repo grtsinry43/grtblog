@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/copier"
 
 	"github.com/gofiber/fiber/v2"
+	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 
@@ -20,13 +21,15 @@ import (
 type ArticleHandler struct {
 	svc         *article.Service
 	contentRepo content.Repository
+	commentRepo domaincomment.CommentRepository
 	userRepo    identity.Repository
 }
 
-func NewArticleHandler(svc *article.Service, contentRepo content.Repository, userRepo identity.Repository) *ArticleHandler {
+func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository) *ArticleHandler {
 	return &ArticleHandler{
 		svc:         svc,
 		contentRepo: contentRepo,
+		commentRepo: commentRepo,
 		userRepo:    userRepo,
 	}
 }
@@ -59,6 +62,10 @@ func (h *ArticleHandler) CreateArticle(c *fiber.Ctx) error {
 	var cmd article.CreateArticleCmd
 	if err := copier.Copy(&cmd, req); err != nil {
 		return response.NewBizErrorWithMsg(response.ParamsError, "请求体映射失败")
+	}
+	if cmd.AllowComment == nil {
+		defaultAllow := true
+		cmd.AllowComment = &defaultAllow
 	}
 	cmd.ExtInfo = extInfo
 
@@ -441,6 +448,7 @@ func (h *ArticleHandler) toArticleResp(ctx context.Context, article *content.Art
 	}
 	resp.TOC = mapTOCNodes(article.TOC)
 	resp.ExtInfo = jsonRawFromBytes(article.ExtInfo)
+	resp.AllowComment = h.allowCommentByAreaID(ctx, article.CommentID)
 
 	if len(tags) > 0 {
 		resp.Tags = make([]contract.TagResp, len(tags))
@@ -474,17 +482,18 @@ func (h *ArticleHandler) toArticleListItemResp(ctx context.Context, article *con
 	}
 
 	resp := contract.ArticleListItemResp{
-		ID:          article.ID,
-		Title:       article.Title,
-		ShortURL:    article.ShortURL,
-		Summary:     article.Summary,
-		IsTop:       article.IsTop,
-		IsHot:       article.IsHot,
-		IsOriginal:  article.IsOriginal,
-		IsPublished: article.IsPublished,
-		CreatedAt:   article.CreatedAt,
-		UpdatedAt:   article.UpdatedAt,
-		Tags:        []string{},
+		ID:           article.ID,
+		Title:        article.Title,
+		ShortURL:     article.ShortURL,
+		Summary:      article.Summary,
+		IsTop:        article.IsTop,
+		IsHot:        article.IsHot,
+		AllowComment: h.allowCommentByAreaID(ctx, article.CommentID),
+		IsOriginal:   article.IsOriginal,
+		IsPublished:  article.IsPublished,
+		CreatedAt:    article.CreatedAt,
+		UpdatedAt:    article.UpdatedAt,
+		Tags:         []string{},
 	}
 	resp.CommentID = article.CommentID
 
@@ -533,6 +542,17 @@ func (h *ArticleHandler) toArticleListItemResp(ctx context.Context, article *con
 	}
 
 	return &resp, nil
+}
+
+func (h *ArticleHandler) allowCommentByAreaID(ctx context.Context, areaID *int64) bool {
+	if h.commentRepo == nil || areaID == nil || *areaID <= 0 {
+		return true
+	}
+	area, err := h.commentRepo.GetAreaByID(ctx, *areaID)
+	if err != nil || area == nil {
+		return false
+	}
+	return !area.IsClosed
 }
 func mapTOCNodes(nodes []content.TOCNode) []contract.TOCNode {
 	result := make([]contract.TOCNode, len(nodes))

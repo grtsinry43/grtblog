@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/page"
+	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
@@ -14,11 +15,12 @@ import (
 )
 
 type PageHandler struct {
-	svc *page.Service
+	svc         *page.Service
+	commentRepo domaincomment.CommentRepository
 }
 
-func NewPageHandler(svc *page.Service) *PageHandler {
-	return &PageHandler{svc: svc}
+func NewPageHandler(svc *page.Service, commentRepo domaincomment.CommentRepository) *PageHandler {
+	return &PageHandler{svc: svc, commentRepo: commentRepo}
 }
 
 // CreatePage godoc
@@ -47,14 +49,19 @@ func (h *PageHandler) CreatePage(c *fiber.Ctx) error {
 	}
 
 	cmd := page.CreatePageCmd{
-		Title:       req.Title,
-		Description: req.Description,
-		Content:     req.Content,
-		ShortURL:    req.ShortURL,
-		IsEnabled:   req.IsEnabled,
-		IsBuiltin:   req.IsBuiltin,
-		ExtInfo:     extInfo,
-		CreatedAt:   req.CreatedAt,
+		Title:        req.Title,
+		Description:  req.Description,
+		Content:      req.Content,
+		ShortURL:     req.ShortURL,
+		AllowComment: req.AllowComment,
+		IsEnabled:    req.IsEnabled,
+		IsBuiltin:    req.IsBuiltin,
+		ExtInfo:      extInfo,
+		CreatedAt:    req.CreatedAt,
+	}
+	if cmd.AllowComment == nil {
+		defaultAllow := true
+		cmd.AllowComment = &defaultAllow
 	}
 
 	createdPage, err := h.svc.CreatePage(c.Context(), cmd)
@@ -111,14 +118,15 @@ func (h *PageHandler) UpdatePage(c *fiber.Ctx) error {
 	}
 
 	cmd := page.UpdatePageCmd{
-		ID:          id,
-		Title:       req.Title,
-		Description: req.Description,
-		Content:     req.Content,
-		ShortURL:    req.ShortURL,
-		IsEnabled:   req.IsEnabled,
-		IsBuiltin:   req.IsBuiltin,
-		ExtInfo:     extInfo,
+		ID:           id,
+		Title:        req.Title,
+		Description:  req.Description,
+		Content:      req.Content,
+		ShortURL:     req.ShortURL,
+		AllowComment: req.AllowComment,
+		IsEnabled:    req.IsEnabled,
+		IsBuiltin:    req.IsBuiltin,
+		ExtInfo:      extInfo,
 	}
 
 	updatedPage, err := h.svc.UpdatePage(c.Context(), cmd)
@@ -350,20 +358,22 @@ func (h *PageHandler) toPageResp(ctx context.Context, pageItem *content.Page) (*
 	}
 
 	resp := contract.PageResp{
-		ID:          pageItem.ID,
-		Title:       pageItem.Title,
-		Description: pageItem.Description,
-		AISummary:   pageItem.AISummary,
-		TOC:         mapPageTOCNodes(pageItem.TOC),
-		Content:     pageItem.Content,
-		ContentHash: pageItem.ContentHash,
-		CommentID:   pageItem.CommentID,
-		ShortURL:    pageItem.ShortURL,
-		IsEnabled:   pageItem.IsEnabled,
-		IsBuiltin:   pageItem.IsBuiltin,
-		ExtInfo:     jsonRawFromBytes(pageItem.ExtInfo),
-		CreatedAt:   pageItem.CreatedAt,
-		UpdatedAt:   pageItem.UpdatedAt,
+		ID:           pageItem.ID,
+		Title:        pageItem.Title,
+		Description:  pageItem.Description,
+		AISummary:    pageItem.AISummary,
+		TOC:          mapPageTOCNodes(pageItem.TOC),
+		Content:      pageItem.Content,
+		ContentHash:  pageItem.ContentHash,
+		CommentID:    pageItem.CommentID,
+		ShortURL:     pageItem.ShortURL,
+		IsEnabled:    pageItem.IsEnabled,
+		IsBuiltin:    pageItem.IsBuiltin,
+		IsHot:        false,
+		AllowComment: h.allowCommentByAreaID(ctx, pageItem.CommentID),
+		ExtInfo:      jsonRawFromBytes(pageItem.ExtInfo),
+		CreatedAt:    pageItem.CreatedAt,
+		UpdatedAt:    pageItem.UpdatedAt,
 	}
 
 	if metrics != nil {
@@ -384,14 +394,16 @@ func (h *PageHandler) toPageListItemResp(ctx context.Context, pageItem *content.
 	}
 
 	resp := contract.PageListItemResp{
-		ID:          pageItem.ID,
-		Title:       pageItem.Title,
-		ShortURL:    pageItem.ShortURL,
-		Description: pageItem.Description,
-		IsEnabled:   pageItem.IsEnabled,
-		IsBuiltin:   pageItem.IsBuiltin,
-		CreatedAt:   pageItem.CreatedAt,
-		UpdatedAt:   pageItem.UpdatedAt,
+		ID:           pageItem.ID,
+		Title:        pageItem.Title,
+		ShortURL:     pageItem.ShortURL,
+		Description:  pageItem.Description,
+		IsEnabled:    pageItem.IsEnabled,
+		IsBuiltin:    pageItem.IsBuiltin,
+		IsHot:        false,
+		AllowComment: h.allowCommentByAreaID(ctx, pageItem.CommentID),
+		CreatedAt:    pageItem.CreatedAt,
+		UpdatedAt:    pageItem.UpdatedAt,
 	}
 	resp.CommentID = pageItem.CommentID
 
@@ -414,4 +426,15 @@ func mapPageTOCNodes(nodes []content.TOCNode) []contract.TOCNode {
 		}
 	}
 	return result
+}
+
+func (h *PageHandler) allowCommentByAreaID(ctx context.Context, areaID *int64) bool {
+	if h.commentRepo == nil || areaID == nil || *areaID <= 0 {
+		return true
+	}
+	area, err := h.commentRepo.GetAreaByID(ctx, *areaID)
+	if err != nil || area == nil {
+		return false
+	}
+	return !area.IsClosed
 }

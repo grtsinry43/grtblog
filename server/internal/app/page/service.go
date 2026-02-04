@@ -8,19 +8,21 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/contentutil"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 )
 
 type Service struct {
-	repo   content.Repository
-	events appEvent.Bus
+	repo        content.Repository
+	commentRepo domaincomment.CommentRepository
+	events      appEvent.Bus
 }
 
-func NewService(repo content.Repository, events appEvent.Bus) *Service {
+func NewService(repo content.Repository, commentRepo domaincomment.CommentRepository, events appEvent.Bus) *Service {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
-	return &Service{repo: repo, events: events}
+	return &Service{repo: repo, commentRepo: commentRepo, events: events}
 }
 
 // CreatePage 创建页面
@@ -60,6 +62,9 @@ func (s *Service) CreatePage(ctx context.Context, cmd CreatePageCmd) (*content.P
 	}
 
 	if err := s.repo.CreatePage(ctx, page); err != nil {
+		return nil, err
+	}
+	if err := s.applyCommentAreaStatus(ctx, page.CommentID, cmd.AllowComment); err != nil {
 		return nil, err
 	}
 
@@ -106,6 +111,9 @@ func (s *Service) UpdatePage(ctx context.Context, cmd UpdatePageCmd) (*content.P
 	existing.ExtInfo = cmd.ExtInfo
 
 	if err := s.repo.UpdatePage(ctx, existing); err != nil {
+		return nil, err
+	}
+	if err := s.applyCommentAreaStatus(ctx, existing.CommentID, cmd.AllowComment); err != nil {
 		return nil, err
 	}
 
@@ -205,4 +213,11 @@ func trimPtr(val *string) *string {
 		return nil
 	}
 	return &trimmed
+}
+
+func (s *Service) applyCommentAreaStatus(ctx context.Context, areaID *int64, allowComment *bool) error {
+	if s.commentRepo == nil || areaID == nil || *areaID <= 0 || allowComment == nil {
+		return nil
+	}
+	return s.commentRepo.SetAreaClosed(ctx, *areaID, !*allowComment)
 }

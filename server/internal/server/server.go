@@ -47,8 +47,9 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	sysCfgRepo := persistence.NewSysConfigRepository(db)
 	sysCfgSvc := sysconfig.NewService(sysCfgRepo, cfg.Turnstile)
 	contentRepo := persistence.NewContentRepository(db)
+	commentRepo := persistence.NewCommentRepository(db)
 	eventBus := infraevent.NewInMemoryBus()
-	articleSvc := article.NewService(contentRepo, eventBus)
+	articleSvc := article.NewService(contentRepo, commentRepo, eventBus)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	bodyLimit := sysCfgSvc.UploadMaxSizeBytes(ctx)
