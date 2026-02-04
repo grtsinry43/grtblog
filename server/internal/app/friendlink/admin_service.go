@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 )
@@ -14,13 +16,18 @@ type AdminService struct {
 	appRepo      social.FriendLinkApplicationRepository
 	linkRepo     social.FriendLinkRepository
 	instanceRepo federation.FederationInstanceRepository
+	events       appEvent.Bus
 }
 
-func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo social.FriendLinkRepository, instanceRepo federation.FederationInstanceRepository) *AdminService {
+func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo social.FriendLinkRepository, instanceRepo federation.FederationInstanceRepository, events appEvent.Bus) *AdminService {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &AdminService{
 		appRepo:      appRepo,
 		linkRepo:     linkRepo,
 		instanceRepo: instanceRepo,
+		events:       events,
 	}
 }
 
@@ -98,6 +105,7 @@ func (s *AdminService) ApproveApplication(ctx context.Context, id int64) (*socia
 	if err := s.appRepo.UpdateByID(ctx, app); err != nil {
 		return nil, err
 	}
+	s.publishApplicationStatusEvent(ctx, "friendlink.application.approved", app)
 	return app, nil
 }
 
@@ -114,6 +122,7 @@ func (s *AdminService) RejectApplication(ctx context.Context, id int64) (*social
 	if err := s.appRepo.UpdateByID(ctx, app); err != nil {
 		return nil, err
 	}
+	s.publishApplicationStatusEvent(ctx, "friendlink.application.rejected", app)
 	return app, nil
 }
 
@@ -130,6 +139,7 @@ func (s *AdminService) BlockApplication(ctx context.Context, id int64) (*social.
 	if app.ApplyChannel == social.FriendLinkApplyChannelFederation {
 		_ = s.blockFederationInstance(ctx, app.URL)
 	}
+	s.publishApplicationStatusEvent(ctx, "friendlink.application.blocked", app)
 	return app, nil
 }
 
@@ -347,6 +357,29 @@ func (s *AdminService) ensureFriendLink(ctx context.Context, app *social.FriendL
 	link.UserID = app.UserID
 	link.IsActive = true
 	return s.linkRepo.Update(ctx, link)
+}
+
+func (s *AdminService) publishApplicationStatusEvent(ctx context.Context, name string, app *social.FriendLinkApplication) {
+	if app == nil {
+		return
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: name,
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":     app.ID,
+			"URL":    app.URL,
+			"Status": app.Status,
+			"Name":   toValue(app.Name),
+		},
+	})
+}
+
+func toValue(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
 }
 
 func (s *AdminService) deactivateFriendLink(ctx context.Context, url string) error {

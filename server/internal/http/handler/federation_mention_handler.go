@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
@@ -24,6 +25,7 @@ type FederationMentionHandler struct {
 	userRepo     identity.Repository
 	resolver     *fedinfra.Resolver
 	verifier     *fedinfra.Verifier
+	events       appEvent.Bus
 }
 
 func NewFederationMentionHandler(
@@ -33,7 +35,11 @@ func NewFederationMentionHandler(
 	userRepo identity.Repository,
 	resolver *fedinfra.Resolver,
 	verifier *fedinfra.Verifier,
+	events appEvent.Bus,
 ) *FederationMentionHandler {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &FederationMentionHandler{
 		cfgSvc:       cfgSvc,
 		instanceRepo: instanceRepo,
@@ -41,6 +47,7 @@ func NewFederationMentionHandler(
 		userRepo:     userRepo,
 		resolver:     resolver,
 		verifier:     verifier,
+		events:       events,
 	}
 }
 
@@ -136,5 +143,15 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 		Delivered: true,
 	}
 	log.Printf("[federation] 入站 提及通知 source=%s mentioned=%s mention_id=%d key_id=%s", payload.SourceInstanceURL, payload.MentionedUser, mention.ID, signature.KeyID)
+	_ = h.events.Publish(c.Context(), appEvent.Generic{
+		EventName: "federation.mention.received",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"MentionID":         mention.ID,
+			"SourceInstanceURL": payload.SourceInstanceURL,
+			"MentionedUser":     payload.MentionedUser,
+			"KeyID":             signature.KeyID,
+		},
+	})
 	return response.Success(c, resp)
 }

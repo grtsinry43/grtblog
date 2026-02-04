@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminstats"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
@@ -37,6 +38,10 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	oauthRepo := persistence.NewOAuthProviderRepository(deps.DB)
 	adminOAuth := handler.NewAdminOAuthHandler(oauthRepo)
 	admin := adminGroup.Group("/admin")
+	eventHandler := handler.NewEventHandler()
+	admin.Get("/events", eventHandler.ListEvents)
+	admin.Get("/events/catalog", eventHandler.ListEventCatalog)
+	admin.Get("/events/catalog/:name", eventHandler.GetEventCatalogItem)
 	admin.Get("/oauth-providers", adminOAuth.List)
 	admin.Post("/oauth-providers", adminOAuth.Create)
 	admin.Put("/oauth-providers/:key", adminOAuth.Update)
@@ -56,6 +61,20 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		sysConfigHandler := handler.NewSysConfigHandler(sysCfgSvc)
 		admin.Get("/sysconfig", sysConfigHandler.ListSysConfig)
 		admin.Put("/sysconfig", sysConfigHandler.UpdateSysConfig)
+
+		emailRepo := persistence.NewEmailRepository(deps.DB)
+		emailSender := email.NewSender(sysCfgSvc)
+		websiteInfoRepo := persistence.NewWebsiteInfoRepository(deps.DB)
+		emailSvc := email.NewService(emailRepo, emailSender, websiteInfoRepo)
+		emailHandler := handler.NewEmailTemplateHandler(emailSvc)
+		admin.Get("/email/templates", emailHandler.ListEmailTemplates)
+		admin.Post("/email/templates", emailHandler.CreateEmailTemplate)
+		admin.Put("/email/templates/:code", emailHandler.UpdateEmailTemplate)
+		admin.Delete("/email/templates/:code", emailHandler.DeleteEmailTemplate)
+		admin.Post("/email/templates/:code/preview", emailHandler.PreviewEmailTemplate)
+		admin.Post("/email/templates/:code/test", emailHandler.TestEmailTemplate)
+		admin.Get("/email/subscriptions", emailHandler.ListEmailSubscriptions)
+		admin.Put("/email/subscriptions/status", emailHandler.BatchUpdateEmailSubscriptionStatus)
 	}
 
 	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
@@ -72,7 +91,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	}
 	resolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
 	outbound := appfed.NewOutboundService(fedCfgSvc, resolver, instanceRepo)
-	federationAdminHandler := handler.NewFederationAdminHandler(fedCfgSvc, contentRepo, outbound, resolver)
+	federationAdminHandler := handler.NewFederationAdminHandler(fedCfgSvc, contentRepo, outbound, resolver, deps.EventBus)
 	admin.Post("/federation/friendlinks/request", federationAdminHandler.RequestFriendLink)
 	admin.Post("/federation/citations/request", federationAdminHandler.SendCitation)
 	admin.Post("/federation/mentions/notify", federationAdminHandler.SendMention)
@@ -84,7 +103,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	friendLinkAppRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
-	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo)
+	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo, deps.EventBus)
 	friendLinkAdminHandler := handler.NewFriendLinkAdminHandler(friendLinkAdminSvc)
 	admin.Get("/friend-links/applications", friendLinkAdminHandler.ListApplications)
 	admin.Put("/friend-links/applications/:id/approve", friendLinkAdminHandler.ApproveApplication)
@@ -98,7 +117,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Delete("/friend-links/:id", friendLinkAdminHandler.DeleteFriendLink)
 
 	logHandler := handler.NewAdminLogHandler("storage/logs/app.log", 200)
-	systemHandler := handler.NewSystemHandler(deps.DB, deps.Redis)
+	systemHandler := handler.NewSystemHandler(deps.DB, deps.Redis, deps.EventBus)
 	adminStatsSvc := adminstats.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, wsManager)
 	adminStatsHandler := handler.NewAdminStatsHandler(adminStatsSvc)
 	adminLogs := adminGroup.Group("/admin")

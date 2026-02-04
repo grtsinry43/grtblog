@@ -358,6 +358,78 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     component: 'webhooks/index',
   },
   {
+    path: 'email',
+    name: 'emailManagement',
+    icon: 'iconify ph--envelope',
+    label: '邮件管理',
+    redirect: 'email/templates',
+    children: [
+      {
+        path: 'templates',
+        name: 'emailTemplateList',
+        label: '邮件模版',
+        icon: 'iconify ph--scroll',
+        meta: {
+          componentName: 'EmailTemplateList',
+          showTab: true,
+        },
+        component: 'email/templates/index',
+      },
+      {
+        path: 'templates/new',
+        name: 'emailTemplateCreate',
+        label: '新建模版',
+        show: false,
+        meta: {
+          componentName: 'EmailTemplateEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle() {
+            return '新建模版'
+          },
+        },
+        component: 'email/templates/edit',
+      },
+      {
+        path: 'templates/:code',
+        name: 'emailTemplateEdit',
+        label: '编辑模版',
+        show: false,
+        meta: {
+          componentName: 'EmailTemplateEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle({ code }) {
+            return `编辑模版-${code}`
+          },
+        },
+        component: 'email/templates/edit',
+      },
+      {
+        path: 'subscriptions',
+        name: 'emailSubscriptionList',
+        label: '订阅管理',
+        icon: 'iconify ph--users',
+        meta: {
+          componentName: 'EmailSubscriptionList',
+          showTab: true,
+        },
+        component: 'email/subscriptions/index',
+      },
+      {
+        path: 'test',
+        name: 'emailTest',
+        label: '邮件测试',
+        icon: 'iconify ph--paper-plane-tilt',
+        meta: {
+          componentName: 'EmailTest',
+          showTab: true,
+        },
+        component: 'email/test/index',
+      },
+    ],
+  },
+  {
     path: 'navigation',
     name: 'navMenuManagement',
     icon: 'iconify ph--list',
@@ -447,6 +519,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
           showTab: true,
         },
         component: 'monitoring/index',
+      },
+      {
+        path: 'logs',
+        name: 'systemLogs',
+        label: '系统日志',
+        icon: 'iconify ph--scroll',
+        meta: {
+          componentName: 'SystemLogs',
+          showTab: true,
+        },
+        component: 'monitoring/logs',
       },
     ],
   },

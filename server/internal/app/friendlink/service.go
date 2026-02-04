@@ -4,16 +4,22 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 )
 
 type Service struct {
-	repo social.FriendLinkApplicationRepository
+	repo   social.FriendLinkApplicationRepository
+	events appEvent.Bus
 }
 
-func NewService(repo social.FriendLinkApplicationRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo social.FriendLinkApplicationRepository, events appEvent.Bus) *Service {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
+	return &Service{repo: repo, events: events}
 }
 
 type SubmitCmd struct {
@@ -54,6 +60,7 @@ func (s *Service) Submit(ctx context.Context, cmd SubmitCmd) (*SubmitResult, err
 		if err := s.repo.Create(ctx, app); err != nil {
 			return nil, err
 		}
+		s.publishApplicationEvent(ctx, "friendlink.application.created", app)
 		return &SubmitResult{Application: *app, Created: true}, nil
 	}
 
@@ -74,7 +81,31 @@ func (s *Service) Submit(ctx context.Context, cmd SubmitCmd) (*SubmitResult, err
 	if err := s.repo.Update(ctx, existing); err != nil {
 		return nil, err
 	}
+	s.publishApplicationEvent(ctx, "friendlink.application.created", existing)
 	return &SubmitResult{Application: *existing, Created: false}, nil
+}
+
+func (s *Service) publishApplicationEvent(ctx context.Context, name string, app *social.FriendLinkApplication) {
+	if app == nil {
+		return
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: name,
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":     app.ID,
+			"URL":    app.URL,
+			"Name":   derefString(app.Name),
+			"Status": app.Status,
+		},
+	})
+}
+
+func derefString(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
 }
 
 func toOptionalString(val string) *string {

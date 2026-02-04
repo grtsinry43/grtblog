@@ -53,3 +53,9 @@ export interface SystemStatus {
 export function getSystemStatus() {
   return request<SystemStatus>('/admin/system/status')
 }
+
+export type SystemLogs = string[]
+
+export function getSystemLogs() {
+  return request<SystemLogs>('/admin/logs')
+}

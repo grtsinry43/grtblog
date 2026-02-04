@@ -4,17 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 )
 
 // Service 编排 WebsiteInfo 相关用例。
 type Service struct {
-	repo config.WebsiteInfoRepository
+	repo   config.WebsiteInfoRepository
+	events appEvent.Bus
 }
 
-func NewService(repo config.WebsiteInfoRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo config.WebsiteInfoRepository, events appEvent.Bus) *Service {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
+	return &Service{repo: repo, events: events}
 }
 
 type CreateCmd struct {
@@ -45,6 +51,7 @@ func (s *Service) Create(ctx context.Context, cmd CreateCmd) (*config.WebsiteInf
 	if err := s.repo.Create(ctx, info); err != nil {
 		return nil, err
 	}
+	s.publishUpdated(ctx, info)
 	return info, nil
 }
 
@@ -63,6 +70,7 @@ func (s *Service) Update(ctx context.Context, cmd UpdateCmd) (*config.WebsiteInf
 	if err := s.repo.Update(ctx, info); err != nil {
 		return nil, err
 	}
+	s.publishUpdated(ctx, info)
 	return info, nil
 }
 
@@ -89,4 +97,27 @@ func rawMessageOrNil(value *json.RawMessage) json.RawMessage {
 	copied := make(json.RawMessage, len(*value))
 	copy(copied, *value)
 	return copied
+}
+
+func (s *Service) publishUpdated(ctx context.Context, info *config.WebsiteInfo) {
+	if info == nil {
+		return
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "websiteinfo.updated",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"Key":      info.Key,
+			"Name":     toString(info.Name),
+			"Value":    toString(info.Value),
+			"InfoJSON": string(info.InfoJSON),
+		},
+	})
+}
+
+func toString(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
 }

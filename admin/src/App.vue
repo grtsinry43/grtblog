@@ -24,6 +24,18 @@ import type { LayoutSlideDirection } from './injection'
 
 const { watermark, noise } = storeToRefs(usePreferencesStore())
 
+import hljs from 'highlight.js/lib/core'
+import javascript from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+import xml from 'highlight.js/lib/languages/xml'
+import css from 'highlight.js/lib/languages/css'
+
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('html', xml)
+hljs.registerLanguage('css', css)
+
 const configProviderProps = getConfigProviderProps()
 
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -57,7 +69,7 @@ provide(layoutInjectionKey, {
 </script>
 
 <template>
-  <NConfigProvider v-bind="configProviderProps">
+  <NConfigProvider v-bind="configProviderProps" :hljs="hljs">
     <NGlobalStyle />
     <NEl>
       <NModalProvider>

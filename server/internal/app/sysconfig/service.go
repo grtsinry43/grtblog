@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/turnstile"
@@ -18,12 +19,17 @@ import (
 type Service struct {
 	repo             domainconfig.SysConfigRepository
 	defaultTurnstile config.TurnstileConfig
+	events           appEvent.Bus
 }
 
-func NewService(repo domainconfig.SysConfigRepository, defaults config.TurnstileConfig) *Service {
+func NewService(repo domainconfig.SysConfigRepository, defaults config.TurnstileConfig, events appEvent.Bus) *Service {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &Service{
 		repo:             repo,
 		defaultTurnstile: defaults,
+		events:           events,
 	}
 }
 
@@ -268,6 +274,217 @@ func (s *Service) WebhookSettings(ctx context.Context) (WebhookSettings, error) 
 	}
 
 	return settings, nil
+}
+
+const (
+	EmailTLSModeNone     = "none"
+	EmailTLSModeStartTLS = "starttls"
+	EmailTLSModeTLS      = "tls"
+)
+
+type EmailSettings struct {
+	Enabled      bool
+	FromAddress  string
+	FromName     string
+	DefaultTo    []string
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUsername string
+	SMTPPassword string
+	TLSMode      string
+	Timeout      time.Duration
+	Workers      int
+	QueueSize    int
+	MaxRetries   int
+}
+
+// EmailSettings 返回邮件发送配置，优先读取 sys_config，未配置时回退默认值。
+// 约定 key：
+// - email.enabled
+// - email.from.address
+// - email.from.name
+// - email.defaultTo
+// - email.smtp.host
+// - email.smtp.port
+// - email.smtp.username
+// - email.smtp.password
+// - email.smtp.tlsMode
+// - email.send.timeoutSeconds
+// - email.send.workers
+// - email.send.queueSize
+// - email.send.maxRetries
+func (s *Service) EmailSettings(ctx context.Context) (EmailSettings, error) {
+	settings := EmailSettings{
+		Enabled:      false,
+		FromAddress:  "",
+		FromName:     "",
+		DefaultTo:    []string{},
+		SMTPHost:     "",
+		SMTPPort:     587,
+		SMTPUsername: "",
+		SMTPPassword: "",
+		TLSMode:      EmailTLSModeStartTLS,
+		Timeout:      10 * time.Second,
+		Workers:      2,
+		QueueSize:    200,
+		MaxRetries:   3,
+	}
+
+	applyString := func(key string, apply func(string) error) error {
+		cfg, err := s.repo.GetByKey(ctx, key)
+		if err != nil {
+			if err == domainconfig.ErrSysConfigNotFound {
+				return nil
+			}
+			return fmt.Errorf("load %s: %w", key, err)
+		}
+		value := strings.TrimSpace(cfg.Value)
+		if value == "" {
+			return nil
+		}
+		return apply(value)
+	}
+	applyInt := func(key string, apply func(int) error) error {
+		return applyString(key, func(value string) error {
+			parsed, err := strconv.Atoi(value)
+			if err != nil {
+				return fmt.Errorf("parse %s: %w", key, err)
+			}
+			return apply(parsed)
+		})
+	}
+
+	if err := applyString("email.enabled", func(value string) error {
+		parsed, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("parse email.enabled: %w", err)
+		}
+		settings.Enabled = parsed
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyString("email.from.address", func(value string) error {
+		settings.FromAddress = value
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyString("email.from.name", func(value string) error {
+		settings.FromName = value
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyString("email.defaultTo", func(value string) error {
+		settings.DefaultTo = parseCSVValues(value)
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyString("email.smtp.host", func(value string) error {
+		settings.SMTPHost = value
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyInt("email.smtp.port", func(value int) error {
+		if value > 0 {
+			settings.SMTPPort = value
+		}
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyString("email.smtp.username", func(value string) error {
+		settings.SMTPUsername = value
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyString("email.smtp.password", func(value string) error {
+		settings.SMTPPassword = value
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyString("email.smtp.tlsMode", func(value string) error {
+		switch strings.ToLower(value) {
+		case EmailTLSModeNone, EmailTLSModeStartTLS, EmailTLSModeTLS:
+			settings.TLSMode = strings.ToLower(value)
+			return nil
+		default:
+			return fmt.Errorf("unsupported tls mode: %s", value)
+		}
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyInt("email.send.timeoutSeconds", func(value int) error {
+		if value > 0 {
+			settings.Timeout = time.Duration(value) * time.Second
+		}
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyInt("email.send.workers", func(value int) error {
+		if value > 0 {
+			settings.Workers = value
+		}
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyInt("email.send.queueSize", func(value int) error {
+		if value > 0 {
+			settings.QueueSize = value
+		}
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+	if err := applyInt("email.send.maxRetries", func(value int) error {
+		if value > 0 {
+			settings.MaxRetries = value
+		}
+		return nil
+	}); err != nil {
+		return settings, err
+	}
+
+	return settings, nil
+}
+
+func parseCSVValues(raw string) []string {
+	parts := strings.Split(raw, ",")
+	result := make([]string, 0, len(parts))
+	seen := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item == "" {
+			continue
+		}
+		if _, ok := seen[item]; ok {
+			continue
+		}
+		seen[item] = struct{}{}
+		result = append(result, item)
+	}
+	return result
+}
+
+// EmailSubscriptionBlockedIPs 返回邮件订阅接口的 IP 黑名单。
+// 约定 key：
+// - email.subscription.blockedIPs: 逗号分隔 IP 列表
+func (s *Service) EmailSubscriptionBlockedIPs(ctx context.Context) ([]string, error) {
+	cfg, err := s.repo.GetByKey(ctx, "email.subscription.blockedIPs")
+	if err != nil {
+		if err == domainconfig.ErrSysConfigNotFound {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	return parseCSVValues(cfg.Value), nil
 }
 
 type UpdateItem struct {
@@ -591,6 +808,20 @@ func (s *Service) UpdateConfigs(ctx context.Context, items []UpdateItem) ([]doma
 
 	if err := s.repo.Upsert(ctx, toUpsert); err != nil {
 		return nil, err
+	}
+	if len(toUpsert) > 0 {
+		keys := make([]string, 0, len(toUpsert))
+		for _, item := range toUpsert {
+			keys = append(keys, item.Key)
+		}
+		_ = s.events.Publish(ctx, appEvent.Generic{
+			EventName: "sysconfig.updated",
+			At:        time.Now(),
+			Payload: map[string]any{
+				"Keys":  keys,
+				"Count": len(keys),
+			},
+		})
 	}
 	return s.repo.List(ctx, nil)
 }
