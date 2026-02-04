@@ -12,8 +12,8 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
 
-func registerWSRoutes(v2 fiber.Router, manager *ws.Manager) {
-	wsHandler := handler.NewWSHandler(manager)
+func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
+	wsHandler := handler.NewWSHandler(manager, deps.Analytics)
 
 	v2.Use("/ws", func(c *fiber.Ctx) error {
 		if !websocket.IsWebSocketUpgrade(c) {

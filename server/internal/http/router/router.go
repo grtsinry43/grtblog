@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
@@ -38,6 +39,7 @@ type Dependencies struct {
 	SysConfig  *sysconfig.Service
 	EventBus   appEvent.Bus
 	Redis      *redis.Client
+	Analytics  *analytics.Service
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -103,10 +105,16 @@ func Register(app *fiber.App, deps Dependencies) {
 	navMenuSvc := appnav.NewService(navMenuRepo)
 	navMenuHandler := handler.NewNavMenuHandler(navMenuSvc)
 
+	analyticsSvc := deps.Analytics
+	if analyticsSvc == nil {
+		analyticsSvc = analytics.NewService(deps.Config, deps.DB, deps.Redis)
+	}
+	deps.Analytics = analyticsSvc
+
 	registerPublicRoutes(v2, deps, websiteInfoHandler, htmlSnapshotSvc, navMenuHandler)
 	registerAuthRoutes(v2, deps, sysCfgSvc)
 	deps.EventBus = eventBus
-	registerWSRoutes(v2, wsManager)
+	registerWSRoutes(v2, wsManager, deps)
 	registerArticlePublicRoutes(v2, deps)
 	registerMomentPublicRoutes(v2, deps)
 	registerThinkingPublicRoutes(v2, deps)
@@ -119,7 +127,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	registerThinkingAuthRoutes(v2, deps)
 	registerPageAuthRoutes(v2, deps)
 	registerCommentAuthRoutes(v2, deps)
-	registerAdminRoutes(v2, deps, websiteInfoHandler, navMenuHandler, sysCfgSvc)
+	registerAdminRoutes(v2, deps, websiteInfoHandler, navMenuHandler, sysCfgSvc, wsManager)
 	registerTaxonomyAdminRoutes(v2, deps)
 	registerWebhookAdminRoutes(v2, deps, webhookSvc)
 

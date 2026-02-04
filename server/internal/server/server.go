@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
@@ -37,6 +38,7 @@ type Server struct {
 	cancel     context.CancelFunc
 	articleSvc *article.Service
 	sysCfgSvc  *sysconfig.Service
+	analytics  *analytics.Service
 }
 
 // New builds a Fiber server with registered routes and middlewares.
@@ -109,6 +111,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		DB:       cfg.Redis.DB,
 	})
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
+	analyticsSvc := analytics.NewService(cfg, db, redisClient)
 
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Locals("requestId") == nil {
@@ -130,6 +133,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		SysConfig:  sysCfgSvc,
 		EventBus:   eventBus,
 		Redis:      redisClient,
+		Analytics:  analyticsSvc,
 	})
 
 	return &Server{
@@ -141,6 +145,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		cancel:     cancel,
 		articleSvc: articleSvc,
 		sysCfgSvc:  sysCfgSvc,
+		analytics:  analyticsSvc,
 	}
 }
 
@@ -148,6 +153,9 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 func (s *Server) Start() error {
 	// 启动热门文章同步任务
 	go s.runHotArticleSyncWorker()
+	if s.analytics != nil {
+		go s.analytics.RunViewEventWorker(s.ctx)
+	}
 
 	addr := fmt.Sprintf(":%s", s.cfg.App.Port)
 	return s.app.Listen(addr)

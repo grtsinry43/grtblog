@@ -6,17 +6,20 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminstats"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/hitokoto"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
+	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
 
-func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, navMenuHandler *handler.NavMenuHandler, sysCfgSvc *sysconfig.Service) {
+func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, navMenuHandler *handler.NavMenuHandler, sysCfgSvc *sysconfig.Service, wsManager *ws.Manager) {
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))
 
@@ -65,6 +68,10 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/federation/mentions/notify", federationAdminHandler.SendMention)
 	admin.Get("/federation/remote/check", federationAdminHandler.CheckRemote)
 
+	hitokotoSvc := hitokoto.NewService(deps.Redis, deps.Config.Redis.Prefix)
+	hitokotoHandler := handler.NewAdminHitokotoHandler(hitokotoSvc)
+	admin.Get("/hitokoto", hitokotoHandler.GetSentence)
+
 	friendLinkAppRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
 	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo)
@@ -82,7 +89,10 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	logHandler := handler.NewAdminLogHandler("storage/logs/app.log", 200)
 	systemHandler := handler.NewSystemHandler(deps.DB, deps.Redis)
+	adminStatsSvc := adminstats.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, wsManager)
+	adminStatsHandler := handler.NewAdminStatsHandler(adminStatsSvc)
 	adminLogs := adminGroup.Group("/admin")
 	adminLogs.Get("/logs", logHandler.List)
 	adminLogs.Get("/system/status", systemHandler.GetStatus)
+	adminLogs.Get("/stats/dashboard", adminStatsHandler.GetDashboard)
 }

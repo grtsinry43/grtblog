@@ -1363,6 +1363,31 @@
                 }
             }
         },
+        "/admin/stats/dashboard": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取后台总览、互动总量、趋势、分布与热门内容等统计数据（含 Redis 缓存）。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Stats"
+                ],
+                "summary": "获取后台仪表盘统计",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.AdminDashboardStatsEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/sysconfig": {
             "get": {
                 "security": [
@@ -3278,6 +3303,39 @@
                 }
             }
         },
+        "/public/analytics/view": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "记录详情页访问埋点",
+                "parameters": [
+                    {
+                        "description": "埋点参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.TrackViewReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.TrackViewEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/public/articles/recent": {
             "get": {
                 "produces": [
@@ -3863,6 +3921,329 @@
         }
     },
     "definitions": {
+        "adminstats.DashboardStats": {
+            "type": "object",
+            "properties": {
+                "browserTop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DistributionItem"
+                    }
+                },
+                "cached": {
+                    "type": "boolean"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DistributionItem"
+                    }
+                },
+                "columns": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DistributionItem"
+                    }
+                },
+                "commentTrend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DayCountPoint"
+                    }
+                },
+                "currentOnline": {
+                    "type": "integer"
+                },
+                "generatedAt": {
+                    "type": "string"
+                },
+                "interaction": {
+                    "$ref": "#/definitions/adminstats.InteractionStats"
+                },
+                "locationTop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DistributionItem"
+                    }
+                },
+                "online24h": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.OnlineTrendPoint"
+                    }
+                },
+                "overview": {
+                    "$ref": "#/definitions/adminstats.OverviewStats"
+                },
+                "pending": {
+                    "$ref": "#/definitions/adminstats.PendingStats"
+                },
+                "platformTop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DistributionItem"
+                    }
+                },
+                "tagTop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DistributionItem"
+                    }
+                },
+                "todayPeakOnline": {
+                    "type": "integer"
+                },
+                "topArticles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.HotContentItem"
+                    }
+                },
+                "topMoments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.HotContentItem"
+                    }
+                },
+                "topPages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.HotContentItem"
+                    }
+                },
+                "topThinkings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.HotContentItem"
+                    }
+                },
+                "trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.PublishTrendPoint"
+                    }
+                },
+                "viewTrend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adminstats.DayCountPoint"
+                    }
+                },
+                "words": {
+                    "$ref": "#/definitions/adminstats.WordCountStats"
+                }
+            }
+        },
+        "adminstats.DayCountPoint": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                }
+            }
+        },
+        "adminstats.DistributionItem": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "adminstats.HotContentItem": {
+            "type": "object",
+            "properties": {
+                "comments": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "shortUrl": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "views": {
+                    "type": "integer"
+                }
+            }
+        },
+        "adminstats.InteractionStats": {
+            "type": "object",
+            "properties": {
+                "articleComments": {
+                    "type": "integer"
+                },
+                "articleLikes": {
+                    "type": "integer"
+                },
+                "articleViews": {
+                    "type": "integer"
+                },
+                "commentsTotal": {
+                    "type": "integer"
+                },
+                "likesTotal": {
+                    "type": "integer"
+                },
+                "momentComments": {
+                    "type": "integer"
+                },
+                "momentLikes": {
+                    "type": "integer"
+                },
+                "momentViews": {
+                    "type": "integer"
+                },
+                "pageComments": {
+                    "type": "integer"
+                },
+                "pageLikes": {
+                    "type": "integer"
+                },
+                "pageViews": {
+                    "type": "integer"
+                },
+                "thinkingComments": {
+                    "type": "integer"
+                },
+                "thinkingLikes": {
+                    "type": "integer"
+                },
+                "thinkingViews": {
+                    "type": "integer"
+                },
+                "viewsTotal": {
+                    "type": "integer"
+                }
+            }
+        },
+        "adminstats.OnlineTrendPoint": {
+            "type": "object",
+            "properties": {
+                "avg": {
+                    "type": "number"
+                },
+                "hour": {
+                    "type": "string"
+                },
+                "peak": {
+                    "type": "integer"
+                }
+            }
+        },
+        "adminstats.OverviewStats": {
+            "type": "object",
+            "properties": {
+                "articlesDraft": {
+                    "type": "integer"
+                },
+                "articlesPublished": {
+                    "type": "integer"
+                },
+                "articlesTotal": {
+                    "type": "integer"
+                },
+                "categoriesTotal": {
+                    "type": "integer"
+                },
+                "columnsTotal": {
+                    "type": "integer"
+                },
+                "momentsDraft": {
+                    "type": "integer"
+                },
+                "momentsPublished": {
+                    "type": "integer"
+                },
+                "momentsTotal": {
+                    "type": "integer"
+                },
+                "pagesEnabled": {
+                    "type": "integer"
+                },
+                "pagesTotal": {
+                    "type": "integer"
+                },
+                "tagsTotal": {
+                    "type": "integer"
+                },
+                "thinkingsTotal": {
+                    "type": "integer"
+                },
+                "users": {
+                    "type": "integer"
+                }
+            }
+        },
+        "adminstats.PendingStats": {
+            "type": "object",
+            "properties": {
+                "friendLinkApplications": {
+                    "type": "integer"
+                },
+                "unviewedComments": {
+                    "type": "integer"
+                }
+            }
+        },
+        "adminstats.PublishTrendPoint": {
+            "type": "object",
+            "properties": {
+                "articles": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "moments": {
+                    "type": "integer"
+                },
+                "pages": {
+                    "type": "integer"
+                },
+                "thinkings": {
+                    "type": "integer"
+                }
+            }
+        },
+        "adminstats.WordCountStats": {
+            "type": "object",
+            "properties": {
+                "articles": {
+                    "type": "integer"
+                },
+                "moments": {
+                    "type": "integer"
+                },
+                "pages": {
+                    "type": "integer"
+                },
+                "thinkings": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "contract.ArticleListItemResp": {
             "type": "object",
             "properties": {
@@ -6076,6 +6457,31 @@
                 }
             }
         },
+        "contract.TrackViewReq": {
+            "type": "object",
+            "properties": {
+                "contentId": {
+                    "type": "integer"
+                },
+                "contentType": {
+                    "type": "string"
+                },
+                "visitorId": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.TrackViewResp": {
+            "type": "object",
+            "properties": {
+                "queued": {
+                    "type": "boolean"
+                },
+                "visitorId": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.TurnstileStateResp": {
             "type": "object",
             "properties": {
@@ -6671,6 +7077,26 @@
                 }
             }
         },
+        "handler.AdminDashboardStatsEnvelope": {
+            "type": "object",
+            "properties": {
+                "bizErr": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/adminstats.DashboardStats"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.AdminGenericMessageEnvelope": {
             "type": "object",
             "properties": {
@@ -7036,6 +7462,26 @@
                 },
                 "data": {
                     "$ref": "#/definitions/handler.SystemStatus"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TrackViewEnvelope": {
+            "type": "object",
+            "properties": {
+                "bizErr": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/contract.TrackViewResp"
                 },
                 "meta": {
                     "$ref": "#/definitions/response.Meta"

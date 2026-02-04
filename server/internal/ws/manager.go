@@ -14,6 +14,7 @@ type Manager struct {
 	roomTTL         time.Duration
 	cleanupInterval time.Duration
 	done            chan struct{}
+	currentOnline   int64
 }
 
 type Config struct {
@@ -87,6 +88,7 @@ func (m *Manager) Join(roomKey string, conn *websocket.Conn) (*Client, [][]byte)
 		cached[i] = append([]byte(nil), msg.payload...)
 	}
 	rm.mu.Unlock()
+	m.currentOnline++
 	m.mu.Unlock()
 
 	return cl, cached
@@ -103,9 +105,17 @@ func (m *Manager) Leave(roomKey string, cl *Client) {
 		return
 	}
 	rm.mu.Lock()
+	_, existed := rm.clients[cl]
 	delete(rm.clients, cl)
 	rm.lastActivity = time.Now()
 	rm.mu.Unlock()
+	if existed {
+		m.mu.Lock()
+		if m.currentOnline > 0 {
+			m.currentOnline--
+		}
+		m.mu.Unlock()
+	}
 }
 
 func (m *Manager) Broadcast(roomKey string, payload []byte) {
@@ -140,6 +150,12 @@ func (m *Manager) Broadcast(roomKey string, payload []byte) {
 
 func (m *Manager) Close() {
 	close(m.done)
+}
+
+func (m *Manager) CurrentConnections() int64 {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.currentOnline
 }
 
 func (c *Client) Write(payload []byte) error {
