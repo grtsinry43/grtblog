@@ -23,6 +23,7 @@ const message = useMessage()
 const formRef = ref<FormInst | null>(null)
 const formValue = ref({
   content: '',
+  allowComment: true,
 })
 const saving = ref(false)
 
@@ -33,6 +34,7 @@ onMounted(() => {
   if (id.value) {
     getThinking(Number(id.value)).then((res) => {
       formValue.value.content = res.content
+      formValue.value.allowComment = res.allowComment
     })
   }
 })
@@ -41,10 +43,16 @@ async function handleSave() {
   try {
     saving.value = true
     if (isCreating.value) {
-      await createThinking({ content: formValue.value.content })
+      await createThinking({
+        content: formValue.value.content,
+        allowComment: formValue.value.allowComment,
+      })
       message.success('创建成功')
     } else {
-      await updateThinking(Number(id.value), { content: formValue.value.content })
+      await updateThinking(Number(id.value), {
+        content: formValue.value.content,
+        allowComment: formValue.value.allowComment,
+      })
       message.success('更新成功')
     }
     router.push({ name: 'thinkingList' })
@@ -67,6 +75,12 @@ async function handleSave() {
             placeholder="分享一些思考..."
             :autosize="{ minRows: 5, maxRows: 15 }"
           />
+        </NFormItem>
+        <NFormItem label="选项">
+           <div class="flex items-center gap-2">
+            <span class="text-sm">允许评论</span>
+            <NSwitch v-model:value="formValue.allowComment" />
+           </div>
         </NFormItem>
       </NForm>
       <template #footer>

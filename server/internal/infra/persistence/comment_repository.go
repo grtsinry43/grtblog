@@ -37,6 +37,13 @@ func (r *CommentRepository) GetAreaByID(ctx context.Context, id int64) (*comment
 	return mapCommentAreaToDomain(*rec), nil
 }
 
+func (r *CommentRepository) SetAreaClosed(ctx context.Context, areaID int64, isClosed bool) error {
+	return r.db.WithContext(ctx).
+		Model(&model.CommentArea{}).
+		Where("id = ?", areaID).
+		Update("is_closed", isClosed).Error
+}
+
 func (r *CommentRepository) FindByID(ctx context.Context, id int64) (*comment.Comment, error) {
 	rec, err := r.commentDB.FirstByID(ctx, id)
 	if err != nil {
@@ -49,10 +56,10 @@ func (r *CommentRepository) FindByID(ctx context.Context, id int64) (*comment.Co
 	return &entity, nil
 }
 
-func (r *CommentRepository) ListByAreaID(ctx context.Context, areaID int64) ([]*comment.Comment, error) {
+func (r *CommentRepository) ListPublicByAreaID(ctx context.Context, options comment.PublicListOptions) ([]*comment.Comment, error) {
 	var recs []model.Comment
-	if err := r.db.WithContext(ctx).
-		Where("area_id = ?", areaID).
+	if err := r.db.WithContext(ctx).Unscoped().
+		Where("area_id = ? AND status = ?", options.AreaID, comment.CommentStatusApproved).
 		Order("is_top DESC, created_at ASC").
 		Find(&recs).Error; err != nil {
 		return nil, err
@@ -63,6 +70,74 @@ func (r *CommentRepository) ListByAreaID(ctx context.Context, areaID int64) ([]*
 		out[i] = &entity
 	}
 	return out, nil
+}
+
+func (r *CommentRepository) ListForAdmin(ctx context.Context, options comment.AdminListOptions) ([]*comment.Comment, int64, error) {
+	query := r.db.WithContext(ctx).Unscoped().Model(&model.Comment{}).
+		Joins("JOIN comment_area ON comment_area.id = comment.area_id AND comment_area.deleted_at IS NULL").
+		Joins("LEFT JOIN article ON article.comment_id = comment_area.id AND comment_area.area_type = ? AND article.deleted_at IS NULL", "article").
+		Joins("LEFT JOIN moment ON moment.comment_id = comment_area.id AND comment_area.area_type = ? AND moment.deleted_at IS NULL", "moment").
+		Joins("LEFT JOIN page ON page.comment_id = comment_area.id AND comment_area.area_type = ? AND page.deleted_at IS NULL", "page").
+		Joins("LEFT JOIN thinking ON thinking.comment_id = comment_area.id AND comment_area.area_type = ?", "thinking").
+		Where(
+			"(comment_area.area_type = ? AND article.id IS NOT NULL) OR "+
+				"(comment_area.area_type = ? AND moment.id IS NOT NULL) OR "+
+				"(comment_area.area_type = ? AND page.id IS NOT NULL) OR "+
+				"(comment_area.area_type = ? AND thinking.id IS NOT NULL)",
+			"article", "moment", "page", "thinking",
+		)
+	if options.AreaID != nil {
+		query = query.Where("comment.area_id = ?", *options.AreaID)
+	}
+	if strings.TrimSpace(options.Status) != "" {
+		query = query.Where("comment.status = ?", options.Status)
+	}
+	if options.OnlyUnviewed {
+		query = query.Where("comment.is_viewed = ?", false)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (options.Page - 1) * options.PageSize
+	type adminCommentRow struct {
+		model.Comment
+		AreaType   string `gorm:"column:area_type"`
+		AreaName   string `gorm:"column:area_name"`
+		AreaRefID  *int64 `gorm:"column:area_ref_id"`
+		AreaClosed bool   `gorm:"column:area_closed"`
+		AreaTitle  string `gorm:"column:area_title"`
+	}
+	var recs []adminCommentRow
+	if err := query.
+		Select(
+			"comment.*",
+			"comment_area.area_type",
+			"comment_area.area_name",
+			"comment_area.content_id AS area_ref_id",
+			"comment_area.is_closed AS area_closed",
+			"COALESCE(article.title, moment.title, page.title, comment_area.area_name) AS area_title",
+		).
+		Order("comment.created_at DESC").
+		Offset(offset).
+		Limit(options.PageSize).
+		Find(&recs).Error; err != nil {
+		return nil, 0, err
+	}
+
+	items := make([]*comment.Comment, len(recs))
+	for i := range recs {
+		entity := mapCommentToDomain(recs[i].Comment)
+		entity.AreaType = toPtr(recs[i].AreaType)
+		entity.AreaName = toPtr(recs[i].AreaName)
+		entity.AreaRefID = recs[i].AreaRefID
+		entity.AreaTitle = toPtr(recs[i].AreaTitle)
+		entity.AreaClosed = &recs[i].AreaClosed
+		items[i] = &entity
+	}
+	return items, total, nil
 }
 
 func (r *CommentRepository) Create(ctx context.Context, commentEntity *comment.Comment) error {
@@ -91,6 +166,7 @@ func (r *CommentRepository) Update(ctx context.Context, commentEntity *comment.C
 			"is_author":  rec.IsAuthor,
 			"is_viewed":  rec.IsViewed,
 			"is_top":     rec.IsTop,
+			"status":     rec.Status,
 			"updated_at": time.Now(),
 		}).Error
 }
@@ -99,13 +175,57 @@ func (r *CommentRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&model.Comment{}, id).Error
 }
 
+func (r *CommentRepository) SetViewedStatus(ctx context.Context, ids []int64, isViewed bool) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.WithContext(ctx).
+		Model(&model.Comment{}).
+		Where("id IN ?", ids).
+		Update("is_viewed", isViewed).Error
+}
+
+func (r *CommentRepository) SetAuthorStatus(ctx context.Context, id int64, isAuthor bool) error {
+	return r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("id = ?", id).
+		Update("is_author", isAuthor).Error
+}
+
+func (r *CommentRepository) UpdateStatus(ctx context.Context, id int64, status string) error {
+	return r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("id = ?", id).
+		Update("status", status).Error
+}
+
 func (r *CommentRepository) SetTopStatus(ctx context.Context, id int64, isTop bool) error {
 	return r.db.WithContext(ctx).Model(&model.Comment{}).
 		Where("id = ?", id).
 		Update("is_top", isTop).Error
 }
 
+func (r *CommentRepository) ExistsBlockedIdentity(ctx context.Context, authorID *int64, email *string) (bool, error) {
+	query := r.db.WithContext(ctx).Unscoped().Model(&model.Comment{}).Where("status = ?", comment.CommentStatusBlocked)
+	switch {
+	case authorID != nil && *authorID > 0:
+		query = query.Where("author_id = ?", *authorID)
+	case email != nil && strings.TrimSpace(*email) != "":
+		query = query.Where("LOWER(email) = LOWER(?)", strings.TrimSpace(*email))
+	default:
+		return false, nil
+	}
+
+	var count int64
+	if err := query.Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func mapCommentToDomain(rec model.Comment) comment.Comment {
+	status := strings.TrimSpace(rec.Status)
+	if status == "" {
+		status = comment.CommentStatusApproved
+	}
 	return comment.Comment{
 		ID:        rec.ID,
 		AreaID:    rec.AreaID,
@@ -123,6 +243,7 @@ func mapCommentToDomain(rec model.Comment) comment.Comment {
 		IsAuthor:  rec.IsAuthor,
 		IsViewed:  rec.IsViewed,
 		IsTop:     rec.IsTop,
+		Status:    status,
 		ParentID:  rec.ParentID,
 		CreatedAt: rec.CreatedAt,
 		UpdatedAt: rec.UpdatedAt,
@@ -131,6 +252,10 @@ func mapCommentToDomain(rec model.Comment) comment.Comment {
 }
 
 func mapCommentToModel(entity *comment.Comment) model.Comment {
+	status := strings.TrimSpace(entity.Status)
+	if status == "" {
+		status = comment.CommentStatusPending
+	}
 	return model.Comment{
 		ID:        entity.ID,
 		AreaID:    entity.AreaID,
@@ -148,6 +273,7 @@ func mapCommentToModel(entity *comment.Comment) model.Comment {
 		IsAuthor:  entity.IsAuthor,
 		IsViewed:  entity.IsViewed,
 		IsTop:     entity.IsTop,
+		Status:    status,
 		ParentID:  entity.ParentID,
 		CreatedAt: entity.CreatedAt,
 		UpdatedAt: entity.UpdatedAt,

@@ -9,6 +9,7 @@ import (
 	"github.com/jinzhu/copier"
 
 	"github.com/gofiber/fiber/v2"
+	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 
@@ -21,13 +22,15 @@ import (
 type MomentHandler struct {
 	svc         *moment.Service
 	contentRepo content.Repository
+	commentRepo domaincomment.CommentRepository
 	userRepo    identity.Repository
 }
 
-func NewMomentHandler(svc *moment.Service, contentRepo content.Repository, userRepo identity.Repository) *MomentHandler {
+func NewMomentHandler(svc *moment.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository) *MomentHandler {
 	return &MomentHandler{
 		svc:         svc,
 		contentRepo: contentRepo,
+		commentRepo: commentRepo,
 		userRepo:    userRepo,
 	}
 }
@@ -58,19 +61,23 @@ func (h *MomentHandler) CreateMoment(c *fiber.Ctx) error {
 	}
 
 	cmd := moment.CreateMomentCmd{
-		Title:       req.Title,
-		Summary:     req.Summary,
-		Content:     req.Content,
-		Image:       joinImages(req.Image),
-		ColumnID:    req.ColumnID,
-		TopicIDs:    req.TopicIDs,
-		ShortURL:    req.ShortURL,
-		IsPublished: req.IsPublished,
-		IsTop:       req.IsTop,
-		IsHot:       req.IsHot,
-		IsOriginal:  req.IsOriginal,
-		ExtInfo:     extInfo,
-		CreatedAt:   req.CreatedAt,
+		Title:        req.Title,
+		Summary:      req.Summary,
+		Content:      req.Content,
+		Image:        joinImages(req.Image),
+		ColumnID:     req.ColumnID,
+		TopicIDs:     req.TopicIDs,
+		ShortURL:     req.ShortURL,
+		IsPublished:  req.IsPublished,
+		IsTop:        req.IsTop,
+		AllowComment: req.AllowComment,
+		IsOriginal:   req.IsOriginal,
+		ExtInfo:      extInfo,
+		CreatedAt:    req.CreatedAt,
+	}
+	if cmd.AllowComment == nil {
+		defaultAllow := true
+		cmd.AllowComment = &defaultAllow
 	}
 
 	createdMoment, err := h.svc.CreateMoment(c.Context(), claims.UserID, cmd)
@@ -133,18 +140,18 @@ func (h *MomentHandler) UpdateMoment(c *fiber.Ctx) error {
 	}
 
 	cmd := moment.UpdateMomentCmd{
-		Title:       req.Title,
-		Summary:     req.Summary,
-		Content:     req.Content,
-		Image:       joinImages(req.Image),
-		ColumnID:    req.ColumnID,
-		TopicIDs:    req.TopicIDs,
-		ShortURL:    req.ShortURL,
-		IsPublished: req.IsPublished,
-		IsTop:       req.IsTop,
-		IsHot:       req.IsHot,
-		IsOriginal:  req.IsOriginal,
-		ExtInfo:     extInfo,
+		Title:        req.Title,
+		Summary:      req.Summary,
+		Content:      req.Content,
+		Image:        joinImages(req.Image),
+		ColumnID:     req.ColumnID,
+		TopicIDs:     req.TopicIDs,
+		ShortURL:     req.ShortURL,
+		IsPublished:  req.IsPublished,
+		IsTop:        req.IsTop,
+		AllowComment: req.AllowComment,
+		IsOriginal:   req.IsOriginal,
+		ExtInfo:      extInfo,
 	}
 	cmd.ID = id
 
@@ -456,25 +463,26 @@ func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Mo
 	}
 
 	resp := contract.MomentResp{
-		ID:          momentItem.ID,
-		Title:       momentItem.Title,
-		Summary:     momentItem.Summary,
-		AISummary:   momentItem.AISummary,
-		TOC:         mapMomentTOCNodes(momentItem.TOC),
-		Content:     momentItem.Content,
-		ContentHash: momentItem.ContentHash,
-		AuthorID:    momentItem.AuthorID,
-		Image:       splitImages(momentItem.Image),
-		ColumnID:    momentItem.ColumnID,
-		CommentID:   momentItem.CommentID,
-		ShortURL:    momentItem.ShortURL,
-		IsPublished: momentItem.IsPublished,
-		IsTop:       momentItem.IsTop,
-		IsHot:       momentItem.IsHot,
-		IsOriginal:  momentItem.IsOriginal,
-		ExtInfo:     jsonRawFromBytes(momentItem.ExtInfo),
-		CreatedAt:   momentItem.CreatedAt,
-		UpdatedAt:   momentItem.UpdatedAt,
+		ID:           momentItem.ID,
+		Title:        momentItem.Title,
+		Summary:      momentItem.Summary,
+		AISummary:    momentItem.AISummary,
+		TOC:          mapMomentTOCNodes(momentItem.TOC),
+		Content:      momentItem.Content,
+		ContentHash:  momentItem.ContentHash,
+		AuthorID:     momentItem.AuthorID,
+		Image:        splitImages(momentItem.Image),
+		ColumnID:     momentItem.ColumnID,
+		CommentID:    momentItem.CommentID,
+		ShortURL:     momentItem.ShortURL,
+		IsPublished:  momentItem.IsPublished,
+		IsTop:        momentItem.IsTop,
+		IsHot:        momentItem.IsHot,
+		AllowComment: h.allowCommentByAreaID(ctx, momentItem.CommentID),
+		IsOriginal:   momentItem.IsOriginal,
+		ExtInfo:      jsonRawFromBytes(momentItem.ExtInfo),
+		CreatedAt:    momentItem.CreatedAt,
+		UpdatedAt:    momentItem.UpdatedAt,
 	}
 
 	if len(topics) > 0 {
@@ -509,17 +517,18 @@ func (h *MomentHandler) toMomentListItemResp(ctx context.Context, momentItem *co
 	}
 
 	resp := contract.MomentListItemResp{
-		ID:         momentItem.ID,
-		Title:      momentItem.Title,
-		ShortURL:   momentItem.ShortURL,
-		Summary:    momentItem.Summary,
-		IsTop:      momentItem.IsTop,
-		IsHot:      momentItem.IsHot,
-		IsOriginal: momentItem.IsOriginal,
-		CreatedAt:  momentItem.CreatedAt,
-		UpdatedAt:  momentItem.UpdatedAt,
-		Topics:     []string{},
-		Image:      splitImages(momentItem.Image),
+		ID:           momentItem.ID,
+		Title:        momentItem.Title,
+		ShortURL:     momentItem.ShortURL,
+		Summary:      momentItem.Summary,
+		IsTop:        momentItem.IsTop,
+		IsHot:        momentItem.IsHot,
+		AllowComment: h.allowCommentByAreaID(ctx, momentItem.CommentID),
+		IsOriginal:   momentItem.IsOriginal,
+		CreatedAt:    momentItem.CreatedAt,
+		UpdatedAt:    momentItem.UpdatedAt,
+		Topics:       []string{},
+		Image:        splitImages(momentItem.Image),
 	}
 	resp.CommentID = momentItem.CommentID
 
@@ -615,4 +624,15 @@ func joinImages(images []string) *string {
 	}
 	joined := strings.Join(out, ",")
 	return &joined
+}
+
+func (h *MomentHandler) allowCommentByAreaID(ctx context.Context, areaID *int64) bool {
+	if h.commentRepo == nil || areaID == nil || *areaID <= 0 {
+		return true
+	}
+	area, err := h.commentRepo.GetAreaByID(ctx, *areaID)
+	if err != nil || area == nil {
+		return false
+	}
+	return !area.IsClosed
 }

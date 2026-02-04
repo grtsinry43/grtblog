@@ -19,6 +19,7 @@ export function usePageForm() {
     content: '',
     shortUrl: '',
     isEnabled: true,
+    allowComment: true,
   })
 
   async function fetch() {
@@ -33,6 +34,7 @@ export function usePageForm() {
       form.content = data.content
       form.shortUrl = data.shortUrl
       form.isEnabled = data.isEnabled
+      form.allowComment = data.allowComment
       return data
     } finally {
       loading.value = false
@@ -48,6 +50,7 @@ export function usePageForm() {
         content: form.content,
         shortUrl: form.shortUrl,
         isEnabled: form.isEnabled,
+        allowComment: form.allowComment,
       }
       if (isCreating.value) {
         await createPage(payload)

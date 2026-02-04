@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/copier"
@@ -112,34 +113,301 @@ func (h *CommentHandler) CreateCommentVisitor(c *fiber.Ctx) error {
 }
 
 // ListCommentTree godoc
-// @Summary 获取评论树
+// @Summary 获取评论树（公开，根评论分页）
 // @Tags Comment
 // @Produce json
 // @Param areaId path int true "评论区ID"
-// @Success 200 {object} []contract.CommentNodeResp
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} contract.PublicCommentListResp
 // @Router /comments/areas/{areaId} [get]
 func (h *CommentHandler) ListCommentTree(c *fiber.Ctx) error {
 	areaID, err := parseInt64Param(c, "areaId")
 	if err != nil {
 		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论区ID")
 	}
+	page := parseIntQuery(c, "page", 1)
+	pageSize := parseIntQuery(c, "pageSize", 10)
 
-	nodes, err := h.svc.ListCommentTree(c.Context(), areaID)
+	result, err := h.svc.ListPublicComments(c.Context(), comment.ListPublicCommentsCmd{
+		AreaID:   areaID,
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		return h.mapCommentError(c, err)
 	}
 
-	resp := make([]contract.CommentNodeResp, len(nodes))
-	for i, node := range nodes {
-		resp[i] = toCommentNodeResp(node)
+	respItems := make([]contract.CommentNodeResp, len(result.Items))
+	for i, node := range result.Items {
+		respItems[i] = toCommentNodeResp(node)
 	}
-	return response.Success(c, resp)
+	return response.Success(c, contract.PublicCommentListResp{
+		Items:    respItems,
+		Total:    result.Total,
+		Page:     result.Page,
+		Size:     result.Size,
+		IsClosed: result.IsClosed,
+	})
+}
+
+// ListAdminComments godoc
+// @Summary 获取评论列表（管理端）
+// @Tags CommentAdmin
+// @Produce json
+// @Param areaId query int false "评论区ID"
+// @Param status query string false "状态 pending/approved/rejected/blocked"
+// @Param onlyUnviewed query bool false "仅返回未查看" default(true)
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(20)
+// @Success 200 {object} contract.AdminCommentListResp
+// @Security JWTAuth
+// @Router /admin/comments [get]
+func (h *CommentHandler) ListAdminComments(c *fiber.Ctx) error {
+	page := parseIntQuery(c, "page", 1)
+	pageSize := parseIntQuery(c, "pageSize", 20)
+	status := strings.TrimSpace(c.Query("status"))
+	if status != "" && !isValidCommentStatus(status) {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论状态")
+	}
+	onlyUnviewed := parseBoolQuery(c, "onlyUnviewed", true)
+
+	var areaID *int64
+	if raw := strings.TrimSpace(c.Query("areaId")); raw != "" {
+		val, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论区ID")
+		}
+		areaID = &val
+	}
+
+	items, total, err := h.svc.ListAdminComments(c.Context(), comment.ListAdminCommentsCmd{
+		AreaID:       areaID,
+		Status:       status,
+		OnlyUnviewed: onlyUnviewed,
+		Page:         page,
+		PageSize:     pageSize,
+	})
+	if err != nil {
+		return h.mapCommentError(c, err)
+	}
+
+	respItems := make([]contract.AdminCommentResp, len(items))
+	for i := range items {
+		respItems[i] = toAdminCommentResp(items[i])
+	}
+	return response.Success(c, contract.AdminCommentListResp{
+		Items: respItems,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
+	})
+}
+
+// MarkCommentsViewed godoc
+// @Summary 批量标记评论已读/未读（管理端）
+// @Tags CommentAdmin
+// @Accept json
+// @Produce json
+// @Param request body contract.MarkCommentsViewedReq true "批量已读参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security JWTAuth
+// @Router /admin/comments/viewed [put]
+func (h *CommentHandler) MarkCommentsViewed(c *fiber.Ctx) error {
+	var req contract.MarkCommentsViewedReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	isViewed := true
+	if req.IsViewed != nil {
+		isViewed = *req.IsViewed
+	}
+	if err := h.svc.MarkCommentsViewed(c.Context(), comment.MarkCommentsViewedCmd{
+		IDs:      req.IDs,
+		IsViewed: isViewed,
+	}); err != nil {
+		return err
+	}
+	if isViewed {
+		return response.SuccessWithMessage[any](c, nil, "已标记已读")
+	}
+	return response.SuccessWithMessage[any](c, nil, "已标记未读")
+}
+
+// ReplyComment godoc
+// @Summary 快捷回复评论（管理端）
+// @Tags CommentAdmin
+// @Accept json
+// @Produce json
+// @Param id path int true "父评论ID"
+// @Param request body contract.ReplyCommentReq true "回复参数"
+// @Success 200 {object} contract.CreateCommentResp
+// @Security JWTAuth
+// @Router /admin/comments/{id}/reply [post]
+func (h *CommentHandler) ReplyComment(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+	parentID, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论ID")
+	}
+	var req contract.ReplyCommentReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	reply, err := h.svc.ReplyComment(c.Context(), comment.ReplyCommentCmd{
+		ParentID: parentID,
+		Content:  req.Content,
+		AdminID:  claims.UserID,
+	})
+	if err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage(c, toCreateCommentResp(reply), "回复成功")
+}
+
+// UpdateCommentStatus godoc
+// @Summary 更新评论状态（管理端）
+// @Tags CommentAdmin
+// @Accept json
+// @Produce json
+// @Param id path int true "评论ID"
+// @Param request body contract.UpdateCommentStatusReq true "状态参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security JWTAuth
+// @Router /admin/comments/{id}/status [put]
+func (h *CommentHandler) UpdateCommentStatus(c *fiber.Ctx) error {
+	id, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论ID")
+	}
+	var req contract.UpdateCommentStatusReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if err := h.svc.UpdateCommentStatus(c.Context(), comment.UpdateCommentStatusCmd{
+		ID:     id,
+		Status: req.Status,
+	}); err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage[any](c, nil, "评论状态已更新")
+}
+
+// SetCommentAuthor godoc
+// @Summary 标记评论为作者评论（管理端）
+// @Tags CommentAdmin
+// @Accept json
+// @Produce json
+// @Param id path int true "评论ID"
+// @Param request body contract.SetCommentAuthorReq true "作者标记参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security JWTAuth
+// @Router /admin/comments/{id}/author [put]
+func (h *CommentHandler) SetCommentAuthor(c *fiber.Ctx) error {
+	id, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论ID")
+	}
+	var req contract.SetCommentAuthorReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if err := h.svc.SetCommentAuthor(c.Context(), comment.SetCommentAuthorCmd{
+		ID:       id,
+		IsAuthor: req.IsAuthor,
+	}); err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage[any](c, nil, "评论作者标记已更新")
+}
+
+// SetCommentTop godoc
+// @Summary 置顶/取消置顶评论（管理端）
+// @Tags CommentAdmin
+// @Accept json
+// @Produce json
+// @Param id path int true "评论ID"
+// @Param request body contract.SetCommentTopReq true "置顶参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security JWTAuth
+// @Router /admin/comments/{id}/top [put]
+func (h *CommentHandler) SetCommentTop(c *fiber.Ctx) error {
+	id, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论ID")
+	}
+	var req contract.SetCommentTopReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if err := h.svc.SetCommentTop(c.Context(), comment.SetCommentTopCmd{
+		ID:    id,
+		IsTop: req.IsTop,
+	}); err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage[any](c, nil, "评论置顶状态已更新")
+}
+
+// DeleteComment godoc
+// @Summary 删除评论（软删除，管理端）
+// @Tags CommentAdmin
+// @Produce json
+// @Param id path int true "评论ID"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security JWTAuth
+// @Router /admin/comments/{id} [delete]
+func (h *CommentHandler) DeleteComment(c *fiber.Ctx) error {
+	id, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论ID")
+	}
+	if err := h.svc.DeleteComment(c.Context(), id); err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage[any](c, nil, "评论已删除")
+}
+
+// SetCommentAreaClose godoc
+// @Summary 关闭/开启评论区（管理端）
+// @Tags CommentAdmin
+// @Accept json
+// @Produce json
+// @Param areaId path int true "评论区ID"
+// @Param request body contract.SetCommentAreaCloseReq true "评论区开关参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security JWTAuth
+// @Router /admin/comments/areas/{areaId}/close [put]
+func (h *CommentHandler) SetCommentAreaClose(c *fiber.Ctx) error {
+	areaID, err := parseInt64Param(c, "areaId")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论区ID")
+	}
+	var req contract.SetCommentAreaCloseReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if err := h.svc.SetAreaClosed(c.Context(), areaID, req.IsClosed); err != nil {
+		return h.mapCommentError(c, err)
+	}
+	if req.IsClosed {
+		return response.SuccessWithMessage[any](c, nil, "评论区已关闭")
+	}
+	return response.SuccessWithMessage[any](c, nil, "评论区已开启")
 }
 
 func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 	switch {
 	case errors.Is(err, domaincomment.ErrCommentAreaNotFound):
 		return response.NewBizErrorWithMsg(response.NotFound, "评论区不存在")
+	case errors.Is(err, domaincomment.ErrCommentNotFound):
+		return response.NewBizErrorWithMsg(response.NotFound, "评论不存在")
 	case errors.Is(err, domaincomment.ErrCommentParentNotFound):
 		return response.NewBizErrorWithMsg(response.ParamsError, "父评论不存在")
 	case errors.Is(err, domaincomment.ErrCommentTooDeep):
@@ -148,6 +416,10 @@ func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论内容不能为空")
 	case errors.Is(err, domaincomment.ErrCommentAreaClosed):
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论区已关闭")
+	case errors.Is(err, domaincomment.ErrCommentDisabled):
+		return response.NewBizErrorWithMsg(response.ParamsError, "全站已关闭评论")
+	case errors.Is(err, domaincomment.ErrCommentStatusInvalid):
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论状态")
 	default:
 		return err
 	}
@@ -155,6 +427,18 @@ func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 
 func parseInt64Param(c *fiber.Ctx, name string) (int64, error) {
 	return strconv.ParseInt(c.Params(name), 10, 64)
+}
+
+func parseBoolQuery(c *fiber.Ctx, key string, defaultVal bool) bool {
+	raw := strings.TrimSpace(c.Query(key))
+	if raw == "" {
+		return defaultVal
+	}
+	val, err := strconv.ParseBool(raw)
+	if err != nil {
+		return defaultVal
+	}
+	return val
 }
 
 func toCreateCommentResp(entity *domaincomment.Comment) contract.CreateCommentResp {
@@ -172,10 +456,12 @@ func toCreateCommentResp(entity *domaincomment.Comment) contract.CreateCommentRe
 		IsAuthor:  entity.IsAuthor,
 		IsViewed:  entity.IsViewed,
 		IsTop:     entity.IsTop,
+		Status:    entity.Status,
 		ParentID:  entity.ParentID,
 		CreatedAt: entity.CreatedAt,
 		UpdatedAt: entity.UpdatedAt,
 		DeletedAt: entity.DeletedAt,
+		IsDeleted: entity.DeletedAt != nil,
 	}
 }
 
@@ -183,7 +469,7 @@ func toCommentNodeResp(node *comment.CommentNode) contract.CommentNodeResp {
 	resp := contract.CommentNodeResp{
 		ID:        node.Comment.ID,
 		AreaID:    node.Comment.AreaID,
-		Content:   node.Comment.Content,
+		Content:   publicContent(node.Comment),
 		NickName:  node.Comment.NickName,
 		Location:  node.Comment.Location,
 		Platform:  node.Comment.Platform,
@@ -194,10 +480,12 @@ func toCommentNodeResp(node *comment.CommentNode) contract.CommentNodeResp {
 		IsAuthor:  node.Comment.IsAuthor,
 		IsViewed:  node.Comment.IsViewed,
 		IsTop:     node.Comment.IsTop,
+		Status:    node.Comment.Status,
 		ParentID:  node.Comment.ParentID,
 		CreatedAt: node.Comment.CreatedAt,
 		UpdatedAt: node.Comment.UpdatedAt,
 		DeletedAt: node.Comment.DeletedAt,
+		IsDeleted: node.Comment.DeletedAt != nil,
 	}
 	if len(node.Children) > 0 {
 		resp.Children = make([]contract.CommentNodeResp, len(node.Children))
@@ -206,4 +494,67 @@ func toCommentNodeResp(node *comment.CommentNode) contract.CommentNodeResp {
 		}
 	}
 	return resp
+}
+
+func toAdminCommentResp(item *domaincomment.Comment) contract.AdminCommentResp {
+	var content *string
+	if item.DeletedAt == nil {
+		content = toStringPtr(item.Content)
+	}
+	return contract.AdminCommentResp{
+		ID:         item.ID,
+		AreaID:     item.AreaID,
+		AreaType:   item.AreaType,
+		AreaRefID:  item.AreaRefID,
+		AreaName:   item.AreaName,
+		AreaTitle:  item.AreaTitle,
+		AreaClosed: item.AreaClosed,
+		Content:    content,
+		AuthorID:   item.AuthorID,
+		NickName:   item.NickName,
+		Email:      item.Email,
+		IP:         item.IP,
+		Location:   item.Location,
+		Platform:   item.Platform,
+		Browser:    item.Browser,
+		Website:    item.Website,
+		IsOwner:    item.IsOwner,
+		IsFriend:   item.IsFriend,
+		IsAuthor:   item.IsAuthor,
+		IsViewed:   item.IsViewed,
+		IsTop:      item.IsTop,
+		Status:     item.Status,
+		ParentID:   item.ParentID,
+		CreatedAt:  item.CreatedAt,
+		UpdatedAt:  item.UpdatedAt,
+		DeletedAt:  item.DeletedAt,
+		IsDeleted:  item.DeletedAt != nil,
+	}
+}
+
+func publicContent(item *domaincomment.Comment) *string {
+	if item.DeletedAt != nil {
+		return nil
+	}
+	return toStringPtr(item.Content)
+}
+
+func toStringPtr(v string) *string {
+	val := strings.TrimSpace(v)
+	if val == "" {
+		return nil
+	}
+	return &val
+}
+
+func isValidCommentStatus(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case domaincomment.CommentStatusPending,
+		domaincomment.CommentStatusApproved,
+		domaincomment.CommentStatusRejected,
+		domaincomment.CommentStatusBlocked:
+		return true
+	default:
+		return false
+	}
 }

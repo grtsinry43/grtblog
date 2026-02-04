@@ -128,7 +128,8 @@ function buildPreviewPayload() {
     metrics: loadedArticle.value ? { views: 0, likes: 0, comments: 0 } : undefined,
     isPublished: form.isPublished,
     isTop: form.isTop,
-    isHot: form.isHot,
+    isHot: false, // isHot removed from form, default false for preview or use loaded value if needed, but preview implies 'draft' context often.
+    allowComment: form.allowComment,
     isOriginal: form.isOriginal,
     createdAt: loadedArticle.value?.createdAt ?? nowIso,
     updatedAt: nowIso,
@@ -198,7 +199,7 @@ watch(
     form.shortUrl,
     form.isPublished,
     form.isTop,
-    form.isHot,
+    form.allowComment,
     form.isOriginal,
     extInfo.value,
   ],
@@ -553,11 +554,11 @@ watch(previewUrl, () => {
                 />
               </div>
               <div
-                class="flex items-center justify-between rounded-lg  px-4 py-3"
+                class="flex items-center justify-between rounded-lg px-4 py-3"
               >
-                <span class="text-sm">热门</span
+                <span class="text-sm">允许评论</span
                 ><NSwitch
-                  v-model:value="form.isHot"
+                  v-model:value="form.allowComment"
                   size="small"
                 />
               </div>

@@ -14,6 +14,7 @@ type FriendLinkApplicationRepository interface {
 type FriendLinkRepository interface {
 	GetByID(ctx context.Context, id int64) (*FriendLink, error)
 	FindByURL(ctx context.Context, url string) (*FriendLink, error)
+	ExistsActiveByUserID(ctx context.Context, userID int64) (bool, error)
 	Create(ctx context.Context, link *FriendLink) error
 	Update(ctx context.Context, link *FriendLink) error
 	Delete(ctx context.Context, id int64) error

@@ -8,25 +8,27 @@ import (
 
 // CreatePageReq 创建页面请求。
 type CreatePageReq struct {
-	Title       string     `json:"title" validate:"required,max=255"`
-	Description *string    `json:"description,omitempty"`
-	Content     string     `json:"content" validate:"required"`
-	ShortURL    *string    `json:"shortUrl"`
-	IsEnabled   bool       `json:"isEnabled"`
-	IsBuiltin   bool       `json:"isBuiltin"`
-	ExtInfo     *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
-	CreatedAt   *time.Time `json:"createdAt,omitempty"`
+	Title        string     `json:"title" validate:"required,max=255"`
+	Description  *string    `json:"description,omitempty"`
+	Content      string     `json:"content" validate:"required"`
+	ShortURL     *string    `json:"shortUrl"`
+	AllowComment *bool      `json:"allowComment,omitempty"`
+	IsEnabled    bool       `json:"isEnabled"`
+	IsBuiltin    bool       `json:"isBuiltin"`
+	ExtInfo      *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
+	CreatedAt    *time.Time `json:"createdAt,omitempty"`
 }
 
 type createPageReqJSON struct {
-	Title       string   `json:"title"`
-	Description *string  `json:"description"`
-	Content     string   `json:"content"`
-	ShortURL    *string  `json:"shortUrl"`
-	IsEnabled   bool     `json:"isEnabled"`
-	IsBuiltin   bool     `json:"isBuiltin"`
-	ExtInfo     *JSONRaw `json:"extInfo" swaggertype:"object"`
-	CreatedAt   *string  `json:"createdAt"`
+	Title        string   `json:"title"`
+	Description  *string  `json:"description"`
+	Content      string   `json:"content"`
+	ShortURL     *string  `json:"shortUrl"`
+	AllowComment *bool    `json:"allowComment"`
+	IsEnabled    bool     `json:"isEnabled"`
+	IsBuiltin    bool     `json:"isBuiltin"`
+	ExtInfo      *JSONRaw `json:"extInfo" swaggertype:"object"`
+	CreatedAt    *string  `json:"createdAt"`
 }
 
 func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
@@ -38,6 +40,7 @@ func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
 	r.Description = aux.Description
 	r.Content = aux.Content
 	r.ShortURL = aux.ShortURL
+	r.AllowComment = aux.AllowComment
 	r.IsEnabled = aux.IsEnabled
 	r.IsBuiltin = aux.IsBuiltin
 	r.ExtInfo = aux.ExtInfo
@@ -61,13 +64,14 @@ func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
 
 // UpdatePageReq 更新页面请求。
 type UpdatePageReq struct {
-	Title       string   `json:"title" validate:"required,max=255"`
-	Description *string  `json:"description,omitempty"`
-	Content     string   `json:"content" validate:"required"`
-	ShortURL    string   `json:"shortUrl" validate:"required"`
-	IsEnabled   bool     `json:"isEnabled"`
-	IsBuiltin   bool     `json:"isBuiltin"`
-	ExtInfo     *JSONRaw `json:"extInfo,omitempty" swaggertype:"object"`
+	Title        string   `json:"title" validate:"required,max=255"`
+	Description  *string  `json:"description,omitempty"`
+	Content      string   `json:"content" validate:"required"`
+	ShortURL     string   `json:"shortUrl" validate:"required"`
+	AllowComment *bool    `json:"allowComment,omitempty"`
+	IsEnabled    bool     `json:"isEnabled"`
+	IsBuiltin    bool     `json:"isBuiltin"`
+	ExtInfo      *JSONRaw `json:"extInfo,omitempty" swaggertype:"object"`
 }
 
 // ListPagesReq 页面列表查询请求。

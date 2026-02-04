@@ -42,6 +42,16 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Put("/oauth-providers/:key", adminOAuth.Update)
 	admin.Delete("/oauth-providers/:key", adminOAuth.Delete)
 
+	commentHandler := newCommentHandler(deps)
+	admin.Get("/comments", commentHandler.ListAdminComments)
+	admin.Put("/comments/viewed", commentHandler.MarkCommentsViewed)
+	admin.Post("/comments/:id/reply", commentHandler.ReplyComment)
+	admin.Put("/comments/:id/status", commentHandler.UpdateCommentStatus)
+	admin.Put("/comments/:id/author", commentHandler.SetCommentAuthor)
+	admin.Put("/comments/:id/top", commentHandler.SetCommentTop)
+	admin.Delete("/comments/:id", commentHandler.DeleteComment)
+	admin.Put("/comments/areas/:areaId/close", commentHandler.SetCommentAreaClose)
+
 	if sysCfgSvc != nil {
 		sysConfigHandler := handler.NewSysConfigHandler(sysCfgSvc)
 		admin.Get("/sysconfig", sysConfigHandler.ListSysConfig)

@@ -30,6 +30,7 @@ func registerPageAuthRoutes(v2 fiber.Router, deps Dependencies) {
 
 func newPageHandler(deps Dependencies) *handler.PageHandler {
 	contentRepo := persistence.NewContentRepository(deps.DB)
-	pageSvc := page.NewService(contentRepo, deps.EventBus)
-	return handler.NewPageHandler(pageSvc)
+	commentRepo := persistence.NewCommentRepository(deps.DB)
+	pageSvc := page.NewService(contentRepo, commentRepo, deps.EventBus)
+	return handler.NewPageHandler(pageSvc, commentRepo)
 }

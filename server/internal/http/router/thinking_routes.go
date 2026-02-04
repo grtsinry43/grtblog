@@ -31,5 +31,5 @@ func newThinkingHandler(deps Dependencies) *handler.ThinkingHandler {
 	commentRepo := persistence.NewCommentRepository(deps.DB)
 	thinkingSvc := thinking.NewService(thinkingRepo, commentRepo)
 	userRepo := persistence.NewIdentityRepository(deps.DB)
-	return handler.NewThinkingHandler(thinkingSvc, userRepo)
+	return handler.NewThinkingHandler(thinkingSvc, commentRepo, userRepo)
 }
