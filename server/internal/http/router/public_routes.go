@@ -27,4 +27,9 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	friendLinkSvc := friendlink.NewLinkService(friendLinkRepo)
 	friendLinkHandler := handler.NewFriendLinkPublicHandler(friendLinkSvc)
 	public.Get("/friend-links", friendLinkHandler.ListPublic)
+
+	if deps.Analytics != nil {
+		analyticsHandler := handler.NewAnalyticsHandler(deps.Analytics)
+		public.Post("/analytics/view", analyticsHandler.TrackView)
+	}
 }

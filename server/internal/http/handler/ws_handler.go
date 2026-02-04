@@ -1,17 +1,21 @@
 package handler
 
 import (
+	"context"
+
 	"github.com/gofiber/websocket/v2"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
 
 type WSHandler struct {
-	manager *ws.Manager
+	manager      *ws.Manager
+	analyticsSvc *analytics.Service
 }
 
-func NewWSHandler(manager *ws.Manager) *WSHandler {
-	return &WSHandler{manager: manager}
+func NewWSHandler(manager *ws.Manager, analyticsSvc *analytics.Service) *WSHandler {
+	return &WSHandler{manager: manager, analyticsSvc: analyticsSvc}
 }
 
 func (h *WSHandler) Handle(conn *websocket.Conn) {
@@ -26,6 +30,9 @@ func (h *WSHandler) Handle(conn *websocket.Conn) {
 	if client == nil {
 		return
 	}
+	if h.analyticsSvc != nil {
+		_ = h.analyticsSvc.TrackOnlineSample(context.Background(), h.manager.CurrentConnections())
+	}
 	for _, payload := range cached {
 		_ = client.Write(payload)
 	}
@@ -37,4 +44,7 @@ func (h *WSHandler) Handle(conn *websocket.Conn) {
 	}
 
 	h.manager.Leave(roomKey, client)
+	if h.analyticsSvc != nil {
+		_ = h.analyticsSvc.TrackOnlineSample(context.Background(), h.manager.CurrentConnections())
+	}
 }
