@@ -410,9 +410,9 @@ onMounted(async () => {
               <div
                 class="flex items-center justify-between rounded-lg px-4 py-3"
               >
-                <span class="text-sm">热门</span
+                <span class="text-sm">允许评论</span
                 ><NSwitch
-                  v-model:value="form.isHot"
+                  v-model:value="form.allowComment"
                   size="small"
                 />
               </div>

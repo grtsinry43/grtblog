@@ -51,3 +51,11 @@ export type CommentNode = {
 	deletedAt?: string | null;
 	children?: CommentNode[];
 };
+
+export type CommentListResponse = {
+	items: CommentNode[];
+	total: number;
+	page: number;
+	size: number;
+	isClosed: boolean;
+};

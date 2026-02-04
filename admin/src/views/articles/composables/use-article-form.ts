@@ -37,8 +37,8 @@ export function useArticleForm() {
     shortUrl: '',
     isPublished: false,
     isTop: false,
-    isHot: false,
     isOriginal: true,
+    allowComment: true,
   })
 
   const baseExtInfo = ref<ContentExtInfo | null>(null)
@@ -76,8 +76,8 @@ export function useArticleForm() {
       form.shortUrl = data.shortUrl
       form.isPublished = data.isPublished
       form.isTop = data.isTop
-      form.isHot = data.isHot
       form.isOriginal = data.isOriginal
+      form.allowComment = data.allowComment
       baseExtInfo.value = data.extInfo ?? null
 
       initialSnapshot.value = takeSnapshot()
@@ -105,7 +105,7 @@ export function useArticleForm() {
         ...form,
         leadIn: form.leadIn || null,
         cover: form.cover || null,
-        shortUrl: form.shortUrl || undefined, //如果是新建，可能允许为空由后端生成？根据原逻辑保持一致
+        shortUrl: form.shortUrl, // Update usually requires shortUrl to be present. If it can be empty, check API. Assuming non-empty for update.
         extInfo: extInfo.value ?? undefined,
       }
 

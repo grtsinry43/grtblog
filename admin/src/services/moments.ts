@@ -18,6 +18,7 @@ export interface MomentListItem {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  allowComment: boolean
   createdAt: string
   updatedAt: string
 }
@@ -49,6 +50,7 @@ export interface MomentDetail {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo | null
   topics?: MomentTopic[]
   createdAt: string
@@ -75,8 +77,8 @@ export interface CreateMomentPayload {
   shortUrl?: string | null
   isPublished: boolean
   isTop: boolean
-  isHot: boolean
   isOriginal: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo | null
   createdAt?: string | null
 }
@@ -91,8 +93,8 @@ export interface UpdateMomentPayload {
   shortUrl: string
   isPublished: boolean
   isTop: boolean
-  isHot: boolean
   isOriginal: boolean
+  allowComment: boolean
   extInfo?: ContentExtInfo | null
 }
 
