@@ -92,11 +92,29 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	}
 	resolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
 	outbound := appfed.NewOutboundService(fedCfgSvc, resolver, instanceRepo)
-	federationAdminHandler := handler.NewFederationAdminHandler(fedCfgSvc, contentRepo, outbound, resolver, deps.EventBus)
+	outboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
+	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, deps.EventBus)
+	federationAdminHandler := handler.NewFederationAdminHandler(fedCfgSvc, contentRepo, deliverySvc, instanceRepo, resolver, deps.EventBus)
+	federationReviewHandler := handler.NewFederationReviewHandler(
+		persistence.NewFederatedCitationRepository(deps.DB),
+		persistence.NewFederatedMentionRepository(deps.DB),
+		instanceRepo,
+		outbound,
+	)
 	admin.Post("/federation/friendlinks/request", federationAdminHandler.RequestFriendLink)
 	admin.Post("/federation/citations/request", federationAdminHandler.SendCitation)
 	admin.Post("/federation/mentions/notify", federationAdminHandler.SendMention)
 	admin.Get("/federation/remote/check", federationAdminHandler.CheckRemote)
+	admin.Get("/federation/instances", federationAdminHandler.ListInstances)
+	admin.Get("/federation/instances/:id", federationAdminHandler.GetInstance)
+	admin.Put("/federation/instances/:id/status", federationAdminHandler.UpdateInstanceStatus)
+	admin.Get("/federation/outbound", federationAdminHandler.ListOutbound)
+	admin.Get("/federation/outbound/:id", federationAdminHandler.GetOutbound)
+	admin.Get("/federation/outbound/request/:requestId", federationAdminHandler.GetOutboundByRequestID)
+	admin.Post("/federation/outbound/:id/retry", federationAdminHandler.RetryOutbound)
+	admin.Get("/federation/reviews/pending", federationReviewHandler.ListPendingReviews)
+	admin.Put("/federation/citations/:id/review", federationReviewHandler.ReviewCitation)
+	admin.Put("/federation/mentions/:id/review", federationReviewHandler.ReviewMention)
 
 	hitokotoSvc := hitokoto.NewService(deps.Redis, deps.Config.Redis.Prefix)
 	hitokotoHandler := handler.NewAdminHitokotoHandler(hitokotoSvc)

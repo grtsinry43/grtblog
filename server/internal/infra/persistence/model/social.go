@@ -63,3 +63,18 @@ type GlobalNotification struct {
 }
 
 func (GlobalNotification) TableName() string { return "global_notification" }
+
+type AdminNotification struct {
+	ID        int64          `gorm:"column:id;primaryKey"`
+	UserID    int64          `gorm:"column:user_id;not null"`
+	NotifType string         `gorm:"column:notif_type;size:50;not null"`
+	Title     string         `gorm:"column:title;size:200;not null"`
+	Content   string         `gorm:"column:content;type:text;not null"`
+	Payload   datatypes.JSON `gorm:"column:payload;type:jsonb;not null"`
+	IsRead    bool           `gorm:"column:is_read;not null"`
+	ReadAt    *time.Time     `gorm:"column:read_at"`
+	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (AdminNotification) TableName() string { return "admin_notification" }

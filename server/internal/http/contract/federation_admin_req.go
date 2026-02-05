@@ -31,3 +31,21 @@ type FederationAdminMentionReq struct {
 type FederationAdminRemoteCheckReq struct {
 	TargetURL string `json:"target_url"`
 }
+
+type FederationOutboundListReq struct {
+	RequestID string `query:"request_id"`
+	Type      string `query:"type"`
+	Status    string `query:"status"`
+	Target    string `query:"target"`
+	Page      int    `query:"page"`
+	PageSize  int    `query:"pageSize"`
+}
+
+type FederationReviewDecisionReq struct {
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+}
+
+type FederationInstanceStatusUpdateReq struct {
+	Status string `json:"status"`
+}

@@ -1197,6 +1197,52 @@
                 }
             }
         },
+        "/admin/federation/citations/{id}/review": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "审核联合引用",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "引用ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "审核结果",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationReviewDecisionReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/admin/federation/config": {
             "get": {
                 "security": [
@@ -1315,6 +1361,151 @@
                 }
             }
         },
+        "/admin/federation/instances": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "查询联合实例列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "状态: pending|active|blocked",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键字（base_url/name）",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationInstanceListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/federation/instances/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "查询联合实例详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "实例ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否实时拉取远端文档并刷新本地快照（默认 true）",
+                        "name": "refresh",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationInstanceDetailResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/federation/instances/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "更新联合实例状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "实例ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "状态更新",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationInstanceStatusUpdateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationInstanceResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/federation/mentions/notify": {
             "post": {
                 "security": [
@@ -1356,6 +1547,227 @@
                 }
             }
         },
+        "/admin/federation/mentions/{id}/review": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "审核联合提及",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "提及ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "审核结果",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationReviewDecisionReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/admin/federation/outbound": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "查询联合出站状态",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "类型: friendlink|citation|mention",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "投递单据 request_id（精确匹配）",
+                        "name": "request_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标实例模糊匹配",
+                        "name": "target",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationOutboundDeliveryListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/federation/outbound/request/{requestId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "通过单据号查询联合出站详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "request_id",
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationOutboundDeliveryResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/federation/outbound/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "查询联合出站详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "投递ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationOutboundDeliveryResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/federation/outbound/{id}/retry": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "重试联合出站投递",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "投递ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationOutboundDeliveryResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/federation/remote/check": {
             "get": {
                 "security": [
@@ -1390,6 +1802,33 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.FederationAdminRemoteCheckResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/federation/reviews/pending": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "联合待审核列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationReviewListResp"
                         }
                     }
                 }
@@ -3125,6 +3564,39 @@
                 }
             }
         },
+        "/api/federation/outbound/result": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Federation"
+                ],
+                "summary": "联合出站结果回调",
+                "parameters": [
+                    {
+                        "description": "回调结果",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationOutboundResultReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationOutboundResultResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/federation/posts/{id}": {
             "get": {
                 "consumes": [
@@ -3431,6 +3903,42 @@
                     "200": {
                         "description": "OK",
                         "schema": {}
+                    }
+                }
+            }
+        },
+        "/articles/{id}/federation/interactions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Federation"
+                ],
+                "summary": "文章联合互动",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "文章 ID 或短链接",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationArticleInteractionsResp"
+                        }
                     }
                 }
             }
@@ -4155,6 +4663,114 @@
                 }
             }
         },
+        "/notifications": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AdminNotification"
+                ],
+                "summary": "查询我的站内信",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "是否仅未读",
+                        "name": "unreadOnly",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.AdminNotificationListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/read-all": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AdminNotification"
+                ],
+                "summary": "标记全部站内信已读",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/notifications/{id}/read": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AdminNotification"
+                ],
+                "summary": "标记站内信已读",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "通知ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/pages": {
             "get": {
                 "produces": [
@@ -4609,6 +5225,41 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.FriendLinkPublicListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/friend-timeline": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FriendTimeline"
+                ],
+                "summary": "朋友聚合时间线",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FriendTimelineListResp"
                         }
                     }
                 }
@@ -5660,6 +6311,55 @@
                     "items": {
                         "$ref": "#/definitions/contract.AdminEventGroupResp"
                     }
+                }
+            }
+        },
+        "contract.AdminNotificationListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminNotificationResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.AdminNotificationResp": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
+                "payload": {
+                    "type": "object"
+                },
+                "read_at": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -6777,6 +7477,12 @@
                 "body": {
                     "type": "string"
                 },
+                "delivery_id": {
+                    "type": "integer"
+                },
+                "request_id": {
+                    "type": "string"
+                },
                 "status_code": {
                     "type": "integer"
                 }
@@ -6796,6 +7502,52 @@
                 }
             }
         },
+        "contract.FederationArticleInteractionsResp": {
+            "type": "object",
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "inbound_citations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationCitationInteractionResp"
+                    }
+                },
+                "outbound": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationOutboundInteractionResp"
+                    }
+                }
+            }
+        },
+        "contract.FederationCitationInteractionResp": {
+            "type": "object",
+            "properties": {
+                "citation_type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "requested_at": {
+                    "type": "string"
+                },
+                "source_instance_id": {
+                    "type": "integer"
+                },
+                "source_post_title": {
+                    "type": "string"
+                },
+                "source_post_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.FederationCitationRequestReq": {
             "type": "object",
             "properties": {
@@ -6803,6 +7555,9 @@
                     "type": "string"
                 },
                 "citation_type": {
+                    "type": "string"
+                },
+                "request_id": {
                     "type": "string"
                 },
                 "source_instance_url": {
@@ -6869,6 +7624,128 @@
                 }
             }
         },
+        "contract.FederationInstanceDetailResp": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "endpoints": {
+                    "type": "object"
+                },
+                "endpoints_doc": {
+                    "type": "object"
+                },
+                "features": {
+                    "type": "object"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "key_id": {
+                    "type": "string"
+                },
+                "last_seen_at": {
+                    "type": "string"
+                },
+                "manifest": {
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "policies": {
+                    "type": "object"
+                },
+                "protocol_version": {
+                    "type": "string"
+                },
+                "public_key": {
+                    "type": "string"
+                },
+                "public_key_doc": {
+                    "type": "object"
+                },
+                "remote_error": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationInstanceListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationInstanceResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.FederationInstanceResp": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "key_id": {
+                    "type": "string"
+                },
+                "last_seen_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "protocol_version": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationInstanceStatusUpdateReq": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.FederationMentionNotifyReq": {
             "type": "object",
             "properties": {
@@ -6879,6 +7756,9 @@
                     "type": "string"
                 },
                 "mentioned_user": {
+                    "type": "string"
+                },
+                "request_id": {
                     "type": "string"
                 },
                 "source_instance_url": {
@@ -6907,6 +7787,157 @@
                     "type": "string"
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationOutboundDeliveryListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationOutboundDeliveryResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.FederationOutboundDeliveryResp": {
+            "type": "object",
+            "properties": {
+                "attempt_count": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "http_status": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_callback_at": {
+                    "type": "string"
+                },
+                "max_attempts": {
+                    "type": "integer"
+                },
+                "next_retry_at": {
+                    "type": "string"
+                },
+                "remote_ticket_id": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "response_body": {
+                    "type": "string"
+                },
+                "source_article_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "target_endpoint": {
+                    "type": "string"
+                },
+                "target_instance_url": {
+                    "type": "string"
+                },
+                "trace_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationOutboundInteractionResp": {
+            "type": "object",
+            "properties": {
+                "attempt_count": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "http_status": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "remote_ticket_id": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "target_instance_url": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationOutboundResultReq": {
+            "type": "object",
+            "properties": {
+                "processed_at": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "remote_ticket_id": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationOutboundResultResp": {
+            "type": "object",
+            "properties": {
+                "request_id": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -6977,6 +8008,54 @@
                 },
                 "url": {
                     "type": "string"
+                }
+            }
+        },
+        "contract.FederationReviewDecisionReq": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationReviewItemResp": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "requested_at": {
+                    "type": "string"
+                },
+                "source_instance_id": {
+                    "type": "integer"
+                },
+                "source_request_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationReviewListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationReviewItemResp"
+                    }
                 }
             }
         },
@@ -7315,6 +8394,26 @@
                     "type": "string"
                 },
                 "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.FriendTimelineListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationPostResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
                     "type": "integer"
                 }
             }

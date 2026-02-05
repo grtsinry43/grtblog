@@ -26,6 +26,7 @@ type FederationFriendLinkHandler struct {
 	applicationRepo social.FriendLinkApplicationRepository
 	resolver        *fedinfra.Resolver
 	verifier        *fedinfra.Verifier
+	rateLimiter     fedinfra.RateLimiter
 	events          appEvent.Bus
 }
 
@@ -36,6 +37,7 @@ func NewFederationFriendLinkHandler(
 	applicationRepo social.FriendLinkApplicationRepository,
 	resolver *fedinfra.Resolver,
 	verifier *fedinfra.Verifier,
+	rateLimiter fedinfra.RateLimiter,
 	events appEvent.Bus,
 ) *FederationFriendLinkHandler {
 	if events == nil {
@@ -48,6 +50,7 @@ func NewFederationFriendLinkHandler(
 		applicationRepo: applicationRepo,
 		resolver:        resolver,
 		verifier:        verifier,
+		rateLimiter:     rateLimiter,
 		events:          events,
 	}
 }
@@ -91,6 +94,9 @@ func (h *FederationFriendLinkHandler) RequestFriendLink(c *fiber.Ctx) error {
 	}
 	if !settings.AllowInbound {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
+	}
+	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, requesterURL, "friendlink", settings.RateLimits); err != nil {
+		return err
 	}
 
 	manifest, endpoints, publicKey, err := fetchFederationDocs(c.Context(), h.resolver, requesterURL)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
@@ -94,6 +95,37 @@ func RegisterPageUpdateSubscriber(bus appEvent.Bus, manager *Manager) {
 	}))
 }
 
+func RegisterNotificationSubscriber(bus appEvent.Bus, manager *Manager) {
+	if bus == nil || manager == nil {
+		return
+	}
+	bus.Subscribe("admin.notification.created", handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		generic, ok := event.(appEvent.Generic)
+		if !ok || generic.Payload == nil {
+			return nil
+		}
+		userID, ok := generic.Payload["UserID"].(int64)
+		if !ok || userID <= 0 {
+			return nil
+		}
+		payload := map[string]any{
+			"id":         generic.Payload["ID"],
+			"type":       generic.Payload["NotifType"],
+			"title":      generic.Payload["Title"],
+			"content":    generic.Payload["Content"],
+			"payload":    generic.Payload["Payload"],
+			"is_read":    false,
+			"created_at": time.Now().UTC().Format(time.RFC3339),
+		}
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		manager.Broadcast(NotificationRoomKey(userID), data)
+		return nil
+	}))
+}
+
 func articleRoomKey(id int64) string {
 	return fmt.Sprintf("article:%d", id)
 }
@@ -104,6 +136,10 @@ func momentRoomKey(id int64) string {
 
 func pageRoomKey(id int64) string {
 	return fmt.Sprintf("page:%d", id)
+}
+
+func NotificationRoomKey(userID int64) string {
+	return fmt.Sprintf("notif:user:%d", userID)
 }
 
 func mapTOCNodes(nodes []content.TOCNode) []contract.TOCNode {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"gorm.io/datatypes"
@@ -39,6 +40,18 @@ func (r *FederationInstanceRepository) GetByBaseURL(ctx context.Context, baseURL
 	return &instance, nil
 }
 
+func (r *FederationInstanceRepository) GetByID(ctx context.Context, id int64) (*federation.FederationInstance, error) {
+	rec, err := r.repo.FirstByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, federation.ErrFederationInstanceNotFound
+		}
+		return nil, err
+	}
+	item := mapFederationInstanceToDomain(*rec)
+	return &item, nil
+}
+
 func (r *FederationInstanceRepository) Create(ctx context.Context, instance *federation.FederationInstance) error {
 	rec := mapFederationInstanceToModel(instance)
 	if err := r.repo.Create(ctx, &rec); err != nil {
@@ -69,6 +82,39 @@ func (r *FederationInstanceRepository) ListActive(ctx context.Context) ([]federa
 		result[i] = mapFederationInstanceToDomain(rec)
 	}
 	return result, nil
+}
+
+func (r *FederationInstanceRepository) List(ctx context.Context, status string, keyword string, page int, pageSize int) ([]federation.FederationInstance, int64, error) {
+	query := r.db.WithContext(ctx).Model(&model.FederationInstance{})
+	if strings.TrimSpace(status) != "" {
+		query = query.Where("status = ?", strings.TrimSpace(status))
+	}
+	if kw := strings.TrimSpace(keyword); kw != "" {
+		like := "%" + kw + "%"
+		query = query.Where("base_url ILIKE ? OR name ILIKE ?", like, like)
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	var recs []model.FederationInstance
+	if err := query.Order("updated_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&recs).Error; err != nil {
+		return nil, 0, err
+	}
+	result := make([]federation.FederationInstance, len(recs))
+	for i := range recs {
+		result[i] = mapFederationInstanceToDomain(recs[i])
+	}
+	return result, total, nil
 }
 
 // FederatedPostCacheRepository stores cached timeline posts.
@@ -131,6 +177,36 @@ func (r *FederatedPostCacheRepository) ListRecent(ctx context.Context, limit int
 	return result, nil
 }
 
+func (r *FederatedPostCacheRepository) ListTimeline(ctx context.Context, page, pageSize int) ([]federation.FederatedPostCache, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	query := r.db.WithContext(ctx).Model(&model.FederatedPostCache{})
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	var recs []model.FederatedPostCache
+	if err := query.
+		Order("published_at DESC, id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&recs).Error; err != nil {
+		return nil, 0, err
+	}
+	result := make([]federation.FederatedPostCache, len(recs))
+	for i, rec := range recs {
+		result[i] = mapFederatedPostCacheToDomain(rec)
+	}
+	return result, total, nil
+}
+
 // FederatedCitationRepository stores citation workflows.
 type FederatedCitationRepository struct {
 	db *gorm.DB
@@ -148,6 +224,18 @@ func (r *FederatedCitationRepository) Create(ctx context.Context, citation *fede
 	citation.ID = rec.ID
 	citation.RequestedAt = rec.RequestedAt
 	return nil
+}
+
+func (r *FederatedCitationRepository) GetByID(ctx context.Context, id int64) (*federation.FederatedCitation, error) {
+	var rec model.FederatedCitation
+	if err := r.db.WithContext(ctx).First(&rec, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, federation.ErrFederatedCitationNotFound
+		}
+		return nil, err
+	}
+	item := mapFederatedCitationToDomain(rec)
+	return &item, nil
 }
 
 func (r *FederatedCitationRepository) UpdateStatus(ctx context.Context, id int64, status string, reason *string) error {
@@ -183,6 +271,26 @@ func (r *FederatedCitationRepository) ListByTarget(ctx context.Context, articleI
 	return result, nil
 }
 
+func (r *FederatedCitationRepository) List(ctx context.Context, status string, limit int) ([]federation.FederatedCitation, error) {
+	query := r.db.WithContext(ctx).Model(&model.FederatedCitation{})
+	if strings.TrimSpace(status) != "" {
+		query = query.Where("status = ?", status)
+	}
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	query = query.Order("requested_at DESC")
+	var recs []model.FederatedCitation
+	if err := query.Find(&recs).Error; err != nil {
+		return nil, err
+	}
+	items := make([]federation.FederatedCitation, len(recs))
+	for i := range recs {
+		items[i] = mapFederatedCitationToDomain(recs[i])
+	}
+	return items, nil
+}
+
 // FederatedMentionRepository stores mentions delivered to local users.
 type FederatedMentionRepository struct {
 	db *gorm.DB
@@ -200,6 +308,31 @@ func (r *FederatedMentionRepository) Create(ctx context.Context, mention *federa
 	mention.ID = rec.ID
 	mention.CreatedAt = rec.CreatedAt
 	return nil
+}
+
+func (r *FederatedMentionRepository) GetByID(ctx context.Context, id int64) (*federation.FederatedMention, error) {
+	var rec model.FederatedMention
+	if err := r.db.WithContext(ctx).First(&rec, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, federation.ErrFederatedMentionNotFound
+		}
+		return nil, err
+	}
+	item := mapFederatedMentionToDomain(rec)
+	return &item, nil
+}
+
+func (r *FederatedMentionRepository) UpdateStatus(ctx context.Context, id int64, status string, reason *string) error {
+	updates := map[string]any{
+		"status": status,
+	}
+	if status == "approved" || status == "rejected" {
+		updates["reviewed_at"] = time.Now().UTC()
+		updates["review_reason"] = reason
+	}
+	return r.db.WithContext(ctx).Model(&model.FederatedMention{}).
+		Where("id = ?", id).
+		Updates(updates).Error
 }
 
 func (r *FederatedMentionRepository) MarkRead(ctx context.Context, id int64) error {
@@ -226,6 +359,26 @@ func (r *FederatedMentionRepository) ListByUser(ctx context.Context, userID int6
 		result[i] = mapFederatedMentionToDomain(rec)
 	}
 	return result, nil
+}
+
+func (r *FederatedMentionRepository) List(ctx context.Context, status string, limit int) ([]federation.FederatedMention, error) {
+	query := r.db.WithContext(ctx).Model(&model.FederatedMention{})
+	if strings.TrimSpace(status) != "" {
+		query = query.Where("status = ?", status)
+	}
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	query = query.Order("created_at DESC")
+	var recs []model.FederatedMention
+	if err := query.Find(&recs).Error; err != nil {
+		return nil, err
+	}
+	items := make([]federation.FederatedMention, len(recs))
+	for i := range recs {
+		items[i] = mapFederatedMentionToDomain(recs[i])
+	}
+	return items, nil
 }
 
 func mapFederationInstanceToDomain(rec model.FederationInstance) federation.FederationInstance {
@@ -316,6 +469,7 @@ func mapFederatedCitationToDomain(rec model.FederatedCitation) federation.Federa
 	return federation.FederatedCitation{
 		ID:               rec.ID,
 		SourceInstanceID: rec.SourceInstanceID,
+		SourceRequestID:  rec.SourceRequestID,
 		SourcePostURL:    rec.SourcePostURL,
 		SourcePostTitle:  rec.SourcePostTitle,
 		TargetArticleID:  rec.TargetArticleID,
@@ -333,6 +487,7 @@ func mapFederatedCitationToModel(citation *federation.FederatedCitation) model.F
 	return model.FederatedCitation{
 		ID:               citation.ID,
 		SourceInstanceID: citation.SourceInstanceID,
+		SourceRequestID:  citation.SourceRequestID,
 		SourcePostURL:    citation.SourcePostURL,
 		SourcePostTitle:  citation.SourcePostTitle,
 		TargetArticleID:  citation.TargetArticleID,
@@ -350,11 +505,15 @@ func mapFederatedMentionToDomain(rec model.FederatedMention) federation.Federate
 	return federation.FederatedMention{
 		ID:               rec.ID,
 		SourceInstanceID: rec.SourceInstanceID,
+		SourceRequestID:  rec.SourceRequestID,
 		SourcePostURL:    rec.SourcePostURL,
 		SourcePostTitle:  rec.SourcePostTitle,
 		MentionedUserID:  rec.MentionedUserID,
 		MentionContext:   rec.MentionContext,
 		MentionType:      rec.MentionType,
+		Status:           rec.Status,
+		ReviewedAt:       rec.ReviewedAt,
+		ReviewReason:     rec.ReviewReason,
 		IsRead:           rec.IsRead,
 		CreatedAt:        rec.CreatedAt,
 		ReadAt:           rec.ReadAt,
@@ -365,11 +524,15 @@ func mapFederatedMentionToModel(mention *federation.FederatedMention) model.Fede
 	return model.FederatedMention{
 		ID:               mention.ID,
 		SourceInstanceID: mention.SourceInstanceID,
+		SourceRequestID:  mention.SourceRequestID,
 		SourcePostURL:    mention.SourcePostURL,
 		SourcePostTitle:  mention.SourcePostTitle,
 		MentionedUserID:  mention.MentionedUserID,
 		MentionContext:   mention.MentionContext,
 		MentionType:      mention.MentionType,
+		Status:           mention.Status,
+		ReviewedAt:       mention.ReviewedAt,
+		ReviewReason:     mention.ReviewReason,
 		IsRead:           mention.IsRead,
 		CreatedAt:        mention.CreatedAt,
 		ReadAt:           mention.ReadAt,

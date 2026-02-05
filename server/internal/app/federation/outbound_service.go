@@ -3,6 +3,7 @@ package federation
 import (
 	"context"
 	"crypto"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
@@ -39,14 +40,14 @@ func NewOutboundService(cfgSvc *federationconfig.Service, resolver *fedinfra.Res
 	}
 }
 
-func (s *OutboundService) SendFriendLinkRequest(ctx context.Context, target string, message string, rssURL string) (*http.Response, []byte, error) {
-	endpoint, err := s.resolveEndpoint(ctx, target, "friendlink_request", "/api/federation/friendlinks/request")
+func (s *OutboundService) SendFriendLinkRequest(ctx context.Context, target string, message string, rssURL string) (*http.Response, []byte, string, error) {
+	endpoint, err := s.resolveEndpoint(ctx, target, "friendlink_request")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	settings, keyID, privKey, client, err := s.signedClient(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 
 	payload := contract.FederationFriendLinkRequestReq{
@@ -56,31 +57,32 @@ func (s *OutboundService) SendFriendLinkRequest(ctx context.Context, target stri
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	resp, err := client.DoSigned(ctx, http.MethodPost, endpoint, body, keyID, privKey)
 	if err != nil {
 		log.Printf("[federation] 出站 友链申请 target=%s endpoint=%s err=%v", target, endpoint, err)
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
 	log.Printf("[federation] 出站 友链申请 target=%s endpoint=%s status=%d", target, endpoint, resp.StatusCode)
-	return resp, raw, nil
+	return resp, raw, endpoint, nil
 }
 
-func (s *OutboundService) SendCitation(ctx context.Context, ev CitationDetected) (*http.Response, []byte, error) {
-	endpoint, err := s.resolveEndpoint(ctx, ev.TargetInstance, "citation_request", "/api/federation/citations/request")
+func (s *OutboundService) SendCitation(ctx context.Context, ev CitationDetected) (*http.Response, []byte, string, error) {
+	endpoint, err := s.resolveEndpoint(ctx, ev.TargetInstance, "citation_request")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	settings, keyID, privKey, client, err := s.signedClient(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 
 	sourceURL := strings.TrimRight(settings.InstanceURL, "/") + "/posts/" + ev.ShortURL
 	payload := contract.FederationCitationRequestReq{
+		RequestID:         strings.TrimSpace(ev.RequestID),
 		SourceInstanceURL: settings.InstanceURL,
 		SourcePost: contract.FederationCitationSourcePost{
 			ID:    ev.ShortURL,
@@ -93,31 +95,32 @@ func (s *OutboundService) SendCitation(ctx context.Context, ev CitationDetected)
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	resp, err := client.DoSigned(ctx, http.MethodPost, endpoint, body, keyID, privKey)
 	if err != nil {
 		log.Printf("[federation] 出站 引用申请 target=%s endpoint=%s err=%v", ev.TargetInstance, endpoint, err)
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
 	log.Printf("[federation] 出站 引用申请 target=%s endpoint=%s status=%d", ev.TargetInstance, endpoint, resp.StatusCode)
-	return resp, raw, nil
+	return resp, raw, endpoint, nil
 }
 
-func (s *OutboundService) SendMention(ctx context.Context, ev MentionDetected) (*http.Response, []byte, error) {
-	endpoint, err := s.resolveEndpoint(ctx, ev.TargetInstance, "mention_notify", "/api/federation/mentions/notify")
+func (s *OutboundService) SendMention(ctx context.Context, ev MentionDetected) (*http.Response, []byte, string, error) {
+	endpoint, err := s.resolveEndpoint(ctx, ev.TargetInstance, "mention_notify")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	settings, keyID, privKey, client, err := s.signedClient(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 
 	sourceURL := strings.TrimRight(settings.InstanceURL, "/") + "/posts/" + ev.ShortURL
 	payload := contract.FederationMentionNotifyReq{
+		RequestID:         strings.TrimSpace(ev.RequestID),
 		SourceInstanceURL: settings.InstanceURL,
 		SourcePost: contract.FederationMentionSourcePost{
 			URL:   sourceURL,
@@ -129,20 +132,42 @@ func (s *OutboundService) SendMention(ctx context.Context, ev MentionDetected) (
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	resp, err := client.DoSigned(ctx, http.MethodPost, endpoint, body, keyID, privKey)
 	if err != nil {
 		log.Printf("[federation] 出站 提及通知 target=%s endpoint=%s err=%v", ev.TargetInstance, endpoint, err)
-		return nil, nil, err
+		return nil, nil, endpoint, err
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
 	log.Printf("[federation] 出站 提及通知 target=%s endpoint=%s status=%d", ev.TargetInstance, endpoint, resp.StatusCode)
-	return resp, raw, nil
+	return resp, raw, endpoint, nil
 }
 
-func (s *OutboundService) resolveEndpoint(ctx context.Context, target string, key string, fallbackPath string) (string, error) {
+func (s *OutboundService) SendResultCallback(ctx context.Context, target string, payload contract.FederationOutboundResultReq) (*http.Response, []byte, string, error) {
+	endpoint, err := s.resolveEndpoint(ctx, target, "outbound_result")
+	if err != nil {
+		return nil, nil, endpoint, err
+	}
+	_, keyID, privKey, client, err := s.signedClient(ctx)
+	if err != nil {
+		return nil, nil, endpoint, err
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, nil, endpoint, err
+	}
+	resp, err := client.DoSigned(ctx, http.MethodPost, endpoint, body, keyID, privKey)
+	if err != nil {
+		return nil, nil, endpoint, err
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
+	return resp, raw, endpoint, nil
+}
+
+func (s *OutboundService) resolveEndpoint(ctx context.Context, target string, key string) (string, error) {
 	baseURL := s.resolveTargetBaseURL(ctx, target)
 	if baseURL == "" {
 		return "", errors.New("target instance is empty")
@@ -159,7 +184,7 @@ func (s *OutboundService) resolveEndpoint(ctx context.Context, target string, ke
 	}
 	path := endpoints.Endpoints[key]
 	if path == "" {
-		path = fallbackPath
+		return "", fmt.Errorf("endpoints.%s is empty", key)
 	}
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 		return path, nil
@@ -240,6 +265,9 @@ func parsePrivateKey(pemData string) (crypto.PrivateKey, error) {
 	if key, err := x509.ParsePKCS8PrivateKey(block.Bytes); err == nil {
 		if rsaKey, ok := key.(*rsa.PrivateKey); ok {
 			return rsaKey, nil
+		}
+		if edKey, ok := key.(ed25519.PrivateKey); ok {
+			return edKey, nil
 		}
 		return nil, fmt.Errorf("unsupported private key type")
 	}

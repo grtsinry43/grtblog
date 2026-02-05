@@ -147,5 +147,3 @@ func parsePublicKey(pemData string) (crypto.PublicKey, error) {
 	}
 	return nil, fmt.Errorf("unsupported public key format")
 }
-
-// TODO: support Ed25519 verification once a stable key format is agreed.

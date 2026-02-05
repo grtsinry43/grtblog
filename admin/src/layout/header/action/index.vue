@@ -7,6 +7,7 @@ import { mediaQueryInjectionKey } from '@/injection'
 import { toRefsPreferencesStore } from '@/stores'
 
 import FullScreen from './FullScreen.vue'
+import Notification from './Notification.vue'
 import PreferencesDrawer from './PreferencesDrawer.vue'
 import SignOut from './SignOut.vue'
 import ThemeModePopover from './ThemeModePopover.vue'
@@ -33,6 +34,7 @@ const { navigationMode } = toRefsPreferencesStore()
     >
       <span class="icon-[mdi--github]" />
     </ButtonAnimation>
+    <Notification />
     <FullScreen />
     <ThemeModePopover />
     <PreferencesDrawer />

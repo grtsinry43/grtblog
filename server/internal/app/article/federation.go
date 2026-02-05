@@ -17,8 +17,15 @@ func publishFederationSignals(ctx context.Context, bus appEvent.Bus, article *co
 	if len(mentions) == 0 && len(citations) == 0 {
 		return
 	}
+	deliveredMentions, deliveredCitations := deliveredSignalKeys(article.ExtInfo)
 	now := time.Now()
+	newMentionKeys := make([]string, 0, len(mentions))
+	newCitationKeys := make([]string, 0, len(citations))
 	for _, mention := range mentions {
+		key := mention.User + "@" + mention.Instance
+		if _, exists := deliveredMentions[key]; exists {
+			continue
+		}
 		_ = bus.Publish(ctx, appfed.MentionDetected{
 			ArticleID:      article.ID,
 			AuthorID:       article.AuthorID,
@@ -30,8 +37,13 @@ func publishFederationSignals(ctx context.Context, bus appEvent.Bus, article *co
 			MentionType:    "",
 			At:             now,
 		})
+		newMentionKeys = append(newMentionKeys, key)
 	}
 	for _, citation := range citations {
+		key := citation.Instance + "|" + citation.PostID
+		if _, exists := deliveredCitations[key]; exists {
+			continue
+		}
 		_ = bus.Publish(ctx, appfed.CitationDetected{
 			ArticleID:      article.ID,
 			AuthorID:       article.AuthorID,
@@ -43,5 +55,12 @@ func publishFederationSignals(ctx context.Context, bus appEvent.Bus, article *co
 			CitationType:   "",
 			At:             now,
 		})
+		newCitationKeys = append(newCitationKeys, key)
+	}
+	if len(newMentionKeys) == 0 && len(newCitationKeys) == 0 {
+		return
+	}
+	if updated, changed := markDeliveredSignals(article.ExtInfo, newMentionKeys, newCitationKeys); changed {
+		article.ExtInfo = updated
 	}
 }

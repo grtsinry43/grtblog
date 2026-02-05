@@ -1,6 +1,7 @@
 package article
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"strings"
@@ -73,7 +74,7 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 		IsTop:       cmd.IsTop,
 		IsHot:       false,
 		IsOriginal:  cmd.IsOriginal,
-		ExtInfo:     cmd.ExtInfo,
+		ExtInfo:     mergeExtInfoKeepingFederation(nil, cmd.ExtInfo),
 		CreatedAt:   createdAt,
 	}
 
@@ -101,6 +102,7 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 		At:        now,
 	})
 	if article.IsPublished {
+		prevExtInfo := append([]byte(nil), article.ExtInfo...)
 		_ = s.events.Publish(ctx, ArticlePublished{
 			ID:       article.ID,
 			AuthorID: article.AuthorID,
@@ -109,6 +111,11 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 			At:       now,
 		})
 		publishFederationSignals(ctx, s.events, article, cmd.Content)
+		if !bytes.Equal(prevExtInfo, article.ExtInfo) {
+			if err := s.repo.UpdateArticle(ctx, article); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return article, nil
@@ -159,7 +166,7 @@ func (s *Service) UpdateArticle(ctx context.Context, cmd UpdateArticleCmd) (*con
 	existing.IsPublished = cmd.IsPublished
 	existing.IsTop = cmd.IsTop
 	existing.IsOriginal = cmd.IsOriginal
-	existing.ExtInfo = cmd.ExtInfo
+	existing.ExtInfo = mergeExtInfoKeepingFederation(existing.ExtInfo, cmd.ExtInfo)
 
 	if err := s.repo.UpdateArticle(ctx, existing); err != nil {
 		return nil, err
@@ -205,7 +212,13 @@ func (s *Service) UpdateArticle(ctx context.Context, cmd UpdateArticleCmd) (*con
 		})
 	}
 	if existing.IsPublished && (!prevPublished || prevContentHash != existing.ContentHash) {
+		prevExtInfo := append([]byte(nil), existing.ExtInfo...)
 		publishFederationSignals(ctx, s.events, existing, existing.Content)
+		if !bytes.Equal(prevExtInfo, existing.ExtInfo) {
+			if err := s.repo.UpdateArticle(ctx, existing); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return existing, nil

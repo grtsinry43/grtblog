@@ -79,3 +79,16 @@ type GlobalNotification struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
+
+type AdminNotification struct {
+	ID        int64
+	UserID    int64
+	NotifType string
+	Title     string
+	Content   string
+	Payload   json.RawMessage
+	IsRead    bool
+	ReadAt    *time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}

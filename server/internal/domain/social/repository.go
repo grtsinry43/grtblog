@@ -33,6 +33,14 @@ type GlobalNotificationRepository interface {
 	ListActive(ctx context.Context, at time.Time) ([]GlobalNotification, error)
 }
 
+type AdminNotificationRepository interface {
+	Create(ctx context.Context, notification *AdminNotification) error
+	GetByID(ctx context.Context, id int64) (*AdminNotification, error)
+	ListByUser(ctx context.Context, userID int64, options AdminNotificationListOptions) ([]AdminNotification, int64, error)
+	MarkRead(ctx context.Context, userID int64, id int64) error
+	MarkAllRead(ctx context.Context, userID int64) error
+}
+
 type FriendLinkApplicationListOptions struct {
 	Status       string
 	ApplyChannel string
@@ -54,4 +62,10 @@ type GlobalNotificationListOptions struct {
 	Status   string
 	Page     int
 	PageSize int
+}
+
+type AdminNotificationListOptions struct {
+	UnreadOnly bool
+	Page       int
+	PageSize   int
 }

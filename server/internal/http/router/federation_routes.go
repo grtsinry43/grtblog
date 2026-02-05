@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
@@ -23,13 +24,18 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	citationRepo := persistence.NewFederatedCitationRepository(deps.DB)
 	mentionRepo := persistence.NewFederatedMentionRepository(deps.DB)
 	postCacheRepo := persistence.NewFederatedPostCacheRepository(deps.DB)
+	outboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
 
 	var cache federation.Cache
+	var rateLimiter federation.RateLimiter
 	if deps.Redis != nil {
 		cache = federation.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
+		rateLimiter = federation.NewRedisRateLimiter(deps.Redis, deps.Config.Redis.Prefix)
 	}
 	resolver := federation.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
 	verifier := federation.NewVerifier(resolver, 5*time.Minute)
+	outbound := appfed.NewOutboundService(cfgSvc, resolver, instanceRepo)
+	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, deps.EventBus)
 
 	wellKnownHandler := handler.NewFederationWellKnownHandler(cfgSvc, deps.Config.App)
 	app.Get("/.well-known/blog-federation/manifest.json", wellKnownHandler.Manifest)
@@ -37,7 +43,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	app.Get("/.well-known/blog-federation/endpoints.json", wellKnownHandler.Endpoints)
 
 	federationGroup := app.Group("/api/federation")
-	friendLinkHandler := handler.NewFederationFriendLinkHandler(cfgSvc, instanceRepo, linkRepo, appRepo, resolver, verifier, deps.EventBus)
+	friendLinkHandler := handler.NewFederationFriendLinkHandler(cfgSvc, instanceRepo, linkRepo, appRepo, resolver, verifier, rateLimiter, deps.EventBus)
 	federationGroup.Post("/friendlinks/request", friendLinkHandler.RequestFriendLink)
 
 	timelineHandler := handler.NewFederationTimelineHandler(contentRepo, userRepo, cfgSvc)
@@ -46,9 +52,12 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	postHandler := handler.NewFederationPostHandler(contentRepo, userRepo, postCacheRepo, cfgSvc)
 	federationGroup.Get("/posts/:id", postHandler.GetPostDetail)
 
-	citationHandler := handler.NewFederationCitationHandler(cfgSvc, contentRepo, instanceRepo, citationRepo, linkRepo, resolver, verifier, deps.EventBus)
+	citationHandler := handler.NewFederationCitationHandler(cfgSvc, contentRepo, instanceRepo, citationRepo, linkRepo, resolver, verifier, rateLimiter, deps.EventBus)
 	federationGroup.Post("/citations/request", citationHandler.RequestCitation)
 
-	mentionHandler := handler.NewFederationMentionHandler(cfgSvc, instanceRepo, mentionRepo, userRepo, resolver, verifier, deps.EventBus)
+	mentionHandler := handler.NewFederationMentionHandler(cfgSvc, instanceRepo, mentionRepo, userRepo, resolver, verifier, rateLimiter, deps.EventBus)
 	federationGroup.Post("/mentions/notify", mentionHandler.NotifyMention)
+
+	outboundResultHandler := handler.NewFederationOutboundResultHandler(deliverySvc, verifier)
+	federationGroup.Post("/outbound/result", outboundResultHandler.ResultCallback)
 }

@@ -3,6 +3,7 @@ package federation
 import "time"
 
 type MentionDetected struct {
+	RequestID      string
 	ArticleID      int64
 	AuthorID       int64
 	Title          string
@@ -20,6 +21,7 @@ func (e MentionDetected) OccurredAt() time.Time {
 }
 
 type CitationDetected struct {
+	RequestID      string
 	ArticleID      int64
 	AuthorID       int64
 	Title          string
@@ -33,5 +35,22 @@ type CitationDetected struct {
 
 func (e CitationDetected) Name() string { return "federation.citation.detected" }
 func (e CitationDetected) OccurredAt() time.Time {
+	return e.At
+}
+
+type DeliveryStatusChanged struct {
+	DeliveryID      int64
+	RequestID       string
+	DeliveryType    string
+	SourceArticleID *int64
+	Status          string
+	HTTPStatus      *int
+	ErrorMessage    *string
+	RemoteTicketID  *string
+	At              time.Time
+}
+
+func (e DeliveryStatusChanged) Name() string { return "federation.delivery.status.changed" }
+func (e DeliveryStatusChanged) OccurredAt() time.Time {
 	return e.At
 }
