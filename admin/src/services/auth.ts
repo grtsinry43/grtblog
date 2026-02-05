@@ -7,6 +7,7 @@ export interface UserInfo {
   email: string
   avatar: string
   isActive: boolean
+  isAdmin: boolean
   createdAt: string
   updatedAt: string
   deletedAt?: string | null
@@ -25,10 +26,39 @@ export interface LoginPayload {
   turnstileToken?: string
 }
 
+export interface RegisterPayload {
+  username: string
+  nickname?: string
+  email?: string
+  password: string
+  turnstileToken?: string
+}
+
+export function register(payload: RegisterPayload) {
+  return request<UserInfo>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function login(payload: LoginPayload) {
   return request<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+export interface SetupStateResponse {
+  hasUser: boolean
+  hasAdmin: boolean
+  websiteInfoReady: boolean
+  missingWebsiteInfoKeys: string[]
+  needsSetup: boolean
+}
+
+export function getSetupState() {
+  return request<SetupStateResponse>('/auth/setup-state', {
+    method: 'GET',
   })
 }
 

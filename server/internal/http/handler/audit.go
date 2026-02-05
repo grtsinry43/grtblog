@@ -65,6 +65,10 @@ func buildAuditMessage(action, role string, fields map[string]any) string {
 		return "更新 OAuth 提供方" + suffixByKey(fields)
 	case "admin.oauth.delete":
 		return "删除 OAuth 提供方" + suffixByKey(fields)
+	case "admin.token.create":
+		return "创建管理员令牌"
+	case "admin.token.delete":
+		return "删除管理员令牌"
 	case "friend-link.submit":
 		return "提交友链申请"
 	default:

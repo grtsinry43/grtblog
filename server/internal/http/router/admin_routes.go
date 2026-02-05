@@ -23,7 +23,8 @@ import (
 
 func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, navMenuHandler *handler.NavMenuHandler, sysCfgSvc *sysconfig.Service, wsManager *ws.Manager) {
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))
+	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 
 	websiteInfo := adminGroup.Group("/website-info")
 	websiteInfo.Get("", websiteInfoHandler.List)
@@ -38,6 +39,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	oauthRepo := persistence.NewOAuthProviderRepository(deps.DB)
 	adminOAuth := handler.NewAdminOAuthHandler(oauthRepo)
+	adminTokenHandler := handler.NewAdminTokenHandler(adminTokenRepo, identityRepo)
 	admin := adminGroup.Group("/admin")
 	eventHandler := handler.NewEventHandler()
 	admin.Get("/events", eventHandler.ListEvents)
@@ -47,6 +49,9 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/oauth-providers", adminOAuth.Create)
 	admin.Put("/oauth-providers/:key", adminOAuth.Update)
 	admin.Delete("/oauth-providers/:key", adminOAuth.Delete)
+	admin.Get("/tokens", adminTokenHandler.List)
+	admin.Post("/tokens", adminTokenHandler.Create)
+	admin.Delete("/tokens/:id", adminTokenHandler.Delete)
 
 	commentHandler := newCommentHandler(deps)
 	admin.Get("/comments", commentHandler.ListAdminComments)

@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/copier"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/auth"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/setupstate"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -18,6 +19,7 @@ import (
 
 type AuthHandler struct {
 	svc       *auth.Service
+	setupSvc  *setupstate.Service
 	sysCfg    *sysconfig.Service
 	turnstile TurnstileVerifier
 }
@@ -27,8 +29,8 @@ type TurnstileVerifier interface {
 	Verify(ctx context.Context, token, remoteIP string, settings turnstile.Settings) error
 }
 
-func NewAuthHandler(svc *auth.Service, sysCfg *sysconfig.Service, verifier TurnstileVerifier) *AuthHandler {
-	return &AuthHandler{svc: svc, sysCfg: sysCfg, turnstile: verifier}
+func NewAuthHandler(svc *auth.Service, setupSvc *setupstate.Service, sysCfg *sysconfig.Service, verifier TurnstileVerifier) *AuthHandler {
+	return &AuthHandler{svc: svc, setupSvc: setupSvc, sysCfg: sysCfg, turnstile: verifier}
 }
 
 // Register godoc
@@ -240,6 +242,24 @@ func (h *AuthHandler) InitState(c *fiber.Ctx) error {
 	}
 	return response.Success(c, contract.InitStateResp{
 		Initialized: initialized,
+	})
+}
+
+// SetupState 返回初始化准备状态（用户、管理员、站点信息）。
+func (h *AuthHandler) SetupState(c *fiber.Ctx) error {
+	if h.setupSvc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "初始化服务未配置")
+	}
+	state, err := h.setupSvc.Evaluate(c.Context())
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "获取初始化状态失败")
+	}
+	return response.Success(c, contract.SetupStateResp{
+		HasUser:                state.HasUser,
+		HasAdmin:               state.HasAdmin,
+		WebsiteInfoReady:       state.WebsiteInfoReady,
+		MissingWebsiteInfoKeys: state.MissingWebsiteInfoKeys,
+		NeedsSetup:             state.NeedsSetup,
 	})
 }
 

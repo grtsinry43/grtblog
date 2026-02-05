@@ -13,12 +13,13 @@ import (
 )
 
 func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler) {
-	authenticated := v2.Group("", middleware.RequireAuth(deps.JWTManager))
+	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
+	authenticated := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo))
 
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	oauthRepo := persistence.NewOAuthProviderRepository(deps.DB)
 	authSvc := auth.NewService(identityRepo, oauthRepo, deps.JWTManager, nil, deps.Config.Auth)
-	authHandler := handler.NewAuthHandler(authSvc, nil, nil)
+	authHandler := handler.NewAuthHandler(authSvc, nil, nil, nil)
 	authenticated.Get("/auth/access-info", authHandler.AccessInfo)
 	authenticated.Get("/auth/profile", authHandler.Profile)
 	authenticated.Put("/auth/profile", authHandler.UpdateProfile)
