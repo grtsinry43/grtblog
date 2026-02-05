@@ -11,6 +11,7 @@ import (
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/hitokoto"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
@@ -115,6 +116,15 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Put("/friend-links/:id", friendLinkAdminHandler.UpdateFriendLink)
 	admin.Put("/friend-links/:id/block", friendLinkAdminHandler.BlockFriendLink)
 	admin.Delete("/friend-links/:id", friendLinkAdminHandler.DeleteFriendLink)
+
+	globalNotificationRepo := persistence.NewGlobalNotificationRepository(deps.DB)
+	globalNotificationSvc := globalnotification.NewService(globalNotificationRepo, deps.EventBus)
+	globalNotificationHandler := handler.NewGlobalNotificationHandler(globalNotificationSvc)
+	admin.Get("/global-notifications", globalNotificationHandler.ListAdmin)
+	admin.Get("/global-notifications/:id", globalNotificationHandler.GetAdmin)
+	admin.Post("/global-notifications", globalNotificationHandler.Create)
+	admin.Put("/global-notifications/:id", globalNotificationHandler.Update)
+	admin.Delete("/global-notifications/:id", globalNotificationHandler.Delete)
 
 	logHandler := handler.NewAdminLogHandler("storage/logs/app.log", 200)
 	systemHandler := handler.NewSystemHandler(deps.DB, deps.Redis, deps.EventBus)

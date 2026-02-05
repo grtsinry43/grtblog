@@ -236,6 +236,7 @@ function handleBack() {
 onMounted(async () => {
   await fetchEvents()
   await fetchDetail()
+})
 </script>
 
 <template>
