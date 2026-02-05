@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
@@ -72,6 +73,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	ws.RegisterArticleUpdateSubscriber(eventBus, wsManager)
 	ws.RegisterMomentUpdateSubscriber(eventBus, wsManager)
 	ws.RegisterPageUpdateSubscriber(eventBus, wsManager)
+	ws.RegisterNotificationSubscriber(eventBus, wsManager)
 
 	webhookSettings, err := sysCfgSvc.WebhookSettings(context.Background())
 	if err != nil {
@@ -108,13 +110,18 @@ func Register(app *fiber.App, deps Dependencies) {
 	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
 	fedCfgSvc := federationconfig.NewService(fedCfgRepo)
 	fedInstanceRepo := persistence.NewFederationInstanceRepository(deps.DB)
+	fedOutboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
 	var fedCache fedinfra.Cache
 	if deps.Redis != nil {
 		fedCache = fedinfra.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 	}
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedCache)
 	fedOutbound := appfed.NewOutboundService(fedCfgSvc, fedResolver, fedInstanceRepo)
-	appfed.RegisterSubscribers(eventBus, fedOutbound)
+	fedDelivery := appfed.NewDeliveryService(fedOutboundRepo, fedOutbound, eventBus)
+	appfed.RegisterSubscribers(eventBus, fedDelivery)
+	adminNotifRepo := persistence.NewAdminNotificationRepository(deps.DB)
+	adminNotifSvc := adminnotification.NewService(adminNotifRepo, eventBus)
+	adminnotification.RegisterSubscribers(eventBus, adminNotifSvc, contentRepo, persistence.NewIdentityRepository(deps.DB))
 
 	websiteInfoSvc := websiteinfo.NewService(websiteInfoRepo, eventBus)
 	websiteInfoHandler := handler.NewWebsiteInfoHandler(websiteInfoSvc)

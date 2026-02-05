@@ -68,6 +68,7 @@ type FederatedPostCache struct {
 type FederatedCitation struct {
 	ID               int64
 	SourceInstanceID int64
+	SourceRequestID  *string
 	SourcePostURL    string
 	SourcePostTitle  *string
 	TargetArticleID  int64
@@ -84,11 +85,15 @@ type FederatedCitation struct {
 type FederatedMention struct {
 	ID               int64
 	SourceInstanceID int64
+	SourceRequestID  *string
 	SourcePostURL    string
 	SourcePostTitle  *string
 	MentionedUserID  int64
 	MentionContext   string
 	MentionType      string
+	Status           string
+	ReviewedAt       *time.Time
+	ReviewReason     *string
 	IsRead           bool
 	CreatedAt        time.Time
 	ReadAt           *time.Time

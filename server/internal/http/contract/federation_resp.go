@@ -63,3 +63,38 @@ type FederationPostDetailResp struct {
 	Post         FederationPostResp   `json:"post"`
 	RelatedPosts []FederationPostResp `json:"related_posts,omitempty"`
 }
+
+type FederationOutboundResultResp struct {
+	RequestID string `json:"request_id"`
+	Status    string `json:"status"`
+}
+
+type FederationCitationInteractionResp struct {
+	ID               int64   `json:"id"`
+	SourceInstanceID int64   `json:"source_instance_id"`
+	SourcePostURL    string  `json:"source_post_url"`
+	SourcePostTitle  *string `json:"source_post_title,omitempty"`
+	CitationType     string  `json:"citation_type"`
+	Status           string  `json:"status"`
+	RequestedAt      string  `json:"requested_at"`
+}
+
+type FederationOutboundInteractionResp struct {
+	ID                int64   `json:"id"`
+	RequestID         string  `json:"request_id"`
+	Type              string  `json:"type"`
+	TargetInstanceURL string  `json:"target_instance_url"`
+	Status            string  `json:"status"`
+	AttemptCount      int     `json:"attempt_count"`
+	HTTPStatus        *int    `json:"http_status,omitempty"`
+	ErrorMessage      *string `json:"error_message,omitempty"`
+	RemoteTicketID    *string `json:"remote_ticket_id,omitempty"`
+	CreatedAt         string  `json:"created_at"`
+	UpdatedAt         string  `json:"updated_at"`
+}
+
+type FederationArticleInteractionsResp struct {
+	ArticleID        int64                               `json:"article_id"`
+	InboundCitations []FederationCitationInteractionResp `json:"inbound_citations"`
+	Outbound         []FederationOutboundInteractionResp `json:"outbound"`
+}

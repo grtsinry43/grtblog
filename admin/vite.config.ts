@@ -26,6 +26,7 @@ export default defineConfig((env) => {
         '/api': {
           target: apiProxyTarget,
           changeOrigin: true,
+          ws: true,
         },
         '/uploads': {
           target: apiProxyTarget,

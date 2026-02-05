@@ -16,6 +16,7 @@ type FederationCitationSourcePost struct {
 
 // FederationCitationRequestReq 跨站引用请求。
 type FederationCitationRequestReq struct {
+	RequestID         string                       `json:"request_id,omitempty"`
 	SourceInstanceURL string                       `json:"source_instance_url"`
 	SourcePost        FederationCitationSourcePost `json:"source_post"`
 	TargetPostID      string                       `json:"target_post_id"`
@@ -38,9 +39,20 @@ type FederationMentionSourcePost struct {
 
 // FederationMentionNotifyReq 跨站提及通知。
 type FederationMentionNotifyReq struct {
+	RequestID         string                      `json:"request_id,omitempty"`
 	SourceInstanceURL string                      `json:"source_instance_url"`
 	SourcePost        FederationMentionSourcePost `json:"source_post"`
 	MentionedUser     string                      `json:"mentioned_user"`
 	MentionContext    string                      `json:"mention_context"`
 	MentionType       string                      `json:"mention_type,omitempty"`
+}
+
+// FederationOutboundResultReq 远端回调本地出站投递结果。
+type FederationOutboundResultReq struct {
+	RequestID      string `json:"request_id"`
+	Type           string `json:"type"`
+	Status         string `json:"status"`
+	RemoteTicketID string `json:"remote_ticket_id,omitempty"`
+	Reason         string `json:"reason,omitempty"`
+	ProcessedAt    string `json:"processed_at,omitempty"`
 }

@@ -29,6 +29,7 @@ type FederationCitationHandler struct {
 	linkRepo     social.FriendLinkRepository
 	resolver     *fedinfra.Resolver
 	verifier     *fedinfra.Verifier
+	rateLimiter  fedinfra.RateLimiter
 	events       appEvent.Bus
 }
 
@@ -40,6 +41,7 @@ func NewFederationCitationHandler(
 	linkRepo social.FriendLinkRepository,
 	resolver *fedinfra.Resolver,
 	verifier *fedinfra.Verifier,
+	rateLimiter fedinfra.RateLimiter,
 	events appEvent.Bus,
 ) *FederationCitationHandler {
 	if events == nil {
@@ -53,6 +55,7 @@ func NewFederationCitationHandler(
 		linkRepo:     linkRepo,
 		resolver:     resolver,
 		verifier:     verifier,
+		rateLimiter:  rateLimiter,
 		events:       events,
 	}
 }
@@ -106,6 +109,9 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 	if !settings.AllowInbound {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
 	}
+	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, payload.SourceInstanceURL, "citation", settings.RateLimits); err != nil {
+		return err
+	}
 
 	article, err := h.resolveTargetArticle(c.Context(), payload.TargetPostID)
 	if err != nil {
@@ -135,6 +141,7 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 
 	citation := &federation.FederatedCitation{
 		SourceInstanceID: instance.ID,
+		SourceRequestID:  toOptionalString(payload.RequestID),
 		SourcePostURL:    payload.SourcePost.URL,
 		SourcePostTitle:  toOptionalString(payload.SourcePost.Title),
 		TargetArticleID:  article.ID,
@@ -146,8 +153,6 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 	if err := h.citationRepo.Create(c.Context(), citation); err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "创建引用记录失败", err)
 	}
-
-	// TODO: 当状态为 approved 时，写入特殊评论（需要评论模块支持）。
 
 	resp := contract.FederationCitationResponseResp{
 		CitationID: citation.ID,

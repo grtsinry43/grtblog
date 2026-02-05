@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendtimeline"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
@@ -28,6 +29,9 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	friendLinkSvc := friendlink.NewLinkService(friendLinkRepo)
 	friendLinkHandler := handler.NewFriendLinkPublicHandler(friendLinkSvc)
 	public.Get("/friend-links", friendLinkHandler.ListPublic)
+	friendTimelineSvc := friendtimeline.NewService(persistence.NewFederatedPostCacheRepository(deps.DB), deps.Redis, deps.Config.Redis.Prefix)
+	friendTimelineHandler := handler.NewFriendTimelineHandler(friendTimelineSvc)
+	public.Get("/friend-timeline", friendTimelineHandler.ListPublic)
 
 	globalNotificationRepo := persistence.NewGlobalNotificationRepository(deps.DB)
 	globalNotificationSvc := globalnotification.NewService(globalNotificationRepo, deps.EventBus)

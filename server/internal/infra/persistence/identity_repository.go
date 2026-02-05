@@ -221,6 +221,18 @@ func (r *IdentityRepository) CountUsers(ctx context.Context) (int64, error) {
 	return total, nil
 }
 
+func (r *IdentityRepository) ListAdmins(ctx context.Context) ([]identity.User, error) {
+	var records []model.User
+	if err := r.db.WithContext(ctx).Where("is_admin = ?", true).Find(&records).Error; err != nil {
+		return nil, err
+	}
+	users := make([]identity.User, len(records))
+	for i := range records {
+		users[i] = mapUserToDomain(records[i])
+	}
+	return users, nil
+}
+
 func isUniqueConstraint(err error) bool {
 	if err == nil {
 		return false

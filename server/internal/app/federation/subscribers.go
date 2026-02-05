@@ -13,7 +13,7 @@ func (h handlerFunc) Handle(ctx context.Context, event appEvent.Event) error {
 }
 
 // RegisterSubscribers wires federation outbound handlers to the event bus.
-func RegisterSubscribers(bus appEvent.Bus, svc *OutboundService) {
+func RegisterSubscribers(bus appEvent.Bus, svc *DeliveryService) {
 	if bus == nil || svc == nil {
 		return
 	}
@@ -22,7 +22,7 @@ func RegisterSubscribers(bus appEvent.Bus, svc *OutboundService) {
 		if !ok {
 			return nil
 		}
-		_, _, err := svc.SendMention(ctx, payload)
+		_, err := svc.DispatchMention(ctx, payload, nil)
 		return err
 	}))
 	bus.Subscribe(CitationDetected{}.Name(), handlerFunc(func(ctx context.Context, event appEvent.Event) error {
@@ -30,7 +30,7 @@ func RegisterSubscribers(bus appEvent.Bus, svc *OutboundService) {
 		if !ok {
 			return nil
 		}
-		_, _, err := svc.SendCitation(ctx, payload)
+		_, err := svc.DispatchCitation(ctx, payload, nil)
 		return err
 	}))
 }

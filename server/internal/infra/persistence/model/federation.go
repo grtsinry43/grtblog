@@ -52,6 +52,7 @@ func (FederatedPostCache) TableName() string { return "federated_post_cache" }
 type FederatedCitation struct {
 	ID               int64      `gorm:"column:id;primaryKey"`
 	SourceInstanceID int64      `gorm:"column:source_instance_id;not null"`
+	SourceRequestID  *string    `gorm:"column:source_request_id;size:64"`
 	SourcePostURL    string     `gorm:"column:source_post_url;size:500;not null"`
 	SourcePostTitle  *string    `gorm:"column:source_post_title;size:500"`
 	TargetArticleID  int64      `gorm:"column:target_article_id;not null"`
@@ -69,14 +70,42 @@ func (FederatedCitation) TableName() string { return "federated_citation" }
 type FederatedMention struct {
 	ID               int64      `gorm:"column:id;primaryKey"`
 	SourceInstanceID int64      `gorm:"column:source_instance_id;not null"`
+	SourceRequestID  *string    `gorm:"column:source_request_id;size:64"`
 	SourcePostURL    string     `gorm:"column:source_post_url;size:500;not null"`
 	SourcePostTitle  *string    `gorm:"column:source_post_title;size:500"`
 	MentionedUserID  int64      `gorm:"column:mentioned_user_id;not null"`
 	MentionContext   string     `gorm:"column:mention_context;type:text;not null"`
 	MentionType      string     `gorm:"column:mention_type;size:20;not null"`
+	Status           string     `gorm:"column:status;size:20;not null"`
+	ReviewedAt       *time.Time `gorm:"column:reviewed_at"`
+	ReviewReason     *string    `gorm:"column:review_reason;type:text"`
 	IsRead           bool       `gorm:"column:is_read;not null"`
 	CreatedAt        time.Time  `gorm:"column:created_at;autoCreateTime"`
 	ReadAt           *time.Time `gorm:"column:read_at"`
 }
 
 func (FederatedMention) TableName() string { return "federated_mention" }
+
+type OutboundDelivery struct {
+	ID                int64          `gorm:"column:id;primaryKey"`
+	RequestID         string         `gorm:"column:request_id;size:64;not null"`
+	DeliveryType      string         `gorm:"column:delivery_type;size:20;not null"`
+	SourceArticleID   *int64         `gorm:"column:source_article_id"`
+	TargetInstanceURL string         `gorm:"column:target_instance_url;size:255;not null"`
+	TargetEndpoint    string         `gorm:"column:target_endpoint;size:500;not null"`
+	Payload           datatypes.JSON `gorm:"column:payload;type:jsonb;not null"`
+	Status            string         `gorm:"column:status;size:20;not null"`
+	AttemptCount      int            `gorm:"column:attempt_count;not null"`
+	MaxAttempts       int            `gorm:"column:max_attempts;not null"`
+	NextRetryAt       *time.Time     `gorm:"column:next_retry_at"`
+	HTTPStatus        *int           `gorm:"column:http_status"`
+	ResponseBody      *string        `gorm:"column:response_body;type:text"`
+	ErrorMessage      *string        `gorm:"column:error_message;type:text"`
+	RemoteTicketID    *string        `gorm:"column:remote_ticket_id;size:128"`
+	TraceID           *string        `gorm:"column:trace_id;size:64"`
+	LastCallbackAt    *time.Time     `gorm:"column:last_callback_at"`
+	CreatedAt         time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt         time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (OutboundDelivery) TableName() string { return "federation_outbound_delivery" }

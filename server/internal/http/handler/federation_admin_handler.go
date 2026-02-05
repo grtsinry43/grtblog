@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,29 +13,32 @@ import (
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
+	domainfed "github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 )
 
 type FederationAdminHandler struct {
-	cfgSvc      *federationconfig.Service
-	contentRepo content.Repository
-	outbound    *appfed.OutboundService
-	resolver    *fedinfra.Resolver
-	events      appEvent.Bus
+	cfgSvc       *federationconfig.Service
+	contentRepo  content.Repository
+	deliverySvc  *appfed.DeliveryService
+	instanceRepo domainfed.FederationInstanceRepository
+	resolver     *fedinfra.Resolver
+	events       appEvent.Bus
 }
 
-func NewFederationAdminHandler(cfgSvc *federationconfig.Service, contentRepo content.Repository, outbound *appfed.OutboundService, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
+func NewFederationAdminHandler(cfgSvc *federationconfig.Service, contentRepo content.Repository, deliverySvc *appfed.DeliveryService, instanceRepo domainfed.FederationInstanceRepository, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
 	return &FederationAdminHandler{
-		cfgSvc:      cfgSvc,
-		contentRepo: contentRepo,
-		outbound:    outbound,
-		resolver:    resolver,
-		events:      events,
+		cfgSvc:       cfgSvc,
+		contentRepo:  contentRepo,
+		deliverySvc:  deliverySvc,
+		instanceRepo: instanceRepo,
+		resolver:     resolver,
+		events:       events,
 	}
 }
 
@@ -56,10 +61,10 @@ func (h *FederationAdminHandler) RequestFriendLink(c *fiber.Ctx) error {
 	if target == "" {
 		return response.NewBizErrorWithMsg(response.ParamsError, "target_url 不能为空")
 	}
-	if h.outbound == nil {
+	if h.deliverySvc == nil {
 		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
 	}
-	resp, raw, err := h.outbound.SendFriendLinkRequest(c.Context(), target, req.Message, req.RSSURL)
+	delivery, err := h.deliverySvc.DispatchFriendLink(c.Context(), target, req.Message, req.RSSURL, nil)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
 	}
@@ -68,13 +73,15 @@ func (h *FederationAdminHandler) RequestFriendLink(c *fiber.Ctx) error {
 		At:        time.Now(),
 		Payload: map[string]any{
 			"TargetURL":   target,
-			"StatusCode":  resp.StatusCode,
-			"ResponseRaw": string(raw),
+			"StatusCode":  intPtrValue(delivery.HTTPStatus),
+			"ResponseRaw": stringPtrValue(delivery.ResponseBody),
 		},
 	})
 	return response.Success(c, contract.FederationAdminProxyResp{
-		StatusCode: resp.StatusCode,
-		Body:       string(raw),
+		RequestID:  delivery.RequestID,
+		DeliveryID: delivery.ID,
+		StatusCode: intPtrValue(delivery.HTTPStatus),
+		Body:       stringPtrValue(delivery.ResponseBody),
 	})
 }
 
@@ -97,7 +104,7 @@ func (h *FederationAdminHandler) SendCitation(c *fiber.Ctx) error {
 	if target == "" || strings.TrimSpace(req.TargetPostID) == "" {
 		return response.NewBizErrorWithMsg(response.ParamsError, "target_instance_url/target_post_id 不能为空")
 	}
-	if h.outbound == nil {
+	if h.deliverySvc == nil {
 		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
 	}
 	article, err := h.resolveArticle(c, req.SourceArticleID, req.SourceShortURL)
@@ -122,7 +129,7 @@ func (h *FederationAdminHandler) SendCitation(c *fiber.Ctx) error {
 		Context:        context,
 		CitationType:   citationType,
 	}
-	resp, raw, err := h.outbound.SendCitation(c.Context(), ev)
+	delivery, err := h.deliverySvc.DispatchCitation(c.Context(), ev, nil)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
 	}
@@ -132,12 +139,14 @@ func (h *FederationAdminHandler) SendCitation(c *fiber.Ctx) error {
 		Payload: map[string]any{
 			"TargetInstanceURL": target,
 			"TargetPostID":      ev.TargetPostID,
-			"StatusCode":        resp.StatusCode,
+			"StatusCode":        intPtrValue(delivery.HTTPStatus),
 		},
 	})
 	return response.Success(c, contract.FederationAdminProxyResp{
-		StatusCode: resp.StatusCode,
-		Body:       string(raw),
+		RequestID:  delivery.RequestID,
+		DeliveryID: delivery.ID,
+		StatusCode: intPtrValue(delivery.HTTPStatus),
+		Body:       stringPtrValue(delivery.ResponseBody),
 	})
 }
 
@@ -160,7 +169,7 @@ func (h *FederationAdminHandler) SendMention(c *fiber.Ctx) error {
 	if target == "" || strings.TrimSpace(req.MentionedUser) == "" {
 		return response.NewBizErrorWithMsg(response.ParamsError, "target_instance_url/mentioned_user 不能为空")
 	}
-	if h.outbound == nil {
+	if h.deliverySvc == nil {
 		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
 	}
 	article, err := h.resolveArticle(c, req.SourceArticleID, req.SourceShortURL)
@@ -185,7 +194,7 @@ func (h *FederationAdminHandler) SendMention(c *fiber.Ctx) error {
 		Context:        context,
 		MentionType:    mentionType,
 	}
-	resp, raw, err := h.outbound.SendMention(c.Context(), ev)
+	delivery, err := h.deliverySvc.DispatchMention(c.Context(), ev, nil)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
 	}
@@ -195,13 +204,137 @@ func (h *FederationAdminHandler) SendMention(c *fiber.Ctx) error {
 		Payload: map[string]any{
 			"TargetInstanceURL": target,
 			"MentionedUser":     ev.TargetUser,
-			"StatusCode":        resp.StatusCode,
+			"StatusCode":        intPtrValue(delivery.HTTPStatus),
 		},
 	})
 	return response.Success(c, contract.FederationAdminProxyResp{
-		StatusCode: resp.StatusCode,
-		Body:       string(raw),
+		RequestID:  delivery.RequestID,
+		DeliveryID: delivery.ID,
+		StatusCode: intPtrValue(delivery.HTTPStatus),
+		Body:       stringPtrValue(delivery.ResponseBody),
 	})
+}
+
+// ListOutbound 查询出站投递状态。
+// @Summary 查询联合出站状态
+// @Tags FederationAdmin
+// @Produce json
+// @Param type query string false "类型: friendlink|citation|mention"
+// @Param request_id query string false "投递单据 request_id（精确匹配）"
+// @Param status query string false "状态"
+// @Param target query string false "目标实例模糊匹配"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(20)
+// @Success 200 {object} contract.FederationOutboundDeliveryListResp
+// @Security BearerAuth
+// @Router /admin/federation/outbound [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) ListOutbound(c *fiber.Ctx) error {
+	if h.deliverySvc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	page := parseIntQuery(c, "page", 1)
+	size := parseIntQuery(c, "pageSize", 20)
+	items, total, err := h.deliverySvc.List(c.Context(), domainfed.OutboundDeliveryListOptions{
+		RequestID: strings.TrimSpace(c.Query("request_id")),
+		Type:      strings.TrimSpace(c.Query("type")),
+		Status:    strings.TrimSpace(c.Query("status")),
+		Target:    strings.TrimSpace(c.Query("target")),
+		Page:      page,
+		PageSize:  size,
+	})
+	if err != nil {
+		return err
+	}
+	respItems := make([]contract.FederationOutboundDeliveryResp, len(items))
+	for i := range items {
+		respItems[i] = mapOutboundDelivery(items[i])
+	}
+	return response.Success(c, contract.FederationOutboundDeliveryListResp{
+		Items: respItems,
+		Total: total,
+		Page:  page,
+		Size:  size,
+	})
+}
+
+// GetOutbound 查询单条出站投递。
+// @Summary 查询联合出站详情
+// @Tags FederationAdmin
+// @Produce json
+// @Param id path int true "投递ID"
+// @Success 200 {object} contract.FederationOutboundDeliveryResp
+// @Security BearerAuth
+// @Router /admin/federation/outbound/{id} [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) GetOutbound(c *fiber.Ctx) error {
+	if h.deliverySvc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的投递ID")
+	}
+	item, err := h.deliverySvc.Get(c.Context(), id)
+	if err != nil {
+		return err
+	}
+	return response.Success(c, mapOutboundDelivery(*item))
+}
+
+// GetOutboundByRequestID 根据 request_id 查询单据。
+// @Summary 通过单据号查询联合出站详情
+// @Tags FederationAdmin
+// @Produce json
+// @Param requestId path string true "request_id"
+// @Success 200 {object} contract.FederationOutboundDeliveryResp
+// @Security BearerAuth
+// @Router /admin/federation/outbound/request/{requestId} [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) GetOutboundByRequestID(c *fiber.Ctx) error {
+	if h.deliverySvc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	requestID := strings.TrimSpace(c.Params("requestId"))
+	if requestID == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "request_id 不能为空")
+	}
+	items, total, err := h.deliverySvc.List(c.Context(), domainfed.OutboundDeliveryListOptions{
+		RequestID: requestID,
+		Page:      1,
+		PageSize:  1,
+	})
+	if err != nil {
+		return err
+	}
+	if total == 0 || len(items) == 0 {
+		return response.NewBizError(response.NotFound)
+	}
+	return response.Success(c, mapOutboundDelivery(items[0]))
+}
+
+// RetryOutbound 手动重试出站投递。
+// @Summary 重试联合出站投递
+// @Tags FederationAdmin
+// @Produce json
+// @Param id path int true "投递ID"
+// @Success 200 {object} contract.FederationOutboundDeliveryResp
+// @Security BearerAuth
+// @Router /admin/federation/outbound/{id}/retry [post]
+// @Security JWTAuth
+func (h *FederationAdminHandler) RetryOutbound(c *fiber.Ctx) error {
+	if h.deliverySvc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的投递ID")
+	}
+	item, err := h.deliverySvc.Retry(c.Context(), id)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "重试失败", err)
+	}
+	return response.Success(c, mapOutboundDelivery(*item))
 }
 
 // CheckRemote 校验远端连通性（manifest/public-key/endpoints）。
@@ -249,6 +382,143 @@ func (h *FederationAdminHandler) CheckRemote(c *fiber.Ctx) error {
 		PublicKey: mapPublicKeyResp(publicKey),
 		Endpoints: mapEndpointsResp(endpoints),
 	})
+}
+
+// ListInstances 查询联合实例列表。
+// @Summary 查询联合实例列表
+// @Tags FederationAdmin
+// @Produce json
+// @Param status query string false "状态: pending|active|blocked"
+// @Param keyword query string false "关键字（base_url/name）"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(20)
+// @Success 200 {object} contract.FederationInstanceListResp
+// @Security BearerAuth
+// @Router /admin/federation/instances [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) ListInstances(c *fiber.Ctx) error {
+	if h.instanceRepo == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	page := parseIntQuery(c, "page", 1)
+	size := parseIntQuery(c, "pageSize", 20)
+	status := strings.TrimSpace(c.Query("status"))
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	items, total, err := h.instanceRepo.List(c.Context(), status, keyword, page, size)
+	if err != nil {
+		return err
+	}
+	respItems := make([]contract.FederationInstanceResp, len(items))
+	for i := range items {
+		respItems[i] = mapFederationInstance(items[i])
+	}
+	return response.Success(c, contract.FederationInstanceListResp{
+		Items: respItems,
+		Total: total,
+		Page:  page,
+		Size:  size,
+	})
+}
+
+// GetInstance 查询联合实例详情。
+// @Summary 查询联合实例详情
+// @Tags FederationAdmin
+// @Produce json
+// @Param id path int true "实例ID"
+// @Param refresh query bool false "是否实时拉取远端文档并刷新本地快照（默认 true）"
+// @Success 200 {object} contract.FederationInstanceDetailResp
+// @Security BearerAuth
+// @Router /admin/federation/instances/{id} [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) GetInstance(c *fiber.Ctx) error {
+	if h.instanceRepo == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的实例ID")
+	}
+	instance, err := h.instanceRepo.GetByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+	refresh := true
+	if raw := strings.TrimSpace(c.Query("refresh")); raw != "" {
+		if parsed, parseErr := strconv.ParseBool(raw); parseErr == nil {
+			refresh = parsed
+		}
+	}
+	var (
+		manifest  any
+		publicKey any
+		endpoints any
+		remoteErr *string
+	)
+	if refresh && h.resolver != nil {
+		baseURL := normalizeInstanceURL(instance.BaseURL)
+		if baseURL != "" {
+			m, errM := h.resolver.FetchManifest(c.Context(), baseURL)
+			p, errP := h.resolver.FetchPublicKey(c.Context(), baseURL)
+			e, errE := h.resolver.FetchEndpoints(c.Context(), baseURL)
+			if errM == nil && errP == nil && errE == nil {
+				manifest = mapManifestResp(m)
+				publicKey = mapPublicKeyResp(p)
+				endpoints = mapEndpointsResp(e)
+				if updated, err := ensureInstanceFromDocs(c.Context(), baseURL, m, e, p, h.instanceRepo); err == nil && updated != nil {
+					instance = updated
+				}
+			} else {
+				msg := "拉取远端实例详情失败"
+				if errM != nil {
+					msg += ": manifest"
+				} else if errP != nil {
+					msg += ": public_key"
+				} else if errE != nil {
+					msg += ": endpoints"
+				}
+				remoteErr = &msg
+			}
+		}
+	}
+	return response.Success(c, mapFederationInstanceDetail(*instance, manifest, publicKey, endpoints, remoteErr))
+}
+
+// UpdateInstanceStatus 更新联合实例状态。
+// @Summary 更新联合实例状态
+// @Tags FederationAdmin
+// @Accept json
+// @Produce json
+// @Param id path int true "实例ID"
+// @Param request body contract.FederationInstanceStatusUpdateReq true "状态更新"
+// @Success 200 {object} contract.FederationInstanceResp
+// @Security BearerAuth
+// @Router /admin/federation/instances/{id}/status [put]
+// @Security JWTAuth
+func (h *FederationAdminHandler) UpdateInstanceStatus(c *fiber.Ctx) error {
+	if h.instanceRepo == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的实例ID")
+	}
+	var req contract.FederationInstanceStatusUpdateReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	status := normalizeInstanceStatus(req.Status)
+	if status == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "status 仅支持 pending|active|blocked")
+	}
+	instance, err := h.instanceRepo.GetByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+	instance.Status = status
+	if err := h.instanceRepo.Update(c.Context(), instance); err != nil {
+		return err
+	}
+	return response.Success(c, mapFederationInstance(*instance))
 }
 
 func (h *FederationAdminHandler) resolveArticle(c *fiber.Ctx, id *int64, shortURL *string) (*content.Article, error) {
@@ -310,4 +580,111 @@ func mapEndpointsResp(doc *fedinfra.EndpointsDoc) map[string]any {
 		"base_url":  doc.BaseURL,
 		"endpoints": doc.Endpoints,
 	}
+}
+
+func mapOutboundDelivery(item domainfed.OutboundDelivery) contract.FederationOutboundDeliveryResp {
+	return contract.FederationOutboundDeliveryResp{
+		ID:                item.ID,
+		RequestID:         item.RequestID,
+		Type:              item.DeliveryType,
+		SourceArticleID:   item.SourceArticleID,
+		TargetInstanceURL: item.TargetInstanceURL,
+		TargetEndpoint:    item.TargetEndpoint,
+		Status:            item.Status,
+		AttemptCount:      item.AttemptCount,
+		MaxAttempts:       item.MaxAttempts,
+		NextRetryAt:       timePtrToRFC3339(item.NextRetryAt),
+		HTTPStatus:        item.HTTPStatus,
+		ResponseBody:      item.ResponseBody,
+		ErrorMessage:      item.ErrorMessage,
+		RemoteTicketID:    item.RemoteTicketID,
+		TraceID:           item.TraceID,
+		LastCallbackAt:    timePtrToRFC3339(item.LastCallbackAt),
+		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:         item.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func mapFederationInstance(item domainfed.FederationInstance) contract.FederationInstanceResp {
+	return contract.FederationInstanceResp{
+		ID:              item.ID,
+		BaseURL:         item.BaseURL,
+		Name:            item.Name,
+		Description:     item.Description,
+		ProtocolVersion: item.ProtocolVersion,
+		KeyID:           item.KeyID,
+		Status:          item.Status,
+		LastSeenAt:      timePtrToRFC3339(item.LastSeenAt),
+		CreatedAt:       item.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:       item.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func mapFederationInstanceDetail(item domainfed.FederationInstance, manifest any, publicKey any, endpoints any, remoteErr *string) contract.FederationInstanceDetailResp {
+	return contract.FederationInstanceDetailResp{
+		ID:              item.ID,
+		BaseURL:         item.BaseURL,
+		Name:            item.Name,
+		Description:     item.Description,
+		ProtocolVersion: item.ProtocolVersion,
+		KeyID:           item.KeyID,
+		PublicKey:       item.PublicKey,
+		Status:          item.Status,
+		Features:        jsonRawToAny(item.Features),
+		Policies:        jsonRawToAny(item.Policies),
+		Endpoints:       jsonRawToAny(item.Endpoints),
+		Manifest:        manifest,
+		PublicKeyDoc:    publicKey,
+		EndpointsDoc:    endpoints,
+		RemoteError:     remoteErr,
+		LastSeenAt:      timePtrToRFC3339(item.LastSeenAt),
+		CreatedAt:       item.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:       item.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func jsonRawToAny(raw json.RawMessage) any {
+	if len(raw) == 0 {
+		return nil
+	}
+	var payload any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil
+	}
+	return payload
+}
+
+func normalizeInstanceStatus(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "pending":
+		return "pending"
+	case "active":
+		return "active"
+	case "blocked":
+		return "blocked"
+	default:
+		return ""
+	}
+}
+
+func timePtrToRFC3339(t *time.Time) *string {
+	if t == nil {
+		return nil
+	}
+	val := t.UTC().Format(time.RFC3339)
+	return &val
+}
+
+func intPtrValue(v *int) int {
+	if v == nil {
+		return 0
+	}
+	return *v
+}
+
+func stringPtrValue(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
 }

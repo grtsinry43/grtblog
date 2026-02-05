@@ -63,8 +63,9 @@ func resolveAlgorithm(algorithm string) (httpsig.Algorithm, error) {
 	switch algorithm {
 	case "rsa-sha256", "rsa_sha256", "RSA-SHA256":
 		return httpsig.RSA_SHA256, nil
+	case "ed25519", "ED25519":
+		return httpsig.ED25519, nil
 	default:
-		// TODO: add ed25519 support once a stable signer strategy is defined.
-		return httpsig.Algorithm(0), ErrUnsupportedSignatureAlgorithm
+		return httpsig.Algorithm(""), ErrUnsupportedSignatureAlgorithm
 	}
 }

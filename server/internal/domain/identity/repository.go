@@ -15,6 +15,7 @@ type Repository interface {
 	FindByOAuth(ctx context.Context, providerKey, oauthID string) (*User, error)
 	BindOAuth(ctx context.Context, link UserOAuth) error
 	CountUsers(ctx context.Context) (int64, error)
+	ListAdmins(ctx context.Context) ([]User, error)
 }
 
 // OAuthProviderRepository 提供 OAuth/OIDC 提供方配置。

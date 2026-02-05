@@ -73,7 +73,7 @@ provide(layoutInjectionKey, {
     <NGlobalStyle />
     <NEl>
       <NModalProvider>
-        <NNotificationProvider placement="bottom-right">
+        <NNotificationProvider placement="top-right">
           <NMessageProvider>
             <NDialogProvider>
               <RouterView />

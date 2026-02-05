@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/auth"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	mediaapp "github.com/grtsinry43/grtblog-v2/server/internal/app/media"
@@ -38,4 +39,11 @@ func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *
 	authenticated.Put("/upload/:id", uploadHandler.RenameUpload)
 	authenticated.Delete("/upload/:id", uploadHandler.DeleteUpload)
 	authenticated.Get("/upload/:id/download", uploadHandler.DownloadUpload)
+
+	adminNotificationRepo := persistence.NewAdminNotificationRepository(deps.DB)
+	adminNotificationSvc := adminnotification.NewService(adminNotificationRepo, deps.EventBus)
+	adminNotificationHandler := handler.NewAdminNotificationHandler(adminNotificationSvc)
+	authenticated.Get("/notifications", adminNotificationHandler.ListMine)
+	authenticated.Post("/notifications/:id/read", adminNotificationHandler.MarkRead)
+	authenticated.Post("/notifications/read-all", adminNotificationHandler.MarkAllRead)
 }

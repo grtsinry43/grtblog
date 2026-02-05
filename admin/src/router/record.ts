@@ -269,29 +269,52 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     name: 'unionManagement',
     icon: 'iconify ph--circles-three',
     label: '联合',
-    redirect: 'federation/debug',
+    redirect: 'federation/instances',
     children: [
-      {
-        path: 'debug',
-        name: 'federationDebug',
-        label: '联邦调试',
-        icon: 'iconify ph--bug',
-        meta: {
-          componentName: 'FederationDebug',
-          showTab: true,
-        },
-        component: 'federation/debug',
-      },
       {
         path: 'instances',
         name: 'federationInstances',
-        label: '联邦实例',
+        label: '联合实例',
         icon: 'iconify ph--network',
         meta: {
           componentName: 'FederationInstances',
           showTab: true,
         },
-        component: 'federation/instances',
+        component: 'federation/instances/index',
+      },
+      {
+        path: 'outbound',
+        name: 'federationOutbound',
+        label: '出站记录',
+        icon: 'iconify ph--paper-plane-tilt',
+        meta: {
+          componentName: 'FederationOutbound',
+          showTab: true,
+        },
+        component: 'federation/outbound/index',
+      },
+      {
+        path: 'reviews',
+        name: 'federationReviews',
+        label: '审核队列',
+        icon: 'iconify ph--check-square',
+        meta: {
+          componentName: 'FederationReviews',
+          showTab: true,
+        },
+        component: 'federation/reviews/index',
+      },
+      {
+        path: 'debug',
+        name: 'federationDebug',
+        label: '联合调试',
+        icon: 'iconify ph--bug',
+        show: false, // Hidden from menu, accessed via Instances page
+        meta: {
+          componentName: 'FederationDebug',
+          showTab: true,
+        },
+        component: 'federation/debug/OutboundRequest',
       },
       {
         path: 'settings',
@@ -305,6 +328,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         component: 'federation/settings',
       },
     ],
+  },
+  {
+    path: 'notifications',
+    name: 'adminNotificationList',
+    label: '通知中心',
+    show: false,
+    meta: {
+      componentName: 'AdminNotificationList',
+      showTab: true,
+    },
+    component: 'admin-notifications/index',
   },
   {
     path: 'files',

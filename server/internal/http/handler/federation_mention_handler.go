@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -25,6 +26,7 @@ type FederationMentionHandler struct {
 	userRepo     identity.Repository
 	resolver     *fedinfra.Resolver
 	verifier     *fedinfra.Verifier
+	rateLimiter  fedinfra.RateLimiter
 	events       appEvent.Bus
 }
 
@@ -35,6 +37,7 @@ func NewFederationMentionHandler(
 	userRepo identity.Repository,
 	resolver *fedinfra.Resolver,
 	verifier *fedinfra.Verifier,
+	rateLimiter fedinfra.RateLimiter,
 	events appEvent.Bus,
 ) *FederationMentionHandler {
 	if events == nil {
@@ -47,6 +50,7 @@ func NewFederationMentionHandler(
 		userRepo:     userRepo,
 		resolver:     resolver,
 		verifier:     verifier,
+		rateLimiter:  rateLimiter,
 		events:       events,
 	}
 }
@@ -103,6 +107,9 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 	if !settings.AllowInbound {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
 	}
+	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, payload.SourceInstanceURL, "mention", settings.RateLimits); err != nil {
+		return err
+	}
 
 	user, err := h.userRepo.FindByUsername(c.Context(), payload.MentionedUser)
 	if err != nil {
@@ -121,14 +128,20 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 	if mentionType == "" {
 		mentionType = "discussion"
 	}
+	status := "pending"
+	if h.isFriendLink(c.Context(), payload.SourceInstanceURL) {
+		status = "approved"
+	}
 
 	mention := &federation.FederatedMention{
 		SourceInstanceID: instance.ID,
+		SourceRequestID:  toOptionalString(payload.RequestID),
 		SourcePostURL:    payload.SourcePost.URL,
 		SourcePostTitle:  toOptionalString(payload.SourcePost.Title),
 		MentionedUserID:  user.ID,
 		MentionContext:   payload.MentionContext,
 		MentionType:      mentionType,
+		Status:           status,
 		IsRead:           false,
 		CreatedAt:        time.Now().UTC(),
 	}
@@ -136,11 +149,9 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 		return response.NewBizErrorWithCause(response.ServerError, "写入提及失败", err)
 	}
 
-	// TODO: 转为站内信或通知（需要消息模块支持）。
-
 	resp := contract.FederationMentionNotifyResp{
 		MentionID: mention.ID,
-		Delivered: true,
+		Delivered: status == "approved",
 	}
 	log.Printf("[federation] 入站 提及通知 source=%s mentioned=%s mention_id=%d key_id=%s", payload.SourceInstanceURL, payload.MentionedUser, mention.ID, signature.KeyID)
 	_ = h.events.Publish(c.Context(), appEvent.Generic{
@@ -150,8 +161,25 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 			"MentionID":         mention.ID,
 			"SourceInstanceURL": payload.SourceInstanceURL,
 			"MentionedUser":     payload.MentionedUser,
+			"Status":            status,
 			"KeyID":             signature.KeyID,
 		},
 	})
 	return response.Success(c, resp)
+}
+
+func (h *FederationMentionHandler) isFriendLink(ctx context.Context, baseURL string) bool {
+	if h.instanceRepo == nil {
+		return false
+	}
+	trimmed := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if trimmed == "" {
+		return false
+	}
+	// Keep mention approval criteria aligned with citation policy: friend-link instances skip manual review.
+	instance, err := h.instanceRepo.GetByBaseURL(ctx, trimmed)
+	if err != nil || instance == nil {
+		return false
+	}
+	return instance.Status == "active"
 }

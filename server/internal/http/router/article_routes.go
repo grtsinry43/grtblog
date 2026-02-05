@@ -26,6 +26,12 @@ func registerArticleAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	authGroup.Post("/", articleHandler.CreateArticle)      // POST /api/v2/articles
 	authGroup.Put("/:id", articleHandler.UpdateArticle)    // PUT /api/v2/articles/123
 	authGroup.Delete("/:id", articleHandler.DeleteArticle) // DELETE /api/v2/articles/123
+	federationInteractionHandler := handler.NewFederationInteractionHandler(
+		persistence.NewContentRepository(deps.DB),
+		persistence.NewFederatedCitationRepository(deps.DB),
+		persistence.NewOutboundDeliveryRepository(deps.DB),
+	)
+	authGroup.Get("/:id/federation/interactions", federationInteractionHandler.GetArticleInteractions)
 
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))

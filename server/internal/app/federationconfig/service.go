@@ -2,6 +2,7 @@ package federationconfig
 
 import (
 	"context"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -157,11 +158,11 @@ func (s *Service) ensureKeyPairUpdates(settings Settings) ([]sysconfig.UpdateIte
 		return nil, nil
 	}
 
-	if settings.SignatureAlg != "" && settings.SignatureAlg != "rsa-sha256" {
-		return nil, errors.New("仅支持 rsa-sha256")
+	alg := strings.TrimSpace(settings.SignatureAlg)
+	if alg == "" {
+		alg = "rsa-sha256"
 	}
-
-	pub, priv, err := generateRSAKeyPair()
+	pub, priv, err := generateKeyPair(alg)
 	if err != nil {
 		return nil, err
 	}
@@ -202,6 +203,35 @@ func generateRSAKeyPair() (string, string, error) {
 	publicPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicBytes})
 
 	return string(publicPEM), string(privatePEM), nil
+}
+
+func generateEd25519KeyPair() (string, string, error) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return "", "", err
+	}
+	privatePKCS8, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return "", "", err
+	}
+	privatePEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privatePKCS8})
+	publicPKIX, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return "", "", err
+	}
+	publicPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicPKIX})
+	return string(publicPEM), string(privatePEM), nil
+}
+
+func generateKeyPair(algorithm string) (string, string, error) {
+	switch strings.ToLower(strings.TrimSpace(algorithm)) {
+	case "rsa-sha256", "rsa_sha256":
+		return generateRSAKeyPair()
+	case "ed25519":
+		return generateEd25519KeyPair()
+	default:
+		return "", "", errors.New("不支持的签名算法")
+	}
 }
 
 func toRaw(raw []byte) *json.RawMessage {

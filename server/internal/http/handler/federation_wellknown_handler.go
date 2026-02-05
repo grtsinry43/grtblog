@@ -93,6 +93,7 @@ func (h *FederationWellKnownHandler) Endpoints(c *fiber.Ctx) error {
 			"post_detail":        "/posts/{id}",
 			"citation_request":   "/citations/request",
 			"mention_notify":     "/mentions/notify",
+			"outbound_result":    "/outbound/result",
 		},
 	}
 	return c.JSON(doc)

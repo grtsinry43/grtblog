@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -18,11 +19,14 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
+	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/router"
 	infraevent "github.com/grtsinry43/grtblog-v2/server/internal/infra/event"
+	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/jwt"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/turnstile"
@@ -39,6 +43,8 @@ type Server struct {
 	articleSvc *article.Service
 	sysCfgSvc  *sysconfig.Service
 	analytics  *analytics.Service
+	fedSync    *appfed.SyncWorker
+	fedDeliver *appfed.DeliveryService
 }
 
 // New builds a Fiber server with registered routes and middlewares.
@@ -113,6 +119,16 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	})
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
 	analyticsSvc := analytics.NewService(cfg, db, redisClient)
+	fedCfgSvc := federationconfig.NewService(persistence.NewFederationConfigRepository(db))
+	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
+	fedOutbound := appfed.NewOutboundService(fedCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))
+	fedDeliver := appfed.NewDeliveryService(persistence.NewOutboundDeliveryRepository(db), fedOutbound, eventBus)
+	fedSync := appfed.NewSyncWorker(
+		persistence.NewFederationInstanceRepository(db),
+		persistence.NewFederatedPostCacheRepository(db),
+		persistence.NewFriendLinkRepository(db),
+		fedResolver,
+	)
 
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Locals("requestId") == nil {
@@ -147,6 +163,8 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		articleSvc: articleSvc,
 		sysCfgSvc:  sysCfgSvc,
 		analytics:  analyticsSvc,
+		fedSync:    fedSync,
+		fedDeliver: fedDeliver,
 	}
 }
 
@@ -157,9 +175,28 @@ func (s *Server) Start() error {
 	if s.analytics != nil {
 		go s.analytics.RunViewEventWorker(s.ctx)
 	}
+	if s.fedSync != nil {
+		go s.fedSync.Run(s.ctx, 30*time.Minute)
+	}
+	if s.fedDeliver != nil {
+		go s.runFederationRetryWorker()
+	}
 
 	addr := fmt.Sprintf(":%s", s.cfg.App.Port)
 	return s.app.Listen(addr)
+}
+
+func (s *Server) runFederationRetryWorker() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-ticker.C:
+			_ = s.fedDeliver.ProcessRetryQueue(s.ctx, 20)
+		}
+	}
 }
 
 // Shutdown gracefully stops Fiber and background workers.
