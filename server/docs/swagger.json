@@ -5342,6 +5342,40 @@
                 }
             }
         },
+        "/public/search": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Search"
+                ],
+                "summary": "全站搜索",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每个分组最多返回条数，默认8，最大20",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.SiteSearchResp"
+                        }
+                    }
+                }
+            }
+        },
         "/public/website-info": {
             "get": {
                 "produces": [
@@ -9153,6 +9187,76 @@
             "properties": {
                 "isTop": {
                     "type": "boolean"
+                }
+            }
+        },
+        "contract.SiteSearchItemResp": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "shortUrl": {
+                    "type": "string"
+                },
+                "snippet": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.SiteSearchResp": {
+            "type": "object",
+            "properties": {
+                "articles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SiteSearchItemResp"
+                    }
+                },
+                "cached": {
+                    "type": "boolean"
+                },
+                "keywords": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "moments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SiteSearchItemResp"
+                    }
+                },
+                "pages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SiteSearchItemResp"
+                    }
+                },
+                "query": {
+                    "type": "string"
+                },
+                "thinkings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SiteSearchItemResp"
+                    }
                 }
             }
         },
