@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"strings"
 	"time"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
@@ -65,10 +66,21 @@ func (d *Dispatcher) Handle(ctx context.Context, event appEvent.Event) error {
 	if err != nil {
 		return err
 	}
+	isSubscriptionEvent := IsPublicSubscribableEventName(event.Name())
+	dynamicRecipients := recipientsFromVariables(variables)
 	now := time.Now()
 	for _, tpl := range templates {
 		rendered, renderErr := RenderTemplate(tpl, variables)
-		recipients := normalizeRecipients(append(append([]string{}, tpl.ToEmails...), subscribers...))
+		recipients := []string{}
+		if isSubscriptionEvent {
+			// Subscription events are driven solely by email_subscription recipients.
+			recipients = normalizeRecipients(subscribers)
+		} else {
+			recipients = normalizeRecipients(append(append(append([]string{}, tpl.ToEmails...), subscribers...), dynamicRecipients...))
+		}
+		if isSubscriptionEvent && len(recipients) == 0 {
+			continue
+		}
 		item := &domainemail.Outbox{
 			TemplateID:   &tpl.ID,
 			TemplateCode: tpl.Code,
@@ -158,4 +170,31 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func recipientsFromVariables(variables map[string]any) []string {
+	if len(variables) == 0 {
+		return []string{}
+	}
+	result := make([]string, 0, 4)
+	if raw, ok := variables["recipientEmail"]; ok {
+		if email, ok := raw.(string); ok {
+			result = append(result, email)
+		}
+	}
+	if raw, ok := variables["toEmails"]; ok {
+		switch v := raw.(type) {
+		case []string:
+			result = append(result, v...)
+		case []any:
+			for _, item := range v {
+				if text, ok := item.(string); ok {
+					result = append(result, text)
+				}
+			}
+		case string:
+			result = append(result, strings.Split(v, ",")...)
+		}
+	}
+	return normalizeRecipients(result)
 }

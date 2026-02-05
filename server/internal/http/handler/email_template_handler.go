@@ -299,22 +299,26 @@ func (h *EmailTemplateHandler) TestEmailTemplate(c *fiber.Ctx) error {
 // @Tags EmailPublic
 // @Accept json
 // @Produce json
-// @Param request body contract.EmailSubscribeReq true "订阅参数"
-// @Success 200 {object} contract.EmailSubscriptionResp
+// @Param request body contract.EmailSubscribeReq true "订阅参数(使用 eventNames)"
+// @Success 200 {object} contract.EmailSubscribeBatchResp
 // @Router /public/email/subscriptions [post]
 func (h *EmailTemplateHandler) SubscribeEmail(c *fiber.Ctx) error {
 	var req contract.EmailSubscribeReq
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
-	item, err := h.svc.Subscribe(c.Context(), req.Email, req.EventName, c.IP())
+	items, err := h.svc.SubscribeBatch(c.Context(), req.Email, req.EventNames, c.IP())
 	if err != nil {
 		if mapped := mapEmailDomainError(err); mapped != nil {
 			return mapped
 		}
 		return err
 	}
-	return response.SuccessWithMessage(c, mapEmailSubscriptionResp(item, true), "订阅成功")
+	respItems := make([]contract.EmailSubscriptionResp, len(items))
+	for i, item := range items {
+		respItems[i] = mapEmailSubscriptionResp(item, true)
+	}
+	return response.SuccessWithMessage(c, contract.EmailSubscribeBatchResp{Items: respItems}, "订阅成功")
 }
 
 // UnsubscribeEmail godoc
@@ -435,6 +439,7 @@ func mapEmailTemplateResp(item *domainemail.Template) contract.EmailTemplateResp
 		TextTemplate:    item.TextTemplate,
 		ToEmails:        toEmails,
 		IsEnabled:       item.IsEnabled,
+		IsInternal:      item.IsInternal,
 		CreatedAt:       item.CreatedAt,
 		UpdatedAt:       item.UpdatedAt,
 	}
@@ -491,6 +496,8 @@ func mapEmailDomainError(err error) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "事件名称无效")
 	case errors.Is(err, domainemail.ErrEmailTemplateRenderFailed):
 		return response.NewBizErrorWithMsg(response.ParamsError, "模板内容无效或渲染失败")
+	case errors.Is(err, domainemail.ErrEmailTemplateInternalLocked):
+		return response.NewBizErrorWithMsg(response.ParamsError, "内置模板不允许删除")
 	case errors.Is(err, domainemail.ErrEmailNoRecipient):
 		return response.NewBizErrorWithMsg(response.ParamsError, "收件人为空，请配置模板收件人或 email.defaultTo")
 	case errors.Is(err, domainemail.ErrEmailDisabled):

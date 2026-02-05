@@ -406,6 +406,7 @@ func mapTemplateToModel(tpl *domainemail.Template) (model.EmailTemplate, error) 
 		TextTemplate:    tpl.TextTemplate,
 		ToEmails:        datatypes.JSON(toBytes),
 		IsEnabled:       tpl.IsEnabled,
+		IsInternal:      tpl.IsInternal,
 	}, nil
 }
 
@@ -426,6 +427,7 @@ func mapTemplateToDomain(rec model.EmailTemplate) (*domainemail.Template, error)
 		TextTemplate:    rec.TextTemplate,
 		ToEmails:        toEmails,
 		IsEnabled:       rec.IsEnabled,
+		IsInternal:      rec.IsInternal,
 		CreatedAt:       rec.CreatedAt,
 		UpdatedAt:       rec.UpdatedAt,
 		DeletedAt:       deletedAtToPtr(rec.DeletedAt),

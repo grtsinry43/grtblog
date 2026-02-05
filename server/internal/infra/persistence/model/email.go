@@ -17,6 +17,7 @@ type EmailTemplate struct {
 	TextTemplate    string         `gorm:"column:text_template;type:text;not null"`
 	ToEmails        datatypes.JSON `gorm:"column:to_emails;type:jsonb;not null"`
 	IsEnabled       bool           `gorm:"column:is_enabled;not null"`
+	IsInternal      bool           `gorm:"column:is_internal;not null;default:false"`
 	CreatedAt       time.Time      `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt       time.Time      `gorm:"column:updated_at;autoUpdateTime"`
 	DeletedAt       gorm.DeletedAt `gorm:"column:deleted_at;index"`

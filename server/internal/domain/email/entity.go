@@ -23,6 +23,7 @@ type Template struct {
 	TextTemplate    string
 	ToEmails        []string
 	IsEnabled       bool
+	IsInternal      bool
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       *time.Time

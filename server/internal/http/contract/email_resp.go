@@ -12,6 +12,7 @@ type EmailTemplateResp struct {
 	TextTemplate    string    `json:"textTemplate"`
 	ToEmails        []string  `json:"toEmails"`
 	IsEnabled       bool      `json:"isEnabled"`
+	IsInternal      bool      `json:"isInternal"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
@@ -63,4 +64,8 @@ type EmailSubscriptionListResp struct {
 	Total int64                   `json:"total"`
 	Page  int                     `json:"page"`
 	Size  int                     `json:"size"`
+}
+
+type EmailSubscribeBatchResp struct {
+	Items []EmailSubscriptionResp `json:"items"`
 }
