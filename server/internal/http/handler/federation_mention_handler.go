@@ -73,6 +73,11 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 	signature, err := h.verifier.VerifyRequest(c.Context(), req, body)
 	if err != nil {
 		log.Printf("[federation] 入站 提及通知 校验失败 ip=%s err=%v", c.IP(), err)
+		_ = h.events.Publish(c.Context(), appEvent.Generic{
+			EventName: "federation.signature.verify_failed",
+			At:        time.Now(),
+			Payload:   map[string]any{"action": "mention", "ip": c.IP()},
+		})
 		return response.NewBizErrorWithMsg(response.Unauthorized, "签名校验失败")
 	}
 
@@ -108,6 +113,11 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
 	}
 	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, payload.SourceInstanceURL, "mention", settings.RateLimits); err != nil {
+		_ = h.events.Publish(c.Context(), appEvent.Generic{
+			EventName: "federation.inbound.rate_limited",
+			At:        time.Now(),
+			Payload:   map[string]any{"action": "mention", "source": payload.SourceInstanceURL},
+		})
 		return err
 	}
 

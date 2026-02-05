@@ -18,6 +18,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	appnav "github.com/grtsinry43/grtblog-v2/server/internal/app/navigation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/observability"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/webhook"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/websiteinfo"
@@ -25,6 +26,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	infraevent "github.com/grtsinry43/grtblog-v2/server/internal/infra/event"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/infra/metrics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/jwt"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/turnstile"
@@ -34,14 +36,16 @@ import (
 
 // Dependencies collects the shared instances that handlers require.
 type Dependencies struct {
-	DB         *gorm.DB
-	Config     config.Config
-	JWTManager *jwt.Manager
-	Turnstile  *turnstile.Client
-	SysConfig  *sysconfig.Service
-	EventBus   appEvent.Bus
-	Redis      *redis.Client
-	Analytics  *analytics.Service
+	DB            *gorm.DB
+	Config        config.Config
+	JWTManager    *jwt.Manager
+	Turnstile     *turnstile.Client
+	SysConfig     *sysconfig.Service
+	EventBus      appEvent.Bus
+	Redis         *redis.Client
+	Analytics     *analytics.Service
+	HTTPStats     *metrics.HTTPStats
+	Observability *observability.Service
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -106,6 +110,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, "")
 	htmlsnapshot.RegisterArticleUpdateSubscriber(eventBus, htmlSnapshotSvc)
+	deps.Observability = observability.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, eventBus, deps.HTTPStats, wsManager, htmlSnapshotSvc)
 
 	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
 	fedCfgSvc := federationconfig.NewService(fedCfgRepo)

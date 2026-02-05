@@ -27,6 +27,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/router"
 	infraevent "github.com/grtsinry43/grtblog-v2/server/internal/infra/event"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/infra/metrics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/jwt"
 	"github.com/grtsinry43/grtblog-v2/server/internal/security/turnstile"
@@ -119,6 +120,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	})
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
 	analyticsSvc := analytics.NewService(cfg, db, redisClient)
+	httpStats := metrics.NewHTTPStats(6 * time.Hour)
 	fedCfgSvc := federationconfig.NewService(persistence.NewFederationConfigRepository(db))
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
 	fedOutbound := appfed.NewOutboundService(fedCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))
@@ -140,6 +142,13 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		}
 		return c.Next()
 	})
+	app.Use(func(c *fiber.Ctx) error {
+		start := time.Now()
+		err := c.Next()
+		status := c.Response().StatusCode()
+		httpStats.Record(status, time.Since(start))
+		return err
+	})
 
 	// 注册路由
 	router.Register(app, router.Dependencies{
@@ -151,6 +160,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		EventBus:   eventBus,
 		Redis:      redisClient,
 		Analytics:  analyticsSvc,
+		HTTPStats:  httpStats,
 	})
 
 	return &Server{
