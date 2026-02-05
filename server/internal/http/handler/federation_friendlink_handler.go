@@ -73,6 +73,11 @@ func (h *FederationFriendLinkHandler) RequestFriendLink(c *fiber.Ctx) error {
 	signature, err := h.verifier.VerifyRequest(c.Context(), req, body)
 	if err != nil {
 		log.Printf("[federation] 入站 友链申请 校验失败 ip=%s err=%v", c.IP(), err)
+		_ = h.events.Publish(c.Context(), appEvent.Generic{
+			EventName: "federation.signature.verify_failed",
+			At:        time.Now(),
+			Payload:   map[string]any{"action": "friendlink", "ip": c.IP()},
+		})
 		return response.NewBizErrorWithMsg(response.Unauthorized, "签名校验失败")
 	}
 
@@ -96,6 +101,11 @@ func (h *FederationFriendLinkHandler) RequestFriendLink(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
 	}
 	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, requesterURL, "friendlink", settings.RateLimits); err != nil {
+		_ = h.events.Publish(c.Context(), appEvent.Generic{
+			EventName: "federation.inbound.rate_limited",
+			At:        time.Now(),
+			Payload:   map[string]any{"action": "friendlink", "source": requesterURL},
+		})
 		return err
 	}
 
