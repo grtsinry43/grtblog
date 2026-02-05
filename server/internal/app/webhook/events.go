@@ -5,6 +5,7 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/moment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/page"
 )
@@ -49,6 +50,12 @@ func SampleEvent(name string) (appEvent.Event, error) {
 		return page.PageUpdated{ID: 1, Title: "Sample Page", ShortURL: "sample-page", Enabled: true, ContentHash: "hash", Description: nil, TOC: nil, Content: "Sample", At: now}, nil
 	case page.PageDeleted{}.Name():
 		return page.PageDeleted{ID: 1, Title: "Sample Page", ShortURL: "sample-page", At: now}, nil
+	case globalnotification.Created{}.Name():
+		return globalnotification.Created{ID: 1, Content: "Sample Global Notification", PublishAt: now.Add(-time.Hour), ExpireAt: now.Add(24 * time.Hour), AllowClose: true, At: now}, nil
+	case globalnotification.Updated{}.Name():
+		return globalnotification.Updated{ID: 1, Content: "Sample Global Notification Updated", PublishAt: now.Add(-time.Hour), ExpireAt: now.Add(24 * time.Hour), AllowClose: false, At: now}, nil
+	case globalnotification.Deleted{}.Name():
+		return globalnotification.Deleted{ID: 1, At: now}, nil
 	default:
 		return appEvent.Generic{
 			EventName: name,

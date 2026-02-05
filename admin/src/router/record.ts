@@ -358,6 +358,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     component: 'webhooks/index',
   },
   {
+    path: 'global-notifications',
+    name: 'globalNotificationList',
+    icon: 'iconify ph--megaphone',
+    label: '全站通知',
+    meta: {
+      componentName: 'GlobalNotificationList',
+      showTab: true,
+    },
+    component: 'global-notifications/index',
+  },
+  {
     path: 'email',
     name: 'emailManagement',
     icon: 'iconify ph--envelope',
