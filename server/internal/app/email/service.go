@@ -69,7 +69,15 @@ func (s *Service) UpdateTemplate(ctx context.Context, code string, tpl *domainem
 }
 
 func (s *Service) DeleteTemplate(ctx context.Context, code string) error {
-	return s.repo.DeleteTemplateByCode(ctx, strings.TrimSpace(code))
+	code = strings.TrimSpace(code)
+	tpl, err := s.repo.GetTemplateByCode(ctx, code)
+	if err != nil {
+		return err
+	}
+	if tpl.IsInternal {
+		return domainemail.ErrEmailTemplateInternalLocked
+	}
+	return s.repo.DeleteTemplateByCode(ctx, code)
 }
 
 func (s *Service) PreviewTemplate(ctx context.Context, code string, variables map[string]any) (RenderedTemplate, error) {
@@ -146,6 +154,41 @@ func (s *Service) Subscribe(ctx context.Context, email string, eventName string,
 		return nil, err
 	}
 	return sub, nil
+}
+
+func (s *Service) SubscribeBatch(ctx context.Context, email string, eventNames []string, sourceIP string) ([]*domainemail.Subscription, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" || len(eventNames) == 0 {
+		return nil, domainemail.ErrEmailSubscriptionInvalid
+	}
+	normalized := make([]string, 0, len(eventNames))
+	seen := make(map[string]struct{}, len(eventNames))
+	for _, item := range eventNames {
+		name := strings.TrimSpace(item)
+		if name == "" {
+			continue
+		}
+		if !IsPublicSubscribableEventName(name) {
+			return nil, domainemail.ErrEmailSubscriptionEventInvalid
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		normalized = append(normalized, name)
+	}
+	if len(normalized) == 0 {
+		return nil, domainemail.ErrEmailSubscriptionInvalid
+	}
+	result := make([]*domainemail.Subscription, 0, len(normalized))
+	for _, name := range normalized {
+		item, err := s.Subscribe(ctx, email, name, sourceIP)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func (s *Service) Unsubscribe(ctx context.Context, token string, email string, eventName string) error {

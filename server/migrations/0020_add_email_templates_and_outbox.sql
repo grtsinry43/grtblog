@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS email_template
     text_template    TEXT         NOT NULL DEFAULT '',
     to_emails        JSONB        NOT NULL DEFAULT '[]'::jsonb,
     is_enabled       BOOLEAN      NOT NULL DEFAULT TRUE,
+    is_internal      BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at       TIMESTAMPTZ  DEFAULT now(),
     updated_at       TIMESTAMPTZ  DEFAULT now(),
     deleted_at       TIMESTAMPTZ,
@@ -128,7 +129,7 @@ SET group_path   = 'notification/email',
     value_type   = 'string',
     sort         = 40,
     visible_when = '[{"key":"email.enabled","op":"eq","value":true}]'::jsonb,
-    meta         = '{"placeholder":"admin@example.com,ops@example.com"}'::jsonb
+    meta         = '{"placeholder":"admin@example.com,ops@example.com","required":true}'::jsonb
 WHERE config_key = 'email.defaultTo';
 
 UPDATE sys_config
@@ -224,35 +225,53 @@ INSERT INTO email_template (code,
                             html_template,
                             text_template,
                             to_emails,
-                            is_enabled)
-VALUES ('article.published.notify',
-        '文章更新推送邮件',
-        'article.published',
-        '[博客更新] {{.Title}}',
-        '<!doctype html><html><body><h2>文章更新：{{.Title}}</h2><p>有一篇新文章已发布。</p><p>访问链接：<a href="{{.public_url}}/articles/short/{{.ShortURL}}">{{.public_url}}/articles/short/{{.ShortURL}}</a></p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
-        '文章更新：{{.Title}}\n\n访问链接：{{.public_url}}/posts/{{.ShortURL}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+                            is_enabled,
+                            is_internal)
+VALUES ('subscription.notify',
+        '邮件订阅通知',
+        'article.created',
+        '[订阅更新] {{.Title}}',
+        '<!doctype html><html><body><h2>{{.website_name}} 有新内容发布</h2><p>标题：{{.Title}}</p><p>访问链接：<a href="{{.public_url}}/articles/short/{{.ShortURL}}">{{.public_url}}/articles/short/{{.ShortURL}}</a></p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
+        '【{{.website_name}}】有新内容发布\n\n标题：{{.Title}}\n访问链接：{{.public_url}}/articles/short/{{.ShortURL}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
         '[]'::jsonb,
+        TRUE,
         TRUE),
-       ('comment.created.notify',
-        '评论创建通知邮件',
-        'comment.created',
-        '[新评论] {{.NickName}} 在评论区 {{.AreaID}} 发表了评论',
-        '<!doctype html><html><body><h2>收到新评论</h2><p><strong>{{.NickName}}</strong> 刚刚提交了一条评论：</p><blockquote style="margin:12px 0;padding:8px 12px;border-left:3px solid #ddd;">{{.Content}}</blockquote><p>评论区 ID：{{.AreaID}}</p><p>状态：{{.Status}}</p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
-        '收到新评论\n\n评论人：{{.NickName}}\n评论区 ID：{{.AreaID}}\n状态：{{.Status}}\n内容：\n{{.Content}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+       ('comment.reply.notify',
+        '评论收到回复通知',
+        'comment.reply',
+        '[评论回复] 您收到一条新回复',
+        '<!doctype html><html><body><h2>您收到一条评论回复</h2><p>被回复内容：</p><blockquote style="margin:12px 0;padding:8px 12px;border-left:3px solid #ddd;">{{.ParentContent}}</blockquote><p>回复内容：</p><blockquote style="margin:12px 0;padding:8px 12px;border-left:3px solid #4f46e5;">{{.ReplyContent}}</blockquote><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
+        '您收到一条评论回复\n\n被回复内容：{{.ParentContent}}\n回复内容：{{.ReplyContent}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
         '[]'::jsonb,
+        TRUE,
+        TRUE),
+       ('friendlink.application.approved.notify',
+        '友链申请通过通知',
+        'friendlink.application.approved',
+        '[友链申请通过] {{.website_name}}',
+        '<!doctype html><html><body><h2>友链申请已通过</h2><p>站点名称：{{.Name}}</p><p>站点地址：<a href="{{.URL}}">{{.URL}}</a></p><p>欢迎访问：<a href="{{.public_url}}">{{.public_url}}</a></p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
+        '友链申请已通过\n\n站点名称：{{.Name}}\n站点地址：{{.URL}}\n欢迎访问：{{.public_url}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+        '[]'::jsonb,
+        TRUE,
+        TRUE),
+       ('friendlink.application.rejected.notify',
+        '友链申请拒绝通知',
+        'friendlink.application.rejected',
+        '[友链申请结果] 很抱歉，本次申请未通过',
+        '<!doctype html><html><body><h2>友链申请未通过</h2><p>站点名称：{{.Name}}</p><p>站点地址：<a href="{{.URL}}">{{.URL}}</a></p><p>如需补充资料，可再次提交申请。</p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
+        '友链申请未通过\n\n站点名称：{{.Name}}\n站点地址：{{.URL}}\n如需补充资料，可再次提交申请。\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+        '[]'::jsonb,
+        TRUE,
         TRUE)
 ON CONFLICT (code) DO NOTHING;
-
-UPDATE email_template
-SET subject_template = '[博客更新] {{.Title}}',
-    html_template    = '<!doctype html><html><body><h2>文章更新：{{.Title}}</h2><p>有一篇新文章已发布。</p><p>访问链接：<a href="{{.public_url}}/articles/short/{{.ShortURL}}">{{.public_url}}/articles/short/{{.ShortURL}}</a></p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
-    text_template    = '文章更新：{{.Title}}\n\n访问链接：{{.public_url}}/articles/short/{{.ShortURL}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}'
-WHERE code = 'article.published.notify';
 
 -- +goose Down
 DELETE
 FROM email_template
-WHERE code IN ('article.published.notify', 'comment.created.notify');
+WHERE code IN ('subscription.notify',
+               'comment.reply.notify',
+               'friendlink.application.approved.notify',
+               'friendlink.application.rejected.notify');
 
 DELETE
 FROM sys_config

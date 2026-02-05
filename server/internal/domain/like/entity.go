@@ -5,9 +5,10 @@ import "time"
 type TargetType string
 
 const (
-	TargetArticle TargetType = "article"
-	TargetMoment  TargetType = "moment"
-	TargetPage    TargetType = "page"
+	TargetArticle  TargetType = "article"
+	TargetMoment   TargetType = "moment"
+	TargetPage     TargetType = "page"
+	TargetThinking TargetType = "thinking"
 )
 
 type ContentLike struct {
@@ -15,6 +16,6 @@ type ContentLike struct {
 	TargetType TargetType
 	TargetID   int64
 	UserID     *int64
-	SessionID  *string
+	VisitorID  *string
 	CreatedAt  time.Time
 }

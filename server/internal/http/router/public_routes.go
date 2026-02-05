@@ -7,6 +7,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendtimeline"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
+	applike "github.com/grtsinry43/grtblog-v2/server/internal/app/like"
 	appsearch "github.com/grtsinry43/grtblog-v2/server/internal/app/search"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
@@ -48,4 +49,8 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 		analyticsHandler := handler.NewAnalyticsHandler(deps.Analytics)
 		public.Post("/analytics/view", analyticsHandler.TrackView)
 	}
+	likeRepo := persistence.NewLikeRepository(deps.DB)
+	likeSvc := applike.NewService(likeRepo)
+	likeHandler := handler.NewLikeHandler(likeSvc)
+	public.Post("/analytics/like", likeHandler.TrackLike)
 }

@@ -33,8 +33,8 @@ type EmailTemplateTestReq struct {
 }
 
 type EmailSubscribeReq struct {
-	Email     string `json:"email"`
-	EventName string `json:"eventName"`
+	Email      string   `json:"email"`
+	EventNames []string `json:"eventNames"`
 }
 
 type EmailUnsubscribeReq struct {

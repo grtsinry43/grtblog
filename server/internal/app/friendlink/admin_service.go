@@ -9,6 +9,7 @@ import (
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 )
 
@@ -16,10 +17,11 @@ type AdminService struct {
 	appRepo      social.FriendLinkApplicationRepository
 	linkRepo     social.FriendLinkRepository
 	instanceRepo federation.FederationInstanceRepository
+	userRepo     identity.Repository
 	events       appEvent.Bus
 }
 
-func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo social.FriendLinkRepository, instanceRepo federation.FederationInstanceRepository, events appEvent.Bus) *AdminService {
+func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo social.FriendLinkRepository, instanceRepo federation.FederationInstanceRepository, userRepo identity.Repository, events appEvent.Bus) *AdminService {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
@@ -27,6 +29,7 @@ func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo so
 		appRepo:      appRepo,
 		linkRepo:     linkRepo,
 		instanceRepo: instanceRepo,
+		userRepo:     userRepo,
 		events:       events,
 	}
 }
@@ -363,16 +366,29 @@ func (s *AdminService) publishApplicationStatusEvent(ctx context.Context, name s
 	if app == nil {
 		return
 	}
+	recipientEmail := s.resolveApplicantEmail(ctx, app.UserID)
 	_ = s.events.Publish(ctx, appEvent.Generic{
 		EventName: name,
 		At:        time.Now(),
 		Payload: map[string]any{
-			"ID":     app.ID,
-			"URL":    app.URL,
-			"Status": app.Status,
-			"Name":   toValue(app.Name),
+			"ID":             app.ID,
+			"URL":            app.URL,
+			"Status":         app.Status,
+			"Name":           toValue(app.Name),
+			"recipientEmail": recipientEmail,
 		},
 	})
+}
+
+func (s *AdminService) resolveApplicantEmail(ctx context.Context, userID *int64) string {
+	if userID == nil || *userID <= 0 || s.userRepo == nil {
+		return ""
+	}
+	user, err := s.userRepo.FindByID(ctx, *userID)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(user.Email)
 }
 
 func toValue(v *string) string {

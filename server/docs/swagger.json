@@ -5042,6 +5042,39 @@
                 }
             }
         },
+        "/public/analytics/like": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "点赞埋点（去重）",
+                "parameters": [
+                    {
+                        "description": "点赞参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.TrackLikeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.TrackLikeEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/public/analytics/view": {
             "post": {
                 "consumes": [
@@ -5127,7 +5160,7 @@
                 "summary": "订阅邮件事件",
                 "parameters": [
                     {
-                        "description": "订阅参数",
+                        "description": "订阅参数(使用 eventNames)",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -5140,7 +5173,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/contract.EmailSubscriptionResp"
+                            "$ref": "#/definitions/contract.EmailSubscribeBatchResp"
                         }
                     }
                 }
@@ -7289,14 +7322,28 @@
                 }
             }
         },
+        "contract.EmailSubscribeBatchResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.EmailSubscriptionResp"
+                    }
+                }
+            }
+        },
         "contract.EmailSubscribeReq": {
             "type": "object",
             "properties": {
                 "email": {
                     "type": "string"
                 },
-                "eventName": {
-                    "type": "string"
+                "eventNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -7388,6 +7435,9 @@
                     "type": "integer"
                 },
                 "isEnabled": {
+                    "type": "boolean"
+                },
+                "isInternal": {
                     "type": "boolean"
                 },
                 "name": {
@@ -9528,6 +9578,31 @@
                 }
             }
         },
+        "contract.TrackLikeReq": {
+            "type": "object",
+            "properties": {
+                "contentId": {
+                    "type": "integer"
+                },
+                "contentType": {
+                    "type": "string"
+                },
+                "visitorId": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.TrackLikeResp": {
+            "type": "object",
+            "properties": {
+                "affected": {
+                    "type": "boolean"
+                },
+                "visitorId": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.TrackViewReq": {
             "type": "object",
             "properties": {
@@ -10599,6 +10674,26 @@
                 },
                 "data": {
                     "$ref": "#/definitions/handler.SystemStatus"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TrackLikeEnvelope": {
+            "type": "object",
+            "properties": {
+                "bizErr": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/contract.TrackLikeResp"
                 },
                 "meta": {
                     "$ref": "#/definitions/response.Meta"

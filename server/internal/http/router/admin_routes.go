@@ -122,7 +122,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	friendLinkAppRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
-	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo, deps.EventBus)
+	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo, identityRepo, deps.EventBus)
 	friendLinkAdminHandler := handler.NewFriendLinkAdminHandler(friendLinkAdminSvc)
 	admin.Get("/friend-links/applications", friendLinkAdminHandler.ListApplications)
 	admin.Put("/friend-links/applications/:id/approve", friendLinkAdminHandler.ApproveApplication)

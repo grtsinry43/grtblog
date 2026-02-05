@@ -451,6 +451,9 @@ func (s *Service) EmailSettings(ctx context.Context) (EmailSettings, error) {
 	}); err != nil {
 		return settings, err
 	}
+	if settings.Enabled && len(settings.DefaultTo) == 0 {
+		return settings, fmt.Errorf("email.defaultTo is required when email is enabled")
+	}
 
 	return settings, nil
 }

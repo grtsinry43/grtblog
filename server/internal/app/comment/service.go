@@ -337,21 +337,46 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 	if err := s.repo.Create(ctx, reply); err != nil {
 		return nil, err
 	}
+	if shouldSkipReplyNotification(parent, adminUser) {
+		return reply, nil
+	}
 	_ = s.events.Publish(ctx, appEvent.Generic{
-		EventName: "comment.created",
+		EventName: "comment.reply",
 		At:        time.Now(),
 		Payload: map[string]any{
-			"ID":       reply.ID,
-			"AreaID":   reply.AreaID,
-			"ParentID": reply.ParentID,
-			"AuthorID": reply.AuthorID,
-			"NickName": toValue(reply.NickName),
-			"Email":    toValue(reply.Email),
-			"Content":  reply.Content,
-			"Status":   string(reply.Status),
+			"ID":             reply.ID,
+			"ParentID":       parent.ID,
+			"AreaID":         reply.AreaID,
+			"ParentContent":  parent.Content,
+			"ReplyContent":   reply.Content,
+			"ParentNickName": toValue(parent.NickName),
+			"ReplyNickName":  toValue(reply.NickName),
+			"recipientEmail": toValue(parent.Email),
+			"Status":         string(reply.Status),
 		},
 	})
 	return reply, nil
+}
+
+func shouldSkipReplyNotification(parent *domaincomment.Comment, replier *identity.User) bool {
+	if parent == nil || replier == nil {
+		return false
+	}
+	if parent.IsOwner {
+		return true
+	}
+	if parent.AuthorID != nil && *parent.AuthorID == replier.ID {
+		return true
+	}
+	parentEmail := ""
+	if parent.Email != nil {
+		parentEmail = strings.TrimSpace(*parent.Email)
+	}
+	replierEmail := strings.TrimSpace(replier.Email)
+	if parentEmail != "" && replierEmail != "" && strings.EqualFold(parentEmail, replierEmail) {
+		return true
+	}
+	return false
 }
 
 func (s *Service) UpdateCommentStatus(ctx context.Context, cmd UpdateCommentStatusCmd) error {
