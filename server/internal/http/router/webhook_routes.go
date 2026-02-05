@@ -14,7 +14,8 @@ func registerWebhookAdminRoutes(v2 fiber.Router, deps Dependencies, webhookSvc *
 		return
 	}
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager), middleware.RequireAdmin(identityRepo))
+	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 	webhookHandler := handler.NewWebhookHandler(webhookSvc)
 
 	admin := adminGroup.Group("/admin")

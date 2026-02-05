@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -13,12 +14,42 @@ import (
 
 const authContextKey = "authUser"
 
+type AdminTokenResolver interface {
+	FindByToken(ctx context.Context, token string) (*identity.AdminToken, error)
+}
+
 // RequireAuth 校验 Authorization header 并解析 JWT。
-func RequireAuth(manager *jwt.Manager) fiber.Handler {
+func RequireAuth(manager *jwt.Manager, adminTokenResolver ...AdminTokenResolver) fiber.Handler {
+	var tokenResolver AdminTokenResolver
+	if len(adminTokenResolver) > 0 {
+		tokenResolver = adminTokenResolver[0]
+	}
 	return func(c *fiber.Ctx) error {
 		token := extractToken(c.Get("Authorization"))
 		if token == "" {
 			return response.ErrorWithMsg[any](c, response.NotLogin, "用户未登录，请提供有效的 token")
+		}
+
+		if strings.HasPrefix(token, "gt_") {
+			if tokenResolver == nil {
+				return response.ErrorWithMsg[any](c, response.NotLogin, "token 无效")
+			}
+			adminToken, err := tokenResolver.FindByToken(c.Context(), token)
+			if err != nil {
+				if errors.Is(err, identity.ErrAdminTokenExpired) {
+					return response.ErrorWithMsg[any](c, response.NotLogin, "登录已过期，请重新获取 token")
+				}
+				return response.ErrorWithMsg[any](c, response.NotLogin, "token 无效")
+			}
+			c.Locals(authContextKey, &jwt.Claims{
+				Subject:   "admin_token",
+				UserID:    adminToken.UserID,
+				IsAdmin:   true,
+				Issuer:    "admin_token",
+				IssuedAt:  adminToken.CreatedAt.Unix(),
+				ExpiresAt: adminToken.ExpireAt.Unix(),
+			})
+			return c.Next()
 		}
 
 		claims, err := manager.Parse(token)
@@ -75,6 +106,10 @@ func getClaims(c *fiber.Ctx) (*jwt.Claims, bool) {
 func extractToken(header string) string {
 	if header == "" {
 		return ""
+	}
+	header = strings.TrimSpace(header)
+	if strings.HasPrefix(header, "gt_") {
+		return header
 	}
 	parts := strings.SplitN(header, " ", 2)
 	if len(parts) != 2 {

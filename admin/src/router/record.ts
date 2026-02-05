@@ -515,6 +515,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         component: 'settings/login-methods/index',
       },
       {
+        path: 'api-tokens',
+        name: 'adminTokens',
+        label: 'API Tokens',
+        icon: 'iconify ph--key',
+        meta: {
+          componentName: 'AdminTokens',
+          showTab: true,
+        },
+        component: 'settings/admin-tokens/index',
+      },
+      {
         path: 'system',
         name: 'systemSettings',
         label: '系统设置',

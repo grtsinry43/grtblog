@@ -62,19 +62,28 @@ type InitStateResp struct {
 	Initialized bool `json:"initialized"`
 }
 
+// SetupStateResp 返回初始化准备状态。
+type SetupStateResp struct {
+	HasUser                bool     `json:"hasUser"`
+	HasAdmin               bool     `json:"hasAdmin"`
+	WebsiteInfoReady       bool     `json:"websiteInfoReady"`
+	MissingWebsiteInfoKeys []string `json:"missingWebsiteInfoKeys"`
+	NeedsSetup             bool     `json:"needsSetup"`
+}
+
 // TurnstileStateResp 返回 Turnstile 配置状态。
 type TurnstileStateResp struct {
-	Enabled bool `json:"enabled"`
+	Enabled bool   `json:"enabled"`
 	SiteKey string `json:"siteKey,omitempty"`
 }
 
 // TurnstileStateRespEnvelope 仅用于 swagger 展示。
 type TurnstileStateRespEnvelope struct {
-	Code   int              `json:"code"`
-	BizErr string           `json:"bizErr"`
-	Msg    string           `json:"msg"`
+	Code   int                `json:"code"`
+	BizErr string             `json:"bizErr"`
+	Msg    string             `json:"msg"`
 	Data   TurnstileStateResp `json:"data"`
-	Meta   response.Meta    `json:"meta"`
+	Meta   response.Meta      `json:"meta"`
 }
 
 // RegisterRespEnvelope 仅用于 swagger 展示。

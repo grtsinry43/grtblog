@@ -21,8 +21,9 @@ func registerPagePublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 func registerPageAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	pageHandler := newPageHandler(deps)
+	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 
-	authGroup := v2.Group("/pages", middleware.RequireAuth(deps.JWTManager))
+	authGroup := v2.Group("/pages", middleware.RequireAuth(deps.JWTManager, adminTokenRepo))
 	authGroup.Post("/", pageHandler.CreatePage)      // POST /api/v2/pages
 	authGroup.Put("/:id", pageHandler.UpdatePage)    // PUT /api/v2/pages/123
 	authGroup.Delete("/:id", pageHandler.DeletePage) // DELETE /api/v2/pages/123

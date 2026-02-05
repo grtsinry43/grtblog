@@ -1,11 +1,27 @@
 import { isEmpty } from 'lodash-es'
 
 import { useEventBus } from '@/event-bus'
+import { getSetupState } from '@/services/auth'
 import { useUserStore, toRefsUserStore } from '@/stores'
 
 import type { Router } from 'vue-router'
 
 const Layout = () => import('@/layout/index.vue')
+
+const SETUP_STATE_TTL_MS = 5000
+let setupStateCache: Awaited<ReturnType<typeof getSetupState>> | null = null
+let setupStateCachedAt = 0
+
+async function getCachedSetupState(force = false) {
+  const now = Date.now()
+  if (!force && setupStateCache && now - setupStateCachedAt < SETUP_STATE_TTL_MS) {
+    return setupStateCache
+  }
+  const state = await getSetupState()
+  setupStateCache = state
+  setupStateCachedAt = now
+  return state
+}
 
 export function setupRouterGuard(router: Router) {
   const { resolveMenuRoute, cleanup, refreshAccessInfo } = useUserStore()
@@ -13,22 +29,62 @@ export function setupRouterGuard(router: Router) {
   const { token, user } = toRefsUserStore()
   const { routerEventBus } = useEventBus()
 
-  router.beforeEach(async (to, from, next) => {
+  router.beforeEach(async (to, _from, next) => {
     routerEventBus.emit('beforeEach')
 
+    if (to.name === 'init') {
+      if (token.value) {
+        next({ path: '/' })
+        return false
+      }
+      try {
+        const setupState = await getCachedSetupState()
+        if (!setupState.needsSetup) {
+          next({ name: 'signIn' })
+          return false
+        }
+      } catch (error) {
+        console.error('Error checking setup state:', error)
+      }
+      next()
+      return false
+    }
+
     if (to.name === 'signIn') {
+      try {
+        const setupState = await getCachedSetupState()
+        if (setupState.needsSetup) {
+          next({ name: 'init' })
+          return false
+        }
+      } catch (error) {
+        console.error('Error checking setup state:', error)
+      }
       if (!token.value) {
         next()
       } else {
-        next(from.fullPath)
+        next({ path: '/' })
       }
 
       return false
     }
 
     if (!token.value) {
-      cleanup()
-      next()
+      try {
+        const setupState = await getCachedSetupState()
+        if (setupState.needsSetup) {
+          next({ name: 'init' })
+          return false
+        }
+      } catch (error) {
+        console.error('Error checking setup state:', error)
+      }
+      next({
+        name: 'signIn',
+        query: {
+          r: to.fullPath,
+        },
+      })
       return false
     }
 
