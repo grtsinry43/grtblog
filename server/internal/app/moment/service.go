@@ -221,6 +221,88 @@ func (s *Service) ListMoments(ctx context.Context, options content.MomentListOpt
 	return s.repo.ListMoments(ctx, options)
 }
 
+// BatchSetPublished 批量设置手记发布状态。
+func (s *Service) BatchSetPublished(ctx context.Context, cmd BatchSetPublishedCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		momentItem, err := s.repo.GetMomentByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		prevPublished := momentItem.IsPublished
+		if prevPublished == cmd.IsPublished {
+			continue
+		}
+		momentItem.IsPublished = cmd.IsPublished
+		if err := s.repo.UpdateMoment(ctx, momentItem); err != nil {
+			return err
+		}
+
+		now := time.Now()
+		_ = s.events.Publish(ctx, MomentUpdated{
+			ID:          momentItem.ID,
+			AuthorID:    momentItem.AuthorID,
+			Title:       momentItem.Title,
+			ShortURL:    momentItem.ShortURL,
+			Published:   momentItem.IsPublished,
+			ContentHash: momentItem.ContentHash,
+			Summary:     momentItem.Summary,
+			TOC:         momentItem.TOC,
+			Content:     momentItem.Content,
+			At:          now,
+		})
+		if cmd.IsPublished {
+			_ = s.events.Publish(ctx, MomentPublished{
+				ID:       momentItem.ID,
+				AuthorID: momentItem.AuthorID,
+				Title:    momentItem.Title,
+				ShortURL: momentItem.ShortURL,
+				At:       now,
+			})
+		} else {
+			_ = s.events.Publish(ctx, MomentUnpublished{
+				ID:       momentItem.ID,
+				AuthorID: momentItem.AuthorID,
+				Title:    momentItem.Title,
+				ShortURL: momentItem.ShortURL,
+				At:       now,
+			})
+		}
+	}
+	return nil
+}
+
+// BatchSetTop 批量设置手记置顶状态。
+func (s *Service) BatchSetTop(ctx context.Context, cmd BatchSetTopCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		momentItem, err := s.repo.GetMomentByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if momentItem.IsTop == cmd.IsTop {
+			continue
+		}
+		momentItem.IsTop = cmd.IsTop
+		if err := s.repo.UpdateMoment(ctx, momentItem); err != nil {
+			return err
+		}
+		_ = s.events.Publish(ctx, MomentUpdated{
+			ID:          momentItem.ID,
+			AuthorID:    momentItem.AuthorID,
+			Title:       momentItem.Title,
+			ShortURL:    momentItem.ShortURL,
+			Published:   momentItem.IsPublished,
+			ContentHash: momentItem.ContentHash,
+			Summary:     momentItem.Summary,
+			TOC:         momentItem.TOC,
+			Content:     momentItem.Content,
+			At:          time.Now(),
+		})
+	}
+	return nil
+}
+
 // DeleteMoment 删除手记
 func (s *Service) DeleteMoment(ctx context.Context, id int64) error {
 	momentItem, err := s.repo.GetMomentByID(ctx, id)
@@ -237,6 +319,17 @@ func (s *Service) DeleteMoment(ctx context.Context, id int64) error {
 		ShortURL: momentItem.ShortURL,
 		At:       time.Now(),
 	})
+	return nil
+}
+
+// BatchDelete 批量删除手记。
+func (s *Service) BatchDelete(ctx context.Context, cmd BatchDeleteCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		if err := s.DeleteMoment(ctx, id); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -306,4 +399,23 @@ func (s *Service) applyCommentAreaStatus(ctx context.Context, areaID *int64, all
 		return nil
 	}
 	return s.commentRepo.SetAreaClosed(ctx, *areaID, !*allowComment)
+}
+
+func normalizeIDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return nil
+	}
+	seen := make(map[int64]struct{}, len(ids))
+	out := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
 }

@@ -23,6 +23,22 @@ type ThinkingMetrics struct {
 }
 
 type ListThinkingResp struct {
-	Items []*ThinkingResp `json:"items"`
-	Total int64           `json:"total"`
+	Items []ThinkingListItemResp `json:"items"`
+	Total int64                  `json:"total"`
+}
+
+type ThinkingListItemResp struct {
+	ID           int64     `json:"id"`
+	CommentID    int64     `json:"commentId"`
+	Content      string    `json:"content"`
+	AuthorID     int64     `json:"authorId"`
+	IsHot        bool      `json:"isHot"`
+	AllowComment bool      `json:"allowComment"`
+	AuthorName   string    `json:"authorName,omitempty"`
+	Avatar       string    `json:"avatar,omitempty"`
+	Views        int64     `json:"views"`
+	Likes        int       `json:"likes"`
+	Comments     int       `json:"comments"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }

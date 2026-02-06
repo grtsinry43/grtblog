@@ -1,18 +1,14 @@
 import { request } from './http'
 
-export interface ThinkingMetrics {
-  views: number
-  likes: number
-  comments: number
-}
-
 export interface ThinkingListItem {
   id: number
   content: string
   authorName?: string
   authorAvatar?: string
   allowComment: boolean
-  metrics: ThinkingMetrics
+  views: number
+  likes: number
+  comments: number
   createdAt: string
   updatedAt: string
 }
@@ -79,5 +75,12 @@ export function updateThinking(id: number, payload: UpdateThinkingPayload) {
 export function deleteThinking(id: number) {
   return request<void>(`/thinkings/${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function batchDeleteThinkings(payload: { ids: number[] }) {
+  return request<void>('/admin/thinkings/batch-delete', {
+    method: 'POST',
+    body: payload,
   })
 }

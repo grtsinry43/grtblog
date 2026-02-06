@@ -87,3 +87,14 @@ type ListPagesReq struct {
 type CheckPageLatestReq struct {
 	Hash string `json:"hash"`
 }
+
+// BatchSetPageEnabledReq 批量切换页面启用状态请求。
+type BatchSetPageEnabledReq struct {
+	IDs       []int64 `json:"ids"`
+	IsEnabled bool    `json:"isEnabled"`
+}
+
+// BatchDeletePageReq 批量删除页面请求。
+type BatchDeletePageReq struct {
+	IDs []int64 `json:"ids"`
+}

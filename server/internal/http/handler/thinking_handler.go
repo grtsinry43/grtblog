@@ -141,13 +141,13 @@ func (h *ThinkingHandler) ListThinkings(c *fiber.Ctx) error {
 		return h.mapError(c, err)
 	}
 
-	resItems := make([]*contract.ThinkingResp, len(items))
+	resItems := make([]contract.ThinkingListItemResp, len(items))
 	for i, item := range items {
-		resp, err := h.toThinkingResp(c.Context(), item)
+		resp, err := h.toThinkingListItemResp(c.Context(), item)
 		if err != nil {
 			return err
 		}
-		resItems[i] = resp
+		resItems[i] = *resp
 	}
 
 	return response.Success(c, contract.ListThinkingResp{
@@ -210,6 +210,46 @@ func (h *ThinkingHandler) DeleteThinking(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "思考删除成功")
 }
 
+// BatchDeleteThinkings godoc
+// @Summary 批量删除思考（管理端）
+// @Tags Thinking
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchDeleteThinkingReq true "批量删除参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security JWTAuth
+// @Router /admin/thinkings/batch-delete [post]
+func (h *ThinkingHandler) BatchDeleteThinkings(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+
+	var req contract.BatchDeleteThinkingReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchDelete(c.Context(), thinking.BatchDeleteCmd{IDs: req.IDs}); err != nil {
+		return h.mapError(c, err)
+	}
+
+	Audit(c, "thinking.batch_delete", map[string]any{
+		"thinkingIds": req.IDs,
+		"userId":      claims.UserID,
+	})
+
+	return response.SuccessWithMessage[any](c, nil, "思考批量删除成功")
+}
+
 func (h *ThinkingHandler) mapError(c *fiber.Ctx, err error) error {
 	switch {
 	case errors.Is(err, domainthinking.ErrThinkingNotFound):
@@ -236,6 +276,34 @@ func (h *ThinkingHandler) toThinkingResp(ctx context.Context, t *domainthinking.
 		},
 		CreatedAt: t.CreatedAt,
 		UpdatedAt: t.UpdatedAt,
+	}
+	if h.userRepo != nil {
+		user, err := h.userRepo.FindByID(ctx, t.AuthorID)
+		if err != nil {
+			if !errors.Is(err, identity.ErrUserNotFound) {
+				return nil, err
+			}
+		} else if user != nil {
+			resp.AuthorName = user.Nickname
+			resp.Avatar = user.Avatar
+		}
+	}
+	return resp, nil
+}
+
+func (h *ThinkingHandler) toThinkingListItemResp(ctx context.Context, t *domainthinking.Thinking) (*contract.ThinkingListItemResp, error) {
+	resp := &contract.ThinkingListItemResp{
+		ID:           t.ID,
+		CommentID:    t.CommentID,
+		Content:      t.Content,
+		AuthorID:     t.AuthorID,
+		IsHot:        false,
+		AllowComment: h.allowCommentByAreaID(ctx, t.CommentID),
+		Views:        t.Metrics.Views,
+		Likes:        t.Metrics.Likes,
+		Comments:     t.Metrics.Comments,
+		CreatedAt:    t.CreatedAt,
+		UpdatedAt:    t.UpdatedAt,
 	}
 	if h.userRepo != nil {
 		user, err := h.userRepo.FindByID(ctx, t.AuthorID)

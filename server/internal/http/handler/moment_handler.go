@@ -183,6 +183,80 @@ func (h *MomentHandler) UpdateMoment(c *fiber.Ctx) error {
 	return response.SuccessWithMessage(c, momentResponse, "手记更新成功")
 }
 
+// BatchSetMomentPublished godoc
+// @Summary 批量设置手记发布状态（管理端）
+// @Tags Moment
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchSetMomentPublishedReq true "批量发布状态参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/moments/published [put]
+// @Security JWTAuth
+func (h *MomentHandler) BatchSetMomentPublished(c *fiber.Ctx) error {
+	var req contract.BatchSetMomentPublishedReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchSetPublished(c.Context(), moment.BatchSetPublishedCmd{
+		IDs:         req.IDs,
+		IsPublished: req.IsPublished,
+	}); err != nil {
+		return err
+	}
+
+	if req.IsPublished {
+		return response.SuccessWithMessage[any](c, nil, "手记发布状态已批量更新为已发布")
+	}
+	return response.SuccessWithMessage[any](c, nil, "手记发布状态已批量更新为未发布")
+}
+
+// BatchSetMomentTop godoc
+// @Summary 批量设置手记置顶状态（管理端）
+// @Tags Moment
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchSetMomentTopReq true "批量置顶状态参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/moments/top [put]
+// @Security JWTAuth
+func (h *MomentHandler) BatchSetMomentTop(c *fiber.Ctx) error {
+	var req contract.BatchSetMomentTopReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchSetTop(c.Context(), moment.BatchSetTopCmd{
+		IDs:   req.IDs,
+		IsTop: req.IsTop,
+	}); err != nil {
+		return err
+	}
+
+	if req.IsTop {
+		return response.SuccessWithMessage[any](c, nil, "手记置顶状态已批量更新为置顶")
+	}
+	return response.SuccessWithMessage[any](c, nil, "手记置顶状态已批量更新为取消置顶")
+}
+
 // GetMoment godoc
 // @Summary 获取手记详情
 // @Tags Moment
@@ -451,6 +525,47 @@ func (h *MomentHandler) DeleteMoment(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "手记删除成功")
 }
 
+// BatchDeleteMoments godoc
+// @Summary 批量删除手记（管理端）
+// @Tags Moment
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchDeleteMomentReq true "批量删除参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/moments/batch-delete [post]
+// @Security JWTAuth
+func (h *MomentHandler) BatchDeleteMoments(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+
+	var req contract.BatchDeleteMomentReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchDelete(c.Context(), moment.BatchDeleteCmd{IDs: req.IDs}); err != nil {
+		return err
+	}
+
+	Audit(c, "moment.batch_delete", map[string]any{
+		"momentIds": req.IDs,
+		"userId":    claims.UserID,
+	})
+
+	return response.SuccessWithMessage[any](c, nil, "手记批量删除成功")
+}
+
 func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Moment) (*contract.MomentResp, error) {
 	topics, err := h.svc.GetMomentTopics(ctx, momentItem.ID)
 	if err != nil {
@@ -525,6 +640,7 @@ func (h *MomentHandler) toMomentListItemResp(ctx context.Context, momentItem *co
 		IsHot:        momentItem.IsHot,
 		AllowComment: h.allowCommentByAreaID(ctx, momentItem.CommentID),
 		IsOriginal:   momentItem.IsOriginal,
+		IsPublished:  momentItem.IsPublished,
 		CreatedAt:    momentItem.CreatedAt,
 		UpdatedAt:    momentItem.UpdatedAt,
 		Topics:       []string{},

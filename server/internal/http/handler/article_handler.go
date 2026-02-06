@@ -163,6 +163,80 @@ func (h *ArticleHandler) UpdateArticle(c *fiber.Ctx) error {
 	return response.SuccessWithMessage(c, articleResponse, "文章更新成功")
 }
 
+// BatchSetArticlePublished godoc
+// @Summary 批量设置文章发布状态（管理端）
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchSetArticlePublishedReq true "批量发布状态参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/articles/published [put]
+// @Security JWTAuth
+func (h *ArticleHandler) BatchSetArticlePublished(c *fiber.Ctx) error {
+	var req contract.BatchSetArticlePublishedReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchSetPublished(c.Context(), article.BatchSetPublishedCmd{
+		IDs:         req.IDs,
+		IsPublished: req.IsPublished,
+	}); err != nil {
+		return err
+	}
+
+	if req.IsPublished {
+		return response.SuccessWithMessage[any](c, nil, "文章发布状态已批量更新为已发布")
+	}
+	return response.SuccessWithMessage[any](c, nil, "文章发布状态已批量更新为未发布")
+}
+
+// BatchSetArticleTop godoc
+// @Summary 批量设置文章置顶状态（管理端）
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchSetArticleTopReq true "批量置顶状态参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/articles/top [put]
+// @Security JWTAuth
+func (h *ArticleHandler) BatchSetArticleTop(c *fiber.Ctx) error {
+	var req contract.BatchSetArticleTopReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchSetTop(c.Context(), article.BatchSetTopCmd{
+		IDs:   req.IDs,
+		IsTop: req.IsTop,
+	}); err != nil {
+		return err
+	}
+
+	if req.IsTop {
+		return response.SuccessWithMessage[any](c, nil, "文章置顶状态已批量更新为置顶")
+	}
+	return response.SuccessWithMessage[any](c, nil, "文章置顶状态已批量更新为取消置顶")
+}
+
 // GetArticle godoc
 // @Summary 获取文章详情
 // @Tags Article
@@ -429,6 +503,47 @@ func (h *ArticleHandler) DeleteArticle(c *fiber.Ctx) error {
 	})
 
 	return response.SuccessWithMessage[any](c, nil, "文章删除成功")
+}
+
+// BatchDeleteArticles godoc
+// @Summary 批量删除文章（管理端）
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchDeleteArticleReq true "批量删除参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/articles/batch-delete [post]
+// @Security JWTAuth
+func (h *ArticleHandler) BatchDeleteArticles(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+
+	var req contract.BatchDeleteArticleReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchDelete(c.Context(), article.BatchDeleteCmd{IDs: req.IDs}); err != nil {
+		return err
+	}
+
+	Audit(c, "article.batch_delete", map[string]any{
+		"articleIds": req.IDs,
+		"userId":     claims.UserID,
+	})
+
+	return response.SuccessWithMessage[any](c, nil, "文章批量删除成功")
 }
 
 func (h *ArticleHandler) toArticleResp(ctx context.Context, article *content.Article) (*contract.ArticleResp, error) {

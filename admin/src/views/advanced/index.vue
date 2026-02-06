@@ -137,7 +137,8 @@ const cardStats = computed(() => {
       value: ov?.api.requests ?? 0,
       suffix: 'req',
       iconClass: 'iconify ph--arrows-left-right-bold text-indigo-50 dark:text-indigo-150',
-      iconBgClass: 'text-indigo-500/5 bg-indigo-400 ring-4 ring-indigo-200 dark:bg-indigo-650 dark:ring-indigo-500/30 transition-all',
+      iconBgClass:
+        'text-indigo-500/5 bg-indigo-400 ring-4 ring-indigo-200 dark:bg-indigo-650 dark:ring-indigo-500/30 transition-all',
       description: '最近5分钟请求',
     },
     {
@@ -146,7 +147,8 @@ const cardStats = computed(() => {
       suffix: '%',
       precision: 2,
       iconClass: 'iconify ph--warning-circle-bold text-rose-50 dark:text-rose-150',
-      iconBgClass: 'text-rose-500/5 bg-rose-400 ring-4 ring-rose-200 dark:bg-rose-650 dark:ring-rose-500/30 transition-all',
+      iconBgClass:
+        'text-rose-500/5 bg-rose-400 ring-4 ring-rose-200 dark:bg-rose-650 dark:ring-rose-500/30 transition-all',
       description: '接口调用异常比例',
     },
     {
@@ -154,17 +156,19 @@ const cardStats = computed(() => {
       value: ov?.realtime.currentOnline ?? 0,
       suffix: 'ws',
       iconClass: 'iconify ph--users-three-bold text-blue-50 dark:text-blue-150',
-      iconBgClass: 'text-blue-500/5 bg-blue-400 ring-4 ring-blue-200 dark:bg-blue-650 dark:ring-blue-500/30 transition-all',
+      iconBgClass:
+        'text-blue-500/5 bg-blue-400 ring-4 ring-blue-200 dark:bg-blue-650 dark:ring-blue-500/30 transition-all',
       description: '实时 WebSocket 连接',
     },
     {
-      title: '联邦成功率(24h)',
+      title: '联合成功率(24h)',
       value: (ov?.federation.deliverySuccessRate ?? 0) * 100,
       suffix: '%',
       precision: 2,
       iconClass: 'iconify ph--planet-bold text-emerald-50 dark:text-emerald-150',
-      iconBgClass: 'text-emerald-500/5 bg-emerald-400 ring-4 ring-emerald-200 dark:bg-emerald-650 dark:ring-emerald-500/30 transition-all',
-      description: 'ActivityPub 投递成功率',
+      iconBgClass:
+        'text-emerald-500/5 bg-emerald-400 ring-4 ring-emerald-200 dark:bg-emerald-650 dark:ring-emerald-500/30 transition-all',
+      description: '联合投递成功率',
     },
   ]
 })
@@ -235,7 +239,7 @@ function renderTrafficChart() {
   trafficChart.setOption({
     tooltip: createTooltipConfig(),
     legend: {
-      data: ['PV', '在线峰值', '联邦出站'],
+      data: ['PV', '在线峰值', '联合出站'],
       right: 0,
       top: 0,
       textStyle: { color: isDark.value ? twc.neutral[400] : twc.neutral[600] },
@@ -251,7 +255,9 @@ function renderTrafficChart() {
     yAxis: {
       type: 'value',
       axisLabel: { color: isDark.value ? twc.neutral[400] : twc.neutral[600] },
-      splitLine: { lineStyle: { color: isDark.value ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' } },
+      splitLine: {
+        lineStyle: { color: isDark.value ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
+      },
     },
     series: [
       {
@@ -268,8 +274,20 @@ function renderTrafficChart() {
         },
         itemStyle: { color },
       },
-      { name: '在线峰值', type: 'line', smooth: true, data: data.online, lineStyle: { width: 2, color: twc.amber[500] }, itemStyle: { color: twc.amber[500] } },
-      { name: '联邦出站', type: 'bar', data: data.outbound, itemStyle: { color: twc.emerald[500] } },
+      {
+        name: '在线峰值',
+        type: 'line',
+        smooth: true,
+        data: data.online,
+        lineStyle: { width: 2, color: twc.amber[500] },
+        itemStyle: { color: twc.amber[500] },
+      },
+      {
+        name: '联邦出站',
+        type: 'bar',
+        data: data.outbound,
+        itemStyle: { color: twc.emerald[500] },
+      },
     ],
   })
 }
@@ -295,7 +313,10 @@ function renderFederationChart() {
           borderColor: isDark.value ? twc.neutral[800] : '#fff',
           borderWidth: 2,
         },
-        label: { formatter: '{b}: {d}%', color: isDark.value ? twc.neutral[400] : twc.neutral[600] },
+        label: {
+          formatter: '{b}: {d}%',
+          color: isDark.value ? twc.neutral[400] : twc.neutral[600],
+        },
         data: pieData,
       },
     ],
@@ -325,16 +346,36 @@ onUnmounted(() => {
 
 <template>
   <ScrollContainer wrapper-class="p-4 md:p-6 space-y-4">
-    <div class="flex flex-col gap-y-3 md:flex-row md:items-center md:justify-between mb-4">
+    <div class="mb-4 flex flex-col gap-y-3 md:flex-row md:items-center md:justify-between">
       <div class="flex items-center gap-2">
-        <NIcon :component="Desktop24Regular" class="text-primary text-xl" />
+        <NIcon
+          :component="Desktop24Regular"
+          class="text-xl text-primary"
+        />
         <div class="text-lg font-medium">高级信息 / Observability</div>
-        <NTag size="small" type="info" round>实时</NTag>
+        <NTag
+          size="small"
+          type="info"
+          round
+          >实时</NTag
+        >
       </div>
       <div class="flex items-center gap-2 self-end md:self-auto">
-        <span class="text-xs text-neutral-400 mr-2 whitespace-nowrap">最后刷新：{{ lastRefreshAt.toLocaleTimeString() }}</span>
-        <NSelect v-model:value="timelineWindow" :options="windowOptions" size="small" class="w-32" />
-        <NButton size="small" secondary :loading="loading" @click="refreshAll">
+        <span class="mr-2 text-xs whitespace-nowrap text-neutral-400"
+          >最后刷新：{{ lastRefreshAt.toLocaleTimeString() }}</span
+        >
+        <NSelect
+          v-model:value="timelineWindow"
+          :options="windowOptions"
+          size="small"
+          class="w-32"
+        />
+        <NButton
+          size="small"
+          secondary
+          :loading="loading"
+          @click="refreshAll"
+        >
           <template #icon><NIcon :component="ArrowClockwise24Regular" /></template>
           刷新
         </NButton>
@@ -352,27 +393,52 @@ onUnmounted(() => {
           <div class="flex-1">
             <span class="text-sm font-medium text-neutral-450">{{ item.title }}</span>
             <div class="mt-1 mb-1.5 flex gap-x-1 text-2xl text-neutral-700 dark:text-neutral-400">
-              <NNumberAnimation :to="item.value" show-separator :precision="item.precision || 0" />
-              <span class="text-xs text-neutral-400 self-end mb-1">{{ item.suffix }}</span>
+              <NNumberAnimation
+                :to="item.value"
+                show-separator
+                :precision="item.precision || 0"
+              />
+              <span class="mb-1 self-end text-xs text-neutral-400">{{ item.suffix }}</span>
             </div>
             <div class="flex items-center">
-              <span class="text-neutral-500 dark:text-neutral-400 text-xs">{{ item.description }}</span>
+              <span class="text-xs text-neutral-500 dark:text-neutral-400">{{
+                item.description
+              }}</span>
             </div>
           </div>
           <div>
-            <div class="grid place-items-center rounded-full p-3" :class="item.iconBgClass">
-              <span class="size-7" :class="item.iconClass" />
+            <div
+              class="grid place-items-center rounded-full p-3"
+              :class="item.iconBgClass"
+            >
+              <span
+                class="size-7"
+                :class="item.iconClass"
+              />
             </div>
           </div>
         </template>
         <template v-else>
-          <div class="w-full flex gap-4">
+          <div class="flex w-full gap-4">
             <div class="flex-1 space-y-2">
-              <NSkeleton text style="width: 40%" />
-              <NSkeleton text style="width: 80%; height: 28px" />
-              <NSkeleton text style="width: 60%" />
+              <NSkeleton
+                text
+                style="width: 40%"
+              />
+              <NSkeleton
+                text
+                style="width: 80%; height: 28px"
+              />
+              <NSkeleton
+                text
+                style="width: 60%"
+              />
             </div>
-            <NSkeleton circle size="medium" style="width: 48px; height: 48px" />
+            <NSkeleton
+              circle
+              size="medium"
+              style="width: 48px; height: 48px"
+            />
           </div>
         </template>
       </div>
@@ -387,10 +453,15 @@ onUnmounted(() => {
           style="height: 420px"
         >
           <div class="flex items-center justify-between px-5 pt-4">
-            <span class="text-base font-medium text-neutral-600 dark:text-neutral-300">全链路趋势</span>
+            <span class="text-base font-medium text-neutral-600 dark:text-neutral-300"
+              >全链路趋势</span
+            >
           </div>
-          <div class="flex-1 px-4 pb-4 pt-2">
-            <div ref="trafficChartEl" class="h-full w-full" />
+          <div class="flex-1 px-4 pt-2 pb-4">
+            <div
+              ref="trafficChartEl"
+              class="h-full w-full"
+            />
           </div>
         </div>
       </div>
@@ -402,10 +473,15 @@ onUnmounted(() => {
           style="height: 420px"
         >
           <div class="flex items-center justify-between px-5 pt-4">
-            <span class="text-base font-medium text-neutral-600 dark:text-neutral-300">联邦出站状态分布</span>
+            <span class="text-base font-medium text-neutral-600 dark:text-neutral-300"
+              >联邦出站状态分布</span
+            >
           </div>
-          <div class="flex-1 px-4 pb-4 pt-2">
-            <div ref="federationChartEl" class="h-full w-full" />
+          <div class="flex-1 px-4 pt-2 pb-4">
+            <div
+              ref="federationChartEl"
+              class="h-full w-full"
+            />
           </div>
         </div>
       </div>
@@ -415,46 +491,88 @@ onUnmounted(() => {
     <div class="grid grid-cols-1 gap-4 overflow-hidden max-sm:gap-2 lg:grid-cols-12">
       <!-- Control Plane -->
       <div class="col-span-1 lg:col-span-6">
-        <div class="flex flex-col rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]">
-          <div class="text-base font-medium text-neutral-600 dark:text-neutral-300 mb-4">控制平面概况</div>
-          <NDescriptions :column="2" size="small">
-            <NDescriptionsItem label="RPS">{{ controlData?.api.rps?.toFixed(2) }}</NDescriptionsItem>
-            <NDescriptionsItem label="P95 延迟">{{ controlData?.api.p95LatencyMs?.toFixed(1) }} ms</NDescriptionsItem>
-            <NDescriptionsItem label="API 错误率">{{ formatPercent(controlData?.api.errorRate) }}</NDescriptionsItem>
-            <NDescriptionsItem label="Go Goroutines">{{ controlData?.goRuntime.numGoroutine }}</NDescriptionsItem>
+        <div
+          class="flex flex-col rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]"
+        >
+          <div class="mb-4 text-base font-medium text-neutral-600 dark:text-neutral-300">
+            控制平面概况
+          </div>
+          <NDescriptions
+            :column="2"
+            size="small"
+          >
+            <NDescriptionsItem label="RPS">{{
+              controlData?.api.rps?.toFixed(2)
+            }}</NDescriptionsItem>
+            <NDescriptionsItem label="P95 延迟"
+              >{{ controlData?.api.p95LatencyMs?.toFixed(1) }} ms</NDescriptionsItem
+            >
+            <NDescriptionsItem label="API 错误率">{{
+              formatPercent(controlData?.api.errorRate)
+            }}</NDescriptionsItem>
+            <NDescriptionsItem label="Go Goroutines">{{
+              controlData?.goRuntime.numGoroutine
+            }}</NDescriptionsItem>
             <NDescriptionsItem label="DB 连接状态">
-              <NTag :type="controlData?.database.status === 'connected' ? 'success' : 'error'" size="small" round>
+              <NTag
+                :type="controlData?.database.status === 'connected' ? 'success' : 'error'"
+                size="small"
+                round
+              >
                 {{ controlData?.database.status || 'unknown' }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem label="DB 等待">{{ controlData?.database.waitCount }}</NDescriptionsItem>
+            <NDescriptionsItem label="DB 等待">{{
+              controlData?.database.waitCount
+            }}</NDescriptionsItem>
           </NDescriptions>
         </div>
       </div>
 
       <!-- Realtime & Storage -->
       <div class="col-span-1 lg:col-span-6">
-        <div class="flex flex-col rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]">
-          <div class="text-base font-medium text-neutral-600 dark:text-neutral-300 mb-4">实时与存储</div>
-          <NDescriptions :column="2" size="small">
-            <NDescriptionsItem label="WS 在线">{{ realtimeData?.snapshot.currentOnline }}</NDescriptionsItem>
-            <NDescriptionsItem label="WS 广播错误率">{{ formatPercent(realtimeData?.snapshot.broadcastErrorRate) }}</NDescriptionsItem>
+        <div
+          class="flex flex-col rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]"
+        >
+          <div class="mb-4 text-base font-medium text-neutral-600 dark:text-neutral-300">
+            实时与存储
+          </div>
+          <NDescriptions
+            :column="2"
+            size="small"
+          >
+            <NDescriptionsItem label="WS 在线">{{
+              realtimeData?.snapshot.currentOnline
+            }}</NDescriptionsItem>
+            <NDescriptionsItem label="WS 广播错误率">{{
+              formatPercent(realtimeData?.snapshot.broadcastErrorRate)
+            }}</NDescriptionsItem>
             <NDescriptionsItem label="WS Fanout P95">
               {{ realtimeData?.snapshot.broadcastP95Ms?.toFixed(1) }} ms
             </NDescriptionsItem>
-            <NDescriptionsItem label="平均接收人数">{{ realtimeData?.snapshot.avgRecipients?.toFixed(2) }}</NDescriptionsItem>
-            <NDescriptionsItem label="HTML 存储">{{ formatBytes(storageData?.storageHtml.size) }}</NDescriptionsItem>
-            <NDescriptionsItem label="日志存储">{{ formatBytes(storageData?.storageLogs.size) }}</NDescriptionsItem>
+            <NDescriptionsItem label="平均接收人数">{{
+              realtimeData?.snapshot.avgRecipients?.toFixed(2)
+            }}</NDescriptionsItem>
+            <NDescriptionsItem label="HTML 存储">{{
+              formatBytes(storageData?.storageHtml.size)
+            }}</NDescriptionsItem>
+            <NDescriptionsItem label="日志存储">{{
+              formatBytes(storageData?.storageLogs.size)
+            }}</NDescriptionsItem>
           </NDescriptions>
-          <div class="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-            <div class="flex justify-between items-center mb-1">
+          <div class="mt-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+            <div class="mb-1 flex items-center justify-between">
               <span class="text-xs text-neutral-500">Redis 队列深度</span>
-              <span class="text-xs text-neutral-400">{{ storageData?.redis.analyticsQueueDepth || 0 }}</span>
+              <span class="text-xs text-neutral-400">{{
+                storageData?.redis.analyticsQueueDepth || 0
+              }}</span>
             </div>
             <NProgress
               type="line"
               status="info"
-              :percentage="Math.min(((storageData?.redis.analyticsQueueDepth || 0) / 1000) * 100, 100)"
+              :percentage="
+                Math.min(((storageData?.redis.analyticsQueueDepth || 0) / 1000) * 100, 100)
+              "
               :show-indicator="false"
               processing
             />
@@ -464,9 +582,16 @@ onUnmounted(() => {
     </div>
 
     <!-- Alerts -->
-    <div class="rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]">
-      <div class="text-base font-medium text-neutral-600 dark:text-neutral-300 mb-4">系统告警流</div>
-      <NEmpty v-if="!alertsData?.items?.length" description="暂无告警" />
+    <div
+      class="rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]"
+    >
+      <div class="mb-4 text-base font-medium text-neutral-600 dark:text-neutral-300">
+        系统告警流
+      </div>
+      <NEmpty
+        v-if="!alertsData?.items?.length"
+        description="暂无告警"
+      />
       <NTimeline v-else>
         <NTimelineItem
           v-for="item in alertsData.items"
@@ -475,7 +600,7 @@ onUnmounted(() => {
           :title="item.title"
           :time="new Date(item.createdAt).toLocaleString()"
         >
-          <div class="text-xs text-neutral-500 mb-1">{{ item.type }}</div>
+          <div class="mb-1 text-xs text-neutral-500">{{ item.type }}</div>
           <div class="text-sm text-neutral-700 dark:text-neutral-300">{{ item.content }}</div>
         </NTimelineItem>
       </NTimeline>

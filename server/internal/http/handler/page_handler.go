@@ -151,6 +151,43 @@ func (h *PageHandler) UpdatePage(c *fiber.Ctx) error {
 	return response.SuccessWithMessage(c, pageResponse, "页面更新成功")
 }
 
+// BatchSetPageEnabled godoc
+// @Summary 批量设置页面启用状态（管理端）
+// @Tags Page
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchSetPageEnabledReq true "批量启用状态参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/pages/enabled [put]
+// @Security JWTAuth
+func (h *PageHandler) BatchSetPageEnabled(c *fiber.Ctx) error {
+	var req contract.BatchSetPageEnabledReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchSetEnabled(c.Context(), page.BatchSetEnabledCmd{
+		IDs:       req.IDs,
+		IsEnabled: req.IsEnabled,
+	}); err != nil {
+		return err
+	}
+
+	if req.IsEnabled {
+		return response.SuccessWithMessage[any](c, nil, "页面启用状态已批量更新为启用")
+	}
+	return response.SuccessWithMessage[any](c, nil, "页面启用状态已批量更新为禁用")
+}
+
 // GetPage godoc
 // @Summary 获取页面详情
 // @Tags Page
@@ -351,6 +388,47 @@ func (h *PageHandler) DeletePage(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "页面删除成功")
 }
 
+// BatchDeletePages godoc
+// @Summary 批量删除页面（管理端）
+// @Tags Page
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchDeletePageReq true "批量删除参数"
+// @Success 200 {object} contract.EmptyRespEnvelope
+// @Security BearerAuth
+// @Router /admin/pages/batch-delete [post]
+// @Security JWTAuth
+func (h *PageHandler) BatchDeletePages(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+
+	var req contract.BatchDeletePageReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if len(req.IDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
+	}
+	for _, id := range req.IDs {
+		if id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 必须为正整数")
+		}
+	}
+
+	if err := h.svc.BatchDelete(c.Context(), page.BatchDeleteCmd{IDs: req.IDs}); err != nil {
+		return err
+	}
+
+	Audit(c, "page.batch_delete", map[string]any{
+		"pageIds": req.IDs,
+		"userId":  claims.UserID,
+	})
+
+	return response.SuccessWithMessage[any](c, nil, "页面批量删除成功")
+}
+
 func (h *PageHandler) toPageResp(ctx context.Context, pageItem *content.Page) (*contract.PageResp, error) {
 	metrics, err := h.svc.GetPageMetrics(ctx, pageItem.ID)
 	if err != nil {
@@ -372,16 +450,19 @@ func (h *PageHandler) toPageResp(ctx context.Context, pageItem *content.Page) (*
 		IsHot:        false,
 		AllowComment: h.allowCommentByAreaID(ctx, pageItem.CommentID),
 		ExtInfo:      jsonRawFromBytes(pageItem.ExtInfo),
-		CreatedAt:    pageItem.CreatedAt,
-		UpdatedAt:    pageItem.UpdatedAt,
+		Metrics: &contract.MetricsResp{
+			Views:    0,
+			Likes:    0,
+			Comments: 0,
+		},
+		CreatedAt: pageItem.CreatedAt,
+		UpdatedAt: pageItem.UpdatedAt,
 	}
 
 	if metrics != nil {
-		resp.Metrics = &contract.MetricsResp{
-			Views:    metrics.Views,
-			Likes:    metrics.Likes,
-			Comments: metrics.Comments,
-		}
+		resp.Metrics.Views = metrics.Views
+		resp.Metrics.Likes = metrics.Likes
+		resp.Metrics.Comments = metrics.Comments
 	}
 
 	return &resp, nil

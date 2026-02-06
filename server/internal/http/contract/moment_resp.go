@@ -48,6 +48,7 @@ type MomentListItemResp struct {
 	IsHot          bool      `json:"isHot"`
 	AllowComment   bool      `json:"allowComment"`
 	IsOriginal     bool      `json:"isOriginal"`
+	IsPublished    bool      `json:"isPublished"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }

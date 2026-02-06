@@ -1,20 +1,23 @@
-import { NCard, NDataTable, NButton, NTag, NPagination, NSpace, useDialog } from 'naive-ui'
-import { defineComponent, onMounted } from 'vue'
+import { NCard, NDataTable, NButton, NTag, NPagination, NSpace, NPopconfirm, useDialog } from 'naive-ui'
+import { defineComponent, onMounted, ref, Transition } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ScrollContainer } from '@/components'
 import { useTable } from '@/composables/table/use-table'
-import { deleteThinking, listThinkings } from '@/services/thinking'
+import { useDiscreteApi } from '@/composables/useDiscreteApi'
+import { deleteThinking, listThinkings, batchDeleteThinkings } from '@/services/thinking'
 
 import type { ThinkingListItem } from '@/services/thinking'
-import type { DataTableColumns } from 'naive-ui'
+import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
 
 export default defineComponent({
   name: 'ThinkingList',
   setup() {
     const router = useRouter()
     const dialog = useDialog()
+    const { message } = useDiscreteApi()
     const { data, loading, pagination, refresh } = useTable<ThinkingListItem>(listThinkings)
+    const checkedRowKeys = ref<DataTableRowKey[]>([])
 
     const handleEdit = (id: number) => {
       router.push({ name: 'thinkingEdit', params: { id } })
@@ -23,7 +26,7 @@ export default defineComponent({
     const handleCreate = () => {
       router.push({ name: 'thinkingCreate' })
     }
-    
+
     const handleDelete = (id: number) => {
       dialog.warning({
         title: '确认删除',
@@ -37,7 +40,27 @@ export default defineComponent({
       })
     }
 
+    const handleCheck = (rowKeys: DataTableRowKey[]) => {
+      checkedRowKeys.value = rowKeys
+    }
+
+    const handleBatchDelete = async () => {
+      const ids = checkedRowKeys.value as number[]
+      if (ids.length === 0) return
+      try {
+        await batchDeleteThinkings({ ids })
+        checkedRowKeys.value = []
+        message.success('批量删除成功')
+        refresh()
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : '操作失败')
+      }
+    }
+
     const columns: DataTableColumns<ThinkingListItem> = [
+      {
+        type: 'selection',
+      },
       {
         title: '内容',
         key: 'content',
@@ -58,7 +81,7 @@ export default defineComponent({
         width: 180,
         render: (row) => (
           <span class='font-mono text-xs text-gray-500'>
-            {row.metrics.views} / {row.metrics.likes} / {row.metrics.comments}
+            {row.views} / {row.likes} / {row.comments}
           </span>
         ),
       },
@@ -105,12 +128,31 @@ export default defineComponent({
         <NCard bordered={false}>
           <div class='flex items-center justify-between'>
             <div class='text-lg font-medium'>思考列表</div>
-            <NButton
-              type='primary'
-              onClick={handleCreate}
-            >
-              新建思考
-            </NButton>
+            <NSpace align='center' size={12}>
+              <Transition name='fade'>
+                {checkedRowKeys.value.length > 0 && (
+                  <NSpace align='center' size={8}>
+                    <NTag type='info' size='small'>已选 {checkedRowKeys.value.length} 项</NTag>
+                    <NPopconfirm onPositiveClick={handleBatchDelete}>
+                      {{
+                        trigger: () => (
+                          <NButton size='small' type='error' secondary>
+                            批量删除
+                          </NButton>
+                        ),
+                        default: () => `确定删除选中的 ${checkedRowKeys.value.length} 条思考吗？`,
+                      }}
+                    </NPopconfirm>
+                  </NSpace>
+                )}
+              </Transition>
+              <NButton
+                type='primary'
+                onClick={handleCreate}
+              >
+                新建思考
+              </NButton>
+            </NSpace>
           </div>
         </NCard>
 
@@ -123,6 +165,8 @@ export default defineComponent({
             data={data.value}
             loading={loading.value}
             rowKey={(row) => row.id}
+            checkedRowKeys={checkedRowKeys.value}
+            onUpdateCheckedRowKeys={handleCheck}
             bordered={false}
           />
 

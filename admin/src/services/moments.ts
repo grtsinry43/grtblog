@@ -18,6 +18,7 @@ export interface MomentListItem {
   isTop: boolean
   isHot: boolean
   isOriginal: boolean
+  isPublished: boolean
   allowComment: boolean
   createdAt: string
   updatedAt: string
@@ -129,6 +130,33 @@ export function createMoment(payload: CreateMomentPayload) {
 export function updateMoment(id: number, payload: UpdateMomentPayload) {
   return request<MomentDetail>(`/moments/${id}`, {
     method: 'PUT',
+    body: payload,
+  })
+}
+
+export function deleteMoment(id: number) {
+  return request<void>(`/moments/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function batchSetMomentPublished(payload: { ids: number[]; isPublished: boolean }) {
+  return request<void>('/admin/moments/published', {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function batchSetMomentTop(payload: { ids: number[]; isTop: boolean }) {
+  return request<void>('/admin/moments/top', {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function batchDeleteMoments(payload: { ids: number[] }) {
+  return request<void>('/admin/moments/batch-delete', {
+    method: 'POST',
     body: payload,
   })
 }

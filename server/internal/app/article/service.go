@@ -247,6 +247,88 @@ func (s *Service) ListArticles(ctx context.Context, options content.ArticleListO
 	return s.repo.ListArticles(ctx, options)
 }
 
+// BatchSetPublished 批量设置文章发布状态。
+func (s *Service) BatchSetPublished(ctx context.Context, cmd BatchSetPublishedCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		articleItem, err := s.repo.GetArticleByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		prevPublished := articleItem.IsPublished
+		if prevPublished == cmd.IsPublished {
+			continue
+		}
+		articleItem.IsPublished = cmd.IsPublished
+		if err := s.repo.UpdateArticle(ctx, articleItem); err != nil {
+			return err
+		}
+
+		now := time.Now()
+		_ = s.events.Publish(ctx, ArticleUpdated{
+			ID:          articleItem.ID,
+			AuthorID:    articleItem.AuthorID,
+			Title:       articleItem.Title,
+			ShortURL:    articleItem.ShortURL,
+			Published:   articleItem.IsPublished,
+			ContentHash: articleItem.ContentHash,
+			LeadIn:      articleItem.LeadIn,
+			TOC:         articleItem.TOC,
+			Content:     articleItem.Content,
+			At:          now,
+		})
+		if cmd.IsPublished {
+			_ = s.events.Publish(ctx, ArticlePublished{
+				ID:       articleItem.ID,
+				AuthorID: articleItem.AuthorID,
+				Title:    articleItem.Title,
+				ShortURL: articleItem.ShortURL,
+				At:       now,
+			})
+		} else {
+			_ = s.events.Publish(ctx, ArticleUnpublished{
+				ID:       articleItem.ID,
+				AuthorID: articleItem.AuthorID,
+				Title:    articleItem.Title,
+				ShortURL: articleItem.ShortURL,
+				At:       now,
+			})
+		}
+	}
+	return nil
+}
+
+// BatchSetTop 批量设置文章置顶状态。
+func (s *Service) BatchSetTop(ctx context.Context, cmd BatchSetTopCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		articleItem, err := s.repo.GetArticleByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if articleItem.IsTop == cmd.IsTop {
+			continue
+		}
+		articleItem.IsTop = cmd.IsTop
+		if err := s.repo.UpdateArticle(ctx, articleItem); err != nil {
+			return err
+		}
+		_ = s.events.Publish(ctx, ArticleUpdated{
+			ID:          articleItem.ID,
+			AuthorID:    articleItem.AuthorID,
+			Title:       articleItem.Title,
+			ShortURL:    articleItem.ShortURL,
+			Published:   articleItem.IsPublished,
+			ContentHash: articleItem.ContentHash,
+			LeadIn:      articleItem.LeadIn,
+			TOC:         articleItem.TOC,
+			Content:     articleItem.Content,
+			At:          time.Now(),
+		})
+	}
+	return nil
+}
+
 // DeleteArticle 删除文章
 func (s *Service) DeleteArticle(ctx context.Context, id int64) error {
 	article, err := s.repo.GetArticleByID(ctx, id)
@@ -263,6 +345,17 @@ func (s *Service) DeleteArticle(ctx context.Context, id int64) error {
 		ShortURL: article.ShortURL,
 		At:       time.Now(),
 	})
+	return nil
+}
+
+// BatchDelete 批量删除文章。
+func (s *Service) BatchDelete(ctx context.Context, cmd BatchDeleteCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		if err := s.DeleteArticle(ctx, id); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -353,4 +446,23 @@ func (s *Service) applyCommentAreaStatus(ctx context.Context, areaID *int64, all
 		return nil
 	}
 	return s.commentRepo.SetAreaClosed(ctx, *areaID, !*allowComment)
+}
+
+func normalizeIDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return nil
+	}
+	seen := make(map[int64]struct{}, len(ids))
+	out := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
 }
