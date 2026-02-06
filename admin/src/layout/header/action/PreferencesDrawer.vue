@@ -4,6 +4,7 @@ import {
   NDivider,
   NDrawer,
   NDrawerContent,
+  NInput,
   NSwitch,
   useModal,
   NSelect,
@@ -389,6 +390,99 @@ const showWatermarkModal = () => {
                         :step="1"
                       />
                     </div>
+                  </div>
+                </CollapseTransitionTrigger>
+                <CollapseTransitionTrigger>
+                  <template #trigger="{ collapsed }">
+                    <div class="flex items-center">
+                      <div
+                        class="flex flex-1 items-center gap-x-1 transition-[color] hover:text-primary"
+                      >
+                        <span>启用背景图片</span>
+                        <span
+                          class="iconify transition-[rotate] ph--caret-right"
+                          :class="{ 'rotate-90': collapsed }"
+                        />
+                      </div>
+                      <NSwitch
+                        v-model:value="preferences.backgroundImage.show"
+                        @click.stop
+                      />
+                    </div>
+                  </template>
+                  <div class="flex flex-col gap-y-1 pt-1.5 pl-4">
+                    <div class="flex flex-col gap-y-1">
+                      <span class="shrink-0">图片链接</span>
+                      <NInput
+                        v-model:value="preferences.backgroundImage.url"
+                        placeholder="请输入图片URL"
+                        size="small"
+                        :disabled="!preferences.backgroundImage.show"
+                        clearable
+                      />
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="mr-4 shrink-0">透明度</span>
+                      <NSlider
+                        v-model:value="preferences.backgroundImage.opacity"
+                        :min="0"
+                        :max="100"
+                        :step="1"
+                        :disabled="!preferences.backgroundImage.show"
+                      />
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="mr-4 shrink-0">模糊程度</span>
+                      <NSlider
+                        v-model:value="preferences.backgroundImage.blur"
+                        :min="0"
+                        :max="50"
+                        :step="1"
+                        :disabled="!preferences.backgroundImage.show"
+                      />
+                    </div>
+                    <CollapseTransitionTrigger>
+                      <template #trigger="{ collapsed }">
+                        <div class="flex items-center">
+                          <div
+                            class="flex flex-1 items-center gap-x-1 transition-[color] hover:text-primary"
+                          >
+                            <span>启用毛玻璃效果</span>
+                            <span
+                              class="iconify transition-[rotate] ph--caret-right"
+                              :class="{ 'rotate-90': collapsed }"
+                            />
+                          </div>
+                          <NSwitch
+                            v-model:value="preferences.backgroundImage.glassEffect.enable"
+                            :disabled="!preferences.backgroundImage.show"
+                            @click.stop
+                          />
+                        </div>
+                      </template>
+                      <div class="flex flex-col gap-y-1 pt-1.5 pl-4">
+                        <div class="flex items-center justify-between">
+                          <span class="mr-4 shrink-0">组件透明度</span>
+                          <NSlider
+                            v-model:value="preferences.backgroundImage.glassEffect.opacity"
+                            :min="0"
+                            :max="100"
+                            :step="1"
+                            :disabled="!preferences.backgroundImage.show || !preferences.backgroundImage.glassEffect.enable"
+                          />
+                        </div>
+                        <div class="flex items-center justify-between">
+                          <span class="mr-4 shrink-0">背景模糊</span>
+                          <NSlider
+                            v-model:value="preferences.backgroundImage.glassEffect.blur"
+                            :min="0"
+                            :max="50"
+                            :step="1"
+                            :disabled="!preferences.backgroundImage.show || !preferences.backgroundImage.glassEffect.enable"
+                          />
+                        </div>
+                      </div>
+                    </CollapseTransitionTrigger>
                   </div>
                 </CollapseTransitionTrigger>
                 <div class="flex items-center justify-between">

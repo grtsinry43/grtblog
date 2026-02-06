@@ -8,6 +8,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	applike "github.com/grtsinry43/grtblog-v2/server/internal/app/like"
+	apprss "github.com/grtsinry43/grtblog-v2/server/internal/app/rss"
 	appsearch "github.com/grtsinry43/grtblog-v2/server/internal/app/search"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
@@ -44,6 +45,15 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	searchSvc := appsearch.NewService(searchRepo, deps.Redis, deps.Config.Redis.Prefix)
 	searchHandler := handler.NewSearchHandler(searchSvc)
 	public.Get("/search", searchHandler.SiteSearch)
+
+	rssSvc := apprss.NewService(
+		persistence.NewContentRepository(deps.DB),
+		persistence.NewThinkingRepository(deps.DB),
+		persistence.NewWebsiteInfoRepository(deps.DB),
+		persistence.NewIdentityRepository(deps.DB),
+	)
+	rssHandler := handler.NewRSSHandler(rssSvc)
+	public.Get("/rss.xml", rssHandler.GetFeed)
 
 	if deps.Analytics != nil {
 		analyticsHandler := handler.NewAnalyticsHandler(deps.Analytics)

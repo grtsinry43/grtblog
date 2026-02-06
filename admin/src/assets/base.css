@@ -32,3 +32,7 @@
   --radius-naive: var(--border-radius);
   --radius-naive-sm: var(--border-radius-small);
 }
+
+.n-card {
+  backdrop-filter: blur(var(--glass-backdrop-blur, 0px));
+}

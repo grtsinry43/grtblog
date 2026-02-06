@@ -19,7 +19,11 @@ const {
   maxWidth: defaultMaxWidth,
 } = DEFAULT_PREFERENCES_OPTIONS.sidebarMenu
 
-const { preferences, sidebarMenu } = toRefsPreferencesStore()
+const { preferences, sidebarMenu, backgroundImage } = toRefsPreferencesStore()
+
+const isGlassActive = computed(() =>
+  backgroundImage.value.show && backgroundImage.value.url && backgroundImage.value.glassEffect.enable,
+)
 
 const { isSidebarColResizing } = useInjection(layoutInjectionKey)
 
@@ -92,6 +96,7 @@ watch(
       }"
       :style="{
         width: `${menuCollapseWidth}px`,
+        backdropFilter: isGlassActive ? `blur(${backgroundImage.glassEffect.blur}px)` : undefined,
       }"
     >
       <SidebarMenu />
