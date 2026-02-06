@@ -142,3 +142,24 @@ export function deleteArticle(id: number) {
     method: 'DELETE',
   })
 }
+
+export function batchSetArticlePublished(payload: { ids: number[]; isPublished: boolean }) {
+  return request<void>('/admin/articles/published', {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function batchSetArticleTop(payload: { ids: number[]; isTop: boolean }) {
+  return request<void>('/admin/articles/top', {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function batchDeleteArticles(payload: { ids: number[] }) {
+  return request<void>('/admin/articles/batch-delete', {
+    method: 'POST',
+    body: payload,
+  })
+}

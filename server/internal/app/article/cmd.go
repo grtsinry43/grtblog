@@ -37,3 +37,20 @@ type UpdateArticleCmd struct {
 	IsOriginal   bool
 	ExtInfo      []byte
 }
+
+// BatchSetPublishedCmd 批量设置文章发布状态命令。
+type BatchSetPublishedCmd struct {
+	IDs         []int64
+	IsPublished bool
+}
+
+// BatchSetTopCmd 批量设置文章置顶状态命令。
+type BatchSetTopCmd struct {
+	IDs   []int64
+	IsTop bool
+}
+
+// BatchDeleteCmd 批量删除文章命令。
+type BatchDeleteCmd struct {
+	IDs []int64
+}

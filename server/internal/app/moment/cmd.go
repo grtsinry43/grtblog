@@ -35,3 +35,20 @@ type UpdateMomentCmd struct {
 	IsOriginal   bool
 	ExtInfo      []byte
 }
+
+// BatchSetPublishedCmd 批量设置手记发布状态命令。
+type BatchSetPublishedCmd struct {
+	IDs         []int64
+	IsPublished bool
+}
+
+// BatchSetTopCmd 批量设置手记置顶状态命令。
+type BatchSetTopCmd struct {
+	IDs   []int64
+	IsTop bool
+}
+
+// BatchDeleteCmd 批量删除手记命令。
+type BatchDeleteCmd struct {
+	IDs []int64
+}

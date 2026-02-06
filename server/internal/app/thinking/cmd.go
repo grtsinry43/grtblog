@@ -11,3 +11,8 @@ type UpdateThinkingCmd struct {
 	Content      string
 	AllowComment *bool
 }
+
+// BatchDeleteCmd 批量删除思考命令。
+type BatchDeleteCmd struct {
+	IDs []int64
+}

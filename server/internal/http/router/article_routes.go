@@ -36,7 +36,10 @@ func registerArticleAuthRoutes(v2 fiber.Router, deps Dependencies) {
 
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
-	adminGroup.Get("/admin/articles", articleHandler.ListArticlesAdmin) // GET /api/v2/admin/articles
+	adminGroup.Get("/admin/articles", articleHandler.ListArticlesAdmin)                  // GET /api/v2/admin/articles
+	adminGroup.Put("/admin/articles/published", articleHandler.BatchSetArticlePublished) // PUT /api/v2/admin/articles/published
+	adminGroup.Put("/admin/articles/top", articleHandler.BatchSetArticleTop)             // PUT /api/v2/admin/articles/top
+	adminGroup.Post("/admin/articles/batch-delete", articleHandler.BatchDeleteArticles)  // POST /api/v2/admin/articles/batch-delete
 }
 
 func newArticleHandler(deps Dependencies) *handler.ArticleHandler {

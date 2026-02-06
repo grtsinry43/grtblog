@@ -1,12 +1,6 @@
 import { request } from './http'
 import type { ContentExtInfo, TOCNode } from '@/types/ext-info' // Assuming TOCNode and ContentExtInfo are defined here or similar
 
-export interface PageMetrics {
-  views: number
-  likes: number
-  comments: number
-}
-
 export interface PageListItem {
   id: number
   title: string
@@ -14,7 +8,9 @@ export interface PageListItem {
   shortUrl: string
   isEnabled: boolean
   isBuiltin: boolean
-  metrics: PageMetrics
+  views: number
+  likes: number
+  comments: number
   createdAt: string
   updatedAt: string
 }
@@ -40,7 +36,9 @@ export interface PageDetail {
   isBuiltin: boolean
   allowComment: boolean
   extInfo?: ContentExtInfo
-  metrics: PageMetrics
+  views: number
+  likes: number
+  comments: number
   createdAt: string
   updatedAt: string
 }
@@ -82,7 +80,7 @@ function stripEmpty<T extends Record<string, unknown>>(value: T) {
 export function listPages(params: ListPagesParams) {
   return request<PageListResponse>('/pages', {
     method: 'GET',
-    query: stripEmpty(params),
+    query: stripEmpty(params as Record<string, unknown>),
   })
 }
 
@@ -115,5 +113,19 @@ export function updatePage(id: number, payload: UpdatePagePayload) {
 export function deletePage(id: number) {
   return request<void>(`/pages/${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function batchSetPageEnabled(payload: { ids: number[]; isEnabled: boolean }) {
+  return request<void>('/admin/pages/enabled', {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function batchDeletePages(payload: { ids: number[] }) {
+  return request<void>('/admin/pages/batch-delete', {
+    method: 'POST',
+    body: payload,
   })
 }

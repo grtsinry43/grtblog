@@ -7,14 +7,21 @@ import {
   NSpace,
   NPopconfirm,
   NTooltip,
+  NDropdown,
 } from 'naive-ui'
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, onMounted, ref, Transition } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ScrollContainer } from '@/components'
 import { useTable } from '@/composables/table/use-table'
 import { useDiscreteApi } from '@/composables/useDiscreteApi'
-import { deleteArticle, listArticles } from '@/services/articles'
+import {
+  deleteArticle,
+  listArticles,
+  batchSetArticlePublished,
+  batchSetArticleTop,
+  batchDeleteArticles,
+} from '@/services/articles'
 
 import type { ArticleListItem } from '@/services/articles'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
@@ -69,6 +76,63 @@ export default defineComponent({
 
     const handleCheck = (rowKeys: DataTableRowKey[]) => {
       checkedRowKeys.value = rowKeys
+    }
+
+    const handleTogglePublished = async (row: ArticleListItem) => {
+      try {
+        await batchSetArticlePublished({ ids: [row.id], isPublished: !row.isPublished })
+        row.isPublished = !row.isPublished
+        message.success(row.isPublished ? '已发布' : '已设为草稿')
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : '操作失败')
+      }
+    }
+
+    const handleToggleTop = async (row: ArticleListItem) => {
+      try {
+        await batchSetArticleTop({ ids: [row.id], isTop: !row.isTop })
+        row.isTop = !row.isTop
+        message.success(row.isTop ? '已置顶' : '已取消置顶')
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : '操作失败')
+      }
+    }
+
+    const handleBatchPublish = async (isPublished: boolean) => {
+      const ids = checkedRowKeys.value as number[]
+      if (ids.length === 0) return
+      try {
+        await batchSetArticlePublished({ ids, isPublished })
+        data.value.forEach((item) => {
+          if (ids.includes(item.id)) item.isPublished = isPublished
+        })
+        checkedRowKeys.value = []
+        message.success(isPublished ? '批量发布成功' : '批量取消发布成功')
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : '操作失败')
+      }
+    }
+
+    const handleBatchDelete = async () => {
+      const ids = checkedRowKeys.value as number[]
+      if (ids.length === 0) return
+      try {
+        await batchDeleteArticles({ ids })
+        checkedRowKeys.value = []
+        message.success('批量删除成功')
+        refresh()
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : '操作失败')
+      }
+    }
+
+    const batchPublishOptions = [
+      { label: '设为已发布', key: 'publish' },
+      { label: '设为草稿', key: 'unpublish' },
+    ]
+
+    const handleBatchPublishSelect = (key: string) => {
+      handleBatchPublish(key === 'publish')
     }
 
     const columns: DataTableColumns<ArticleListItem> = [
@@ -152,11 +216,18 @@ export default defineComponent({
         key: 'isPublished',
         width: 120,
         render: (row) => (
-          row.isPublished ? (
-            <NTag size='small' type='success' bordered={false}>已发布</NTag>
-          ) : (
-            <NTag size='small' type='default' bordered={false}>草稿</NTag>
-          )
+          <NTag
+            size='small'
+            type={row.isPublished ? 'success' : 'default'}
+            bordered={false}
+            style={{ cursor: 'pointer' }}
+            onClick={() => handleTogglePublished(row)}
+          >
+            {{
+              default: () => row.isPublished ? '已发布' : '草稿',
+              icon: () => <span class={`iconify ${row.isPublished ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`} />,
+            }}
+          </NTag>
         ),
         sorter: (row1, row2) => Number(row1.isPublished) - Number(row2.isPublished),
       },
@@ -166,7 +237,18 @@ export default defineComponent({
         width: 180,
         render: (row) => (
           <NSpace size={4}>
-            {row.isTop && <NTag size='small' type='warning' bordered={false}>置顶</NTag>}
+            <NTag
+              size='small'
+              type={row.isTop ? 'warning' : 'default'}
+              bordered={false}
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleToggleTop(row)}
+            >
+              {{
+                default: () => row.isTop ? '置顶' : '未置顶',
+                icon: () => <span class={`iconify ${row.isTop ? 'ph--push-pin-fill' : 'ph--push-pin'} size-3.5`} />,
+              }}
+            </NTag>
             {row.isOriginal ? (
               <NTag size='small' type='success' bordered={false}>原创</NTag>
             ) : (
@@ -258,12 +340,39 @@ export default defineComponent({
         <NCard bordered={false}>
           <div class='flex items-center justify-between'>
             <div class='text-lg font-medium'>文章列表</div>
-            <NButton
-              type='primary'
-              onClick={handleCreate}
-            >
-              新建文章
-            </NButton>
+            <NSpace align='center' size={12}>
+              <Transition name='fade'>
+                {checkedRowKeys.value.length > 0 && (
+                  <NSpace align='center' size={8}>
+                    <NTag type='info' size='small'>已选 {checkedRowKeys.value.length} 项</NTag>
+                    <NDropdown
+                      options={batchPublishOptions}
+                      onSelect={handleBatchPublishSelect}
+                    >
+                      <NButton size='small' secondary>
+                        批量发布
+                      </NButton>
+                    </NDropdown>
+                    <NPopconfirm onPositiveClick={handleBatchDelete}>
+                      {{
+                        trigger: () => (
+                          <NButton size='small' type='error' secondary>
+                            批量删除
+                          </NButton>
+                        ),
+                        default: () => `确定删除选中的 ${checkedRowKeys.value.length} 篇文章吗？`,
+                      }}
+                    </NPopconfirm>
+                  </NSpace>
+                )}
+              </Transition>
+              <NButton
+                type='primary'
+                onClick={handleCreate}
+              >
+                新建文章
+              </NButton>
+            </NSpace>
           </div>
         </NCard>
 
@@ -277,6 +386,7 @@ export default defineComponent({
             data={data.value}
             loading={loading.value}
             rowKey={(row) => row.id}
+            checkedRowKeys={checkedRowKeys.value}
             onUpdateCheckedRowKeys={handleCheck}
             bordered={false}
           />

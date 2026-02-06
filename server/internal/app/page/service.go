@@ -155,6 +155,36 @@ func (s *Service) ListPages(ctx context.Context, options content.PageListOptions
 	return s.repo.ListPages(ctx, options)
 }
 
+// BatchSetEnabled 批量设置页面启用状态。
+func (s *Service) BatchSetEnabled(ctx context.Context, cmd BatchSetEnabledCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		pageItem, err := s.repo.GetPageByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if pageItem.IsEnabled == cmd.IsEnabled {
+			continue
+		}
+		pageItem.IsEnabled = cmd.IsEnabled
+		if err := s.repo.UpdatePage(ctx, pageItem); err != nil {
+			return err
+		}
+		_ = s.events.Publish(ctx, PageUpdated{
+			ID:          pageItem.ID,
+			Title:       pageItem.Title,
+			ShortURL:    pageItem.ShortURL,
+			Enabled:     pageItem.IsEnabled,
+			ContentHash: pageItem.ContentHash,
+			Description: pageItem.Description,
+			TOC:         pageItem.TOC,
+			Content:     pageItem.Content,
+			At:          time.Now(),
+		})
+	}
+	return nil
+}
+
 // DeletePage 删除页面
 func (s *Service) DeletePage(ctx context.Context, id int64) error {
 	page, err := s.repo.GetPageByID(ctx, id)
@@ -170,6 +200,17 @@ func (s *Service) DeletePage(ctx context.Context, id int64) error {
 		ShortURL: page.ShortURL,
 		At:       time.Now(),
 	})
+	return nil
+}
+
+// BatchDelete 批量删除页面。
+func (s *Service) BatchDelete(ctx context.Context, cmd BatchDeleteCmd) error {
+	ids := normalizeIDs(cmd.IDs)
+	for _, id := range ids {
+		if err := s.DeletePage(ctx, id); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -220,4 +261,23 @@ func (s *Service) applyCommentAreaStatus(ctx context.Context, areaID *int64, all
 		return nil
 	}
 	return s.commentRepo.SetAreaClosed(ctx, *areaID, !*allowComment)
+}
+
+func normalizeIDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return nil
+	}
+	seen := make(map[int64]struct{}, len(ids))
+	out := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
 }

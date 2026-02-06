@@ -30,7 +30,10 @@ func registerMomentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
-	adminGroup.Get("/admin/moments", momentHandler.ListMomentsAdmin) // GET /api/v2/admin/moments
+	adminGroup.Get("/admin/moments", momentHandler.ListMomentsAdmin)                  // GET /api/v2/admin/moments
+	adminGroup.Put("/admin/moments/published", momentHandler.BatchSetMomentPublished) // PUT /api/v2/admin/moments/published
+	adminGroup.Put("/admin/moments/top", momentHandler.BatchSetMomentTop)             // PUT /api/v2/admin/moments/top
+	adminGroup.Post("/admin/moments/batch-delete", momentHandler.BatchDeleteMoments)  // POST /api/v2/admin/moments/batch-delete
 }
 
 func newMomentHandler(deps Dependencies) *handler.MomentHandler {

@@ -105,3 +105,20 @@ type ListMomentsReq struct {
 type CheckMomentLatestReq struct {
 	Hash string `json:"hash"`
 }
+
+// BatchSetMomentPublishedReq 批量切换手记发布状态请求。
+type BatchSetMomentPublishedReq struct {
+	IDs         []int64 `json:"ids"`
+	IsPublished bool    `json:"isPublished"`
+}
+
+// BatchSetMomentTopReq 批量切换手记置顶状态请求。
+type BatchSetMomentTopReq struct {
+	IDs   []int64 `json:"ids"`
+	IsTop bool    `json:"isTop"`
+}
+
+// BatchDeleteMomentReq 批量删除手记请求。
+type BatchDeleteMomentReq struct {
+	IDs []int64 `json:"ids"`
+}

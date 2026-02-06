@@ -27,3 +27,14 @@ type UpdatePageCmd struct {
 	IsBuiltin    bool
 	ExtInfo      []byte
 }
+
+// BatchSetEnabledCmd 批量设置页面启用状态命令。
+type BatchSetEnabledCmd struct {
+	IDs       []int64
+	IsEnabled bool
+}
+
+// BatchDeleteCmd 批量删除页面命令。
+type BatchDeleteCmd struct {
+	IDs []int64
+}

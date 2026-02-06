@@ -109,3 +109,20 @@ type ListArticlesReq struct {
 type CheckArticleLatestReq struct {
 	Hash string `json:"hash"`
 }
+
+// BatchSetArticlePublishedReq 批量切换文章发布状态请求。
+type BatchSetArticlePublishedReq struct {
+	IDs         []int64 `json:"ids"`
+	IsPublished bool    `json:"isPublished"`
+}
+
+// BatchSetArticleTopReq 批量切换文章置顶状态请求。
+type BatchSetArticleTopReq struct {
+	IDs   []int64 `json:"ids"`
+	IsTop bool    `json:"isTop"`
+}
+
+// BatchDeleteArticleReq 批量删除文章请求。
+type BatchDeleteArticleReq struct {
+	IDs []int64 `json:"ids"`
+}
