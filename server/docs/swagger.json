@@ -5848,6 +5848,34 @@
                 }
             }
         },
+        "/public/rss.xml": {
+            "get": {
+                "produces": [
+                    "application/rss+xml"
+                ],
+                "tags": [
+                    "Public"
+                ],
+                "summary": "获取 RSS 聚合订阅",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "条目数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "rss xml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/public/search": {
             "get": {
                 "produces": [

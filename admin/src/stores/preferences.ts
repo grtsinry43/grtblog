@@ -44,6 +44,18 @@ export interface PreferencesOptions {
     show: boolean
     opacity: number
   }
+
+  backgroundImage: {
+    show: boolean
+    url: string
+    opacity: number
+    blur: number
+    glassEffect: {
+      enable: boolean
+      opacity: number
+      blur: number
+    }
+  }
 }
 
 export const DEFAULT_PREFERENCES_OPTIONS = {
@@ -100,6 +112,17 @@ export const DEFAULT_PREFERENCES_OPTIONS = {
     show: true,
     opacity: 20,
   },
+  backgroundImage: {
+    show: false,
+    url: '',
+    opacity: 100,
+    blur: 0,
+    glassEffect: {
+      enable: false,
+      opacity: 70,
+      blur: 12,
+    },
+  },
 } as const
 
 const DEFAULT_THEME_COLOR = '#8e51ff'
@@ -134,6 +157,37 @@ export const usePreferencesStore = defineStore('preferencesStore', () => {
     () => preferences.value.enableTextSelect,
     (enabled) => {
       document.documentElement.style.userSelect = enabled ? '' : 'none'
+    },
+    {
+      immediate: true,
+    },
+  )
+
+  watch(
+    () => preferences.value.backgroundImage.glassEffect,
+    (glassEffect) => {
+      const el = document.documentElement
+      if (glassEffect.enable && preferences.value.backgroundImage.show) {
+        el.style.setProperty('--glass-backdrop-blur', `${glassEffect.blur}px`)
+      } else {
+        el.style.setProperty('--glass-backdrop-blur', '0px')
+      }
+    },
+    {
+      immediate: true,
+      deep: true,
+    },
+  )
+
+  watch(
+    () => preferences.value.backgroundImage.show,
+    (show) => {
+      const el = document.documentElement
+      if (show && preferences.value.backgroundImage.glassEffect.enable) {
+        el.style.setProperty('--glass-backdrop-blur', `${preferences.value.backgroundImage.glassEffect.blur}px`)
+      } else {
+        el.style.setProperty('--glass-backdrop-blur', '0px')
+      }
     },
     {
       immediate: true,

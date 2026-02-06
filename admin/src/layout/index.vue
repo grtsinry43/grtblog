@@ -23,6 +23,7 @@ const {
   navigationMode,
   showFooter,
   tabs: tabsOptions,
+  backgroundImage,
 } = toRefsPreferencesStore()
 
 const AsyncMobileHeader = defineAsyncComponent(() => import('./mobile/MobileHeader.vue'))
@@ -66,6 +67,20 @@ const layoutTranslateOffset = computed(() => {
       : 0
 })
 
+const showBgImage = computed(() => backgroundImage.value.show && backgroundImage.value.url)
+
+const bgImageStyle = computed(() => {
+  if (!showBgImage.value) return {}
+  const bg = backgroundImage.value
+  return {
+    backgroundImage: `url(${bg.url})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    opacity: bg.opacity / 100,
+    filter: bg.blur > 0 ? `blur(${bg.blur}px)` : undefined,
+  }
+})
+
 watch(isMaxSm, (isMaxSm) => {
   if (isMaxSm) {
     preferences.value.sidebarMenu.collapsed = false
@@ -78,10 +93,15 @@ watch(isMaxSm, (isMaxSm) => {
     class="relative h-svh overflow-hidden"
     :style="{ backgroundImage: `url(${texturePng})` }"
   >
+    <div
+      v-if="showBgImage"
+      class="pointer-events-none absolute inset-0 z-0 transition-[opacity,filter]"
+      :style="bgImageStyle"
+    />
     <AsyncMobileLeftAside v-if="isMaxSm" />
 
     <div
-      class="relative flex h-full flex-col max-sm:bg-naive-card/50"
+      class="relative z-[1] flex h-full flex-col max-sm:bg-naive-card/50"
       :class="{
         'border-naive-border transition-[background-color,border-color,rounded,transform]': isMaxSm,
         'rounded-xl border pb-2': isMaxSm && layoutTranslateOffset,
