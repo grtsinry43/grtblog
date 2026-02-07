@@ -4,42 +4,29 @@ import {
   NConfigProvider,
   NForm,
   NFormItem,
-  NGlobalStyle,
   NH1,
   NH2,
-  NIcon,
   NInput,
   NResult,
-  NSpace,
   NSpin,
   NStep,
   NSteps,
-  NText,
-  darkTheme,
   useMessage,
-  useOsTheme,
+  type GlobalThemeOverrides,
 } from 'naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
-import {
-  ArrowForwardOutline,
-  DesktopOutline,
-  EarthOutline,
-  KeyOutline,
-  LinkOutline,
-  LockClosedOutline,
-  MailOutline,
-  PersonOutline,
-  PlanetOutline,
-  RocketOutline,
-} from '@vicons/ionicons5'
 
+import noiseBg from '@/assets/noise.png'
+import { getConfigProviderProps } from '@/composables'
+import ThemeModePopover from '@/layout/header/action/ThemeModePopover.vue'
 import router from '@/router'
 import { getSetupState, login, register } from '@/services/auth'
 import { ApiError } from '@/services/http'
 import { updateWebsiteInfo } from '@/services/website-info'
-import { useUserStore } from '@/stores'
+import { useUserStore, usePreferencesStore } from '@/stores'
+import ThemeColorPopover from '@/views/sign-in/component/ThemeColorPopover.vue'
 
-import type { FormItemRule, GlobalThemeOverrides } from 'naive-ui'
+import type { FormItemRule } from 'naive-ui'
 
 defineOptions({
   name: 'InitPage',
@@ -47,32 +34,45 @@ defineOptions({
 
 const message = useMessage()
 const userStore = useUserStore()
-const osTheme = useOsTheme()
+const preferencesStore = usePreferencesStore()
 
-const theme = computed(() => (osTheme.value === 'dark' ? darkTheme : null))
+// 使用全局主题配置
+const configProviderProps = getConfigProviderProps()
 
-// Custom Theme Overrides for "Exquisite" Feel
+// 将主题色转换为 RGB 格式供 CSS 使用
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+    : '0, 0, 0'
+}
+
+const primaryColorRgb = computed(() => hexToRgb(preferencesStore.themeColor))
+
 const themeOverrides: GlobalThemeOverrides = {
   common: {
-    primaryColor: '#18a058',
-    primaryColorHover: '#36ad6a',
-    primaryColorPressed: '#0c7a43',
-    borderRadius: '8px', // Slightly softer corners
+    fontWeightStrong: '600',
   },
   Input: {
-    paddingLarge: '12px 16px',
-    fontSizeLarge: '16px',
-    borderRadius: '8px',
+    heightMedium: '34px',
+    fontSizeMedium: '13px',
+    boxShadowFocus: '0 0 0 2px rgba(var(--primary-color-rgb), 0.1)',
   },
   Button: {
-    heightLarge: '46px',
-    fontSizeLarge: '16px',
-    fontWeight: '600',
-    borderRadius: '8px',
+    heightMedium: '34px',
+    fontSizeMedium: '13px',
+    fontWeight: '500',
   },
-  Card: {
-    borderRadius: '16px',
-    boxShadow1: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  Form: {
+    labelFontSizeTop: '12px',
+    labelFontWeight: '500',
+    labelTextColor: 'rgb(115, 115, 115)',
+    feedbackPadding: '4px 0 0 2px',
+    feedbackFontSize: '11px',
+  },
+  Steps: {
+    indicatorSizeSmall: '20px',
+    headerFontSizeSmall: '13px',
   },
 }
 
@@ -88,7 +88,7 @@ const form = reactive({
   email: '',
   password: '',
   confirmPassword: '',
-  websiteName: 'grtBlog',
+  websiteName: '',
   publicUrl: '',
   description: '',
   keywords: '',
@@ -221,53 +221,119 @@ onMounted(() => {
 </script>
 
 <template>
-  <NConfigProvider :theme="theme" :theme-overrides="themeOverrides">
-    <NGlobalStyle />
-    <div class="init-layout">
+  <NConfigProvider
+    v-bind="configProviderProps"
+    :theme-overrides="themeOverrides"
+  >
+    <div
+      class="relative flex min-h-screen w-screen bg-neutral-50 font-sans text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100"
+      :style="{ '--primary-color-rgb': primaryColorRgb }"
+    >
+      <!-- 主题控制栏 -->
+      <div class="absolute top-0 right-0 z-100 flex items-center gap-4 p-8">
+        <ThemeColorPopover />
+        <ThemeModePopover />
+      </div>
+
       <!-- Loading State -->
-      <NSpin :show="loadingState" class="loading-spin" size="large" v-if="loadingState">
+      <NSpin
+        :show="loadingState"
+        class="m-auto"
+        size="large"
+        v-if="loadingState"
+      >
         <template #description>正在加载环境...</template>
       </NSpin>
 
       <template v-else-if="setupState">
         <!-- New Setup Split Layout -->
-        <div v-if="!setupState.hasUser" class="split-container">
+        <div
+          v-if="!setupState.hasUser"
+          class="flex h-screen w-full overflow-hidden"
+        >
           <!-- Left: Brand -->
-          <div class="brand-panel">
-            <div class="brand-content">
-              <div class="logo-area">
-                <NIcon size="48" color="#18a058">
-                  <RocketOutline />
-                </NIcon>
-                <NH1 class="brand-title">grtBlog</NH1>
+          <div
+            class="brand-panel relative hidden flex-[0_0_45%] flex-col justify-center overflow-hidden px-20 lg:flex"
+            :style="{
+              background: `linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.05) 0%, rgba(var(--primary-color-rgb), 0.02) 100%)`,
+            }"
+          >
+            <!-- Noise Texture -->
+            <div
+              class="absolute inset-0 z-0 opacity-[0.03] mix-blend-multiply dark:mix-blend-overlay"
+              :style="{ backgroundImage: `url(${noiseBg})` }"
+            ></div>
+
+            <!-- Decorative Elements -->
+            <div
+              class="absolute -top-[10%] -left-[10%] z-0 h-[600px] w-[600px] rounded-full bg-white opacity-40 blur-3xl dark:opacity-5"
+            ></div>
+
+            <div class="relative z-10 max-w-lg">
+              <div class="mb-10 flex items-center gap-3 opacity-60">
+                <div
+                  class="h-1 w-10 rounded-full"
+                  :style="{ background: `rgb(var(--primary-color-rgb))` }"
+                ></div>
+                <span
+                  class="text-[10px] font-bold tracking-[0.2em] text-neutral-500 uppercase dark:text-neutral-400"
+                  >Welcome aboard</span
+                >
               </div>
-              <div class="brand-message">
-                <NH2>开启您的创作之旅</NH2>
-                <NText class="brand-desc" depth="3">
-                  只需几步，即可构建属于您的现代化博客。
-                  <br />
-                  极致体验，原生交互，即刻出发。
-                </NText>
+
+              <NH1
+                class="mb-6 text-4xl leading-tight font-bold tracking-tight text-neutral-900 dark:text-white"
+              >
+                开启您的
+                <br />
+                <span :style="{ color: `rgb(var(--primary-color-rgb))` }">创作之旅</span>
+              </NH1>
+
+              <div
+                class="text-base leading-relaxed font-light text-neutral-500 dark:text-neutral-400"
+              >
+                <p class="mb-3">只需简单几步，即可构建您的专属个人空间。</p>
+                <p>精致的写作体验与强大的管理功能，让分享变得前所未有的简单。</p>
               </div>
-              <div class="brand-footer">
-                <NText depth="3" class="version-text">v2.0.0</NText>
+
+              <div
+                class="mt-20 flex items-center gap-4 text-[10px] font-medium tracking-widest text-neutral-400 uppercase"
+              >
+                <span>GRTBLOG V2.0.0</span>
+                <span class="h-0.5 w-0.5 rounded-full bg-neutral-300"></span>
+                <span>DESIGNED FOR CREATORS</span>
               </div>
             </div>
-            <!-- Decorative Circle -->
-            <div class="decoration-circle" />
           </div>
 
           <!-- Right: Form -->
-          <div class="form-panel">
-            <div class="form-container">
-              <div class="form-header">
-                <NH2 class="step-title">
+          <div
+            class="flex flex-1 flex-col items-center justify-center bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
+          >
+            <div class="w-full max-w-[360px]">
+              <div class="mb-10">
+                <div class="mb-6 flex items-center justify-between">
+                  <div
+                    class="text-[10px] font-bold tracking-widest whitespace-nowrap text-neutral-400 uppercase"
+                  >
+                    Step {{ currentStep }} / 2
+                  </div>
+                  <NSteps
+                    :current="currentStep"
+                    size="small"
+                    class="ml-4 w-24"
+                  >
+                    <NStep />
+                    <NStep />
+                  </NSteps>
+                </div>
+
+                <NH2 class="m-0 text-2xl font-bold tracking-tight">
                   {{ currentStep === 1 ? '创建管理员' : '站点基本信息' }}
                 </NH2>
-                <NSteps :current="currentStep" size="small" class="form-steps">
-                  <NStep title="账户" />
-                  <NStep title="站点" />
-                </NSteps>
+                <p class="mt-2 text-[13px] leading-relaxed text-neutral-500">
+                  {{ currentStep === 1 ? '请设置您的超级管理员账户。' : '完善站点的基础元数据。' }}
+                </p>
               </div>
 
               <NForm
@@ -276,318 +342,171 @@ onMounted(() => {
                 :rules="rules"
                 label-placement="top"
                 :show-require-mark="false"
-                class="main-form"
+                class="mb-6"
+                size="medium"
               >
                 <!-- Step 1: Admin Account -->
-                <Transition name="slide-fade" mode="out-in">
-                  <div v-if="currentStep === 1" key="step1" class="form-step-content">
-                    <NFormItem label="账号" path="username">
-                      <NInput v-model:value="form.username" placeholder="请输入管理员账号" size="large">
-                        <template #prefix>
-                          <NIcon :component="PersonOutline" />
-                        </template>
+                <Transition
+                  name="fade-slide"
+                  mode="out-in"
+                >
+                  <div
+                    v-if="currentStep === 1"
+                    key="step1"
+                    class="space-y-0.5"
+                  >
+                    <NFormItem
+                      label="账号"
+                      path="username"
+                    >
+                      <NInput
+                        v-model:value="form.username"
+                        placeholder="admin"
+                      >
                       </NInput>
                     </NFormItem>
                     <NFormItem label="昵称">
-                      <NInput v-model:value="form.nickname" placeholder="显示的昵称 (可选)" size="large">
-                        <template #prefix>
-                          <NIcon :component="DesktopOutline" />
-                        </template>
+                      <NInput
+                        v-model:value="form.nickname"
+                        placeholder="显示的名称"
+                      >
                       </NInput>
                     </NFormItem>
-                    <NFormItem label="密码" path="password">
+                    <NFormItem
+                      label="密码"
+                      path="password"
+                    >
                       <NInput
                         v-model:value="form.password"
                         type="password"
                         show-password-on="click"
-                        placeholder="请输入密码"
-                        size="large"
+                        placeholder="设置登录密码"
                       >
-                        <template #prefix>
-                          <NIcon :component="KeyOutline" />
-                        </template>
                       </NInput>
                     </NFormItem>
-                    <NFormItem label="确认密码" path="confirmPassword">
+                    <NFormItem
+                      label="确认密码"
+                      path="confirmPassword"
+                    >
                       <NInput
                         v-model:value="form.confirmPassword"
                         type="password"
                         show-password-on="click"
-                        placeholder="请再次输入密码"
-                        size="large"
+                        placeholder="再次输入确认"
                       >
-                        <template #prefix>
-                          <NIcon :component="LockClosedOutline" />
-                        </template>
                       </NInput>
                     </NFormItem>
                     <NFormItem label="邮箱">
-                      <NInput v-model:value="form.email" placeholder="通知邮箱 (可选)" size="large">
-                        <template #prefix>
-                          <NIcon :component="MailOutline" />
-                        </template>
+                      <NInput
+                        v-model:value="form.email"
+                        placeholder="example@domain.com"
+                      >
                       </NInput>
                     </NFormItem>
                   </div>
                   <!-- Step 2: Site Info -->
-                  <div v-else key="step2" class="form-step-content">
-                    <NFormItem label="站点名称" path="websiteName">
-                      <NInput v-model:value="form.websiteName" placeholder="例如：My Awesome Blog" size="large">
-                        <template #prefix>
-                          <NIcon :component="PlanetOutline" />
-                        </template>
+                  <div
+                    v-else
+                    key="step2"
+                    class="space-y-0.5"
+                  >
+                    <NFormItem
+                      label="站点名称"
+                      path="websiteName"
+                    >
+                      <NInput
+                        v-model:value="form.websiteName"
+                        placeholder="我的博客"
+                      >
                       </NInput>
                     </NFormItem>
-                    <NFormItem label="公开地址" path="publicUrl">
-                      <NInput v-model:value="form.publicUrl" placeholder="例如：https://grtsinry.com" size="large">
-                        <template #prefix>
-                          <NIcon :component="LinkOutline" />
-                        </template>
+                    <NFormItem
+                      label="公开地址 (URL)"
+                      path="publicUrl"
+                    >
+                      <NInput
+                        v-model:value="form.publicUrl"
+                        placeholder="https://..."
+                      >
                       </NInput>
                     </NFormItem>
-                    <NFormItem label="站点描述">
+                    <NFormItem label="一句话描述">
                       <NInput
                         v-model:value="form.description"
                         type="textarea"
-                        placeholder="简单介绍一下您的博客..."
-                        :rows="3"
-                        size="large"
+                        placeholder="分享技术与生活..."
+                        :rows="2"
+                        class="resize-none"
                       />
                     </NFormItem>
                     <NFormItem label="关键词">
-                      <NInput v-model:value="form.keywords" placeholder="技术, 生活, 随笔 (逗号分隔)" size="large">
-                        <template #prefix>
-                          <NIcon :component="EarthOutline" />
-                        </template>
+                      <NInput
+                        v-model:value="form.keywords"
+                        placeholder="Tag1, Tag2..."
+                      >
                       </NInput>
                     </NFormItem>
                   </div>
                 </Transition>
               </NForm>
 
-              <div class="form-actions">
-                <NSpace justify="space-between" align="center">
-                  <NButton v-if="currentStep > 1" text @click="currentStep--">
-                    <template #icon>
-                      <NIcon><ArrowForwardOutline style="transform: rotate(180deg)" /></NIcon>
-                    </template>
-                    返回上一步
-                  </NButton>
-                  <div v-else></div> <!-- Spacer -->
+              <div
+                class="flex items-center justify-between border-t border-neutral-100 pt-6 dark:border-neutral-800"
+              >
+                <NButton
+                  v-if="currentStep > 1"
+                  quaternary
+                  size="medium"
+                  @click="currentStep--"
+                >
+                  上一步
+                </NButton>
+                <div v-else></div>
 
-                  <NButton
-                    type="primary"
-                    size="large"
-                    :loading="submitting"
-                    @click="handleNextStep"
-                    class="next-btn"
-                  >
-                    {{ currentStep === 2 ? '完成初始化' : '下一步' }}
-                    <template #icon v-if="currentStep === 1">
-                      <NIcon><ArrowForwardOutline /></NIcon>
-                    </template>
-                  </NButton>
-                </NSpace>
+                <NButton
+                  type="primary"
+                  size="medium"
+                  :loading="submitting"
+                  @click="handleNextStep"
+                  class="min-w-25 shadow-sm"
+                >
+                  {{ currentStep === 2 ? '开始使用' : '继续' }}
+                </NButton>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Existing User State (Full Centered) -->
-        <div v-else class="existing-state-container">
-          <div class="existing-content">
+        <div
+          v-else
+          class="flex h-screen w-full items-center justify-center bg-neutral-50 dark:bg-neutral-950"
+        >
+          <div
+            class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-12 text-center shadow-xl dark:bg-neutral-900"
+          >
+            <div
+              class="absolute top-0 left-0 h-1 w-full"
+              :style="{ background: `rgb(var(--primary-color-rgb))` }"
+            ></div>
             <NResult
               status="info"
               title="准备就绪"
               description="系统检测到管理员账户已存在，无需重复初始化。"
               size="large"
+              class="mb-8"
+            />
+            <NButton
+              type="primary"
+              size="large"
+              block
+              @click="router.replace({ name: 'signIn' })"
             >
-              <template #footer>
-                <NButton type="primary" size="large" @click="router.replace({ name: 'signIn' })">
-                  立即登录
-                </NButton>
-              </template>
-            </NResult>
+              前往登录
+            </NButton>
           </div>
         </div>
       </template>
     </div>
   </NConfigProvider>
 </template>
-
-<style scoped>
-.init-layout {
-  min-height: 100vh;
-  width: 100vw;
-  display: flex;
-  background-color: var(--n-color);
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.loading-spin {
-  margin: auto;
-}
-
-/* Split Container */
-.split-container {
-  display: flex;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Brand Panel (Left) */
-.brand-panel {
-  flex: 0 0 40%;
-  background-color: rgba(24, 160, 88, 0.05); /* Light Green Tint */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  padding: 60px;
-}
-
-/* Dark mode adjustment for brand panel */
-:deep(.n-config-provider--theme-dark) .brand-panel {
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.brand-content {
-  position: relative;
-  z-index: 10;
-  max-width: 480px;
-  margin-left: auto;
-  margin-right: 60px;
-}
-
-.logo-area {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 40px;
-}
-
-.brand-title {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -1px;
-}
-
-.brand-message h2 {
-  font-size: 40px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 24px;
-}
-
-.brand-desc {
-  font-size: 18px;
-  line-height: 1.6;
-  opacity: 0.8;
-}
-
-.brand-footer {
-  margin-top: 80px;
-}
-
-.decoration-circle {
-  position: absolute;
-  top: -20%;
-  right: -20%;
-  width: 80%;
-  padding-bottom: 80%;
-  background: radial-gradient(circle, rgba(24, 160, 88, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
-  border-radius: 50%;
-  z-index: 1;
-}
-
-/* Form Panel (Right) */
-.form-panel {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  background-color: var(--n-color);
-}
-
-.form-container {
-  width: 100%;
-  max-width: 520px;
-}
-
-.form-header {
-  margin-bottom: 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.step-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.form-steps {
-  width: 160px;
-}
-
-.main-form {
-  min-height: 400px; /* Prevent layout jump */
-}
-
-/* Form Actions */
-.form-actions {
-  margin-top: 40px;
-}
-
-.next-btn {
-  padding-left: 32px;
-  padding-right: 32px;
-}
-
-/* Existing State */
-.existing-state-container {
-  display: flex;
-  width: 100%;
-  height: 100vh;
-  align-items: center;
-  justify-content: center;
-}
-
-.existing-content {
-  max-width: 600px;
-  padding: 60px;
-  text-align: center;
-}
-
-/* Transitions */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.3s ease-out;
-}
-
-.slide-fade-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.slide-fade-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
-/* Mobile Responsive */
-@media (max-width: 1024px) {
-  .brand-panel {
-    display: none; /* Hide branding on tablet/mobile for focus */
-  }
-  
-  .form-panel {
-    padding: 20px;
-  }
-}
-</style>

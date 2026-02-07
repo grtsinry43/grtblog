@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 )
 
-const setupMarkerFile = ".setupdone"
+const setupMarkerFileName = ".setupdone"
 
 var requiredWebsiteInfoKeys = []string{
 	"website_name",
@@ -79,14 +80,18 @@ func (s *Service) Evaluate(ctx context.Context) (*State, error) {
 }
 
 func (s *Service) syncMarker(needsSetup bool) {
+	path := filepath.Join("storage", setupMarkerFileName)
 	if needsSetup {
-		if err := os.Remove(setupMarkerFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return
 		}
 		return
 	}
-	if _, err := os.Stat(setupMarkerFile); err == nil {
+	if _, err := os.Stat(path); err == nil {
 		return
 	}
-	_ = os.WriteFile(setupMarkerFile, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o644)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return
+	}
+	_ = os.WriteFile(path, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o644)
 }

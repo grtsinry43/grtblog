@@ -15,9 +15,10 @@ const { user } = toRefsUserStore()
 const message = useMessage()
 
 const displayName = computed(() => user.value.nickname || user.value.username || '未命名用户')
+const displaySubtitle = computed(() => user.value.email || (user.value.roles && user.value.roles[0]) || '暂无介绍')
 
 const handleUserPanelClick = () => {
-  message.info('你可以把它设计成有背景的User Card')
+  // message.info('你可以把它设计成有背景的User Card')
 }
 </script>
 <template>
@@ -46,6 +47,7 @@ const handleUserPanelClick = () => {
         >
           <Avatar
             size="large"
+            :src="user.avatar"
             class="aspect-square"
             style="height: unset"
           />
@@ -70,7 +72,7 @@ const handleUserPanelClick = () => {
             {{ displayName }}
           </span>
           <span class="truncate text-xs text-neutral-450 dark:text-neutral-500">
-            这里应该写点什么
+            {{ displaySubtitle }}
           </span>
         </div>
 

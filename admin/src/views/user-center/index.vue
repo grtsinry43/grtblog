@@ -2,39 +2,36 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import {
-  NAlert,
   NButton,
   NCard,
-  NDescriptions,
-  NDescriptionsItem,
   NDivider,
   NForm,
   NFormItem,
   NGi,
   NGrid,
   NInput,
-  NList,
-  NListItem,
-  NPopover,
-  NSpace,
+  NModal,
   NStatistic,
   NTabPane,
   NTabs,
   NTag,
-  NThing,
+  NUpload,
   useMessage,
 } from 'naive-ui'
+import VuePictureCropper, { cropper } from 'vue-picture-cropper'
+
 import { ScrollContainer, UserAvatar } from '@/components'
-import { toRefsUserStore, useUserStore } from '@/stores'
 import {
-  type OAuthBinding,
   changePassword,
   getAccessInfo,
   getOAuthBindings,
   updateProfile,
 } from '@/services/auth'
+import { uploadFile } from '@/services/uploads'
+import { toRefsUserStore, useUserStore } from '@/stores'
 
-import type { FormInst, FormItemRule } from 'naive-ui'
+import type { OAuthBinding } from '@/services/auth'
+import type { FormInst, FormItemRule, UploadCustomRequestOptions } from 'naive-ui'
 
 defineOptions({ name: 'UserCenter' })
 
@@ -42,6 +39,7 @@ const userStore = useUserStore()
 const { user, token } = toRefsUserStore()
 const message = useMessage()
 
+// --- State ---
 const profileFormRef = ref<FormInst | null>(null)
 const passwordFormRef = ref<FormInst | null>(null)
 const oauthLoading = ref(false)
@@ -59,6 +57,12 @@ const passwordForm = reactive({
   confirmPassword: '',
 })
 
+// --- Cropper State ---
+const showCropper = ref(false)
+const cropperImg = ref('')
+const isUploading = ref(false)
+
+// --- Rules ---
 const profileRules: Record<string, FormItemRule[]> = {
   nickname: [{ required: true, message: '请输入昵称', trigger: ['blur', 'input'] }],
   email: [{ type: 'email', message: '请输入有效邮箱', trigger: ['blur', 'input'] }],
@@ -77,9 +81,7 @@ const passwordRules: Record<string, FormItemRule[]> = {
   ],
 }
 
-const roles = computed(() => user.value.roles || [])
-const permissions = computed(() => user.value.permissions || [])
-
+// --- Actions ---
 async function loadAccessInfo() {
   const data = await getAccessInfo()
   userStore.setAuth({
@@ -94,6 +96,7 @@ async function loadAccessInfo() {
       permissions: data.permissions,
       createdAt: data.user.createdAt,
       updatedAt: data.user.updatedAt,
+      isAdmin: data.user.isAdmin,
     },
   })
   profileForm.nickname = data.user.nickname
@@ -112,16 +115,12 @@ async function handleProfileSubmit() {
     userStore.setAuth({
       token: token.value || '',
       user: {
-        id: updated.id,
-        username: updated.username,
+        ...user.value,
         nickname: updated.nickname,
         email: updated.email,
         avatar: updated.avatar,
-        roles: user.value.roles,
-        permissions: user.value.permissions,
-        createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
-      },
+      } as any,
     })
     message.success('个人信息更新成功')
   })
@@ -155,6 +154,50 @@ function handleCopy(text: string) {
   message.success('已复制到剪贴板')
 }
 
+// --- Avatar & Cropper Logic ---
+const onBeforeUpload = async (options: { file: { file: File | null } }) => {
+  const file = options.file.file
+  if (!file) return false
+
+  // Check file size (e.g., 2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    message.error('图片大小不能超过 2MB')
+    return false
+  }
+
+  const reader = new FileReader()
+  reader.readAsDataURL(file)
+  reader.onload = (e) => {
+    cropperImg.value = e.target?.result as string
+    showCropper.value = true
+  }
+  return false // Prevent auto upload
+}
+
+const handleConfirmCrop = async () => {
+  const result = cropper.getFile()
+  if (!result) return
+
+  isUploading.value = true
+  try {
+    // vue-picture-cropper's getFile might return a Promise
+    const file = await result
+    const res = await uploadFile(file, 'picture')
+    profileForm.avatar = res.publicUrl
+    showCropper.value = false
+    message.success('头像处理成功，请保存设置以生效')
+  } catch (err: any) {
+    message.error('上传失败: ' + err.message)
+  } finally {
+    isUploading.value = false
+  }
+}
+
+const registrationDays = computed(() => {
+  if (!user.value.createdAt) return 0
+  return Math.floor((Date.now() - new Date(user.value.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+})
+
 onMounted(() => {
   profileForm.nickname = user.value.nickname
   profileForm.email = user.value.email
@@ -165,263 +208,198 @@ onMounted(() => {
 </script>
 
 <template>
-  <ScrollContainer wrapper-class="p-4">
+  <ScrollContainer wrapper-class="p-4 md:p-6">
     <NGrid
       x-gap="24"
       y-gap="24"
-      cols="1 800:3"
+      cols="1 800:12"
     >
-      <!-- 左侧：个人概览卡片 -->
-      <NGi span="1">
-        <div class="space-y-4">
-          <NCard
-            class="h-full shadow-sm"
-            content-style="padding: 24px;"
-            :bordered="false"
-          >
-            <div class="flex flex-col items-center text-center">
-              <UserAvatar
-                :size="88"
-                class="mb-4 shadow-md"
-              />
-              <div class="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {{ user.nickname || '未设置昵称' }}
+      <!-- Left: User Info Card -->
+      <NGi span="1 800:4 1200:3">
+        <div class="flex flex-col gap-4">
+          <NCard :bordered="false">
+            <div class="flex flex-col items-center py-4">
+              <div class="relative mb-6">
+                <UserAvatar
+                  :size="100"
+                  :src="user.avatar"
+                />
+                <div class="absolute -bottom-2 -right-2">
+                  <NUpload
+                    :show-file-list="false"
+                    accept="image/*"
+                    @before-upload="onBeforeUpload"
+                  >
+                    <NButton
+                      circle
+                      type="primary"
+                      size="small"
+                    >
+                      <template #icon>
+                        <span class="iconify ph--camera-bold" />
+                      </template>
+                    </NButton>
+                  </NUpload>
+                </div>
               </div>
-              <div class="text-sm text-gray-400">
-                @{{ user.username }}
+              <div class="text-center">
+                <div class="text-xl font-medium">
+                  {{ user.nickname || '未设置昵称' }}
+                </div>
+                <div class="text-sm text-neutral-500">
+                  @{{ user.username }}
+                </div>
               </div>
 
-              <div class="mt-4 flex gap-2">
+              <div class="mt-4 flex flex-wrap justify-center gap-2">
                 <NTag
-                  :type="user.id ? 'success' : 'warning'"
+                  v-if="user.id"
+                  type="success"
                   size="small"
                   round
-                  :bordered="false"
                 >
-                  {{ user.id ? '账号已激活' : '未激活' }}
+                  已激活
                 </NTag>
                 <NTag
-                  v-for="role in roles.slice(0, 2)"
-                  :key="role"
+                  v-if="user.isAdmin"
                   type="primary"
                   size="small"
                   round
-                  :bordered="false"
                 >
-                  {{ role }}
+                  管理员
                 </NTag>
               </div>
 
-              <NDivider class="my-6" />
+              <NDivider />
 
-              <div class="w-full">
-                <NGrid
-                  cols="2"
-                  x-gap="12"
-                  class="text-left"
+              <div class="flex w-full justify-around">
+                <NStatistic
+                  label="注册天数"
+                  tabular-nums
                 >
-                  <NGi>
-                    <NStatistic
-                      label="注册天数"
-                      tabular-nums
-                    >
-                      <template #suffix>
-                        天
-                      </template>
-                      {{ Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) }}
-                    </NStatistic>
-                  </NGi>
-                  <NGi>
-                    <NPopover trigger="hover" scrollable style="max-height: 300px;">
-                      <template #trigger>
-                        <div class="cursor-pointer transition-opacity hover:opacity-80">
-                          <NStatistic label="当前角色">
-                            {{ roles[0] || '访客' }}
-                            <template #suffix>
-                              <span v-if="roles.length > 1" class="text-xs text-gray-400">
-                                (+{{ roles.length - 1 }})
-                              </span>
-                            </template>
-                          </NStatistic>
-                        </div>
-                      </template>
-                      <div class="w-64">
-                        <div class="mb-2 text-xs font-medium text-gray-500">拥有权限 ({{ permissions.length }})</div>
-                        <div class="flex flex-wrap gap-1">
-                          <NTag
-                            v-for="perm in permissions"
-                            :key="perm"
-                            size="small"
-                            :bordered="false"
-                            type="info"
-                          >
-                            {{ perm }}
-                          </NTag>
-                          <span v-if="permissions.length === 0" class="text-xs text-gray-400">无特殊权限</span>
-                        </div>
-                      </div>
-                    </NPopover>
-                  </NGi>
-                </NGrid>
+                  {{ registrationDays }}
+                </NStatistic>
               </div>
             </div>
           </NCard>
 
           <NCard
-            title="详细信息"
+            title="基本信息"
             size="small"
             :bordered="false"
-            class="shadow-sm"
           >
-            <NDescriptions
-              :column="1"
-              label-placement="left"
-              label-style="width: 80px; color: #888;"
-            >
-              <NDescriptionsItem label="ID">
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-neutral-400">UID</span>
                 <span
-                  class="cursor-pointer font-mono text-xs text-gray-500 hover:text-primary"
+                  class="cursor-pointer font-mono hover:text-primary"
                   @click="handleCopy(String(user.id))"
                 >
                   {{ user.id }}
                 </span>
-              </NDescriptionsItem>
-              <NDescriptionsItem label="注册时间">
-                {{ user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-' }}
-              </NDescriptionsItem>
-              <NDescriptionsItem label="最后更新">
-                {{ user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : '-' }}
-              </NDescriptionsItem>
-            </NDescriptions>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-neutral-400">注册日期</span>
+                <span>{{ user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-' }}</span>
+              </div>
+            </div>
           </NCard>
         </div>
       </NGi>
 
-      <!-- 右侧：设置选项卡 -->
-      <NGi span="2">
+      <!-- Right: Settings Area -->
+      <NGi span="1 800:8 1200:9">
         <NCard
-          class="h-full shadow-sm"
           :bordered="false"
+          content-style="padding: 0;"
         >
           <NTabs
             type="line"
-            size="medium"
+            size="large"
+            class="ml-4"
             animated
             justify-content="start"
-            pane-class="p-4 md:p-8"
+            pane-style="padding: 32px; min-height: 540px;"
           >
             <NTabPane
               name="profile"
               tab="个人资料"
             >
-              <NGrid
-                :x-gap="40"
-                item-responsive
-                responsive="screen"
-              >
-                <!-- 左侧表单 -->
-                <NGi span="24 m:14 l:15">
-                  <NForm
-                    ref="profileFormRef"
-                    :model="profileForm"
-                    :rules="profileRules"
-                    label-placement="top"
-                    require-mark-placement="right-hanging"
+              <div class="max-w-2xl">
+                <NForm
+                  ref="profileFormRef"
+                  :model="profileForm"
+                  :rules="profileRules"
+                  label-placement="top"
+                >
+                  <NGrid
+                    cols="1 m:2"
+                    x-gap="24"
                   >
-                    <NGrid
-                      :x-gap="24"
-                      :cols="1"
-                    >
-                      <NGi>
-                        <NFormItem
-                          label="昵称"
-                          path="nickname"
-                        >
-                          <NInput
-                            v-model:value="profileForm.nickname"
-                            placeholder="如何称呼您？"
-                            size="large"
-                          />
-                        </NFormItem>
-                      </NGi>
-                      <NGi>
-                        <NFormItem
-                          label="邮箱"
-                          path="email"
-                        >
-                          <NInput
-                            v-model:value="profileForm.email"
-                            placeholder="联系邮箱"
-                            size="large"
-                          />
-                        </NFormItem>
-                      </NGi>
-                      <NGi>
-                        <NFormItem label="头像链接">
-                          <NInput
-                            v-model:value="profileForm.avatar"
-                            type="textarea"
-                            :rows="2"
-                            placeholder="请输入有效的图片 URL"
-                          />
-                        </NFormItem>
-                      </NGi>
-                    </NGrid>
-
-                    <div class="mt-6">
-                      <NButton
-                        type="primary"
-                        size="large"
-                        strong
-                        @click="handleProfileSubmit"
+                    <NGi>
+                      <NFormItem
+                        label="昵称"
+                        path="nickname"
                       >
-                        保存个人信息
-                      </NButton>
-                    </div>
-                  </NForm>
-                </NGi>
-
-                <!-- 右侧头像预览 -->
-                <NGi span="24 m:10 l:9">
-                  <div class="flex h-full flex-col items-center justify-start rounded-2xl bg-gray-50 py-8 dark:bg-white/5">
-                    <div class="mb-6 text-sm font-medium text-gray-500">
-                      头像预览
-                    </div>
-                    <UserAvatar
-                      :src="profileForm.avatar"
-                      :size="160"
-                      class="mb-6 shadow-xl ring-4 ring-white dark:ring-gray-700"
+                        <NInput
+                          v-model:value="profileForm.nickname"
+                          placeholder="请输入您的昵称"
+                        />
+                      </NFormItem>
+                    </NGi>
+                    <NGi>
+                      <NFormItem
+                        label="电子邮箱"
+                        path="email"
+                      >
+                        <NInput
+                          v-model:value="profileForm.email"
+                          placeholder="请输入电子邮箱"
+                        />
+                      </NFormItem>
+                    </NGi>
+                  </NGrid>
+                  <NFormItem label="头像地址 (URL)">
+                    <NInput
+                      v-model:value="profileForm.avatar"
+                      type="textarea"
+                      :rows="2"
+                      placeholder="如果您有外部头像链接，也可以直接填入此处"
                     />
-                    <div class="text-xs text-gray-400">
-                      支持 JPG, PNG, GIF 格式
-                    </div>
+                  </NFormItem>
+                  <div class="mt-4">
+                    <NButton
+                      type="primary"
+                      size="large"
+                      strong
+                      @click="handleProfileSubmit"
+                    >
+                      保存基本信息
+                    </NButton>
                   </div>
-                </NGi>
-              </NGrid>
+                </NForm>
+              </div>
             </NTabPane>
 
             <NTabPane
               name="security"
-              tab="账号安全"
+              tab="安全设置"
             >
-              <div class="mx-auto max-w-lg py-4">
-                <div class="mb-8 text-center">
-                  <h3 class="text-lg font-medium text-gray-800 dark:text-gray-100">
-                    修改登录密码
-                  </h3>
-                  <p class="mt-1 text-sm text-gray-400">
-                    建议定期更换密码以保护您的账户安全
-                  </p>
+              <div class="mx-auto max-w-lg pt-4">
+                <div class="mb-8">
+                  <div class="text-lg font-medium">
+                    修改账户密码
+                  </div>
+                  <div class="text-sm text-neutral-400">
+                    为了您的账户安全，建议定期更换高强度密码
+                  </div>
                 </div>
 
                 <NForm
                   ref="passwordFormRef"
                   :model="passwordForm"
                   :rules="passwordRules"
-                  label-placement="left"
-                  :label-width="100"
-                  require-mark-placement="left"
-                  size="large"
+                  label-placement="top"
                 >
                   <NFormItem
                     label="当前密码"
@@ -431,7 +409,7 @@ onMounted(() => {
                       v-model:value="passwordForm.oldPassword"
                       type="password"
                       show-password-on="click"
-                      placeholder="验证当前密码"
+                      placeholder="输入旧密码进行身份验证"
                     />
                   </NFormItem>
                   <NDivider />
@@ -443,29 +421,28 @@ onMounted(() => {
                       v-model:value="passwordForm.newPassword"
                       type="password"
                       show-password-on="click"
-                      placeholder="设置新密码"
+                      placeholder="设置您的新密码"
                     />
                   </NFormItem>
                   <NFormItem
-                    label="确认密码"
+                    label="确认新密码"
                     path="confirmPassword"
                   >
                     <NInput
                       v-model:value="passwordForm.confirmPassword"
                       type="password"
                       show-password-on="click"
-                      placeholder="再次输入以确认"
+                      placeholder="再次输入新密码"
                     />
                   </NFormItem>
-
-                  <div class="mt-8 flex justify-center">
+                  <div class="mt-6">
                     <NButton
                       type="primary"
+                      block
                       size="large"
-                      class="w-full"
                       @click="handlePasswordSubmit"
                     >
-                      确认修改
+                      确认更改密码
                     </NButton>
                   </div>
                 </NForm>
@@ -474,61 +451,108 @@ onMounted(() => {
 
             <NTabPane
               name="binding"
-              tab="第三方绑定"
+              tab="账号绑定"
             >
-              <div class="mx-auto max-w-4xl py-2">
-                <NGrid
-                  v-if="oauthBindings.length > 0"
-                  :x-gap="16"
-                  :y-gap="16"
-                  cols="1 m:2"
+              <div v-if="oauthLoading" class="py-12 text-center text-neutral-400">
+                正在加载绑定信息...
+              </div>
+              <div
+                v-else-if="oauthBindings.length === 0"
+                class="flex flex-col items-center justify-center py-20"
+              >
+                <div class="mb-4 text-5xl text-neutral-150 dark:text-neutral-800">
+                  <span class="iconify ph--link-break" />
+                </div>
+                <div class="text-neutral-500">
+                  尚未绑定任何第三方账号
+                </div>
+              </div>
+              <NGrid
+                v-else
+                cols="1 m:2"
+                x-gap="16"
+                y-gap="16"
+              >
+                <NGi
+                  v-for="item in oauthBindings"
+                  :key="item.providerKey + item.oauthID"
                 >
-                  <NGi
-                    v-for="item in oauthBindings"
-                    :key="item.providerKey + item.oauthID"
+                  <NCard
+                    size="small"
+                    hoverable
                   >
-                    <div class="group relative flex items-start gap-4 rounded-xl border border-gray-100 bg-white p-4 transition-all hover:border-primary-100 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                      <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50 text-xl font-bold uppercase text-primary-600 dark:bg-primary-900/30">
-                        {{ item.providerKey.slice(0, 1) }}
+                    <div class="flex items-center gap-4 py-1">
+                      <div class="grid h-10 w-10 place-items-center rounded bg-primary/10 text-xl font-bold text-primary">
+                        {{ item.providerKey.charAt(0).toUpperCase() }}
                       </div>
-                      <div class="flex-1">
+                      <div class="flex-1 overflow-hidden">
                         <div class="flex items-center justify-between">
-                          <h4 class="font-bold text-gray-800 dark:text-gray-100">
-                            {{ item.providerName || (item.providerKey.charAt(0).toUpperCase() + item.providerKey.slice(1)) }}
-                          </h4>
+                          <span class="font-medium">{{ item.providerName || item.providerKey }}</span>
                           <NTag
-                            size="small"
                             type="success"
-                            bordered
-                            class="scale-90"
+                            size="tiny"
+                            round
                           >
-                            已绑定
+                            已关联
                           </NTag>
                         </div>
-                        <div class="mt-2 text-xs text-gray-400">
+                        <div class="truncate text-xs text-neutral-400">
                           ID: {{ item.oauthID }}
-                        </div>
-                        <div class="mt-1 text-xs text-gray-400">
-                          绑定于 {{ new Date(item.boundAt).toLocaleDateString() }}
                         </div>
                       </div>
                     </div>
-                  </NGi>
-                </NGrid>
-                
-                <!-- Empty State -->
-                <div
-                  v-else-if="!oauthLoading"
-                  class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 py-16 text-center dark:border-gray-700"
-                >
-                  <div class="mb-4 text-4xl text-gray-300">🔗</div>
-                  <p class="text-gray-500">暂无绑定的第三方账号</p>
-                </div>
-              </div>
+                  </NCard>
+                </NGi>
+              </NGrid>
             </NTabPane>
           </NTabs>
         </NCard>
       </NGi>
     </NGrid>
+
+    <!-- Cropper Modal -->
+    <NModal
+      v-model:show="showCropper"
+      preset="card"
+      style="max-width: 600px"
+      title="裁剪头像"
+      :mask-closable="false"
+      :closable="!isUploading"
+    >
+      <div class="h-80 w-full overflow-hidden rounded bg-neutral-100 dark:bg-neutral-900">
+        <VuePictureCropper
+          :box-style="{
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#f8f8f8',
+            margin: 'auto',
+          }"
+          :img="cropperImg"
+          :options="{
+            viewMode: 1,
+            dragMode: 'move',
+            aspectRatio: 1,
+            cropBoxResizable: false,
+          }"
+        />
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <NButton
+            :disabled="isUploading"
+            @click="showCropper = false"
+          >
+            取消
+          </NButton>
+          <NButton
+            type="primary"
+            :loading="isUploading"
+            @click="handleConfirmCrop"
+          >
+            确认并上传
+          </NButton>
+        </div>
+      </template>
+    </NModal>
   </ScrollContainer>
 </template>
