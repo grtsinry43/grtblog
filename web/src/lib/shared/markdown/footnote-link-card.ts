@@ -1,22 +1,10 @@
 import type MarkdownIt from 'markdown-it';
 import type Token from 'markdown-it/lib/token.mjs';
 
-import type { MarkdownExtension } from '../types';
-
 type FootnoteLinkInfo = {
 	href: string;
 	title?: string;
 	desc?: string;
-};
-
-const renderComponentPlaceholder = (
-	md: MarkdownIt,
-	component: string,
-	props: Record<string, string>
-) => {
-	const propsJson = JSON.stringify(props);
-	const propsAttr = propsJson !== '{}' ? ` data-props="${md.utils.escapeHtml(propsJson)}"` : '';
-	return `<div class="md-component-placeholder" data-component="${md.utils.escapeHtml(component)}"${propsAttr}></div>`;
 };
 
 const urlRegex = /(https?:\/\/[^\s)]+)|(^\/[^\s)]+)/i;
@@ -102,56 +90,51 @@ const collectText = (tokens: Token[]) => {
 	return text.replace(/\s+/g, ' ').trim();
 };
 
-const resolveHref = (href: string, origin?: string) => {
-	if (href.startsWith('/')) return href;
-	if (!origin) return href;
-	try {
-		return new URL(href, origin).href;
-	} catch {
-		return href;
+const buildFootnoteLinkMap = (tokens: Array<{ tokens?: Token[]; content?: string }>) => {
+	const map: Record<string, FootnoteLinkInfo> = {};
+	for (let i = 0; i < tokens.length; i += 1) {
+		const entry = tokens[i];
+		const entryTokens = entry?.tokens || [];
+		const link = findLinkInTokens(entryTokens);
+		if (!link?.href) continue;
+		const title = link.text?.trim() || deriveTitleFromHref(link.href);
+		const desc = entryTokens.length ? collectText(entryTokens) : (entry?.content || '').trim();
+		map[String(i)] = { href: link.href, title, desc };
+	}
+	return map;
+};
+
+const injectLinkCards = (state: any, tokens: Token[], map: Record<string, FootnoteLinkInfo>) => {
+	for (let i = 0; i < tokens.length; i += 1) {
+		const token = tokens[i];
+		if (token.type === 'footnote_ref') {
+			const id = token.meta?.id;
+			const info = typeof id === 'number' ? map[String(id)] : null;
+			if (info?.href) {
+				const open = new state.Token('footnote_link_card_open', 'footnote-link-card', 1);
+				open.attrs = [
+					['href', info.href],
+					['title', info.title || deriveTitleFromHref(info.href)],
+					['desc', info.desc || '']
+				];
+				const close = new state.Token('footnote_link_card_close', 'footnote-link-card', -1);
+				tokens.splice(i + 1, 0, open, close);
+				i += 2;
+			}
+		}
+		if (token.children?.length) {
+			injectLinkCards(state, token.children, map);
+		}
 	}
 };
 
-export const footnoteLinkCardExtension: MarkdownExtension = (md) => {
-	md.core.ruler.after('footnote_tail', 'footnote_linkcard_map', (state) => {
+export const footnoteLinkCardPlugin = (md: MarkdownIt) => {
+	md.core.ruler.after('footnote_tail', 'footnote_link_card', (state) => {
 		const env = state.env as any;
 		if (!env.footnotes?.list?.length) return;
-		const map: Record<string, FootnoteLinkInfo> = {};
-
 		const list = env.footnotes.list as Array<{ tokens?: Token[]; content?: string }>;
-		for (let i = 0; i < list.length; i += 1) {
-			const entry = list[i];
-			const tokens = entry?.tokens || [];
-			const link = findLinkInTokens(tokens);
-			if (!link?.href) continue;
-			const title = link.text?.trim() || deriveTitleFromHref(link.href);
-			const desc = tokens.length ? collectText(tokens) : (entry?.content || '').trim();
-			map[String(i)] = { href: link.href, title, desc };
-		}
-
-		env.footnoteLinkMap = map;
+		const map = buildFootnoteLinkMap(list);
+		if (!Object.keys(map).length) return;
+		injectLinkCards(state, state.tokens, map);
 	});
-
-	const defaultFootnoteRef =
-		md.renderer.rules.footnote_ref ||
-		((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
-
-	md.renderer.rules.footnote_ref = (tokens, idx, options, env, self) => {
-		const base = defaultFootnoteRef(tokens, idx, options, env, self);
-		const map = (env as any)?.footnoteLinkMap as Record<string, FootnoteLinkInfo> | undefined;
-		const id = tokens[idx].meta?.id;
-		if (!map || typeof id !== 'number') return base;
-		const info = map[String(id)];
-		if (!info?.href) return base;
-
-		const origin = (env as any)?.origin as string | undefined;
-		const href = resolveHref(info.href, origin);
-
-		const props = {
-			href,
-			title: info.title || deriveTitleFromHref(href),
-			desc: info.desc || ''
-		};
-		return `${base}${renderComponentPlaceholder(md, 'footnote-link-card', props)}`;
-	};
 };

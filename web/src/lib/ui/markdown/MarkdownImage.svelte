@@ -1,16 +1,28 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { imageLazy } from '$lib/shared/actions/image-lazy';
 	import { imageExtInfoCtx, type ImageExtInfoItem } from '$lib/shared/markdown/image-ext-info';
 	import { bindImageInteractions } from '$lib/shared/dom/image-interactions';
 
-	const { imgEl } = $props<{
-		imgEl?: HTMLImageElement | null;
+	const {
+		src = '',
+		alt = '',
+		title = '',
+		loading = 'lazy',
+		decoding = 'async',
+		class: className = ''
+	} = $props<{
+		src?: string;
+		alt?: string;
+		title?: string;
+		loading?: 'lazy' | 'eager';
+		decoding?: 'async' | 'sync' | 'auto';
+		class?: string;
 	}>();
 
 	const extInfoStore = imageExtInfoCtx.selectModelData((data) => data);
 
-	console.log('extInfoStore:', $extInfoStore);
-
+	let imgEl = $state<HTMLImageElement | null>(null);
 	let imgSrc = $state('');
 	let zoomSrc = $state('');
 	let zoomAlt = $state('');
@@ -28,7 +40,7 @@
 			imgEl.style.setProperty('aspect-ratio', `${info.width} / ${info.height}`);
 		}
 		if (info.color) {
-			imgEl.style.backgroundColor = info.color;
+			imgEl.style.setProperty('background-color', info.color);
 		}
 	};
 
@@ -55,12 +67,12 @@
 
 	$effect(() => {
 		if (!imgEl) return;
-		imgSrc = imgEl.currentSrc || imgEl.src || '';
+		imgSrc = imgEl.currentSrc || imgEl.src || src;
 		cleanup?.();
 		cleanup = bindImageInteractions(imgEl, {
 			onClick: openZoom,
 			onLoad: () => {
-				imgSrc = imgEl.currentSrc || imgEl.src || '';
+				imgSrc = imgEl?.currentSrc || imgEl?.src || src;
 				clearPlaceholder();
 			}
 		});
@@ -75,7 +87,9 @@
 
 	onDestroy(() => {
 		cleanup?.();
-		document.documentElement.classList.remove('is-image-zooming');
+		if (typeof document !== 'undefined') {
+			document.documentElement.classList.remove('is-image-zooming');
+		}
 	});
 </script>
 
@@ -84,6 +98,23 @@
 		<img class="md-image-zoom__img" src={zoomSrc} alt={zoomAlt} />
 	</div>
 {/if}
+
+<figure class="md-figure my-6 overflow-hidden">
+	<img
+		bind:this={imgEl}
+		class={`md-img block w-full rounded-sm transition-[filter,transform,opacity] duration-[400ms] ease-in-out ${className}`.trim()}
+		{src}
+		{alt}
+		{loading}
+		{decoding}
+		title={title || undefined}
+		data-loaded="false"
+		use:imageLazy={{ src, blur: imageInfo()?.blur }}
+	/>
+	{#if title}
+		<figcaption class="md-caption mt-2 text-sm opacity-70">{title}</figcaption>
+	{/if}
+</figure>
 
 <style lang="postcss">
 	:global(html.is-image-zooming) {
@@ -115,5 +146,17 @@
 		to {
 			transform: scale(1);
 		}
+	}
+
+	:global(.md-img) {
+		filter: blur(var(--md-img-blur, 18px));
+		transform: scale(1.01);
+		opacity: 0.85;
+	}
+
+	:global(.md-img[data-loaded="true"]) {
+		filter: blur(0);
+		transform: scale(1);
+		opacity: 1;
 	}
 </style>

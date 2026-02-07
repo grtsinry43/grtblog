@@ -78,6 +78,7 @@
 		"ofetch": "^1.5.1",
 		"shiki": "^3.21.0",
 		"svatoms": "^0.1.0",
-		"svelte-sonner": "^1.0.7"
+		"svelte-sonner": "^1.0.7",
+		"svmarkdown": "^0.1.1"
 	}
 }
