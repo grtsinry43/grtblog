@@ -37,15 +37,108 @@
 <style lang="postcss">
 	@reference "/Users/grtsinry43/grtblog-v2/web/src/routes/layout.css";
 
-	:global(.md-codeblock__body .shiki) {
+	:global(.md-codeblock__body pre) {
 		@apply m-0 px-4 py-3 text-[13px] overflow-x-auto bg-transparent;
 	}
 
-	:global(.dark .md-codeblock__body .shiki) {
-		color: var(--shiki-dark) !important;
+	:global(.md-codeblock__body code) {
+		font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas,
+			"Liberation Mono", "Courier New", monospace;
 	}
 
-	:global(.dark .md-codeblock__body .shiki span) {
-		color: var(--shiki-dark) !important;
+	:global(.md-codeblock__body .hljs) {
+		color: #24292f;
+	}
+
+	:global(.md-codeblock__body .hljs-comment),
+	:global(.md-codeblock__body .hljs-quote) {
+		color: #6e7781;
+	}
+
+	:global(.md-codeblock__body .hljs-keyword),
+	:global(.md-codeblock__body .hljs-selector-tag),
+	:global(.md-codeblock__body .hljs-literal) {
+		color: #cf222e;
+	}
+
+	:global(.md-codeblock__body .hljs-string),
+	:global(.md-codeblock__body .hljs-title),
+	:global(.md-codeblock__body .hljs-section),
+	:global(.md-codeblock__body .hljs-built_in),
+	:global(.md-codeblock__body .hljs-addition) {
+		color: #116329;
+	}
+
+	:global(.md-codeblock__body .hljs-number),
+	:global(.md-codeblock__body .hljs-symbol),
+	:global(.md-codeblock__body .hljs-bullet) {
+		color: #b62324;
+	}
+
+	:global(.md-codeblock__body .hljs-attribute),
+	:global(.md-codeblock__body .hljs-name),
+	:global(.md-codeblock__body .hljs-selector-id),
+	:global(.md-codeblock__body .hljs-selector-class) {
+		color: #8250df;
+	}
+
+	:global(.md-codeblock__body .hljs-type),
+	:global(.md-codeblock__body .hljs-function),
+	:global(.md-codeblock__body .hljs-title.class_),
+	:global(.md-codeblock__body .hljs-title.function_) {
+		color: #1f6feb;
+	}
+
+	:global(.md-codeblock__body .hljs-variable),
+	:global(.md-codeblock__body .hljs-template-variable) {
+		color: #953800;
+	}
+
+	:global(.dark .md-codeblock__body .hljs) {
+		color: #c9d1d9;
+	}
+
+	:global(.dark .md-codeblock__body .hljs-comment),
+	:global(.dark .md-codeblock__body .hljs-quote) {
+		color: #8b949e;
+	}
+
+	:global(.dark .md-codeblock__body .hljs-keyword),
+	:global(.dark .md-codeblock__body .hljs-selector-tag),
+	:global(.dark .md-codeblock__body .hljs-literal) {
+		color: #ff7b72;
+	}
+
+	:global(.dark .md-codeblock__body .hljs-string),
+	:global(.dark .md-codeblock__body .hljs-title),
+	:global(.dark .md-codeblock__body .hljs-section),
+	:global(.dark .md-codeblock__body .hljs-built_in),
+	:global(.dark .md-codeblock__body .hljs-addition) {
+		color: #7ee787;
+	}
+
+	:global(.dark .md-codeblock__body .hljs-number),
+	:global(.dark .md-codeblock__body .hljs-symbol),
+	:global(.dark .md-codeblock__body .hljs-bullet) {
+		color: #ffa657;
+	}
+
+	:global(.dark .md-codeblock__body .hljs-attribute),
+	:global(.dark .md-codeblock__body .hljs-name),
+	:global(.dark .md-codeblock__body .hljs-selector-id),
+	:global(.dark .md-codeblock__body .hljs-selector-class) {
+		color: #d2a8ff;
+	}
+
+	:global(.dark .md-codeblock__body .hljs-type),
+	:global(.dark .md-codeblock__body .hljs-function),
+	:global(.dark .md-codeblock__body .hljs-title.class_),
+	:global(.dark .md-codeblock__body .hljs-title.function_) {
+		color: #79c0ff;
+	}
+
+	:global(.dark .md-codeblock__body .hljs-variable),
+	:global(.dark .md-codeblock__body .hljs-template-variable) {
+		color: #ffa657;
 	}
 </style>
