@@ -590,6 +590,18 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     ],
   },
   {
+    path: 'user-center',
+    name: 'userCenter',
+    label: '个人中心',
+    icon: 'iconify ph--user',
+    show: false,
+    meta: {
+      componentName: 'UserCenter',
+      showTab: true,
+    },
+    component: 'user-center/index',
+  },
+  {
     path: '/about',
     key: 'about',
     name: 'about',

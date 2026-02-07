@@ -3,15 +3,16 @@ import { NAvatar } from 'naive-ui'
 
 import type { AvatarProps } from 'naive-ui'
 
-interface UserAvatarProps extends /** @vue-ignore */ AvatarProps {}
+interface UserAvatarProps extends /** @vue-ignore */ AvatarProps {
+  src?: string
+}
 
 defineProps<UserAvatarProps>()
 </script>
 <template>
   <NAvatar
     round
-    src="src path"
-    v-bind="$attrs"
+    v-bind="$props"
   >
     <template #fallback>
       <svg
