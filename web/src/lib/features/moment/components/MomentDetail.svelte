@@ -1,10 +1,7 @@
 <script lang="ts">
-	import type { MomentDetail } from '$lib/features/moment/types';
-	import { renderMarkdown } from '$lib/shared/markdown/markdown';
-	import { markdownComponents } from '$lib/shared/actions/markdown-components';
+	import type { MomentDetail, TOCNode } from '$lib/features/moment/types';
+	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import { ArrowLeft, Sun } from 'lucide-svelte';
-	import { page } from '$app/stores';
-	import '$lib/ui/markdown/register';
 	import Loading from '$lib/ui/common/Loading.svelte';
 	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
 	import StickyHeader from '$lib/ui/common/StickyHeader.svelte';
@@ -16,12 +13,18 @@
 
 	let { moment } = $props<Props>();
 
-	const siteOrigin = $derived($page.url.origin);
-	const contentHtml = $derived(
-		renderMarkdown(moment.content ?? '', [], {
-			origin: siteOrigin
-		})
-	);
+	const flattenTOC = (nodes?: TOCNode[]) => {
+		if (!nodes?.length) return [];
+		const anchors: string[] = [];
+		const walk = (items: TOCNode[]) => {
+			for (const item of items) {
+				anchors.push(item.anchor);
+				if (item.children?.length) walk(item.children);
+			}
+		};
+		walk(nodes);
+		return anchors;
+	};
 
 	// Date formatting
 	const dateObj = new Date(moment.createdAt);
@@ -175,11 +178,10 @@
 
 				<!-- Body Text -->
 				<div
-					class="markdown-preview prose prose-stone dark:prose-invert prose-lg max-w-none text-ink-900/80 dark:text-ink-200/90 font-serif text-justify text-[15px]"
+					class="markdown-preview max-w-none text-ink-900/80 dark:text-ink-200/90 font-serif text-justify text-[15px]"
 					bind:this={contentRoot}
-					use:markdownComponents
 				>
-					{@html contentHtml}
+					<MarkdownView content={moment.content} headingAnchors={flattenTOC(moment.toc)} />
 				</div>
 
 				<!-- Footer Stamp -->

@@ -4,22 +4,20 @@
 		title = '',
 		type = 'page',
 		cover = '',
-		blur = '7px',
-		contentHtml = ''
+		blur = '7px'
 	} = $props<{
 		url?: string;
 		title?: string;
 		type?: string;
 		cover?: string;
 		blur?: string;
-		contentHtml?: string;
 	}>();
 
 	const target = $derived((url ?? '').startsWith('http') ? '_blank' : '_self');
 	const rel = $derived(target === '_blank' ? 'noreferrer' : undefined);
 </script>
 
-<article class="group relative overflow-hidden rounded-3xl border border-ink-200/70 bg-white/80 shadow-float">
+<article class="group relative my-4 overflow-hidden rounded-3xl border border-ink-200/70 bg-white/80 shadow-float">
 	{#if cover}
 		<div class="absolute inset-0">
 			<img class="h-full w-full object-cover" src={cover} alt="" loading="lazy" />
@@ -32,13 +30,9 @@
 		<div class="space-y-3">
 			<p class="text-xs font-semibold uppercase tracking-[0.28em] text-ink-400">Annual Summary</p>
 			<h3 class="text-3xl font-semibold text-ink-900 md:text-4xl">{title}</h3>
-			{#if contentHtml}
-				<div class="text-base leading-relaxed text-ink-700">
-					{@html contentHtml}
-				</div>
-			{:else}
-				<p class="text-base text-ink-700">年度回顾与总结</p>
-			{/if}
+			<div class="text-base leading-relaxed text-ink-700">
+				<slot>年度回顾与总结</slot>
+			</div>
 		</div>
 		<div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
 			<a

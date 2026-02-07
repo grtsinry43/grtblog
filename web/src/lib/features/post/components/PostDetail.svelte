@@ -1,19 +1,16 @@
 <script lang="ts">
 	import { onDestroy, tick } from 'svelte';
 	import type { PostDetail } from '$lib/features/post/types';
-	import { renderMarkdown } from '$lib/shared/markdown/markdown';
+	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import type { TOCNode } from '$lib/features/post/types';
-	import { markdownComponents } from '$lib/shared/actions/markdown-components';
 	import { buildImageExtInfoState, imageExtInfoCtx } from '$lib/shared/markdown/image-ext-info';
 	import { Calendar, Clock, Share2, ArrowLeft, Sparkles, ChevronDown } from 'lucide-svelte';
 	import Icon from '@iconify/svelte';
-	import { page } from '$app/stores';
 	import { spring } from 'svelte/motion';
 	import Button from '$lib/ui/ui/button/Button.svelte';
 	import Badge from '$lib/ui/ui/badge/Badge.svelte';
 	import Tag from '$lib/ui/ui/tag/Tag.svelte';
 	import Loading from '$lib/ui/common/Loading.svelte';
-	import '$lib/ui/markdown/register';
 	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
 	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
 	import StickyHeader from '$lib/ui/common/StickyHeader.svelte';
@@ -25,7 +22,6 @@
 	let contentRoot: HTMLElement | null = $state(null);
 	let activeAnchor = $state<string | null>(null);
 	let observer: IntersectionObserver | null = null;
-	const siteOrigin = $derived($page.url.origin);
 	let isAiSummaryExpanded = $state(false);
 	let summaryContentHeight = $state(0);
 	const summaryHeight = spring(60, { stiffness: 0.15, damping: 0.6 });
@@ -46,22 +42,6 @@
 		walk(nodes);
 		return anchors;
 	};
-
-	let contentHtml = $derived(
-		$postStore
-			? renderMarkdown($postStore.content ?? '', flattenTOC($postStore.toc), {
-					origin: siteOrigin
-				})
-			: ''
-	);
-
-	let aiSummaryHtml = $derived(
-		$postStore?.aiSummary
-			? renderMarkdown($postStore.aiSummary, [], {
-					origin: siteOrigin
-				})
-			: ''
-	);
 
 	const setupObserver = () => {
 		if (!contentRoot || typeof IntersectionObserver === 'undefined') return;
@@ -244,20 +224,18 @@
 						>
 							<div
 								bind:clientHeight={summaryContentHeight}
-								class="markdown-preview prose prose-sm max-w-none font-sans text-xs leading-relaxed text-ink-700 dark:prose-invert dark:text-ink-300 [&>p]:mb-1.5 [&>p]:last:mb-0"
-								use:markdownComponents
+								class="markdown-preview max-w-none font-sans text-xs leading-relaxed text-ink-700 dark:text-ink-300 [&>p]:mb-1.5 [&>p]:last:mb-0"
 							>
-								{@html aiSummaryHtml}
+								<MarkdownView content={$postStore.aiSummary ?? ''} />
 							</div>
 						</div>
 					</div>
 				{/if}
 				<div
-					class="markdown-preview markdown-body prose prose-ink dark:prose-invert max-w-none text-[15px] leading-[1.8] font-normal text-ink-800 md:text-base dark:text-ink-200 prose-headings:mt-10 prose-headings:mb-4 prose-headings:font-serif prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-ink-950 dark:prose-headings:text-ink-50 prose-h2:text-xl md:prose-h2:text-2xl prose-h3:text-lg md:prose-h3:text-xl prose-p:mb-6 prose-blockquote:my-8 prose-blockquote:border-l-[1px] prose-blockquote:border-jade-500/40 prose-blockquote:py-0.5 prose-blockquote:pl-5 prose-blockquote:text-[0.95em] prose-blockquote:text-ink-600 prose-blockquote:italic prose-blockquote:opacity-90 dark:prose-blockquote:text-ink-400"
+					class="markdown-preview markdown-body max-w-none text-[15px] leading-[1.8] font-normal text-ink-800 md:text-base dark:text-ink-200"
 					bind:this={contentRoot}
-					use:markdownComponents
 				>
-					{@html contentHtml}
+					<MarkdownView content={$postStore.content ?? ''} headingAnchors={flattenTOC($postStore.toc)} />
 				</div>
 
 				<footer

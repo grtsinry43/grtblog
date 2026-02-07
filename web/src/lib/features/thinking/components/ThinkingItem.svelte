@@ -2,7 +2,7 @@
 	import type { ThinkingItem } from '$lib/features/thinking/types';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
 	import { MessageCircle, Heart, Eye } from 'lucide-svelte';
-	import { renderMarkdown } from '$lib/shared/markdown/markdown';
+	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 
 	let { item } = $props<{ item: ThinkingItem }>();
 </script>
@@ -43,9 +43,9 @@
 
 		<!-- Content -->
 		<div
-			class="prose prose-base dark:prose-invert max-w-none text-ink-800 dark:text-ink-200 mb-3 font-sans leading-relaxed break-words"
+			class="max-w-none text-ink-800 dark:text-ink-200 mb-3 font-sans leading-relaxed break-words"
 		>
-			{@html renderMarkdown(item.content)}
+			<MarkdownView content={item.content} />
 		</div>
 
 		<!-- Actions -->

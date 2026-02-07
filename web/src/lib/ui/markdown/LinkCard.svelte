@@ -1,10 +1,9 @@
 <script lang="ts">
-	let { href = '', title = '', desc = '', newtab = 'true', contentHtml = '' } = $props<{
+	let { href = '', title = '', desc = '', newtab = 'true' } = $props<{
 		href?: string;
 		title?: string;
 		desc?: string;
 		newtab?: string | boolean;
-		contentHtml?: string;
 	}>();
 
 	const openInNewTab = $derived.by(() => {
@@ -16,7 +15,7 @@
 </script>
 
 <a
-	class="group block rounded-2xl border border-ink-200/70 bg-white/80 p-6 shadow-subtle transition hover:-translate-y-0.5 hover:shadow-float"
+	class="group my-4 block rounded-2xl border border-ink-200/70 bg-white/80 p-6 shadow-subtle transition hover:-translate-y-0.5 hover:shadow-float"
 	href={href || '#'}
 	target={target}
 	rel={rel}
@@ -40,13 +39,9 @@
 					Link
 				</span>
 			</div>
-			{#if contentHtml}
-				<div class="text-sm leading-relaxed text-ink-600">
-					{@html contentHtml}
-				</div>
-			{:else if desc}
-				<p class="text-sm leading-relaxed text-ink-600">{desc}</p>
-			{/if}
+			<div class="text-sm leading-relaxed text-ink-600">
+				<slot>{desc}</slot>
+			</div>
 		</div>
 	</div>
 </a>

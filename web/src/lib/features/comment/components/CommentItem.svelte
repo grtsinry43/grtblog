@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { renderMarkdown } from '$lib/shared/markdown/markdown';
+	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import type { CommentNode } from '$lib/features/comment/types';
 	import {
 		createRelativeTimeTicker,
@@ -87,7 +87,7 @@
 		<div
 			class="rounded-default bg-ink-50/50 dark:bg-ink-800/30 p-3 text-sm text-ink-800 dark:text-ink-200 leading-relaxed group-hover:bg-ink-100/50 dark:group-hover:bg-ink-800/50 transition-colors"
 		>
-			{@html renderMarkdown(comment.content)}
+			<MarkdownView content={comment.content} />
 		</div>
 
 		<div class="flex items-center gap-4 mt-2 mb-4">
