@@ -73,10 +73,9 @@
 		"lucide-svelte": "^0.562.0",
 		"markdown-it": "^14.1.0",
 		"markdown-it-container": "^4.0.0",
-		"markdown-it-footnote": "^4.0.0",
 		"ofetch": "^1.5.1",
 		"svatoms": "^0.1.0",
 		"svelte-sonner": "^1.0.7",
-		"svmarkdown": "^0.1.1"
+		"svmarkdown": "^0.1.3"
 	}
 }

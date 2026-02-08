@@ -1,7 +1,5 @@
-import footnote from 'markdown-it-footnote';
 import type { SvmdComponentMap, SvmdParseOptions, SvmdRenderOptions } from 'svmarkdown';
 import { markdownComponents as componentDefinitions } from '$lib/shared/markdown/shared/components';
-import { footnoteLinkCardPlugin } from '$lib/shared/markdown/footnote-link-card';
 import MarkdownLink from '$lib/ui/markdown/MarkdownLink.svelte';
 import MarkdownImage from '$lib/ui/markdown/MarkdownImage.svelte';
 import MarkdownCodeBlock from '$lib/ui/markdown/MarkdownCodeBlock.svelte';
@@ -12,6 +10,12 @@ import MarkdownList from '$lib/ui/markdown/MarkdownList.svelte';
 import MarkdownListItem from '$lib/ui/markdown/MarkdownListItem.svelte';
 import MarkdownBlockquote from '$lib/ui/markdown/MarkdownBlockquote.svelte';
 import MarkdownHr from '$lib/ui/markdown/MarkdownHr.svelte';
+import MarkdownTable from '$lib/ui/markdown/MarkdownTable.svelte';
+import MarkdownThead from '$lib/ui/markdown/MarkdownThead.svelte';
+import MarkdownTbody from '$lib/ui/markdown/MarkdownTbody.svelte';
+import MarkdownTr from '$lib/ui/markdown/MarkdownTr.svelte';
+import MarkdownTh from '$lib/ui/markdown/MarkdownTh.svelte';
+import MarkdownTd from '$lib/ui/markdown/MarkdownTd.svelte';
 import YearCard from '$lib/ui/markdown/YearCard.svelte';
 import LinkCard from '$lib/ui/markdown/LinkCard.svelte';
 import FootnoteLinkCard from '$lib/ui/markdown/FootnoteLinkCard.svelte';
@@ -33,6 +37,12 @@ export const markdownComponents: SvmdComponentMap = {
 	li: MarkdownListItem,
 	blockquote: MarkdownBlockquote,
 	hr: MarkdownHr,
+	table: MarkdownTable,
+	thead: MarkdownThead,
+	tbody: MarkdownTbody,
+	tr: MarkdownTr,
+	th: MarkdownTh,
+	td: MarkdownTd,
 	a: MarkdownLink,
 	img: MarkdownImage,
 	code: MarkdownCodeBlock,
@@ -46,7 +56,7 @@ export const markdownComponents: SvmdComponentMap = {
 
 export const markdownParseOptions: SvmdParseOptions = {
 	componentBlocks,
-	markdownItPlugins: [footnote, footnoteLinkCardPlugin],
+	markdownItPlugins: [],
 	markdownItOptions: {
 		html: true,
 		linkify: true,
