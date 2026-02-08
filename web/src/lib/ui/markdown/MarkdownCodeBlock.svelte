@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { highlightCode } from '$lib/shared/markdown/highlight';
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
 
 	const { inline = false, text = '', lang = '', attrs = {}, class: className = '' } = $props<{
 		inline?: boolean;
@@ -11,6 +13,47 @@
 
 	const codeHtml = $derived.by(() => (inline ? '' : highlightCode(text ?? '', lang)));
 	const dataLang = $derived((lang || 'text').trim() || 'text');
+	const lineCount = $derived.by(() => {
+		const value = text ?? '';
+		if (!value) return 0;
+		return value.endsWith('\n') ? value.split('\n').length - 1 : value.split('\n').length;
+	});
+
+	let expanded = $state(false);
+	let measured = $state(false);
+	let innerEl: HTMLDivElement | null = $state(null);
+	let collapsedHeight = $state(0);
+	let expandedHeight = $state(0);
+	const displayHeight = tweened(0, { duration: 220, easing: cubicOut });
+
+	const updateHeights = () => {
+		if (typeof window === 'undefined' || !innerEl) return;
+		const pre = innerEl.querySelector('pre');
+		if (!pre) return;
+		const style = getComputedStyle(pre);
+		const lineHeightRaw = parseFloat(style.lineHeight);
+		const lineHeight = Number.isFinite(lineHeightRaw) ? lineHeightRaw : 20;
+		const paddingTop = parseFloat(style.paddingTop) || 0;
+		const paddingBottom = parseFloat(style.paddingBottom) || 0;
+		const paddingY = paddingTop + paddingBottom;
+		const fullHeight = innerEl.scrollHeight;
+		const clampedHeight = Math.min(fullHeight, lineHeight * 10 + paddingY);
+		collapsedHeight = lineCount > 10 ? clampedHeight : fullHeight;
+		expandedHeight = fullHeight;
+		measured = true;
+		displayHeight.set(expanded ? expandedHeight : collapsedHeight);
+	};
+
+	$effect(() => {
+		if (!inline) {
+			updateHeights();
+		}
+	});
+
+	const toggleExpand = () => {
+		expanded = !expanded;
+		displayHeight.set(expanded ? expandedHeight : collapsedHeight);
+	};
 </script>
 
 {#if inline}
@@ -22,28 +65,44 @@
 	</code>
 {:else}
 	<div
-		class="md-codeblock my-6 overflow-hidden rounded-sm border border-ink-900/20 bg-ink-900/5 dark:border-white/15 dark:bg-white/5"
+		class="md-codeblock font-mono my-6 overflow-hidden rounded-sm border border-ink-900/20 bg-ink-900/5 dark:border-white/15 dark:bg-white/5"
 		data-lang={dataLang}
 	>
 		<div class="md-codeblock__header flex items-center justify-between border-b border-ink-900/15 px-3 py-0.5 text-[11px] uppercase tracking-[0.08em] opacity-75 dark:border-white/15">
 			<span class="md-codeblock__lang">{dataLang || 'text'}</span>
 		</div>
 		<div class="md-codeblock__body">
-			{@html codeHtml}
+			<div
+				class={`code-wrap ${measured ? 'is-measured' : ''}`}
+				style:height={measured ? `${$displayHeight}px` : undefined}
+			>
+				<div class="code-inner" bind:this={innerEl}>
+					{@html codeHtml}
+				</div>
+			</div>
+			{#if lineCount > 10}
+				<div class="flex justify-center border-t border-ink-900/10 dark:border-white/10">
+					<button
+						class="px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase text-ink-500 transition-colors hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-100"
+						onclick={toggleExpand}
+					>
+						{expanded ? '收起' : '展开'}
+					</button>
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}
 
 <style lang="postcss">
-	@reference "/Users/grtsinry43/grtblog-v2/web/src/routes/layout.css";
+	@reference "$routes/layout.css";
 
 	:global(.md-codeblock__body pre) {
 		@apply m-0 px-4 py-3 text-[13px] overflow-x-auto bg-transparent;
 	}
 
-	:global(.md-codeblock__body code) {
-		font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas,
-			"Liberation Mono", "Courier New", monospace;
+	:global(.md-codeblock__body .code-wrap.is-measured) {
+		@apply overflow-hidden;
 	}
 
 	:global(.md-codeblock__body .hljs) {
