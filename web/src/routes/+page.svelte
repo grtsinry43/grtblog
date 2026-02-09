@@ -2,6 +2,7 @@
 	import Hero from '$lib/features/home/Hero.svelte';
 	import HomeArticleItem from '$lib/features/post/components/HomeArticleItem.svelte';
 	import HomeMomentItem from '$lib/features/moment/components/HomeMomentItem.svelte';
+	import { SlideIn, StaggerList } from '$lib/ui/animation';
 	import { ArrowRight } from 'lucide-svelte';
 	import type { PageData } from './$types';
 
@@ -15,46 +16,56 @@
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24">
 			<!-- Recent Articles -->
 			<section>
-				<div
-					class="flex items-center justify-between mb-6 border-b border-ink-100 dark:border-ink-800 pb-4"
-				>
-					<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">最近文章</h2>
-					<a
-						href="/posts"
-						class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
+				<SlideIn direction="left">
+					<div
+						class="flex items-center justify-between mb-6 border-b border-ink-100 dark:border-ink-800 pb-4"
 					>
-						<span>查看全部</span>
-						<ArrowRight size={12} class="group-hover:translate-x-1 transition-transform" />
-					</a>
-				</div>
+						<div class="flex items-center gap-3">
+							<span class="h-px w-8 bg-jade-500/40"></span>
+							<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">最近文章</h2>
+						</div>
+						<a
+							href="/posts"
+							class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
+						>
+							<span>查看全部</span>
+							<ArrowRight size={12} class="group-hover:translate-x-1 transition-transform" />
+						</a>
+					</div>
+				</SlideIn>
 
-				<div class="flex flex-col">
+				<StaggerList staggerDelay={100} y={16} class="flex flex-col">
 					{#each data.recentPosts.items as post}
 						<HomeArticleItem {post} />
 					{/each}
-				</div>
+				</StaggerList>
 			</section>
 
 			<!-- Recent Moments -->
 			<section>
-				<div
-					class="flex items-center justify-between mb-6 border-b border-ink-100 dark:border-ink-800 pb-4"
-				>
-					<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">最近手记</h2>
-					<a
-						href="/moments"
-						class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
+				<SlideIn direction="right">
+					<div
+						class="flex items-center justify-between mb-6 border-b border-ink-100 dark:border-ink-800 pb-4"
 					>
-						<span>查看全部</span>
-						<ArrowRight size={12} class="group-hover:translate-x-1 transition-transform" />
-					</a>
-				</div>
+						<div class="flex items-center gap-3">
+							<span class="h-px w-8 bg-jade-500/40"></span>
+							<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">最近手记</h2>
+						</div>
+						<a
+							href="/moments"
+							class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
+						>
+							<span>查看全部</span>
+							<ArrowRight size={12} class="group-hover:translate-x-1 transition-transform" />
+						</a>
+					</div>
+				</SlideIn>
 
-				<div class="flex flex-col">
+				<StaggerList staggerDelay={100} y={16} class="flex flex-col">
 					{#each data.recentMoments.items as moment}
 						<HomeMomentItem {moment} />
 					{/each}
-				</div>
+				</StaggerList>
 			</section>
 		</div>
 	</div>

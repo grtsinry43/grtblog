@@ -1,38 +1,46 @@
 <script lang="ts">
-    import SocialItem from '$lib/features/home/SocialItem.svelte';
+	import SocialItem from '$lib/features/home/SocialItem.svelte';
+	import { FadeIn } from '$lib/ui/animation';
 	import { ArrowDown } from 'lucide-svelte';
 </script>
 
-<div class="hero-container min-h-[100%-4em] flex flex-col w-full gap-20">
-	<div class="hero-info flex justify-center mt-[200px] gap-36">
-		<div class="hero-author-avatar relative z-10 w-fit">
-			<img
-				src="https://dogeoss.grtsinry43.com/img/author.jpeg"
-				alt="Author"
-				class="h-[184px] w-[184px] rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
-			/>
-		</div>
-		<div class="hero-welcome">
-			<div class="text-4xl font-mono leading-relaxed">
-				<span class="italic">Hi! 👋</span><br />
-				I'm grtinry43
+<div class="hero-container min-h-[calc(100svh-5rem)] md:min-h-[calc(100svh-8rem)] flex flex-col justify-center w-full gap-20">
+	<div class="hero-info flex justify-center gap-36">
+		<FadeIn y={24} duration={1000}>
+			<div class="hero-author-avatar relative z-10 w-fit">
+				<img
+					src="https://dogeoss.grtsinry43.com/img/author.jpeg"
+					alt="Author"
+					class="h-[184px] w-[184px] rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
+				/>
 			</div>
-			<p class="hero-subtitle mt-12 font-mono">
-				Java & JavaScript full-stack developer committed to crafting excellent software.
-			</p>
-		</div>
+		</FadeIn>
+		<FadeIn y={20} duration={1000} delay={200}>
+			<div class="hero-welcome">
+				<div class="text-4xl font-mono leading-relaxed">
+					<span class="italic">Hi! 👋</span><br />
+					I'm grtinry43
+				</div>
+				<p class="hero-subtitle mt-12 font-mono">
+					Java & JavaScript full-stack developer committed to crafting excellent software.
+				</p>
+			</div>
+		</FadeIn>
 	</div>
-    <div class="hero-motto font-serif text-2xl ml-4">
-        热衷于在逻辑与感性的缝隙中构建数字花园。<br/>
-        也许，代码是现代的诗歌，而文字是思想的快照。
-    </div>
+	<FadeIn y={16} duration={900} delay={400}>
+		<div class="hero-motto font-serif text-2xl ml-4">
+			热衷于在逻辑与感性的缝隙中构建数字花园。<br/>
+			也许，代码是现代的诗歌，而文字是思想的快照。
+		</div>
+	</FadeIn>
 
-    <div class="social-container ml-4 flex items-center gap-6">
-        <!-- Social Items -->
-        <SocialItem icon="github" name="GitHub" href="https://github.com/grtinry43" />
-        <SocialItem icon="mail" name="Email" href="mailto:grtsinry43@outlook.com" />
-        <SocialItem icon="rss" name="RSS" href="/feed" />
-    </div>
+	<FadeIn y={12} duration={800} delay={600}>
+		<div class="social-container ml-4 flex items-center gap-6">
+			<SocialItem icon="github" name="GitHub" href="https://github.com/grtinry43" />
+			<SocialItem icon="mail" name="Email" href="mailto:grtsinry43@outlook.com" />
+			<SocialItem icon="rss" name="RSS" href="/feed" />
+		</div>
+	</FadeIn>
 
 	<div class="hero-scroll-hint" aria-hidden="true">
 		<ArrowDown size={20} />
