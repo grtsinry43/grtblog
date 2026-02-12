@@ -119,13 +119,19 @@ func (r *FriendLinkRepository) List(ctx context.Context, options social.FriendLi
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	offset := (options.Page - 1) * options.PageSize
+
+	query = query.Order("updated_at DESC")
+	if options.PageSize > 0 {
+		page := options.Page
+		if page < 1 {
+			page = 1
+		}
+		offset := (page - 1) * options.PageSize
+		query = query.Limit(options.PageSize).Offset(offset)
+	}
+
 	var recs []model.FriendLink
-	if err := query.
-		Order("updated_at DESC").
-		Limit(options.PageSize).
-		Offset(offset).
-		Find(&recs).Error; err != nil {
+	if err := query.Find(&recs).Error; err != nil {
 		return nil, 0, err
 	}
 	result := make([]social.FriendLink, len(recs))

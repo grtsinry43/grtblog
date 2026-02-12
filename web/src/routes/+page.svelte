@@ -1,5 +1,8 @@
 <script lang="ts">
 	import Hero from '$lib/features/home/Hero.svelte';
+	import InspirationGrid from '$lib/features/home/InspirationGrid.svelte';
+	import SubscribeSection from '$lib/features/home/SubscribeSection.svelte';
+	import ActivityPulse from '$lib/features/home/ActivityPulse.svelte';
 	import HomeArticleItem from '$lib/features/post/components/HomeArticleItem.svelte';
 	import HomeMomentItem from '$lib/features/moment/components/HomeMomentItem.svelte';
 	import { SlideIn, StaggerList } from '$lib/ui/animation';
@@ -68,6 +71,15 @@
 				</StaggerList>
 			</section>
 		</div>
+
+		<!-- New Inspiration Grid -->
+		<InspirationGrid />
+
+		<!-- New Activity Pulse -->
+		<ActivityPulse />
+
+		<!-- New Subscribe Section -->
+		<SubscribeSection />
 	</div>
 </div>
 

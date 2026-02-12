@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	appcomment "github.com/grtsinry43/grtblog-v2/server/internal/app/comment"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
@@ -115,6 +116,80 @@ func RegisterSubscribers(bus appEvent.Bus, svc *Service, contentRepo content.Rep
 		}
 		return nil
 	}))
+
+	bus.Subscribe("friendlink.application.created", handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		if identityRepo == nil {
+			return nil
+		}
+		generic, ok := event.(appEvent.Generic)
+		if !ok {
+			return nil
+		}
+		admins, err := identityRepo.ListAdmins(ctx)
+		if err != nil || len(admins) == 0 {
+			return nil
+		}
+		url, _ := generic.Payload["URL"].(string)
+		name, _ := generic.Payload["Name"].(string)
+		url = strings.TrimSpace(url)
+		name = strings.TrimSpace(name)
+		title := "收到友链申请"
+		contentText := fmt.Sprintf("收到新的友链申请：%s。", url)
+		if name != "" {
+			contentText = fmt.Sprintf("收到新的友链申请：%s（%s）。", name, url)
+		}
+		for _, admin := range admins {
+			if _, err := svc.Create(ctx, admin.ID, "friendlink.application.created", title, contentText, generic.Payload); err != nil {
+				return err
+			}
+		}
+		return nil
+	}))
+
+	bus.Subscribe(appcomment.CommentCreated{}.Name(), handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		if identityRepo == nil {
+			return nil
+		}
+		payload, ok := event.(appcomment.CommentCreated)
+		if !ok {
+			return nil
+		}
+		if payload.AuthorID != nil {
+			author, err := identityRepo.FindByID(ctx, *payload.AuthorID)
+			if err == nil && author != nil && author.IsAdmin {
+				return nil
+			}
+		}
+		admins, err := identityRepo.ListAdmins(ctx)
+		if err != nil || len(admins) == 0 {
+			return nil
+		}
+		nickname := strings.TrimSpace(payload.NickName)
+		if nickname == "" {
+			nickname = "匿名用户"
+		}
+		title := "收到新评论"
+		contentText := fmt.Sprintf("%s 在评论区 #%d 发表了评论。", nickname, payload.AreaID)
+		if snippet := trimAndTruncate(payload.Content, 80); snippet != "" {
+			contentText += " 内容：" + snippet
+		}
+		commentPayload := map[string]any{
+			"ID":       payload.ID,
+			"AreaID":   payload.AreaID,
+			"ParentID": payload.ParentID,
+			"AuthorID": payload.AuthorID,
+			"NickName": payload.NickName,
+			"Email":    payload.Email,
+			"Content":  payload.Content,
+			"Status":   payload.Status,
+		}
+		for _, admin := range admins {
+			if _, err := svc.Create(ctx, admin.ID, "comment.created", title, contentText, commentPayload); err != nil {
+				return err
+			}
+		}
+		return nil
+	}))
 }
 
 func resolveArticleByTargetID(ctx context.Context, repo content.Repository, target string) (*content.Article, error) {
@@ -122,4 +197,16 @@ func resolveArticleByTargetID(ctx context.Context, repo content.Repository, targ
 		return repo.GetArticleByID(ctx, id)
 	}
 	return repo.GetArticleByShortURL(ctx, target)
+}
+
+func trimAndTruncate(s string, maxRunes int) string {
+	text := strings.TrimSpace(s)
+	if text == "" || maxRunes <= 0 {
+		return ""
+	}
+	runes := []rune(text)
+	if len(runes) <= maxRunes {
+		return text
+	}
+	return string(runes[:maxRunes]) + "..."
 }

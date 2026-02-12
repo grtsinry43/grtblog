@@ -2,6 +2,7 @@ package friendlink
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -53,6 +54,7 @@ func (s *Service) Submit(ctx context.Context, cmd SubmitCmd) (*SubmitResult, err
 			ApplyChannel:      social.FriendLinkApplyChannelUser,
 			RequestedSyncMode: requestedSyncMode(cmd.RSSURL),
 			RSSURL:            toOptionalString(cmd.RSSURL),
+			Manifest:          json.RawMessage("{}"),
 			UserID:            cmd.UserID,
 			Message:           toOptionalString(cmd.Message),
 			Status:            social.FriendLinkAppStatusPending,
@@ -74,6 +76,9 @@ func (s *Service) Submit(ctx context.Context, cmd SubmitCmd) (*SubmitResult, err
 	existing.ApplyChannel = social.FriendLinkApplyChannelUser
 	existing.RequestedSyncMode = requestedSyncMode(cmd.RSSURL)
 	existing.RSSURL = toOptionalString(cmd.RSSURL)
+	if len(existing.Manifest) == 0 {
+		existing.Manifest = json.RawMessage("{}")
+	}
 	existing.Message = toOptionalString(cmd.Message)
 	existing.UserID = cmd.UserID
 	existing.Status = social.FriendLinkAppStatusPending
