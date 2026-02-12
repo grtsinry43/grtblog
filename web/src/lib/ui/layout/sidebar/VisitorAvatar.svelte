@@ -33,6 +33,6 @@
             action={authLoginModal}
             actionOptions={{ source: 'sidebar-avatar' }}
     >
-        <UserIcon/>
+        <UserIcon class="h-5 w-5" />
     </Button>
 {/if}

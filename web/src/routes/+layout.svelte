@@ -161,7 +161,6 @@
 
 <Toaster />
 {#snippet authFallback()}
-	\t
 	<div></div>
 {/snippet}
 <QueryRoot
