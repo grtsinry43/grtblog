@@ -1,3 +1,7 @@
+import type { TOCNode } from '$lib/shared/types/toc';
+
+export type { TOCNode };
+
 export type PageSummary = {
 	id: number;
 	title: string;
@@ -32,12 +36,6 @@ export type PageDetail = {
 	};
 	createdAt: string;
 	updatedAt: string;
-};
-
-export type TOCNode = {
-	name: string;
-	anchor: string;
-	children?: TOCNode[];
 };
 
 export type PageLatestCheckResponse = {

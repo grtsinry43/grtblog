@@ -17,6 +17,8 @@
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import { goto } from '$app/navigation';
 	import Loading from '$lib/ui/common/Loading.svelte';
+	import { buildMomentPath, buildPagePath, buildPostPath } from '$lib/shared/utils/content-path';
+	import type { SiteSearchItemResp } from './types';
 
 	let shouldRender = $state(false);
 	let isAnimating = $state(false);
@@ -114,13 +116,30 @@
 		}
 	}
 
-	function handleResultClick(path: string, term?: string) {
+	function handleResultClick(path: string | null, term?: string) {
+		if (!path) return;
 		if (term) saveHistory(term);
 		else if (debouncedSearchTerm) saveHistory(debouncedSearchTerm);
 
 		closeWithAnimation();
 		goto(path);
 	}
+
+	const resolveSearchPath = (
+		kind: 'article' | 'moment' | 'page' | 'thinking',
+		item: SiteSearchItemResp
+	): string | null => {
+		if (kind === 'article') {
+			return item.shortUrl ? buildPostPath(item.shortUrl) : null;
+		}
+		if (kind === 'moment') {
+			return item.shortUrl ? buildMomentPath(item.shortUrl, item.createdAt) : null;
+		}
+		if (kind === 'page') {
+			return item.shortUrl ? buildPagePath(item.shortUrl) : null;
+		}
+		return item.path;
+	};
 
 	function clearHistory() {
 		searchHistory = [];
@@ -279,7 +298,7 @@
 							<div class="flex flex-col gap-1">
 								{#each query.data.articles as article}
 									<button
-										onclick={() => handleResultClick(article.path)}
+										onclick={() => handleResultClick(resolveSearchPath('article', article))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
 									>
 										<div
@@ -306,7 +325,7 @@
 							<div class="flex flex-col gap-1">
 								{#each query.data.moments as moment}
 									<button
-										onclick={() => handleResultClick(moment.path)}
+										onclick={() => handleResultClick(resolveSearchPath('moment', moment))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
 									>
 										<div
@@ -333,7 +352,7 @@
 							<div class="flex flex-col gap-1">
 								{#each query.data.thinkings as thinking}
 									<button
-										onclick={() => handleResultClick(thinking.path)}
+										onclick={() => handleResultClick(resolveSearchPath('thinking', thinking))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
 									>
 										<div
@@ -363,7 +382,7 @@
 							<div class="flex flex-col gap-1">
 								{#each query.data.pages as page}
 									<button
-										onclick={() => handleResultClick(page.path)}
+										onclick={() => handleResultClick(resolveSearchPath('page', page))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
 									>
 										<div

@@ -3,7 +3,7 @@
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import ThemeIcon from './ThemeIcon.svelte';
 	import VisitorAvatar from './VisitorAvatar.svelte';
-	import TableOfContents from './TableOfContents.svelte';
+	// TODO: Implement mobile TableOfContents using tocObserver action
 	import { Menu, X, ChevronDown, List } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { slide, fade } from 'svelte/transition';
@@ -296,7 +296,7 @@
 	{/if}
 </div>
 
-<TableOfContents isOpen={isTocOpen} onClose={() => (isTocOpen = false)} />
+<!-- TODO: Mobile TableOfContents (placeholder removed, needs proper implementation) -->
 
 <style>
 	/* Use reference if needed, though Tailwind classes usually suffice */

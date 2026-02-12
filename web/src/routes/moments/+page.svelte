@@ -1,19 +1,19 @@
 <script lang="ts">
 	import MomentItem from '$lib/features/moment/components/MomentItem.svelte';
-	import { momentContext } from './moment-context';
+	import { momentListCtx } from '$lib/features/moment/context';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
 
 	// Mount data to context
-	const momentsStore = momentContext.mountModelData(data.moments);
+	const momentsStore = momentListCtx.mountModelData(data.moments);
 
 	// Sync data
 	$effect(() => {
-		momentContext.syncModelData(momentsStore, data.moments);
+		momentListCtx.syncModelData(momentsStore, data.moments);
 	});
 
-	const moments = momentContext.selectModelData((d) => d?.items || []);
+	const moments = momentListCtx.selectModelData((d) => d?.items || []);
 </script>
 
 <div class="w-full max-w-5xl mx-auto px-6 md:px-0 py-16 animate-settle origin-top">

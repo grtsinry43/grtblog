@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from '$lib/ui/ui/button/Button.svelte';
+	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import type { OAuthProvider } from '$lib/features/auth/types';
 	import { AuthCtx } from '$lib/features/auth/context';
 	import { ChevronDown, ChevronUp } from 'lucide-svelte';

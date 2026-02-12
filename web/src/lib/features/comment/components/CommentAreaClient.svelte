@@ -5,8 +5,9 @@
 	import CommentList from './CommentList.svelte';
 	import { MessageSquare, Globe, ChevronLeft, ChevronRight, Lock } from 'lucide-svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
+	import { browser } from '$app/environment';
 
-	let { areaId, commentsCount = 0 } = $props<{ areaId: number; commentsCount?: number }>();
+	let { areaId, commentsCount = 0 }: { areaId: number; commentsCount?: number } = $props();
 	const isLoggedIn = false;
 
 	const initialModel = {
@@ -20,7 +21,7 @@
 		guestEmail: '',
 		guestSite: '',
 		commentsCount,
-		total: 0,
+		total: commentsCount,
 		page: 1,
 		size: 10,
 		isClosed: false
@@ -42,30 +43,26 @@
 		updateModelData((prev) => (prev ? { ...prev, isLoggedIn: !prev.isLoggedIn } : prev));
 	};
 
-	let displayCount = $derived.by(() => {
-		if (!$commentAreaModel) return 0;
-		return $commentAreaModel.commentsCount > 0
-			? $commentAreaModel.commentsCount
-			: $commentAreaModel.comments.length;
-	});
+	const displayCount = $derived(commentsCount);
 
 	$effect(() => {
 		const data = query.data;
 		updateModelData((prev) => ({
 			...(prev ?? initialModel),
 			areaId,
-			comments: data?.items ?? [],
+			comments: data?.items ?? prev?.comments ?? [],
 			isLoading: query.isLoading,
 			isError: query.isError,
-			commentsCount: data?.total ?? commentsCount,
-			total: data?.total ?? 0,
-			page: data?.page ?? 1,
-			size: data?.size ?? 10,
-			isClosed: data?.isClosed ?? false
+			commentsCount,
+			total: data?.total ?? prev?.total ?? commentsCount,
+			page: data?.page ?? prev?.page ?? 1,
+			size: data?.size ?? prev?.size ?? 10,
+			isClosed: data?.isClosed ?? prev?.isClosed ?? false
 		}));
 	});
 
 	const totalPages = $derived(Math.ceil(($commentAreaModel?.total ?? 0) / pageSize));
+	const fediversePostUrl = $derived(browser ? window.location.href : '');
 
 	const handlePageChange = (page: number) => {
 		if (page < 1 || page > totalPages) return;
@@ -159,12 +156,12 @@
 				class="mt-4 p-5 bg-ink-50 dark:bg-[#252525] border border-ink-200 dark:border-ink-200/50 rounded-default animate-in slide-in-from-top-2 duration-300"
 			>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-					<!-- Post URL -->
+					<!-- Content URL -->
 					<div>
 						<label
 							for="fediverse-post-url"
 							class="block text-[10px] uppercase text-ink-800/40 dark:text-ink-200/40 mb-2 font-sans tracking-widest"
-							>Post URL</label
+							>页面链接</label
 						>
 						<div
 							class="flex items-center gap-0 bg-white dark:bg-[#1a1a1a] border border-ink-200 dark:border-ink-200/30 p-1 pl-3 rounded-default w-full"
@@ -172,7 +169,7 @@
 							<input
 								id="fediverse-post-url"
 								readonly
-								value={`https://grtsinry43.com/posts/${areaId}`}
+								value={fediversePostUrl}
 								class="flex-1 bg-transparent text-xs font-mono text-ink-800 dark:text-ink-200 truncate flex-1 text-left select-all outline-none border-none p-0"
 							/>
 							<button

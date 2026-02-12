@@ -5,7 +5,7 @@
 	import type { ContentExtInfo } from '$lib/shared/markdown/image-ext-info';
 	import type { PostDetail as PostDetailModel, TOCNode, Tag } from '$lib/features/post/types';
 	import { windowMessage } from '$lib/shared/actions/window-message';
-	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
+	import { postDetailCtx } from '$lib/features/post/context';
 
 	type PreviewPostPayload = {
 		id?: number;

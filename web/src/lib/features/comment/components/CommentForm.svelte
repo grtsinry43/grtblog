@@ -4,8 +4,8 @@
 	import { createCommentLogin, createCommentVisitor } from '$lib/features/comment/api';
 	import { toast } from 'svelte-sonner';
 	import { slide } from 'svelte/transition';
-	import Input from '$lib/ui/ui/input/Input.svelte';
-	import Textarea from '$lib/ui/ui/textarea/Textarea.svelte';
+	import Input from '$lib/ui/primitives/input/Input.svelte';
+	import Textarea from '$lib/ui/primitives/textarea/Textarea.svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 
 	interface Props {

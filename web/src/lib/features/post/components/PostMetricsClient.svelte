@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { postDetailCtx } from '$routes/posts/[id]/post-detail-context';
+	import { postDetailCtx } from '$lib/features/post/context';
 	import { getPostDetail } from '$lib/features/post/api';
 
 	const { updateModelData } = postDetailCtx.useModelActions();

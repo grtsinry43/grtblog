@@ -71,25 +71,25 @@
 		onmousemove={handleMouseMove}
 		onmouseleave={handleMouseLeave}
 	>
-		<div
+		<span
 			class="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
 			style:opacity={spotlightOpacity}
 			style:background={`radial-gradient(600px circle at ${mouseX}px ${mouseY}px, color-mix(in srgb, var(--color-jade-500), transparent 70%) 0%, transparent 40%)`}
 			style:mix-blend-mode="soft-light"
-		></div>
+		></span>
 
-		<div
+		<span
 			class="absolute inset-0 z-0 opacity-0 transition-opacity duration-300 group-hover:opacity-10 dark:group-hover:opacity-20 bg-jade-500/10"
-		></div>
+		></span>
 
-		<div class="relative z-10 min-w-0 flex-1">
-			<div class="truncate text-base font-semibold text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-100 dark:group-hover:text-jade-300">
+		<span class="relative z-10 min-w-0 flex-1">
+			<span class="block truncate text-base font-semibold text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-100 dark:group-hover:text-jade-300">
 				{@render children?.()}
-			</div>
-			<div class="mt-1 line-clamp-2 text-sm leading-relaxed text-ink-600 dark:text-ink-400">
+			</span>
+			<span class="mt-1 block line-clamp-2 text-sm leading-relaxed text-ink-600 dark:text-ink-400">
 				{href}
-			</div>
-		</div>
+			</span>
+		</span>
 		<span
 			class="relative z-10 shrink-0 rounded-full border border-ink-200/80 bg-white/70 px-2.5 py-0.5 text-[11px] uppercase tracking-[0.18em] text-ink-500 dark:border-ink-700/60 dark:bg-ink-900/60 dark:text-ink-300"
 		>

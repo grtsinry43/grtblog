@@ -2,7 +2,7 @@
     import {userStore} from '$lib/shared/stores/userStore';
     import {authLoginModal} from '$lib/shared/actions/auth-login-modal';
     import {UserIcon} from "lucide-svelte";
-    import Button from "$lib/ui/ui/button/Button.svelte";
+    import Button from "$lib/ui/primitives/button/Button.svelte";
 </script>
 
 {#if $userStore.isLogin}
