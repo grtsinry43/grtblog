@@ -13,34 +13,41 @@
 	const toggleTheme = async (event: MouseEvent) => {
 		const next = resolved === 'dark' ? 'light' : 'dark';
 		const doc = document as DocumentWithViewTransition;
+		const root = document.documentElement;
 		if (!doc.startViewTransition) {
 			theme.set(next);
 			return;
 		}
 
-		const x = event.clientX;
-		const y = event.clientY;
-		const endRadius = Math.hypot(
-			Math.max(x, window.innerWidth - x),
-			Math.max(y, window.innerHeight - y)
-		);
+		root.dataset.themeTransitioning = 'true';
+		try {
+			const x = event.clientX;
+			const y = event.clientY;
+			const endRadius = Math.hypot(
+				Math.max(x, window.innerWidth - x),
+				Math.max(y, window.innerHeight - y)
+			);
 
-		const transition = doc.startViewTransition.call(doc, () => {
-			theme.set(next);
-		});
+			const transition = doc.startViewTransition.call(doc, () => {
+				theme.set(next);
+			});
 
-		await transition.ready;
+			await transition.ready;
 
-		document.documentElement.animate(
-			{
-				clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
-			},
-			{
-				duration: 500,
-				easing: 'ease-in-out',
-				pseudoElement: '::view-transition-new(root)'
-			}
-		);
+			const reveal = document.documentElement.animate(
+				{
+					clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
+				},
+				{
+					duration: 500,
+					easing: 'ease-in-out',
+					pseudoElement: '::view-transition-new(root)'
+				}
+			);
+			await reveal.finished;
+		} finally {
+			delete root.dataset.themeTransitioning;
+		}
 	};
 </script>
 
@@ -49,12 +56,12 @@
 	data-theme={resolved}
 	aria-label={`Switch to ${resolved === 'dark' ? 'light' : 'dark'} theme`}
 	onclick={toggleTheme}
-	class="rounded-default hover:bg-ink-200 dark:hover:bg-ink-800 p-2"
+	class="h-10 w-10 rounded-default text-ink-400 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-ink-800 dark:hover:text-ink-100 flex items-center justify-center"
 >
 	{#if resolved === 'dark'}
-		<Sun class="theme-icon w-6 h-6 relative z-10" />
+		<Sun class="theme-icon w-5 h-5 relative z-10" />
 	{:else}
-		<Moon class="theme-icon w-6 h-6 relative z-10" />
+		<Moon class="theme-icon w-5 h-5 relative z-10" />
 	{/if}
 </button>
 

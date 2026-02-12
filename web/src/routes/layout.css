@@ -132,6 +132,11 @@ body {
     z-index: 1;
 }
 
+/* Keep only root transition during theme toggle. */
+:root[data-theme-transitioning='true'] body * {
+    view-transition-name: none !important;
+}
+
 /* Utilities */
 @utility no-scrollbar {
     &::-webkit-scrollbar {
@@ -232,14 +237,9 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 99998;
-    opacity: 0.04;
-    background-image: var(--texture-noise);
-}
-
-:root[class~="dark"] .bg-noise {
-    opacity: 0.035;
-    filter: invert(1) sepia(10%) hue-rotate(10deg);
+    z-index: 1;
+    opacity: 0.02;
+    background-image: url('/noise.png');
 }
 
 /* Noise overlay for glass surfaces */

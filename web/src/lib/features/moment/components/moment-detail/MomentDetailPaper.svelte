@@ -19,16 +19,14 @@
 
 <div
 	class="
-		bg-ink-50 md:bg-[#fbf9f4] dark:bg-ink-900 dark:md:bg-ink-900
-		shadow-[0_4px_30px_-8px_rgba(0,0,0,0.06)] dark:shadow-none
-		border border-ink-200/80 dark:border-ink-200/10
-		px-8 py-12 md:p-20 rounded-sm relative overflow-hidden min-h-[80vh]
-		transition-colors duration-500
+		bg-transparent border-0 shadow-none rounded-none
+		md:bg-ink-50 dark:md:bg-ink-900
+		md:shadow-[0_4px_30px_-8px_rgba(0,0,0,0.06)] dark:md:shadow-none
+		md:border md:border-ink-200/80 dark:md:border-ink-200/10
+		px-4 py-10 md:p-20 md:rounded-sm relative overflow-hidden md:min-h-[80vh]
 	"
 	style:view-transition-name={`moment-${moment.id}`}
 >
-	<div class="absolute inset-0 bg-noise opacity-30 pointer-events-none"></div>
-
 	<div class="relative z-10">
 		<header class="mb-12 flex flex-col gap-6">
 			<div class="flex items-center justify-between border-b border-ink-800/10 pb-4">
@@ -43,7 +41,7 @@
 			</div>
 
 			<h1
-				class="text-3xl md:text-5xl font-serif font-bold text-ink-900 dark:text-ink-50 leading-[1.2]"
+				class="text-xl md:text-3xl font-serif font-bold text-ink-900 dark:text-ink-50 leading-[1.2]"
 			>
 				{moment.title}
 			</h1>

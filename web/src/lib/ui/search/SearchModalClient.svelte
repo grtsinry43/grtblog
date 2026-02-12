@@ -194,16 +194,13 @@
 			class:translate-y-0={isAnimating}
 			class:translate-y-8={!isAnimating}
 			class:scale-100={isAnimating}
-			class:scale-95={!isAnimating}
-			class:opacity-100={isAnimating}
-			class:opacity-0={!isAnimating}
-		>
-			<!-- Paper Texture Overlay -->
-			<div class="absolute inset-0 opacity-[0.03] pointer-events-none bg-noise"></div>
-
-			<!-- Input Header -->
-			<div
-				class="relative p-4 border-b border-ink-200 dark:border-ink-200/10 flex items-center gap-3 bg-ink-50 dark:bg-[#232323]"
+				class:scale-95={!isAnimating}
+				class:opacity-100={isAnimating}
+				class:opacity-0={!isAnimating}
+			>
+				<!-- Input Header -->
+				<div
+					class="relative p-4 border-b border-ink-200 dark:border-ink-200/10 flex items-center gap-3 bg-ink-50 dark:bg-[#232323]"
 			>
 				<Search size={18} class="text-ink-400 dark:text-ink-600 flex-shrink-0" strokeWidth={2} />
 				<input

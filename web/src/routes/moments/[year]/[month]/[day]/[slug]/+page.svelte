@@ -5,6 +5,6 @@
 	let { data } = $props<{ data: PageData }>();
 </script>
 
-<div class="w-full min-h-screen pt-8 md:pt-16 pb-12">
+<div class="w-full min-h-screen pt-2 md:pt-4 pb-12">
 	<MomentDetail moment={data.moment} />
 </div>

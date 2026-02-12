@@ -135,7 +135,7 @@
 			onclick={() => uiState.openSearch()}
 			class="h-10 w-10 rounded-default text-ink-400 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-ink-800 dark:hover:text-ink-100"
 		>
-			<SearchIcon class="h-10 w-10" />
+			<SearchIcon class="h-5 w-5" />
 		</Button>
 		<ThemeIcon />
 		<VisitorAvatar />
