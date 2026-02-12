@@ -2,13 +2,14 @@
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { ArrowRight } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
+	import { buildMomentPath } from '$lib/shared/utils/content-path';
 
 	interface Props {
 		moment: MomentSummary;
 		index?: number;
 	}
 
-	let { moment, index = 0 } = $props<Props>();
+	let { moment, index = 0 }: Props = $props();
 
 	// Helpers to format date and derivation
 	const dateObj = new Date(moment.createdAt);
@@ -25,7 +26,7 @@
 
 	// Navigate to detail
 	const handleClick = () => {
-		goto(`/moments/${moment.shortUrl}`);
+		goto(buildMomentPath(moment.shortUrl, moment.createdAt));
 	};
 </script>
 

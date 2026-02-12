@@ -1,4 +1,7 @@
 import type { ContentExtInfo } from '$lib/shared/markdown/image-ext-info';
+import type { TOCNode } from '$lib/shared/types/toc';
+
+export type { TOCNode };
 
 export type PostSummary = {
 	id: number;
@@ -49,12 +52,6 @@ export type PostDetail = {
 	isOriginal: boolean;
 	createdAt: string;
 	updatedAt: string;
-};
-
-export type TOCNode = {
-	name: string;
-	anchor: string;
-	children?: TOCNode[];
 };
 
 export type Tag = {

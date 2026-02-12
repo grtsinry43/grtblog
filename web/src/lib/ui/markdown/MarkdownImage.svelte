@@ -99,7 +99,7 @@
 	</div>
 {/if}
 
-<figure class="md-figure my-6 overflow-hidden">
+<span class="md-figure my-6 block overflow-hidden">
 	<img
 		bind:this={imgEl}
 		class={`md-img block w-full rounded-sm transition-[filter,transform,opacity] duration-[400ms] ease-in-out ${className}`.trim()}
@@ -112,9 +112,9 @@
 		use:imageLazy={{ src, blur: imageInfo()?.blur }}
 	/>
 	{#if title}
-		<figcaption class="md-caption mt-2 text-sm opacity-70">{title}</figcaption>
+		<span class="md-caption mt-2 block text-sm opacity-70">{title}</span>
 	{/if}
-</figure>
+</span>
 
 <style lang="postcss">
 	:global(html.is-image-zooming) {

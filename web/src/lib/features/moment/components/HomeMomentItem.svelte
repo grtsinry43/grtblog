@@ -2,12 +2,13 @@
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { Calendar } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
+	import { buildMomentPath } from '$lib/shared/utils/content-path';
 
 	let { moment } = $props<{ moment: MomentSummary }>();
 </script>
 
 <a
-	href="/moments/{moment.shortUrl}"
+	href={buildMomentPath(moment.shortUrl, moment.createdAt)}
 	class="group flex flex-col gap-2 py-4 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 block w-full outline-none"
 >
 	<div class="flex items-start justify-between gap-4">

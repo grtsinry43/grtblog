@@ -6,7 +6,7 @@
 	import { initTheme, startThemeSync, themeManager } from '$lib/shared/theme/theme.svelte.js';
 	import { onMount } from 'svelte';
 	import { consoleLogInfo } from '$lib/features/console-info/index';
-	import Toaster from '$lib/ui/ui/toaster/Toaster.svelte';
+	import Toaster from '$lib/ui/primitives/toaster/Toaster.svelte';
 	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
 	import Loading from '$lib/ui/common/Loading.svelte';
 	import { navigating } from '$app/stores';

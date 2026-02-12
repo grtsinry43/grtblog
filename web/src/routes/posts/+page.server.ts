@@ -1,6 +1,7 @@
 import { getPostList } from '$lib/features/post/api';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
 	const rawPageSize = Number(url.searchParams.get('pageSize') ?? '10');
 	const pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0 ? rawPageSize : 10;
 	const data = await getPostList(fetch, { page: 1, pageSize });

@@ -2,6 +2,7 @@ import { getApi } from '$lib/shared/clients/api';
 import type {
 	CommentCreateResponse,
 	CommentNode,
+	CommentListResponse,
 	CreateCommentLoginPayload,
 	CreateCommentVisitorPayload
 } from '$lib/features/comment/types';

@@ -2,12 +2,13 @@
 	import type { PostSummary } from '$lib/features/post/types';
 	import { Calendar } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
+	import { buildPostPath } from '$lib/shared/utils/content-path';
 
 	let { post } = $props<{ post: PostSummary }>();
 </script>
 
 <a
-	href="/posts/{post.shortUrl}"
+	href={buildPostPath(post.shortUrl)}
 	class="group flex flex-col gap-2 py-4 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 block w-full outline-none"
 >
 	<div class="flex items-start justify-between gap-4">

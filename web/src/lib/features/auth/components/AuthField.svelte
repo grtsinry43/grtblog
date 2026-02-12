@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Input from '$lib/ui/ui/input/Input.svelte';
+	import Input from '$lib/ui/primitives/input/Input.svelte';
 
 	let {
 		label,

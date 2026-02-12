@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowLeft } from 'lucide-svelte';
 	import { fade, fly } from 'svelte/transition';
-	import Button from '$lib/ui/ui/button/Button.svelte';
+	import Button from '$lib/ui/primitives/button/Button.svelte';
 
 	interface Props {
 		title: string;

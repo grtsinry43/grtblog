@@ -5,7 +5,7 @@
 	import { preloadTurnstile } from '$lib/shared/actions/turnstile';
 	import { authModalStore } from '$lib/shared/stores/authModalStore';
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
-	import Button from '$lib/ui/ui/button/Button.svelte';
+	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import {
 		authorizeOAuthProvider,
 		getProfile,

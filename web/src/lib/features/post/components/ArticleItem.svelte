@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Calendar, Eye, Heart, ExternalLink, Sparkles } from 'lucide-svelte';
 	import type { PostSummary } from '$lib/features/post/types';
+	import { buildPostPath } from '$lib/shared/utils/content-path';
 
 	let { post } = $props<{ post: PostSummary }>();
 
@@ -18,7 +19,7 @@
 </script>
 
 <a
-	href="/posts/{post.shortUrl}"
+	href={buildPostPath(post.shortUrl)}
 	class="group relative flex flex-col gap-3 px-4 py-4 sm:px-6 sm:py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 w-full outline-none"
 >
 	<!-- Title -->

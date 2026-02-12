@@ -1,13 +1,13 @@
 <script lang="ts">
 	import PostList from '$lib/features/post/components/PostList.svelte';
-	import { postContext } from '$routes/posts/post-context';
+	import { postListCtx } from '$lib/features/post/context';
 
 	let { data } = $props();
 
-	const postStore = postContext.mountModelData(data);
+	const postStore = postListCtx.mountModelData(data);
 
 	$effect(() => {
-		postContext.syncModelData(postStore, data);
+		postListCtx.syncModelData(postStore, data);
 	});
 </script>
 

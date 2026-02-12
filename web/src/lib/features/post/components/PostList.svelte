@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { PostSummary } from '$lib/features/post/types';
-	import Pagination from '$lib/ui/ui/pagination/Pagination.svelte';
+	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { FileText, Sparkles } from 'lucide-svelte';
 	import ArticleItem from '$lib/features/post/components/ArticleItem.svelte';
-	import { postContext } from '$routes/posts/post-context';
+	import { postListCtx } from '$lib/features/post/context';
 	import { goto } from '$app/navigation';
 
 	import { spring } from 'svelte/motion';
@@ -14,10 +14,10 @@
 		size: number;
 	};
 
-	const postsStore = postContext.selectModelData((state) => state?.posts ?? []);
-	const totalStore = postContext.selectModelData((state) => state?.pagination?.total ?? 0);
-	const pageStore = postContext.selectModelData((state) => state?.pagination?.page ?? 1);
-	const sizeStore = postContext.selectModelData((state) => state?.pagination?.size ?? 10);
+	const postsStore = postListCtx.selectModelData((state) => state?.posts ?? []);
+	const totalStore = postListCtx.selectModelData((state) => state?.pagination?.total ?? 0);
+	const pageStore = postListCtx.selectModelData((state) => state?.pagination?.page ?? 1);
+	const sizeStore = postListCtx.selectModelData((state) => state?.pagination?.size ?? 10);
 
 	let posts = postsStore;
 	let total = totalStore;

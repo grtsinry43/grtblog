@@ -21,10 +21,11 @@
 	let ready = $state(false);
 
 	onMount(async () => {
-		// Dynamically import for minimal bundle size
-		const mod = await import('@tanstack/svelte-query');
-		const { QueryClient, QueryClientProvider } = mod;
-		client = new QueryClient(options);
+		const [{ QueryClientProvider }, { getOrCreateQueryClient }] = await Promise.all([
+			import('@tanstack/svelte-query'),
+			import('$lib/shared/clients/query-client')
+		]);
+		client = await getOrCreateQueryClient(options);
 		Provider = QueryClientProvider;
 		if (loader) {
 			const loaded = await loader();

@@ -4,7 +4,7 @@
 	import {
 		createRelativeTimeTicker,
 		formatRelativeTimeWithSeconds
-	} from '$lib/shared/utils/relative-time';
+	} from '$lib/shared/utils/date';
 	import { MessageSquare, Monitor } from 'lucide-svelte';
 	import CommentItem from './CommentItem.svelte';
 	import CommentForm from './CommentForm.svelte';

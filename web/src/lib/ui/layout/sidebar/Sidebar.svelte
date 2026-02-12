@@ -7,7 +7,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { SearchIcon } from 'lucide-svelte';
 
-	import Button from '$lib/ui/ui/button/Button.svelte';
+	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import VisitorAvatar from '$lib/ui/layout/sidebar/VisitorAvatar.svelte';
 	import { uiState } from '$lib/shared/stores/ui.svelte';
 
