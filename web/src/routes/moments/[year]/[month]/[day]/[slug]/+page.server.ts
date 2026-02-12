@@ -1,17 +1,25 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import { getMomentDetail } from '$lib/features/moment/api';
-import { buildMomentPath } from '$lib/shared/utils/content-path';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, params, url }) => {
+export const load: PageServerLoad = async ({ fetch, params }) => {
 	const detail = await getMomentDetail(fetch, params.slug);
 	if (!detail) {
 		error(404, 'Moment not found');
 	}
 
-	const canonicalPath = `${buildMomentPath(detail.shortUrl, detail.createdAt).replace(/\/+$/, '')}/`;
-	if (url.pathname !== canonicalPath) {
-		redirect(308, canonicalPath);
+	const matched = detail.createdAt.match(/^(\d{4})-(\d{2})-(\d{2})/);
+	if (!matched) {
+		error(404, 'Moment not found');
+	}
+	const [, year, month, day] = matched;
+	if (
+		params.year !== year ||
+		params.month !== month ||
+		params.day !== day ||
+		params.slug !== detail.shortUrl
+	) {
+		error(404, 'Moment not found');
 	}
 
 	return {
