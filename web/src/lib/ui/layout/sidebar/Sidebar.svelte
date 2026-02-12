@@ -10,6 +10,8 @@
 	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import VisitorAvatar from '$lib/ui/layout/sidebar/VisitorAvatar.svelte';
 	import { uiState } from '$lib/shared/stores/ui.svelte';
+	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
+	import { LayoutIcon } from 'lucide-svelte';
 
 	let { menuTree = [] } = $props<{ menuTree: NavMenuItem[] }>();
 
@@ -130,6 +132,16 @@
 	</nav>
 
 	<div class="flex flex-none flex-col items-center gap-6 pb-6 pt-6">
+		{#if windowStore.isOpen && windowStore.isMinimized}
+			<Button
+				variant="icon"
+				onclick={() => windowStore.restore()}
+				class="h-10 w-10 rounded-default bg-jade-500 text-white shadow-lg animate-bounce duration-[2000ms] transition-all"
+				title="恢复窗口"
+			>
+				<LayoutIcon class="h-5 w-5" />
+			</Button>
+		{/if}
 		<Button
 			variant="icon"
 			onclick={() => uiState.openSearch()}

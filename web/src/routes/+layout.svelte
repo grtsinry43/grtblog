@@ -13,7 +13,10 @@
 	import { browser } from '$app/environment';
 	import { onNavigate } from '$app/navigation';
 	import SearchModal from '$lib/ui/search/SearchModal.svelte';
+	import Footer from '$lib/ui/layout/Footer.svelte';
+	import FloatingWindow from '$lib/ui/common/FloatingWindow.svelte';
 	import { uiState } from '$lib/shared/stores/ui.svelte';
+	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
@@ -140,10 +143,11 @@
 
 <div class="md:pl-24 transition-[padding] duration-300">
 	<main class="page-wrapper max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
-		<div class="content-container">
+		<div class="content-container min-h-[60vh]">
 			{@render children()}
 		</div>
 	</main>
+	<Footer />
 </div>
 
 {#if showRouteLoading}
@@ -157,6 +161,16 @@
 {/if}
 
 <SearchModal />
+<FloatingWindow>
+	{#if windowStore.title === '申请友链'}
+		<QueryRoot loader={() => import('$lib/features/friend-link/components/ApplyFriendForm.svelte')} />
+	{:else}
+		<div class="flex flex-col gap-3">
+
+		</div>
+	{/if}
+</FloatingWindow>
+
 <svelte:window onkeydown={handleKeydown} />
 
 <Toaster />

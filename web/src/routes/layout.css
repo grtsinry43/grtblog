@@ -247,6 +247,19 @@ body {
     position: relative;
 }
 
+/* Keep explicit positioning utilities when combined with noise-surface. */
+.noise-surface.fixed {
+    position: fixed;
+}
+
+.noise-surface.absolute {
+    position: absolute;
+}
+
+.noise-surface.sticky {
+    position: sticky;
+}
+
 .noise-surface::after {
     content: '';
     position: absolute;
