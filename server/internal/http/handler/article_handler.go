@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/jinzhu/copier"
 
@@ -353,6 +354,37 @@ func (h *ArticleHandler) ListArticles(c *fiber.Ctx) error {
 	query := buildArticleListQuery(c)
 
 	// 公共接口只返回已发布
+	published := true
+	query.Published = &published
+
+	return h.listArticlesWithQuery(c, query)
+}
+
+// ListArticlesByCategoryShortURL godoc
+// @Summary 根据分类短链接获取文章列表
+// @Tags Article
+// @Produce json
+// @Param shortUrl path string true "分类短链接"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} contract.ArticleListResp
+// @Router /categories/short/{shortUrl}/articles [get]
+func (h *ArticleHandler) ListArticlesByCategoryShortURL(c *fiber.Ctx) error {
+	shortURL := strings.TrimSpace(c.Params("shortUrl"))
+	if shortURL == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "分类短链接不能为空")
+	}
+
+	category, err := h.contentRepo.GetCategoryByShortURL(c.Context(), shortURL)
+	if err != nil {
+		if errors.Is(err, content.ErrCategoryNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "分类不存在")
+		}
+		return err
+	}
+
+	query := buildArticleListQuery(c)
+	query.CategoryID = &category.ID
 	published := true
 	query.Published = &published
 

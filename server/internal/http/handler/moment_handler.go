@@ -379,6 +379,37 @@ func (h *MomentHandler) ListMoments(c *fiber.Ctx) error {
 	return h.listMomentsWithQuery(c, query)
 }
 
+// ListMomentsByColumnShortURL godoc
+// @Summary 根据专栏短链接获取手记列表
+// @Tags Moment
+// @Produce json
+// @Param shortUrl path string true "专栏短链接"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} contract.MomentListResp
+// @Router /columns/short/{shortUrl}/moments [get]
+func (h *MomentHandler) ListMomentsByColumnShortURL(c *fiber.Ctx) error {
+	shortURL := strings.TrimSpace(c.Params("shortUrl"))
+	if shortURL == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "专栏短链接不能为空")
+	}
+
+	column, err := h.contentRepo.GetColumnByShortURL(c.Context(), shortURL)
+	if err != nil {
+		if errors.Is(err, content.ErrColumnNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "专栏不存在")
+		}
+		return err
+	}
+
+	query := buildMomentListQuery(c)
+	query.ColumnID = &column.ID
+	published := true
+	query.Published = &published
+
+	return h.listMomentsWithQuery(c, query)
+}
+
 // ListMomentsAdmin godoc
 // @Summary 获取手记列表（管理员）
 // @Tags Moment

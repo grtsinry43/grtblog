@@ -24,6 +24,7 @@ type Repository interface {
 	// ArticleCategory 相关操作
 	CreateCategory(ctx context.Context, category *ArticleCategory) error
 	GetCategoryByID(ctx context.Context, id int64) (*ArticleCategory, error)
+	GetCategoryByShortURL(ctx context.Context, shortURL string) (*ArticleCategory, error)
 	ListCategories(ctx context.Context) ([]*ArticleCategory, error)
 	UpdateCategory(ctx context.Context, category *ArticleCategory) error
 	DeleteCategory(ctx context.Context, id int64) error
@@ -31,6 +32,7 @@ type Repository interface {
 	// MomentColumn 相关操作
 	CreateColumn(ctx context.Context, column *MomentColumn) error
 	GetColumnByID(ctx context.Context, id int64) (*MomentColumn, error)
+	GetColumnByShortURL(ctx context.Context, shortURL string) (*MomentColumn, error)
 	ListColumns(ctx context.Context) ([]*MomentColumn, error)
 	UpdateColumn(ctx context.Context, column *MomentColumn) error
 	DeleteColumn(ctx context.Context, id int64) error

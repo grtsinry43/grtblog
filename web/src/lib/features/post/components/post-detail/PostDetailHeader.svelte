@@ -7,6 +7,7 @@
 	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import Badge from '$lib/ui/primitives/badge/Badge.svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
+	import TagList from '$lib/features/tag/components/TagList.svelte';
 
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
@@ -16,6 +17,8 @@
 	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
 		equals: sameMetrics
 	});
+	const tagsStore = postDetailCtx.selectModelData((data) => data?.tags ?? []);
+	const categoryNameStore = postDetailCtx.selectModelData((data) => data?.categoryName ?? '未分类');
 
 	function goBack() {
 		history.back();
@@ -41,7 +44,7 @@
 	<div class="space-y-4">
 		<div class="flex items-center gap-3">
 			<Badge variant="soft">专题</Badge>
-			<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase">技术与设计</span>
+			<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase">{$categoryNameStore}</span>
 		</div>
 
 		<h1
@@ -50,36 +53,40 @@
 			{$titleStore}
 		</h1>
 
-		<div
-			class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase"
-		>
-			{#if $isHotStore}
-				{#snippet hotIcon()}
-					<Icon icon="ph:fire-fill" class="size-4 text-red-500" />
-				{/snippet}
-				<Badge
-					variant="soft"
-					class="!border-red-500/20 !bg-red-500/5 !text-red-600 dark:!text-red-400"
-					icon={hotIcon}
-				>
-					热门
-				</Badge>
-			{/if}
-			<span class="flex items-center gap-1.5">
-				<Calendar size={12} />
-				{formatDateCN($createdAtStore)}
-			</span>
-			<span class="flex items-center gap-1.5"><Clock size={12} /> 12 分钟阅读</span>
-			<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>
-			<span aria-hidden="true" class="opacity-40">·</span>
-			<ContentLikeButton
-				contentType="article"
-				contentId={$postIdStore}
-				likes={$metricsStore?.likes ?? 0}
-				className="inline-flex items-center gap-1.5"
-			/>
-			<span aria-hidden="true" class="opacity-40">·</span>
-			<span class="flex items-center gap-1.5">评论 {$metricsStore?.comments ?? 0}</span>
+		<div class="flex flex-col gap-4">
+			<div
+				class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase"
+			>
+				{#if $isHotStore}
+					{#snippet hotIcon()}
+						<Icon icon="ph:fire-fill" class="size-4 text-red-500" />
+					{/snippet}
+					<Badge
+						variant="soft"
+						class="!border-red-500/20 !bg-red-500/5 !text-red-600 dark:!text-red-400"
+						icon={hotIcon}
+					>
+						热门
+					</Badge>
+				{/if}
+				<span class="flex items-center gap-1.5">
+					<Calendar size={12} />
+					{formatDateCN($createdAtStore)}
+				</span>
+				<span class="flex items-center gap-1.5"><Clock size={12} /> 12 分钟阅读</span>
+				<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>
+				<span aria-hidden="true" class="opacity-40">·</span>
+				<ContentLikeButton
+					contentType="article"
+					contentId={$postIdStore}
+					likes={$metricsStore?.likes ?? 0}
+					className="inline-flex items-center gap-1.5"
+				/>
+				<span aria-hidden="true" class="opacity-40">·</span>
+				<span class="flex items-center gap-1.5">评论 {$metricsStore?.comments ?? 0}</span>
+			</div>
+
+			<TagList tags={$tagsStore} />
 		</div>
 	</div>
 

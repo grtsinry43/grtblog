@@ -4708,6 +4708,48 @@
                 }
             }
         },
+        "/categories/short/{shortUrl}/articles": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Article"
+                ],
+                "summary": "根据分类短链接获取文章列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "分类短链接",
+                        "name": "shortUrl",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ArticleListResp"
+                        }
+                    }
+                }
+            }
+        },
         "/columns": {
             "get": {
                 "produces": [
@@ -4725,6 +4767,48 @@
                             "items": {
                                 "$ref": "#/definitions/contract.ColumnResp"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/columns/short/{shortUrl}/moments": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Moment"
+                ],
+                "summary": "根据专栏短链接获取手记列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "专栏短链接",
+                        "name": "shortUrl",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MomentListResp"
                         }
                     }
                 }
@@ -4759,6 +4843,18 @@
                         "default": 10,
                         "description": "每页数量",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量（兼容参数）",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "访客ID（使用前端埋点 visitorId）",
+                        "name": "visitorId",
                         "in": "query"
                     }
                 ],
@@ -5996,6 +6092,34 @@
                 }
             }
         },
+        "/tags/{id}/contents": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tag"
+                ],
+                "summary": "根据标签聚合返回相关文章和手记",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "标签ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.TagRelatedContentsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/thinkings": {
             "get": {
                 "tags": [
@@ -6780,6 +6904,9 @@
                 "authorId": {
                     "type": "integer"
                 },
+                "avatar": {
+                    "type": "string"
+                },
                 "browser": {
                     "type": "string"
                 },
@@ -7501,6 +7628,9 @@
                 "areaId": {
                     "type": "integer"
                 },
+                "avatar": {
+                    "type": "string"
+                },
                 "browser": {
                     "type": "string"
                 },
@@ -7529,6 +7659,9 @@
                     "type": "boolean"
                 },
                 "isFriend": {
+                    "type": "boolean"
+                },
+                "isMy": {
                     "type": "boolean"
                 },
                 "isOwner": {
@@ -7631,6 +7764,9 @@
                 },
                 "parentId": {
                     "type": "integer"
+                },
+                "visitorId": {
+                    "type": "string"
                 }
             }
         },
@@ -7639,6 +7775,9 @@
             "properties": {
                 "areaId": {
                     "type": "integer"
+                },
+                "avatar": {
+                    "type": "string"
                 },
                 "browser": {
                     "type": "string"
@@ -7662,6 +7801,9 @@
                     "type": "boolean"
                 },
                 "isFriend": {
+                    "type": "boolean"
+                },
+                "isMy": {
                     "type": "boolean"
                 },
                 "isOwner": {
@@ -7717,6 +7859,9 @@
                 },
                 "parentId": {
                     "type": "integer"
+                },
+                "visitorId": {
+                    "type": "string"
                 },
                 "website": {
                     "type": "string",
@@ -7982,13 +8127,33 @@
                 }
             }
         },
+        "contract.EmailPublicSubscriptionResp": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "eventName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.EmailSubscribeBatchResp": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/contract.EmailSubscriptionResp"
+                        "$ref": "#/definitions/contract.EmailPublicSubscriptionResp"
                     }
                 }
             }
@@ -9789,6 +9954,9 @@
                 "page": {
                     "type": "integer"
                 },
+                "requireModeration": {
+                    "type": "boolean"
+                },
                 "size": {
                     "type": "integer"
                 },
@@ -10218,6 +10386,23 @@
                 },
                 "updatedAt": {
                     "type": "string"
+                }
+            }
+        },
+        "contract.TagRelatedContentsResp": {
+            "type": "object",
+            "properties": {
+                "articles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.ArticleListItemResp"
+                    }
+                },
+                "moments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.MomentListItemResp"
+                    }
                 }
             }
         },

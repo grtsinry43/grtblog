@@ -59,6 +59,14 @@ type EmailSubscriptionResp struct {
 	UpdatedAt      time.Time  `json:"updatedAt"`
 }
 
+type EmailPublicSubscriptionResp struct {
+	ID        int64     `json:"id"`
+	Email     string    `json:"email"`
+	EventName string    `json:"eventName"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 type EmailSubscriptionListResp struct {
 	Items []EmailSubscriptionResp `json:"items"`
 	Total int64                   `json:"total"`
@@ -67,5 +75,5 @@ type EmailSubscriptionListResp struct {
 }
 
 type EmailSubscribeBatchResp struct {
-	Items []EmailSubscriptionResp `json:"items"`
+	Items []EmailPublicSubscriptionResp `json:"items"`
 }

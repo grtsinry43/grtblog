@@ -4,6 +4,7 @@
 	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
 	import { Sun } from 'lucide-svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
+	import TagList from '$lib/features/tag/components/TagList.svelte';
 
 	interface Props {
 		moment: MomentDetail;
@@ -60,6 +61,8 @@
 				<span aria-hidden="true" class="opacity-40">·</span>
 				<span class="flex items-center gap-1.5">评论 {moment.metrics?.comments ?? 0}</span>
 			</div>
+
+			<TagList tags={moment.topics} />
 		</header>
 
 		<DetailMarkdownContent
