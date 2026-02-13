@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { NavMenuItem } from '$lib/features/navigation/types';
 	import { buildMomentPath, buildPostPath } from '$lib/shared/utils/content-path';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
@@ -25,7 +26,9 @@
 	let navProgress = $derived(Math.max(0, Math.min((scrollY || 0) / 50, 1)));
 	let domDetailTitle = $state('');
 
-	const websiteNameStore = websiteInfoCtx.selectModelData((data) => data?.website_name || '墨 手记');
+	const websiteNameStore = websiteInfoCtx.selectModelData(
+		(data) => data?.website_name || '墨 手记'
+	);
 	const detailKindStore = detailPanelCtx.selectModelData((data) => data?.kind ?? null);
 	const detailTitleStore = detailPanelCtx.selectModelData((data) => data?.title ?? '');
 	const detailTocStore = detailPanelCtx.selectModelData((data) => data?.toc ?? []);
@@ -90,32 +93,35 @@
 	};
 
 	$effect(() => {
-		isMobileMenuOpen;
+		const menuOpen = isMobileMenuOpen;
 		isMenuAnimating = true;
-		const timer = setTimeout(() => (isMenuAnimating = false), 500);
+		const timer = setTimeout(() => (isMenuAnimating = false), menuOpen ? 500 : 300);
 		return () => clearTimeout(timer);
 	});
 
 	$effect(() => {
-		page.url.pathname;
-		$detailTitleStore;
+		const pathname = page.url.pathname;
+		const detailTitle = $detailTitleStore;
 		if (!browser) {
 			domDetailTitle = '';
 			return;
 		}
-		if ($detailTitleStore) {
+		if (detailTitle) {
 			domDetailTitle = '';
 			return;
 		}
 		tick().then(() => {
+			if (page.url.pathname !== pathname) return;
 			const heading = document.querySelector('main article h1, main h1');
 			domDetailTitle = heading?.textContent?.trim() ?? '';
 		});
 	});
 
 	$effect(() => {
-		page.url.pathname;
-		isTocOpen = false;
+		const pathname = page.url.pathname;
+		if (pathname) {
+			isTocOpen = false;
+		}
 	});
 </script>
 
@@ -241,7 +247,7 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					{#each menuTree as item}
+					{#each menuTree as item (item.url)}
 						{@const active = isParentActive(item)}
 						{@const hasChildren = item.children && item.children.length > 0}
 						{@const isExpanded = expandedMobileItems.includes(item.name)}
@@ -318,10 +324,10 @@
 										class="absolute bottom-4 left-[39px] top-0 w-[1px] bg-ink-200 dark:bg-ink-700"
 									></div>
 
-									{#each item.children as sub}
+									{#each item.children as sub (sub.url)}
 										{@const subActive = isActive(sub.url)}
 										<a
-											href={sub.url}
+											href={resolve(sub.url)}
 											onclick={handleNavigate}
 											class="group/sub relative flex items-center gap-3 rounded-lg ml-2 mr-2 py-2.5 pl-[54px] pr-4 text-left transition-colors
                                             {subActive
@@ -389,7 +395,9 @@
 		transition:fly={{ x: 32, duration: 260, easing: cubicOut, opacity: 0 }}
 		class="fixed inset-y-0 right-0 z-[60] h-full w-[82vw] max-w-[360px] border-l border-ink-200/70 bg-white/95 shadow-glass-lg backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/95 md:hidden"
 	>
-		<div class="flex h-14 items-center justify-between border-b border-ink-100/80 px-4 dark:border-ink-800/70">
+		<div
+			class="flex h-14 items-center justify-between border-b border-ink-100/80 px-4 dark:border-ink-800/70"
+		>
 			<span class="font-mono text-[10px] font-bold tracking-[0.2em] text-ink-400 uppercase">
 				本页导航
 			</span>
@@ -423,7 +431,7 @@
 						<div class="space-y-2.5">
 							{#each $relatedMomentsStore.slice(0, 2) as moment (moment.id)}
 								<a
-									href={buildMomentPath(moment.shortUrl, moment.createdAt)}
+									href={resolve(buildMomentPath(moment.shortUrl, moment.createdAt))}
 									onclick={handleRelatedNavigate}
 									class="block rounded-default border border-ink-100/80 bg-ink-50/40 p-3 transition-colors hover:border-cinnabar-200 hover:bg-white dark:border-ink-700/70 dark:bg-ink-900/40 dark:hover:border-cinnabar-800"
 								>
@@ -431,7 +439,9 @@
 										<Calendar size={11} />
 										{formatDate(moment.createdAt)}
 									</div>
-									<p class="line-clamp-2 text-[13px] font-semibold leading-5 text-ink-700 dark:text-ink-200">
+									<p
+										class="line-clamp-2 text-[13px] font-semibold leading-5 text-ink-700 dark:text-ink-200"
+									>
 										{moment.title}
 									</p>
 									<p class="mt-1 line-clamp-2 text-[12px] leading-5 text-ink-500 dark:text-ink-400">
@@ -452,7 +462,7 @@
 						<div class="space-y-2.5">
 							{#each $relatedPostsStore.slice(0, 2) as post (post.id)}
 								<a
-									href={buildPostPath(post.shortUrl)}
+									href={resolve(buildPostPath(post.shortUrl))}
 									onclick={handleRelatedNavigate}
 									class="block rounded-default border border-ink-100/80 bg-ink-50/40 p-3 transition-colors hover:border-jade-200 hover:bg-white dark:border-ink-700/70 dark:bg-ink-900/40 dark:hover:border-jade-800"
 								>
@@ -460,7 +470,9 @@
 										<Calendar size={11} />
 										{formatDate(post.createdAt)}
 									</div>
-									<p class="line-clamp-2 text-[13px] font-semibold leading-5 text-ink-700 dark:text-ink-200">
+									<p
+										class="line-clamp-2 text-[13px] font-semibold leading-5 text-ink-700 dark:text-ink-200"
+									>
 										{post.title}
 									</p>
 									<p class="mt-1 line-clamp-2 text-[12px] leading-5 text-ink-500 dark:text-ink-400">

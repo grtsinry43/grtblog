@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TOCNode } from '$lib/shared/types/toc';
-	import DetailTocNavList from "$lib/ui/detail/DetailTocNavList.svelte";
+	import DetailTocNavList from '$lib/ui/detail/DetailTocNavList.svelte';
 	import MomentDetailRelatedPosts from './MomentDetailRelatedPosts.svelte';
 
 	interface Props {

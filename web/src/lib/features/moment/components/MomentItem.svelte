@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { ArrowRight } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
@@ -12,8 +13,11 @@
 	let { moment, index = 0 }: Props = $props();
 
 	// Helpers to format date and derivation
-	const dateObj = new Date(moment.createdAt);
-	const formattedDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`;
+	const dateObj = $derived.by(() => new Date(moment.createdAt));
+	const formattedDate = $derived.by(
+		() =>
+			`${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
+	);
 
 	function getSeason(date: Date) {
 		const month = date.getMonth() + 1;
@@ -22,11 +26,11 @@
 		if (month >= 9 && month <= 11) return '秋';
 		return '冬';
 	}
-	const season = getSeason(dateObj);
+	const season = $derived(getSeason(dateObj));
 
 	// Navigate to detail
 	const handleClick = () => {
-		goto(buildMomentPath(moment.shortUrl, moment.createdAt));
+		goto(resolve(buildMomentPath(moment.shortUrl, moment.createdAt)));
 	};
 </script>
 

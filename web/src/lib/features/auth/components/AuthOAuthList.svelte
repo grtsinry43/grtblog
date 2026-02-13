@@ -23,7 +23,7 @@
 	<div class="space-y-3">
 		<p class="text-xs font-mono text-ink-500">使用 OAuth 登录</p>
 		<div class="grid gap-2">
-			{#each $providersStore as provider}
+			{#each $providersStore as provider (provider.key)}
 				<Button
 					variant="secondary"
 					fullWidth

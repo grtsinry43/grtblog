@@ -1,5 +1,10 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
+	import { resolve } from '$app/paths';
+	import type { Snippet } from 'svelte';
+
 	let {
+		children,
 		url = '',
 		title = '',
 		type = 'page',
@@ -11,42 +16,53 @@
 		type?: string;
 		cover?: string;
 		blur?: string;
+		children?: Snippet;
 	}>();
 
 	const target = $derived((url ?? '').startsWith('http') ? '_blank' : '_self');
 	const rel = $derived(target === '_blank' ? 'noreferrer' : undefined);
 </script>
 
-<article class="group relative my-4 overflow-hidden rounded-3xl border border-ink-200/70 bg-white/80 shadow-float">
+<article
+	class="group relative my-4 overflow-hidden rounded-3xl border border-ink-200/70 bg-white/80 shadow-float"
+>
 	{#if cover}
 		<div class="absolute inset-0">
 			<img class="h-full w-full object-cover" src={cover} alt="" loading="lazy" />
 			<div class="absolute inset-0 bg-white/70" style={`backdrop-filter: blur(${blur});`}></div>
 		</div>
 	{:else}
-		<div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.15),_transparent_55%)]"></div>
+		<div
+			class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.15),_transparent_55%)]"
+		></div>
 	{/if}
-	<div class="relative z-10 flex flex-col gap-6 px-8 py-8 md:flex-row md:items-center md:justify-between">
+	<div
+		class="relative z-10 flex flex-col gap-6 px-8 py-8 md:flex-row md:items-center md:justify-between"
+	>
 		<div class="space-y-3">
 			<p class="text-xs font-semibold uppercase tracking-[0.28em] text-ink-400">Annual Summary</p>
 			<h3 class="text-3xl font-semibold text-ink-900 md:text-4xl">{title}</h3>
 			<div class="text-base leading-relaxed text-ink-700">
-				<slot>年度回顾与总结</slot>
+				{#if children}
+					{@render children()}
+				{:else}
+					年度回顾与总结
+				{/if}
 			</div>
 		</div>
 		<div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
 			<a
-				href={url || '#'}
-				target={target}
-				rel={rel}
+				href={url && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(url) ? resolve(url) : url || '#'}
+				{target}
+				{rel}
 				class="inline-flex items-center justify-center rounded-2xl border border-ink-300/70 bg-white/70 px-5 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-ink-700 shadow-subtle transition hover:-translate-y-0.5 hover:shadow-float"
 			>
 				Preview
 			</a>
 			<a
-				href={url || '#'}
-				target={target}
-				rel={rel}
+				href={url && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(url) ? resolve(url) : url || '#'}
+				{target}
+				{rel}
 				class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink-300/70 bg-white/70 text-ink-700 shadow-subtle transition hover:-translate-y-0.5 hover:shadow-float"
 				aria-label="Open link"
 			>
@@ -60,7 +76,9 @@
 					/>
 				</svg>
 			</a>
-			<span class="rounded-full border border-ink-200/80 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500">
+			<span
+				class="rounded-full border border-ink-200/80 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500"
+			>
 				{type}
 			</span>
 		</div>

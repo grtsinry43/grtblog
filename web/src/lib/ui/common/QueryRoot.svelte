@@ -7,7 +7,7 @@
 	import type { Component } from 'svelte';
 
 	type LoaderProps = Record<string, unknown>;
-	type LoaderComponent = Component<any>;
+	type LoaderComponent = Component<LoaderProps>;
 	let { children, options, fallback, loader, loaderProps } = $props<{
 		children?: Snippet;
 		options?: QueryClientConfig;
@@ -35,18 +35,16 @@
 	});
 </script>
 
-<ClientOnly fallback={fallback}>
+<ClientOnly {fallback}>
 	{#if ready && Provider && client}
-		<Provider client={client}>
+		<Provider {client}>
 			{#if Loaded}
 				<Loaded {...loaderProps} />
 			{:else}
 				{@render children?.()}
 			{/if}
 		</Provider>
-	{:else}
-		{#if fallback}
-			{@render fallback?.()}
-		{/if}
+	{:else if fallback}
+		{@render fallback?.()}
 	{/if}
 </ClientOnly>

@@ -8,10 +8,7 @@ import type {
 } from '$lib/features/auth/types';
 import type { UserInfo } from '$lib/shared/types/user';
 
-export const login = async (
-	payload: LoginReq,
-	fetcher?: typeof fetch
-): Promise<LoginResp> => {
+export const login = async (payload: LoginReq, fetcher?: typeof fetch): Promise<LoginResp> => {
 	const api = getApi(fetcher);
 	const result = await api<LoginResp>('/auth/login', {
 		method: 'POST',
@@ -44,9 +41,7 @@ export const authorizeOAuthProvider = async (
 	return result;
 };
 
-export const getTurnstileState = async (
-	fetcher?: typeof fetch
-): Promise<TurnstileStateResp> => {
+export const getTurnstileState = async (fetcher?: typeof fetch): Promise<TurnstileStateResp> => {
 	const api = getApi(fetcher);
 	const result = await api<TurnstileStateResp>('/auth/turnstile');
 	return result;

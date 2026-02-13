@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { Calendar, FileText, ArrowRight } from 'lucide-svelte';
 	import { momentDetailCtx } from '$lib/features/moment/context';
 	import type { MomentRelatedPost } from '$lib/features/moment/types';
@@ -49,20 +50,25 @@
 				同期文章
 			</span>
 		</div>
-		<a href="/posts" class="group text-[10px] text-ink-300 transition-colors hover:text-cinnabar-500">
+		<a
+			href={resolve('/posts')}
+			class="group text-[10px] text-ink-300 transition-colors hover:text-cinnabar-500"
+		>
 			<ArrowRight size={10} class="transition-transform group-hover:translate-x-0.5" />
 		</a>
 	</div>
 
 	{#if $relatedPostsStore.length === 0}
-		<div class="rounded-default border border-dashed border-ink-200/70 bg-ink-50/30 p-3 text-[10px] text-ink-400">
+		<div
+			class="rounded-default border border-dashed border-ink-200/70 bg-ink-50/30 p-3 text-[10px] text-ink-400"
+		>
 			暂无同期文章
 		</div>
 	{:else}
 		<div class="space-y-4">
 			{#each $relatedPostsStore as post, i (post.id)}
 				<a
-					href={buildPostPath(post.shortUrl)}
+					href={resolve(buildPostPath(post.shortUrl))}
 					class="group block space-y-1.5 rounded-default border border-transparent bg-ink-50/40 p-3 transition-all hover:border-cinnabar-500/10 hover:bg-white hover:shadow-sm dark:bg-ink-900/20 dark:hover:bg-ink-900/40"
 					in:fly={{ x: 10, delay: i * 100 }}
 				>
@@ -72,7 +78,9 @@
 							{formatDate(post.createdAt)}
 						</div>
 					</div>
-					<h4 class="text-[11px] font-bold leading-snug text-ink-800 transition-colors group-hover:text-cinnabar-500 dark:text-ink-200">
+					<h4
+						class="text-[11px] font-bold leading-snug text-ink-800 transition-colors group-hover:text-cinnabar-500 dark:text-ink-200"
+					>
 						{post.title}
 					</h4>
 					<p class="line-clamp-2 text-[10px] leading-relaxed text-ink-500 dark:text-ink-400">

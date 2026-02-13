@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { NavMenuItem } from '$lib/features/navigation/types';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import ThemeIcon from './ThemeIcon.svelte';
@@ -43,7 +44,7 @@
 >
 	<div class="relative my-4 flex-none">
 		<div class="nav-author-avatar relative z-10">
-			<a href="/">
+			<a href={resolve('/')}>
 				<img
 					src="https://dogeoss.grtsinry43.com/img/author.jpeg"
 					alt="Author"
@@ -54,7 +55,7 @@
 	</div>
 
 	<nav class="flex w-full flex-1 flex-col items-center gap-4 px-2 mt-6">
-		{#each menuTree as item}
+		{#each menuTree as item (item.url)}
 			{@const active = isParentActive(item)}
 			{@const hasChildren = item.children && item.children.length > 0}
 			{@const isHovered = hoveredName === item.name}
@@ -66,7 +67,7 @@
 				onmouseleave={handleMouseLeave}
 			>
 				<a
-					href={item.url}
+					href={resolve(item.url)}
 					class="relative z-20 flex h-10 w-10 items-center justify-center rounded-default transition-all duration-200
                     {active
 						? 'bg-ink-900 text-white shadow-sm dark:bg-ink-100 dark:text-ink-950'
@@ -92,10 +93,10 @@
 									{item.name}
 								</div>
 								<ul class="flex flex-col gap-0.5 py-1">
-									{#each item.children as child}
+									{#each item.children as child (child.url)}
 										<li>
 											<a
-												href={child.url}
+												href={resolve(child.url)}
 												class="flex items-center gap-2 rounded-default px-3 py-2 text-sm transition-colors
                                                 {isActive(child.url)
 													? 'bg-ink-100 text-ink-900 font-medium dark:bg-ink-800 dark:text-ink-100'

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import Hero from '$lib/features/home/Hero.svelte';
 	import InspirationGrid from '$lib/features/home/InspirationGrid.svelte';
 	import SubscribeSection from '$lib/features/home/SubscribeSection.svelte';
@@ -15,7 +16,7 @@
 <div class="homepage-container">
 	<Hero />
 
-	<div class="max-w-[1200px] mx-auto px-6 py-12 md:py-20">
+	<div class="max-w-300 mx-auto px-6 py-12 md:py-20">
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24">
 			<!-- Recent Articles -->
 			<section>
@@ -25,10 +26,12 @@
 					>
 						<div class="flex items-center gap-3">
 							<span class="h-px w-8 bg-jade-500/40"></span>
-							<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">最近文章</h2>
+							<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">
+								最近文章
+							</h2>
 						</div>
 						<a
-							href="/posts"
+							href={resolve('/posts')}
 							class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
 						>
 							<span>查看全部</span>
@@ -38,7 +41,7 @@
 				</SlideIn>
 
 				<StaggerList staggerDelay={100} y={16} class="flex flex-col">
-					{#each data.recentPosts.items as post}
+					{#each data.recentPosts.items as post (post.id)}
 						<HomeArticleItem {post} />
 					{/each}
 				</StaggerList>
@@ -52,10 +55,12 @@
 					>
 						<div class="flex items-center gap-3">
 							<span class="h-px w-8 bg-jade-500/40"></span>
-							<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">最近手记</h2>
+							<h2 class="text-xl font-serif font-medium text-ink-900 dark:text-ink-100">
+								最近手记
+							</h2>
 						</div>
 						<a
-							href="/moments"
+							href={resolve('/moments')}
 							class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
 						>
 							<span>查看全部</span>
@@ -65,7 +70,7 @@
 				</SlideIn>
 
 				<StaggerList staggerDelay={100} y={16} class="flex flex-col">
-					{#each data.recentMoments.items as moment}
+					{#each data.recentMoments.items as moment (moment.id)}
 						<HomeMomentItem {moment} />
 					{/each}
 				</StaggerList>

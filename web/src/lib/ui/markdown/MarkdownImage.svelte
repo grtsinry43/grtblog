@@ -94,9 +94,9 @@
 </script>
 
 {#if zoomOpen}
-	<div class="md-image-zoom" onclick={closeZoom}>
+	<button type="button" class="md-image-zoom" onclick={closeZoom} aria-label="关闭图片预览">
 		<img class="md-image-zoom__img" src={zoomSrc} alt={zoomAlt} />
-	</div>
+	</button>
 {/if}
 
 <span class="md-figure my-6 block overflow-hidden">
@@ -154,7 +154,7 @@
 		opacity: 0.85;
 	}
 
-	:global(.md-img[data-loaded="true"]) {
+	:global(.md-img[data-loaded='true']) {
 		filter: blur(0);
 		transform: scale(1);
 		opacity: 1;

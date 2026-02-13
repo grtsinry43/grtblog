@@ -1,4 +1,6 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
+	import { resolve } from '$app/paths';
 	import type { MouseEventHandler } from 'svelte/elements';
 
 	const {
@@ -41,7 +43,7 @@
 		'group relative max-w-96 flex items-center justify-between gap-4 overflow-hidden rounded-default border border-ink-200/80 bg-white/80 px-5 py-4 shadow-subtle transition-all hover:-translate-y-0.5 hover:shadow-float dark:border-ink-800/60 dark:bg-ink-900/40 no-underline',
 		className
 	)}
-	href={href || '#'}
+	href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolve(href) : href || '#'}
 	{target}
 	{rel}
 	onmousemove={handleMouseMove}

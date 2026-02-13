@@ -75,31 +75,35 @@
 </script>
 
 {#if windowStore.isOpen && !windowStore.isMinimized}
-		<div 
-			bind:this={windowEl}
-			class="fixed z-[999] w-[90vw] md:w-[450px] rounded-default border border-ink-200/50 bg-white/65 dark:border-ink-700/50 dark:bg-ink-900/60 backdrop-blur-xl shadow-float dark:shadow-glass overflow-hidden noise-surface"
-			class:window-outside-pulse={outsidePulse}
-			style="left: {windowStore.position.x}px; top: {windowStore.position.y}px;"
-			use:draggable={{ handle: '.window-header', onMove: handleMove }}
+	<div
+		bind:this={windowEl}
+		class="fixed z-[999] w-[90vw] md:w-[450px] rounded-default border border-ink-200/50 bg-white/65 dark:border-ink-700/50 dark:bg-ink-900/60 backdrop-blur-xl shadow-float dark:shadow-glass overflow-hidden noise-surface"
+		class:window-outside-pulse={outsidePulse}
+		style="left: {windowStore.position.x}px; top: {windowStore.position.y}px;"
+		use:draggable={{ handle: '.window-header', onMove: handleMove }}
 		in:scale={{ duration: 260, start: 0.92, easing: backOut }}
 		out:scale={{ duration: 140, easing: cubicIn }}
 	>
 		<!-- Window Header - Narrower -->
-			<div class="window-header pl-4 pr-2 py-1.5 flex items-center justify-between border-b border-ink-100/45 dark:border-ink-800/45 select-none bg-ink-50/35 dark:bg-ink-950/35">
-				<div class="flex items-center gap-2">
-					<span class="text-[10px] font-mono font-extrabold text-ink-500 dark:text-ink-400 uppercase tracking-[0.15em]">
-						{windowStore.title}
-					</span>
-				</div>
-			
+		<div
+			class="window-header pl-4 pr-2 py-1.5 flex items-center justify-between border-b border-ink-100/45 dark:border-ink-800/45 select-none bg-ink-50/35 dark:bg-ink-950/35"
+		>
+			<div class="flex items-center gap-2">
+				<span
+					class="text-[10px] font-mono font-extrabold text-ink-500 dark:text-ink-400 uppercase tracking-[0.15em]"
+				>
+					{windowStore.title}
+				</span>
+			</div>
+
 			<div class="flex items-center gap-0.5">
-				<button 
+				<button
 					onclick={() => windowStore.minimize()}
 					class="p-1 rounded-full hover:bg-ink-200/50 dark:hover:bg-ink-800/50 text-ink-400 transition-colors"
 				>
 					<Minus size={12} />
 				</button>
-				<button 
+				<button
 					onclick={() => windowStore.close()}
 					class="p-1 rounded-full hover:bg-cinnabar-500 hover:text-white text-ink-400 transition-all"
 				>
@@ -109,14 +113,20 @@
 		</div>
 
 		<!-- Window Content -->
-		<div class="p-6 text-sm text-ink-600 dark:text-ink-300 leading-relaxed max-h-[60vh] overflow-y-auto">
+		<div
+			class="p-6 text-sm text-ink-600 dark:text-ink-300 leading-relaxed max-h-[60vh] overflow-y-auto"
+		>
 			{#if children}
 				{@render children()}
 			{:else}
 				<div class="flex flex-col gap-3">
 					<p>终端初始化成功...</p>
-					<p class="text-jade-600 dark:text-jade-400 font-mono text-xs font-bold">✓ 核心拖拽 Action 已加载</p>
-					<p class="text-jade-600 dark:text-jade-400 font-mono text-xs font-bold">✓ 全局状态通过 Runes 同步</p>
+					<p class="text-jade-600 dark:text-jade-400 font-mono text-xs font-bold">
+						✓ 核心拖拽 Action 已加载
+					</p>
+					<p class="text-jade-600 dark:text-jade-400 font-mono text-xs font-bold">
+						✓ 全局状态通过 Runes 同步
+					</p>
 					<p class="mt-4 opacity-50 text-[11px]">你可以点击标题栏在页面范围内自由移动此窗口。</p>
 				</div>
 			{/if}

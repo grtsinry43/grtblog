@@ -12,7 +12,7 @@
 		showCommentShortcut?: boolean;
 	}
 
-	let { title, showThreshold = 300, showCommentShortcut = true } : Props = $props();
+	let { title, showThreshold = 300, showCommentShortcut = true }: Props = $props();
 
 	let scrollY = $state(0);
 	let clientHeight = $state(0);
@@ -136,7 +136,7 @@
 						{Math.round(progress)}%
 					</span>
 				</div>
-				
+
 				{#if showCommentShortcut}
 					<Button
 						variant="ghost"

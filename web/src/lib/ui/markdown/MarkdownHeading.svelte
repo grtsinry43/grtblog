@@ -1,9 +1,16 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { SvmdElementNode } from 'svmarkdown';
 
-	const { node, class: className = '', ...attrs } = $props<{
+	const {
+		children,
+		node,
+		class: className = '',
+		...attrs
+	} = $props<{
 		node?: SvmdElementNode;
 		class?: string;
+		children?: Snippet;
 	}>();
 
 	const tag = $derived((node?.name as string) || 'h2');
@@ -22,5 +29,5 @@
 	class={`mt-10 mb-4 break-words font-serif font-medium tracking-tight text-ink-950 dark:text-ink-50 ${sizeClass} ${className}`.trim()}
 	{...attrs}
 >
-	<slot />
+	{@render children?.()}
 </svelte:element>

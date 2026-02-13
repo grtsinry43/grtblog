@@ -78,13 +78,12 @@
 		updateModelData((prev) => (prev ? { ...prev, replyingTo: null } : prev));
 	};
 
-	const updateGuestField =
-		(key: 'guestName' | 'guestEmail' | 'guestSite') => (event: Event) => {
-			const target = event.target as HTMLInputElement | null;
-			if (!target) return;
-			const value = target.value;
-			updateModelData((prev) => (prev ? { ...prev, [key]: value } : prev));
-		};
+	const updateGuestField = (key: 'guestName' | 'guestEmail' | 'guestSite') => (event: Event) => {
+		const target = event.target as HTMLInputElement | null;
+		if (!target) return;
+		const value = target.value;
+		updateModelData((prev) => (prev ? { ...prev, [key]: value } : prev));
+	};
 </script>
 
 <div class="w-full font-serif text-ink-900 dark:text-ink-100">
@@ -193,7 +192,8 @@
 		<!-- Footer Actions -->
 		<div class="flex items-center justify-between mt-6">
 			<div class="text-[10px] text-ink-800/40 dark:text-ink-200/40 font-serif tracking-wider">
-				支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span> 换行
+				支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span>
+				换行
 				{#if $requireModerationStore}
 					<span class="ml-2 text-amber-600 dark:text-amber-300">
 						当前开启审核，评论会先进入审核队列

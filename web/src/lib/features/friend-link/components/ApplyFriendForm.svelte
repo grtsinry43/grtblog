@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { applyFriendLink } from '../api';
 	import type { FriendApplyForm } from '../types';
 
@@ -27,12 +26,12 @@
 		}
 		submitting = true;
 		error = null;
-		
+
 		try {
 			await applyFriendLink(form);
 			success = true;
-		} catch (e: any) {
-			error = e.message || '提交失败，请重试';
+		} catch (e: unknown) {
+			error = e instanceof Error ? e.message : '提交失败，请重试';
 		} finally {
 			submitting = false;
 		}
@@ -41,8 +40,16 @@
 
 {#if success}
 	<div class="flex flex-col items-center justify-center py-8 text-center animate-settle">
-		<div class="w-12 h-12 rounded-full bg-jade-100 dark:bg-jade-900/30 text-jade-600 dark:text-jade-400 flex items-center justify-center mb-4">
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+		<div
+			class="w-12 h-12 rounded-full bg-jade-100 dark:bg-jade-900/30 text-jade-600 dark:text-jade-400 flex items-center justify-center mb-4"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="w-6 h-6"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+			>
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 			</svg>
 		</div>
@@ -52,14 +59,18 @@
 {:else}
 	<form onsubmit={handleSubmit} class="space-y-4">
 		{#if error}
-			<div class="p-3 text-[11px] bg-cinnabar-50 dark:bg-cinnabar-950/30 text-cinnabar-600 dark:text-cinnabar-400 border border-cinnabar-200 dark:border-cinnabar-800 rounded-sm">
+			<div
+				class="p-3 text-[11px] bg-cinnabar-50 dark:bg-cinnabar-950/30 text-cinnabar-600 dark:text-cinnabar-400 border border-cinnabar-200 dark:border-cinnabar-800 rounded-sm"
+			>
 				{error}
 			</div>
 		{/if}
 
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<div class="space-y-1.5">
-				<label for="name" class="text-[10px] font-mono font-bold uppercase text-ink-400">站点名称</label>
+				<label for="name" class="text-[10px] font-mono font-bold uppercase text-ink-400"
+					>站点名称</label
+				>
 				<input
 					type="text"
 					id="name"
@@ -70,7 +81,9 @@
 				/>
 			</div>
 			<div class="space-y-1.5">
-				<label for="url" class="text-[10px] font-mono font-bold uppercase text-ink-400">站点链接</label>
+				<label for="url" class="text-[10px] font-mono font-bold uppercase text-ink-400"
+					>站点链接</label
+				>
 				<input
 					type="url"
 					id="url"
@@ -84,7 +97,9 @@
 
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<div class="space-y-1.5">
-				<label for="logo" class="text-[10px] font-mono font-bold uppercase text-ink-400">Logo 链接</label>
+				<label for="logo" class="text-[10px] font-mono font-bold uppercase text-ink-400"
+					>Logo 链接</label
+				>
 				<input
 					type="url"
 					id="logo"
@@ -95,7 +110,9 @@
 				/>
 			</div>
 			<div class="space-y-1.5">
-				<label for="rssUrl" class="text-[10px] font-mono font-bold uppercase text-ink-400">RSS 地址 (可选)</label>
+				<label for="rssUrl" class="text-[10px] font-mono font-bold uppercase text-ink-400"
+					>RSS 地址 (可选)</label
+				>
 				<input
 					type="url"
 					id="rssUrl"
@@ -107,7 +124,9 @@
 		</div>
 
 		<div class="space-y-1.5">
-			<label for="description" class="text-[10px] font-mono font-bold uppercase text-ink-400">站点描述</label>
+			<label for="description" class="text-[10px] font-mono font-bold uppercase text-ink-400"
+				>站点描述</label
+			>
 			<input
 				type="text"
 				id="description"
@@ -119,7 +138,9 @@
 		</div>
 
 		<div class="space-y-1.5">
-			<label for="message" class="text-[10px] font-mono font-bold uppercase text-ink-400">留言 (可选)</label>
+			<label for="message" class="text-[10px] font-mono font-bold uppercase text-ink-400"
+				>留言 (可选)</label
+			>
 			<textarea
 				id="message"
 				bind:value={form.message}

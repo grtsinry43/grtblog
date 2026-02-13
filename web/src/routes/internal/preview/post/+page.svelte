@@ -31,7 +31,7 @@
 		authorId?: number;
 	};
 
-	postDetailCtx.mountModelData(null);
+	postDetailCtx.mountModelData(() => null);
 	const { updateModelData } = postDetailCtx.useModelActions();
 
 	let hasPayload = $state(false);

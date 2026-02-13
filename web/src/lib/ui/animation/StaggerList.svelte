@@ -112,10 +112,6 @@
 	}
 </script>
 
-<div
-	bind:this={wrapper}
-	class={className}
-	use:intersect={{ onEnter, threshold, rootMargin }}
->
+<div bind:this={wrapper} class={className} use:intersect={{ onEnter, threshold, rootMargin }}>
 	{@render children()}
 </div>

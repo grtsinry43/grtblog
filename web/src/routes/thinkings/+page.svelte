@@ -6,12 +6,7 @@
 	let { data } = $props<{ data: PageData }>();
 
 	// Mount the data into the context
-	const store = thinkingListCtx.mountModelData(data.thinkings);
-
-	// Sync data if it changes (e.g. navigation)
-	$effect(() => {
-		thinkingListCtx.syncModelData(store, data.thinkings);
-	});
+	thinkingListCtx.mountModelData(() => data.thinkings);
 
 	// Select items from the context
 	const items = thinkingListCtx.selectModelData((d) => d?.items || []);

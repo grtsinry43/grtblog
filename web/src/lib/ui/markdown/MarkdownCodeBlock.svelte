@@ -3,7 +3,13 @@
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 
-	const { inline = false, text = '', lang = '', attrs = {}, class: className = '' } = $props<{
+	const {
+		inline = false,
+		text = '',
+		lang = '',
+		attrs = {},
+		class: className = ''
+	} = $props<{
 		inline?: boolean;
 		text?: string;
 		lang?: string;
@@ -68,7 +74,9 @@
 		class="md-codeblock font-mono my-6 overflow-hidden rounded-sm border border-ink-900/20 bg-ink-900/5 dark:border-white/15 dark:bg-white/5"
 		data-lang={dataLang}
 	>
-		<div class="md-codeblock__header flex items-center justify-between border-b border-ink-900/15 px-3 py-0.5 text-[11px] uppercase tracking-[0.08em] opacity-75 dark:border-white/15">
+		<div
+			class="md-codeblock__header flex items-center justify-between border-b border-ink-900/15 px-3 py-0.5 text-[11px] uppercase tracking-[0.08em] opacity-75 dark:border-white/15"
+		>
 			<span class="md-codeblock__lang">{dataLang || 'text'}</span>
 		</div>
 		<div class="md-codeblock__body">
@@ -77,6 +85,7 @@
 				style:height={measured ? `${$displayHeight}px` : undefined}
 			>
 				<div class="code-inner" bind:this={innerEl}>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					{@html codeHtml}
 				</div>
 			</div>
@@ -98,7 +107,7 @@
 	@reference "$routes/layout.css";
 
 	:global(.md-codeblock__body pre) {
-		@apply m-0 px-4 py-3 text-[13px] overflow-x-auto bg-transparent;
+		@apply m-0 overflow-x-auto bg-transparent px-4 py-3 text-[13px];
 	}
 
 	:global(.md-codeblock__body .code-wrap.is-measured) {

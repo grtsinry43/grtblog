@@ -17,8 +17,9 @@
 </script>
 
 <div class="space-y-2">
-	<label class="text-xs font-mono text-ink-500">{label}</label>
+	<label for={name} class="text-xs font-mono text-ink-500">{label}</label>
 	<Input
+		id={name}
 		{name}
 		{type}
 		{autocomplete}

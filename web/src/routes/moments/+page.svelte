@@ -6,12 +6,7 @@
 	let { data } = $props<{ data: PageData }>();
 
 	// Mount data to context
-	const momentsStore = momentListCtx.mountModelData(data.moments);
-
-	// Sync data
-	$effect(() => {
-		momentListCtx.syncModelData(momentsStore, data.moments);
-	});
+	momentListCtx.mountModelData(() => data.moments);
 
 	const moments = momentListCtx.selectModelData((d) => d?.items || []);
 </script>

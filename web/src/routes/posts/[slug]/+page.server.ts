@@ -9,12 +9,9 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 		error(404, 'Post not found');
 	}
 
-	let relatedMoments: PostRelatedMoment[] = [];
-	try {
-		relatedMoments = await getPostRelatedMoments(fetch, post.id);
-	} catch {
-		relatedMoments = [];
-	}
+	const relatedMoments: PostRelatedMoment[] = await getPostRelatedMoments(fetch, post.id).catch(
+		() => []
+	);
 
 	return {
 		post: {

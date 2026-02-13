@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { ArrowRight } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
@@ -25,7 +26,7 @@
 </script>
 
 <a
-	href={buildMomentPath(moment.shortUrl, moment.createdAt)}
+	href={resolve(buildMomentPath(moment.shortUrl, moment.createdAt))}
 	class="home-item-card moment-item group w-full px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-cinnabar-500/30"
 	onmousemove={handleMouseMove}
 	onmouseleave={handleMouseLeave}
@@ -112,7 +113,10 @@
 	.home-item-arrow {
 		opacity: 0.55;
 		color: rgb(120 113 108 / 0.9);
-		transition: transform 220ms ease, opacity 220ms ease, color 220ms ease;
+		transition:
+			transform 220ms ease,
+			opacity 220ms ease,
+			color 220ms ease;
 	}
 
 	.title-underline {
@@ -137,7 +141,9 @@
 	.home-item-card[data-hovered='true'] {
 		background: rgb(250 250 249 / 0.68);
 		border-color: rgb(41 37 36 / 0.08);
-		box-shadow: 0 2px 8px rgb(28 25 23 / 0.05), 0 1px 3px rgb(28 25 23 / 0.1);
+		box-shadow:
+			0 2px 8px rgb(28 25 23 / 0.05),
+			0 1px 3px rgb(28 25 23 / 0.1);
 		backdrop-filter: blur(22px) saturate(132%);
 		transform: translateY(-1px);
 	}

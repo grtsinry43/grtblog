@@ -16,7 +16,9 @@ export type ImageExtInfoState = {
 	map: Map<string, ImageExtInfoItem>;
 };
 
-export const buildImageExtInfoState = (extInfo?: ContentExtInfo | null): ImageExtInfoState | null => {
+export const buildImageExtInfoState = (
+	extInfo?: ContentExtInfo | null
+): ImageExtInfoState | null => {
 	if (!extInfo?.images?.length) return null;
 	const images = extInfo.images.filter((item) => item?.id);
 	if (!images.length) return null;

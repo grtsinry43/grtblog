@@ -9,4 +9,3 @@ export { default as Tag } from './tag/Tag.svelte';
 export { default as Textarea } from './textarea/Textarea.svelte';
 export { default as Toaster } from './toaster/Toaster.svelte';
 export { default as Tooltip } from './tooltip/Tooltip.svelte';
-

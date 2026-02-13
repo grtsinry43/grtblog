@@ -1,11 +1,12 @@
 <script lang="ts">
-	import {type Snippet} from 'svelte';
-	import {type FullAutoFill} from "svelte/elements";
+	import { type Snippet } from 'svelte';
+	import { type FullAutoFill } from 'svelte/elements';
 
 	interface Props {
 		value?: string;
 		placeholder?: string;
 		type?: string;
+		id?: string;
 		name?: string;
 		autocomplete?: FullAutoFill;
 		required?: boolean;
@@ -21,6 +22,7 @@
 		value = $bindable(''),
 		placeholder = '',
 		type = 'text',
+		id,
 		name,
 		autocomplete,
 		required = false,
@@ -71,6 +73,7 @@
 	<input
 		bind:value
 		{type}
+		{id}
 		{name}
 		{autocomplete}
 		{required}

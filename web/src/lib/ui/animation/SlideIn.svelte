@@ -38,11 +38,11 @@
 	const dirY: Record<string, number> = { left: 0, right: 0, up: -1, down: 1 };
 
 	// CSS fallback direction map
-	const directionMap: Record<string, string> = {
-		left: `translateX(-${offset}px)`,
-		right: `translateX(${offset}px)`,
-		up: `translateY(-${offset}px)`,
-		down: `translateY(${offset}px)`
+	const directionMap: Record<string, (distance: number) => string> = {
+		left: (distance) => `translateX(-${distance}px)`,
+		right: (distance) => `translateX(${distance}px)`,
+		up: (distance) => `translateY(-${distance}px)`,
+		down: (distance) => `translateY(${distance}px)`
 	};
 
 	$effect(() => {
@@ -79,7 +79,7 @@
 			? `translate(${offset * dirX[direction] * (1 - progress.current)}px, ${offset * dirY[direction] * (1 - progress.current)}px)`
 			: reducedMotion || visible
 				? 'translate(0, 0)'
-				: directionMap[direction]
+				: directionMap[direction](offset)
 	);
 </script>
 

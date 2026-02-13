@@ -4,11 +4,7 @@
 
 	let { data } = $props();
 
-	const postStore = postListCtx.mountModelData(data);
-
-	$effect(() => {
-		postListCtx.syncModelData(postStore, data);
-	});
+	postListCtx.mountModelData(() => data);
 </script>
 
 <PostList />

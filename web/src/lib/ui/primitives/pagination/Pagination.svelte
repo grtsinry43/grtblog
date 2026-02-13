@@ -34,7 +34,7 @@
 	/>
 
 	<div class="flex items-center gap-1.5">
-		{#each pages as page}
+		{#each pages as page (page)}
 			{#if page === current}
 				<span
 					class="flex h-7 w-7 items-center justify-center rounded-default bg-jade-800 font-mono text-[11px] font-bold text-ink-200 dark:text-ink-800 shadow-sm"
