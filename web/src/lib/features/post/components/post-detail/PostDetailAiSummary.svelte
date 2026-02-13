@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DetailAiSummary from '$lib/shared/components/detail/DetailAiSummary.svelte';
+	import DetailAiSummary from '$lib/ui/detail/DetailAiSummary.svelte';
 
 	interface Props {
 		summary: string;

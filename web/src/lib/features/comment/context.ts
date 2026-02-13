@@ -16,6 +16,7 @@ export type CommentAreaModel = {
 	page: number;
 	size: number;
 	isClosed: boolean;
+	requireModeration: boolean;
 };
 
 export const commentAreaCtx = createModelDataContext<CommentAreaModel>({
@@ -34,6 +35,7 @@ export const commentAreaCtx = createModelDataContext<CommentAreaModel>({
 		total: 0,
 		page: 1,
 		size: 10,
-		isClosed: false
+		isClosed: false,
+		requireModeration: false
 	}
 });

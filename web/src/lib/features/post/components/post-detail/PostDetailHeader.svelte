@@ -6,10 +6,10 @@
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import Badge from '$lib/ui/primitives/badge/Badge.svelte';
-	import Loading from '$lib/ui/common/Loading.svelte';
-	import QueryRoot from '$lib/ui/common/QueryRoot.svelte';
+	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
+	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
 	const createdAtStore = postDetailCtx.selectModelData((data) => data?.createdAt ?? '');
 	const leadInStore = postDetailCtx.selectModelData((data) => data?.leadIn ?? null);
 	const isHotStore = postDetailCtx.selectModelData((data) => data?.isHot ?? false);
@@ -70,19 +70,16 @@
 				{formatDateCN($createdAtStore)}
 			</span>
 			<span class="flex items-center gap-1.5"><Clock size={12} /> 12 分钟阅读</span>
-			<span class="flex items-center gap-1.5">
-				浏览 {$metricsStore?.views ?? 0} · 喜欢 {$metricsStore?.likes ?? 0} · 评论 {$metricsStore?.comments ??
-					0}
-			</span>
-			{#snippet fallback()}
-				<div>
-					<Loading size="w-3 h-3" duration={1000} />
-				</div>
-			{/snippet}
-			<QueryRoot
-				loader={() => import('$lib/features/post/components/PostMetricsClient.svelte')}
-				{fallback}
+			<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>
+			<span aria-hidden="true" class="opacity-40">·</span>
+			<ContentLikeButton
+				contentType="article"
+				contentId={$postIdStore}
+				likes={$metricsStore?.likes ?? 0}
+				className="inline-flex items-center gap-1.5"
 			/>
+			<span aria-hidden="true" class="opacity-40">·</span>
+			<span class="flex items-center gap-1.5">评论 {$metricsStore?.comments ?? 0}</span>
 		</div>
 	</div>
 

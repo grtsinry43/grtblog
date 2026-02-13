@@ -1,4 +1,5 @@
-import { getPostDetail } from '$lib/features/post/api';
+import { getPostDetail, getPostRelatedMoments } from '$lib/features/post/api';
+import type { PostRelatedMoment } from '$lib/features/post/types';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
@@ -7,5 +8,18 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 	if (!post) {
 		error(404, 'Post not found');
 	}
-	return { post };
+
+	let relatedMoments: PostRelatedMoment[] = [];
+	try {
+		relatedMoments = await getPostRelatedMoments(fetch, post.id);
+	} catch {
+		relatedMoments = [];
+	}
+
+	return {
+		post: {
+			...post,
+			relatedMoments
+		}
+	};
 };

@@ -2,7 +2,8 @@ import { getApi } from '$lib/shared/clients/api';
 import type {
 	MomentDetail,
 	MomentLatestCheckResponse,
-	MomentListResponse
+	MomentListResponse,
+	MomentRelatedPost
 } from '$lib/features/moment/types';
 
 type MomentListOptions = {
@@ -51,4 +52,17 @@ export const getRecentMoments = async (
 	const api = getApi(fetcher);
 	const result = await api<MomentListResponse>('/public/moments/recent');
 	return result ?? { items: [], total: 0, page: 1, size: 5 };
+};
+
+type MomentRelatedPostsResponse = {
+	items: MomentRelatedPost[];
+};
+
+export const getMomentRelatedPosts = async (
+	fetcher: typeof fetch | undefined,
+	id: number
+): Promise<MomentRelatedPost[]> => {
+	const api = getApi(fetcher);
+	const result = await api<MomentRelatedPostsResponse>(`/moments/${id}/same-period-articles`);
+	return result?.items ?? [];
 };

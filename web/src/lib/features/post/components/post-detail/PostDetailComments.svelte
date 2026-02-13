@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { postDetailCtx } from '$lib/features/post/context';
-	import DetailCommentSection from '$lib/shared/components/detail/DetailCommentSection.svelte';
+	import DetailCommentSection from '$lib/ui/detail/DetailCommentSection.svelte';
 
 	const commentAreaIdStore = postDetailCtx.selectModelData((data) => data?.commentAreaId ?? null);
 	const commentsCountStore = postDetailCtx.selectModelData((data) => data?.metrics?.comments ?? 0);

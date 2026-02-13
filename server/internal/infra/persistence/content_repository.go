@@ -768,6 +768,32 @@ func (r *ContentRepository) ListPublicArticles(ctx context.Context, options cont
 	return articles, total, nil
 }
 
+func (r *ContentRepository) ListPublishedArticlesByCreatedAtRange(ctx context.Context, start time.Time, end time.Time, limit int) ([]*content.Article, error) {
+	if limit <= 0 {
+		limit = 2
+	}
+	if start.After(end) {
+		start, end = end, start
+	}
+
+	var articleModels []*model.Article
+	if err := r.db.WithContext(ctx).
+		Model(&model.Article{}).
+		Where("is_published = ?", true).
+		Where("created_at >= ? AND created_at <= ?", start, end).
+		Order("is_top DESC, created_at DESC").
+		Limit(limit).
+		Find(&articleModels).Error; err != nil {
+		return nil, err
+	}
+
+	articles := make([]*content.Article, len(articleModels))
+	for i, am := range articleModels {
+		articles[i] = r.modelToArticle(am)
+	}
+	return articles, nil
+}
+
 // ListPublicArticlesForFederation 获取用于联合时间线的公开文章列表。
 func (r *ContentRepository) ListPublicArticlesForFederation(ctx context.Context, since *time.Time, until *time.Time, page int, pageSize int) ([]*content.Article, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Article{}).Where("is_published = ?", true)
@@ -1051,6 +1077,32 @@ func (r *ContentRepository) ListPublicMoments(ctx context.Context, options conte
 	}
 
 	return moments, total, nil
+}
+
+func (r *ContentRepository) ListPublishedMomentsByCreatedAtRange(ctx context.Context, start time.Time, end time.Time, limit int) ([]*content.Moment, error) {
+	if limit <= 0 {
+		limit = 2
+	}
+	if start.After(end) {
+		start, end = end, start
+	}
+
+	var momentModels []*model.Moment
+	if err := r.db.WithContext(ctx).
+		Model(&model.Moment{}).
+		Where("is_published = ?", true).
+		Where("created_at >= ? AND created_at <= ?", start, end).
+		Order("is_top DESC, created_at DESC").
+		Limit(limit).
+		Find(&momentModels).Error; err != nil {
+		return nil, err
+	}
+
+	moments := make([]*content.Moment, len(momentModels))
+	for i, mm := range momentModels {
+		moments[i] = r.modelToMoment(mm)
+	}
+	return moments, nil
 }
 
 // CreatePage 创建页面

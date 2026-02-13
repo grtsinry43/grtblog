@@ -15,6 +15,7 @@ type Repository interface {
 	DeleteArticle(ctx context.Context, id int64) error
 	ListArticles(ctx context.Context, options ArticleListOptionsInternal) ([]*Article, int64, error)
 	ListPublicArticles(ctx context.Context, options ArticleListOptions) ([]*Article, int64, error)
+	ListPublishedArticlesByCreatedAtRange(ctx context.Context, start time.Time, end time.Time, limit int) ([]*Article, error)
 	// ListPublicArticlesForFederation 提供联合时间线的公开文章列表。
 	ListPublicArticlesForFederation(ctx context.Context, since *time.Time, until *time.Time, page int, pageSize int) ([]*Article, int64, error)
 	// SyncHotArticles 根据指标同步热门文章状态
@@ -68,6 +69,7 @@ type Repository interface {
 	DeleteMoment(ctx context.Context, id int64) error
 	ListMoments(ctx context.Context, options MomentListOptionsInternal) ([]*Moment, int64, error)
 	ListPublicMoments(ctx context.Context, options MomentListOptions) ([]*Moment, int64, error)
+	ListPublishedMomentsByCreatedAtRange(ctx context.Context, start time.Time, end time.Time, limit int) ([]*Moment, error)
 
 	// Page 相关操作
 	CreatePage(ctx context.Context, page *Page) error

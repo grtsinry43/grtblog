@@ -7,6 +7,7 @@ type CreateCommentResp struct {
 	AreaID    int64      `json:"areaId"`
 	Content   string     `json:"content"`
 	NickName  *string    `json:"nickName"`
+	Avatar    *string    `json:"avatar"`
 	Location  *string    `json:"location"`
 	Platform  *string    `json:"platform"`
 	Browser   *string    `json:"browser"`
@@ -16,6 +17,7 @@ type CreateCommentResp struct {
 	IsAuthor  bool       `json:"isAuthor"`
 	IsViewed  bool       `json:"isViewed"`
 	IsTop     bool       `json:"isTop"`
+	IsMy      bool       `json:"isMy"`
 	Status    string     `json:"status"`
 	ParentID  *int64     `json:"parentId"`
 	CreatedAt time.Time  `json:"createdAt"`
@@ -29,6 +31,7 @@ type CommentNodeResp struct {
 	AreaID    int64             `json:"areaId"`
 	Content   *string           `json:"content"`
 	NickName  *string           `json:"nickName"`
+	Avatar    *string           `json:"avatar"`
 	Location  *string           `json:"location"`
 	Platform  *string           `json:"platform"`
 	Browser   *string           `json:"browser"`
@@ -38,6 +41,7 @@ type CommentNodeResp struct {
 	IsAuthor  bool              `json:"isAuthor"`
 	IsViewed  bool              `json:"isViewed"`
 	IsTop     bool              `json:"isTop"`
+	IsMy      bool              `json:"isMy"`
 	Status    string            `json:"status"`
 	ParentID  *int64            `json:"parentId"`
 	CreatedAt time.Time         `json:"createdAt"`
@@ -48,11 +52,12 @@ type CommentNodeResp struct {
 }
 
 type PublicCommentListResp struct {
-	Items    []CommentNodeResp `json:"items"`
-	Total    int64             `json:"total"`
-	Page     int               `json:"page"`
-	Size     int               `json:"size"`
-	IsClosed bool              `json:"isClosed"`
+	Items             []CommentNodeResp `json:"items"`
+	Total             int64             `json:"total"`
+	Page              int               `json:"page"`
+	Size              int               `json:"size"`
+	IsClosed          bool              `json:"isClosed"`
+	RequireModeration bool              `json:"requireModeration"`
 }
 
 type AdminCommentResp struct {
@@ -66,6 +71,7 @@ type AdminCommentResp struct {
 	Content    *string    `json:"content"`
 	AuthorID   *int64     `json:"authorId,omitempty"`
 	NickName   *string    `json:"nickName"`
+	Avatar     *string    `json:"avatar"`
 	Email      *string    `json:"email,omitempty"`
 	IP         *string    `json:"ip,omitempty"`
 	Location   *string    `json:"location"`

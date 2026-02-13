@@ -4456,6 +4456,34 @@
                 }
             }
         },
+        "/articles/{id}/same-period-moments": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Article"
+                ],
+                "summary": "获取文章同一时间的手记（两周内）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.SamePeriodMomentListResp"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "consumes": [
@@ -5131,6 +5159,34 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.CheckMomentLatestResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/moments/{id}/same-period-articles": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Moment"
+                ],
+                "summary": "获取手记同一时期的文章（两周内）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "手记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.SamePeriodArticleListResp"
                         }
                     }
                 }
@@ -9800,6 +9856,77 @@
             "properties": {
                 "content": {
                     "type": "string"
+                }
+            }
+        },
+        "contract.SamePeriodArticleItemResp": {
+            "type": "object",
+            "properties": {
+                "cover": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "shortUrl": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.SamePeriodArticleListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SamePeriodArticleItemResp"
+                    }
+                }
+            }
+        },
+        "contract.SamePeriodMomentItemResp": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "shortUrl": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.SamePeriodMomentListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SamePeriodMomentItemResp"
+                    }
                 }
             }
         },

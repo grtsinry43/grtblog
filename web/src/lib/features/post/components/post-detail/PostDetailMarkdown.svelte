@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DetailMarkdownContent from '$lib/shared/components/detail/DetailMarkdownContent.svelte';
+	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
 	import type { TOCNode } from '$lib/shared/types/toc';
 
 	interface Props {

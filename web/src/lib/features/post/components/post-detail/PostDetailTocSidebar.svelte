@@ -1,7 +1,7 @@
 <script lang="ts">
-	import DetailTocNavList from '$lib/shared/components/detail/DetailTocNavList.svelte';
+	import DetailTocNavList from '$lib/ui/detail/DetailTocNavList.svelte';
 	import type { TOCNode } from '$lib/shared/types/toc';
-	import Tag from '$lib/ui/primitives/tag/Tag.svelte';
+	import PostDetailRelatedMoments from './PostDetailRelatedMoments.svelte';
 
 	interface Props {
 		toc: TOCNode[];
@@ -24,11 +24,6 @@
 			<DetailTocNavList {toc} {contentRoot} {activeAnchor} {onAnchorChange} tone="jade" />
 		</div>
 
-		<div class="space-y-2.5 rounded-lg border border-jade-500/10 bg-jade-500/5 p-5">
-			<Tag variant="jade" class="border-none px-0">感悟</Tag>
-			<p class="text-[10px] leading-relaxed font-normal text-ink-500 dark:text-ink-400">
-				每一篇文章都是漫长探索中的一小步。如果这些文字能引起共鸣，欢迎留下你的思考。
-			</p>
-		</div>
+		<PostDetailRelatedMoments />
 	</div>
 </aside>

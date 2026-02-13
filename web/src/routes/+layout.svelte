@@ -11,6 +11,7 @@
 	import Loading from '$lib/ui/common/Loading.svelte';
 	import { navigating } from '$app/stores';
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
 	import { onNavigate } from '$app/navigation';
 	import SearchModal from '$lib/ui/search/SearchModal.svelte';
 	import Footer from '$lib/ui/layout/Footer.svelte';
@@ -26,10 +27,11 @@
 	}
 
 	onNavigate((navigation) => {
-		if (!document?.startViewTransition) return;
+		if (typeof document === 'undefined' || !document.startViewTransition) return;
+		const startViewTransition = document.startViewTransition.bind(document);
 
 		return new Promise((resolve) => {
-			document?.startViewTransition(async () => {
+			startViewTransition(async () => {
 				resolve();
 				await navigation.complete;
 			});
@@ -40,14 +42,83 @@
 	import '@fontsource/noto-serif-sc';
 	import '@fontsource-variable/victor-mono';
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
+	import {
+		createEmptyDetailPanelModel,
+		detailPanelCtx,
+		type DetailPanelModel,
+		type DetailPanelRelatedMoment,
+		type DetailPanelRelatedPost
+	} from '$lib/shared/detail-panel/context';
 
 	let { children, data } = $props();
 	let showRouteLoading = $state(false);
 
 	const websiteInfoStore = websiteInfoCtx.mountModelData(data.websiteInfo ?? null);
+	const detailPanelStore = detailPanelCtx.mountModelData(createEmptyDetailPanelModel());
+
+	const readDetailPanelFromPageData = (view: unknown): DetailPanelModel => {
+		const empty = createEmptyDetailPanelModel();
+		if (!view || typeof view !== 'object') return empty;
+		const viewData = view as {
+			post?: {
+				title?: string | null;
+				toc?: DetailPanelModel['toc'] | null;
+				relatedMoments?: DetailPanelRelatedMoment[] | null;
+			};
+			moment?: {
+				title?: string | null;
+				toc?: DetailPanelModel['toc'] | null;
+				relatedPosts?: DetailPanelRelatedPost[] | null;
+			};
+			page?: {
+				title?: string | null;
+				toc?: DetailPanelModel['toc'] | null;
+			};
+		};
+
+		if (viewData.post) {
+			return {
+				...empty,
+				kind: 'post',
+				title: viewData.post.title ?? '',
+				toc: viewData.post.toc ?? [],
+				relatedMoments: (viewData.post.relatedMoments ?? []).slice(0, 2)
+			};
+		}
+		if (viewData.moment) {
+			return {
+				...empty,
+				kind: 'moment',
+				title: viewData.moment.title ?? '',
+				toc: viewData.moment.toc ?? [],
+				relatedPosts: (viewData.moment.relatedPosts ?? []).slice(0, 2)
+			};
+		}
+		if (viewData.page) {
+			return {
+				...empty,
+				kind: 'page',
+				title: viewData.page.title ?? '',
+				toc: viewData.page.toc ?? []
+			};
+		}
+
+		return empty;
+	};
 
 	$effect(() => {
 		websiteInfoCtx.syncModelData(websiteInfoStore, data.websiteInfo ?? null);
+	});
+
+	$effect(() => {
+		page.url.pathname;
+		page.data;
+		const hash = browser ? window.location.hash.replace(/^#/, '') : '';
+		detailPanelCtx.syncModelData(detailPanelStore, {
+			...readDetailPanelFromPageData(page.data),
+			contentRoot: null,
+			activeAnchor: hash || null
+		});
 	});
 
 	const websiteName = websiteInfoCtx.selectModelData((data) => data?.website_name || 'grtBlog');
@@ -163,11 +234,11 @@
 <SearchModal />
 <FloatingWindow>
 	{#if windowStore.title === '申请友链'}
-		<QueryRoot loader={() => import('$lib/features/friend-link/components/ApplyFriendForm.svelte')} />
+		<QueryRoot
+			loader={() => import('$lib/features/friend-link/components/ApplyFriendForm.svelte')}
+		/>
 	{:else}
-		<div class="flex flex-col gap-3">
-
-		</div>
+		<div class="flex flex-col gap-3"></div>
 	{/if}
 </FloatingWindow>
 

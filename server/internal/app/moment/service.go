@@ -211,8 +211,6 @@ func (s *Service) GetMomentByShortURL(ctx context.Context, shortURL string) (*co
 		return nil, err
 	}
 
-	_ = s.repo.UpdateMomentViews(ctx, moment.ID)
-
 	return moment, nil
 }
 

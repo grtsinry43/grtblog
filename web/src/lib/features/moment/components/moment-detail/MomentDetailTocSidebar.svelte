@@ -1,6 +1,7 @@
 <script lang="ts">
-	import DetailTocNavList from '$lib/shared/components/detail/DetailTocNavList.svelte';
 	import type { TOCNode } from '$lib/shared/types/toc';
+	import DetailTocNavList from "$lib/ui/detail/DetailTocNavList.svelte";
+	import MomentDetailRelatedPosts from './MomentDetailRelatedPosts.svelte';
 
 	interface Props {
 		toc: TOCNode[];
@@ -22,5 +23,7 @@
 			</span>
 			<DetailTocNavList {toc} {contentRoot} {activeAnchor} {onAnchorChange} tone="cinnabar" />
 		</div>
+
+		<MomentDetailRelatedPosts />
 	</div>
 </aside>

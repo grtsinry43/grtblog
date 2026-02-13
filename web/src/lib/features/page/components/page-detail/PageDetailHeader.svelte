@@ -3,6 +3,7 @@
 	import { Calendar, Clock } from 'lucide-svelte';
 	import { formatDateCN } from '$lib/shared/utils/date';
 	import Badge from '$lib/ui/primitives/badge/Badge.svelte';
+	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 
 	interface Props {
 		page: PageDetail;
@@ -32,10 +33,16 @@
 				{formatDateCN(page.createdAt)}
 			</span>
 			<span class="flex items-center gap-1.5"><Clock size={12} /> 8 分钟阅读</span>
-			<span class="flex items-center gap-1.5">
-				浏览 {page.metrics?.views ?? 0} · 喜欢 {page.metrics?.likes ?? 0} · 评论 {page.metrics
-					?.comments ?? 0}
-			</span>
+			<span class="flex items-center gap-1.5">浏览 {page.metrics?.views ?? 0}</span>
+			<span aria-hidden="true" class="opacity-40">·</span>
+			<ContentLikeButton
+				contentType="page"
+				contentId={page.id}
+				likes={page.metrics?.likes ?? 0}
+				className="inline-flex items-center gap-1.5"
+			/>
+			<span aria-hidden="true" class="opacity-40">·</span>
+			<span class="flex items-center gap-1.5">评论 {page.metrics?.comments ?? 0}</span>
 		</div>
 	</div>
 

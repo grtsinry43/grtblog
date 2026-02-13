@@ -6,6 +6,7 @@
 	import { MessageSquare, Globe, ChevronLeft, ChevronRight, Lock } from 'lucide-svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { browser } from '$app/environment';
+	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
 
 	let { areaId, commentsCount = 0 }: { areaId: number; commentsCount?: number } = $props();
 	const isLoggedIn = false;
@@ -24,7 +25,8 @@
 		total: commentsCount,
 		page: 1,
 		size: 10,
-		isClosed: false
+		isClosed: false,
+		requireModeration: false
 	};
 
 	let currentPage = $state(1);
@@ -32,7 +34,14 @@
 
 	const query = createQuery(() => ({
 		queryKey: ['comments', areaId, currentPage],
-		queryFn: () => getCommentTree(undefined, areaId, currentPage, pageSize)
+		queryFn: () =>
+			getCommentTree(
+				undefined,
+				areaId,
+				currentPage,
+				pageSize,
+				browser ? getOrCreateVisitorId() : undefined
+			)
 	}));
 
 	commentAreaCtx.mountModelData(initialModel);
@@ -57,7 +66,8 @@
 			total: data?.total ?? prev?.total ?? commentsCount,
 			page: data?.page ?? prev?.page ?? 1,
 			size: data?.size ?? prev?.size ?? 10,
-			isClosed: data?.isClosed ?? prev?.isClosed ?? false
+			isClosed: data?.isClosed ?? prev?.isClosed ?? false,
+			requireModeration: data?.requireModeration ?? prev?.requireModeration ?? false
 		}));
 	});
 
@@ -72,7 +82,7 @@
 	};
 </script>
 
-<div class="mt-16 pt-10 border-t border-ink-100 dark:border-ink-800/50">
+<div class="mt-16 pt-10 border-t border-ink-100 dark:border-ink-800/50" id="comments">
 	<div class="w-full font-serif text-ink-900 dark:text-ink-100" id="comment-area">
 		<!-- Header -->
 		<div class="flex items-center justify-between mb-12 text-ink-900 dark:text-ink-100">
@@ -104,6 +114,13 @@
 					<span class="text-sm font-serif tracking-widest">评论已关闭</span>
 				</div>
 			{:else}
+				{#if $commentAreaModel?.requireModeration}
+					<div
+						class="mb-4 rounded-default border border-amber-300/60 bg-amber-50/70 px-4 py-2 text-xs text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200"
+					>
+						当前评论区已开启审核，评论提交后会先进入审核流程，通过后公开展示。
+					</div>
+				{/if}
 				<CommentForm />
 			{/if}
 		</div>

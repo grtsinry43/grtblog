@@ -30,6 +30,7 @@ const (
 	defaultQueueKey       = "analytics:view:queue"
 	defaultQueueMaxLength = 200000
 	defaultUVTTL          = 72 * time.Hour
+	defaultViewDedupTTL   = 30 * time.Minute
 )
 
 type Service struct {
@@ -100,6 +101,9 @@ func (s *Service) TrackView(ctx context.Context, in ViewTrackInput) (*ViewTrackR
 	if err := s.ensureContentExists(ctx, event.ContentType, event.ContentID); err != nil {
 		return nil, err
 	}
+	if duplicated := s.isDuplicateView(ctx, event); duplicated {
+		return &ViewTrackResult{VisitorID: event.VisitorID, Queued: false}, nil
+	}
 
 	if s.redis == nil {
 		if err := s.processViewEvent(ctx, event); err != nil {
@@ -121,6 +125,24 @@ func (s *Service) TrackView(ctx context.Context, in ViewTrackInput) (*ViewTrackR
 	}
 
 	return &ViewTrackResult{VisitorID: event.VisitorID, Queued: true}, nil
+}
+
+func (s *Service) isDuplicateView(ctx context.Context, event ViewTrackEvent) bool {
+	if s.redis == nil {
+		return false
+	}
+	key := fmt.Sprintf(
+		"%sanalytics:view:dedupe:%s:%d:%s",
+		s.redisPrefix,
+		event.ContentType,
+		event.ContentID,
+		event.VisitorID,
+	)
+	added, err := s.redis.SetNX(ctx, key, "1", defaultViewDedupTTL).Result()
+	if err != nil {
+		return false
+	}
+	return !added
 }
 
 func (s *Service) RunViewEventWorker(ctx context.Context) {

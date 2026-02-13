@@ -17,7 +17,9 @@ type Comment struct {
 	AreaID     int64
 	Content    string
 	AuthorID   *int64
+	VisitorID  *string
 	NickName   *string
+	Avatar     *string
 	IP         *string
 	Location   *string
 	Platform   *string
@@ -29,6 +31,7 @@ type Comment struct {
 	IsAuthor   bool
 	IsViewed   bool
 	IsTop      bool
+	IsMy       bool
 	Status     string
 	AreaType   *string
 	AreaName   *string

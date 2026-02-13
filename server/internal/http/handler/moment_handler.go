@@ -284,6 +284,54 @@ func (h *MomentHandler) GetMoment(c *fiber.Ctx) error {
 	return response.Success(c, momentResponse)
 }
 
+// ListSamePeriodArticles godoc
+// @Summary 获取手记同一时期的文章（两周内）
+// @Tags Moment
+// @Produce json
+// @Param id path int true "手记ID"
+// @Success 200 {object} contract.SamePeriodArticleListResp
+// @Router /moments/{id}/same-period-articles [get]
+func (h *MomentHandler) ListSamePeriodArticles(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的手记ID")
+	}
+
+	momentItem, err := h.svc.GetMomentByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	const windowDays = 14
+	const limit = 2
+	start := momentItem.CreatedAt.AddDate(0, 0, -windowDays)
+	end := momentItem.CreatedAt.AddDate(0, 0, windowDays)
+
+	articles, err := h.contentRepo.ListPublishedArticlesByCreatedAtRange(c.Context(), start, end, limit)
+	if err != nil {
+		return err
+	}
+
+	items := make([]contract.SamePeriodArticleItemResp, 0, len(articles))
+	for _, item := range articles {
+		resp := contract.SamePeriodArticleItemResp{
+			ID:        item.ID,
+			Title:     item.Title,
+			ShortURL:  item.ShortURL,
+			Summary:   item.Summary,
+			CreatedAt: item.CreatedAt,
+		}
+		if item.Cover != nil {
+			resp.Cover = *item.Cover
+		}
+		items = append(items, resp)
+	}
+
+	return response.Success(c, contract.SamePeriodArticleListResp{
+		Items: items,
+	})
+}
+
 // GetMomentByShortURL godoc
 // @Summary 根据短链接获取手记
 // @Tags Moment

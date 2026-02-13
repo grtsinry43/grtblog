@@ -24,6 +24,7 @@ type Comment struct {
 	AreaID    int64          `gorm:"column:area_id;not null"`
 	Content   string         `gorm:"column:content;type:text;not null"`
 	AuthorID  *int64         `gorm:"column:author_id"`
+	VisitorID string         `gorm:"column:visitor_id;size:255"`
 	NickName  string         `gorm:"column:nick_name;size:45"`
 	IP        string         `gorm:"column:ip;size:45"`
 	Location  string         `gorm:"column:location;size:255"`

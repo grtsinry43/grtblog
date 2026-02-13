@@ -8,8 +8,9 @@ export const scrollToAnchor = (
 	event?: MouseEvent
 ): void => {
 	event?.preventDefault();
-	if (!container) return;
-	const target = container.querySelector(`#${CSS.escape(anchor)}`) as HTMLElement | null;
+	const root = container ?? (typeof document !== 'undefined' ? document : null);
+	if (!root) return;
+	const target = root.querySelector(`#${CSS.escape(anchor)}`) as HTMLElement | null;
 	if (!target) return;
 	target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	if (typeof history !== 'undefined') history.replaceState(null, '', `#${anchor}`);

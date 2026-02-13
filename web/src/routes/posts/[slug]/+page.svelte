@@ -4,6 +4,7 @@
 	import { browser } from '$app/environment';
 	import { postDetailCtx } from '$lib/features/post/context';
 	import { createPostLiveUpdate } from '$lib/features/post/live-update';
+	import ContentViewTracker from '$lib/features/analytics/components/ContentViewTracker.svelte';
 
 	let { data } = $props();
 
@@ -32,3 +33,4 @@
 </script>
 
 <PostDetail />
+<ContentViewTracker contentType="article" contentId={$postIdStore ?? 0} />

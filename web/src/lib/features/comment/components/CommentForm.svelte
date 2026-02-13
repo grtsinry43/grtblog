@@ -3,10 +3,11 @@
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { createCommentLogin, createCommentVisitor } from '$lib/features/comment/api';
 	import { toast } from 'svelte-sonner';
-	import { slide } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import Input from '$lib/ui/primitives/input/Input.svelte';
 	import Textarea from '$lib/ui/primitives/textarea/Textarea.svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
+	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
 
 	interface Props {
 		parentId?: number;
@@ -22,6 +23,9 @@
 	const guestEmailStore = commentAreaCtx.selectModelData((data) => data?.guestEmail ?? '');
 	const guestSiteStore = commentAreaCtx.selectModelData((data) => data?.guestSite ?? '');
 	const replyingToStore = commentAreaCtx.selectModelData((data) => data?.replyingTo ?? null);
+	const requireModerationStore = commentAreaCtx.selectModelData(
+		(data) => data?.requireModeration ?? false
+	);
 	const { updateModelData } = commentAreaCtx.useModelActions();
 
 	const showReplyingTo = $derived(
@@ -30,8 +34,9 @@
 
 	const mutation = createMutation(() => ({
 		mutationFn: async () => {
+			const visitorId = getOrCreateVisitorId();
 			if ($isLoggedInStore) {
-				return await createCommentLogin(undefined, $areaIdStore, { content, parentId });
+				return await createCommentLogin(undefined, $areaIdStore, { content, parentId, visitorId });
 			}
 			if (!$guestNameStore || !$guestEmailStore) throw new Error('请填写称呼和邮箱');
 			return await createCommentVisitor(undefined, $areaIdStore, {
@@ -39,11 +44,17 @@
 				nickName: $guestNameStore,
 				email: $guestEmailStore,
 				website: $guestSiteStore || undefined,
-				parentId
+				parentId,
+				visitorId
 			});
 		},
-		onSuccess: () => {
-			toast.success('评论发表成功');
+		onSuccess: (created) => {
+			const status = created?.status?.toLowerCase?.() ?? '';
+			if (status === 'pending') {
+				toast.success('评论已提交，审核通过后公开展示');
+			} else {
+				toast.success('评论发表成功');
+			}
 			content = '';
 			if (parentId) {
 				updateModelData((prev) => (prev ? { ...prev, replyingTo: null } : prev));
@@ -96,7 +107,7 @@
 	{:else}
 		<div
 			class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"
-			transition:slide={{ axis: 'y', duration: 300 }}
+			transition:fly={{ y: -8, duration: 260, opacity: 0 }}
 		>
 			<!-- Name -->
 			<div class="group">
@@ -183,6 +194,11 @@
 		<div class="flex items-center justify-between mt-6">
 			<div class="text-[10px] text-ink-800/40 dark:text-ink-200/40 font-serif tracking-wider">
 				支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span> 换行
+				{#if $requireModerationStore}
+					<span class="ml-2 text-amber-600 dark:text-amber-300">
+						当前开启审核，评论会先进入审核队列
+					</span>
+				{/if}
 			</div>
 
 			<button

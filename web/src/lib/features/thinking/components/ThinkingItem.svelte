@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { ThinkingItem } from '$lib/features/thinking/types';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
-	import { MessageCircle, Heart, Eye } from 'lucide-svelte';
+	import { MessageCircle, Eye } from 'lucide-svelte';
 	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
+	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 
 	let { item } = $props<{ item: ThinkingItem }>();
 </script>
@@ -58,17 +59,17 @@
 					strokeWidth={1.5}
 					class="group-hover:scale-105 transition-transform"
 				/>
-				<span>{item.metrics.comments || '评论'}</span>
+				<span>{item.comments || '评论'}</span>
 			</button>
-			<button
-				class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-red-500 transition-colors group p-1.5 rounded-default hover:bg-red-50 dark:hover:bg-red-900/20"
-			>
-				<Heart size={15} strokeWidth={1.5} class="group-hover:scale-105 transition-transform" />
-				<span>{item.metrics.likes || '点赞'}</span>
-			</button>
+			<ContentLikeButton
+				contentType="thinking"
+				contentId={item.id}
+				likes={item.likes}
+				className="text-xs text-ink-400 hover:text-red-500 transition-colors p-1.5 rounded-default hover:bg-red-50 dark:hover:bg-red-900/20"
+			/>
 			<div class="flex items-center gap-1.5 text-xs text-ink-400 ml-auto cursor-default opacity-80">
 				<Eye size={15} strokeWidth={1.5} />
-				<span>{item.metrics.views}</span>
+				<span>{item.views}</span>
 			</div>
 		</div>
 	</div>

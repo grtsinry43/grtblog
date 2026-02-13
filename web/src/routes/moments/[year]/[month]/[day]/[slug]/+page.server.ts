@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { getMomentDetail } from '$lib/features/moment/api';
+import { getMomentDetail, getMomentRelatedPosts } from '$lib/features/moment/api';
+import type { MomentRelatedPost } from '$lib/features/moment/types';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
@@ -22,7 +23,17 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 		error(404, 'Moment not found');
 	}
 
+	let relatedPosts: MomentRelatedPost[] = [];
+	try {
+		relatedPosts = await getMomentRelatedPosts(fetch, detail.id);
+	} catch {
+		relatedPosts = [];
+	}
+
 	return {
-		moment: detail
+		moment: {
+			...detail,
+			relatedPosts
+		}
 	};
 };

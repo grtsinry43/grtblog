@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DetailTocNavList from '$lib/shared/components/detail/DetailTocNavList.svelte';
+	import DetailTocNavList from '$lib/ui/detail/DetailTocNavList.svelte';
 	import type { TOCNode } from '$lib/shared/types/toc';
 
 	interface Props {

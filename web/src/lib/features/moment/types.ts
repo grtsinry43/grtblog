@@ -24,6 +24,15 @@ export type MomentSummary = {
 	updatedAt: string;
 };
 
+export type MomentRelatedPost = {
+	id: number;
+	title: string;
+	shortUrl: string;
+	summary: string;
+	cover?: string;
+	createdAt: string;
+};
+
 export type MomentDetail = {
 	id: number;
 	title: string;
@@ -47,6 +56,7 @@ export type MomentDetail = {
 	isTop: boolean;
 	isHot: boolean;
 	isOriginal: boolean;
+	relatedPosts?: MomentRelatedPost[];
 	createdAt: string;
 	updatedAt: string;
 };

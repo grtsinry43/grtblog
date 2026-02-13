@@ -3,11 +3,13 @@
 > 目标：把“优雅代码”的原则落到当前仓库结构与命名上，供任何 LLM / Agent 在本项目中遵循。
 
 ## 0. 项目定位
+
 - 内容平台 / 博客系统
 - 静态优先（SSG/预渲染） + 渐进式增强（hydration islands）
 - 统一设计系统 + 可扩展功能模块
 
 ## 1. 目录与职责边界（按当前仓库结构）
+
 - `src/routes/**`: 页面编排 + SvelteKit load 数据接入（SSR/SSG/SEO）。不写复杂业务逻辑。
 - `src/lib/features/<feature>/**`: 业务域模块（API + types + components）。例如：`post`。
 - `src/lib/shared/**`: 跨功能共享能力（clients、markdown、theme、token）。
@@ -16,6 +18,7 @@
 - `static/**`: 直接公开静态资源。
 
 ## 2. 组合优先：页面只做编排
+
 - 页面组件只负责“拼装”，不要堆业务细节。
 - 业务逻辑必须下沉到：
   - `src/lib/features/<feature>/api.ts`（请求与协议）
@@ -24,6 +27,7 @@
   - `src/lib/ui/**`（可复用 UI）
 
 ## 3. 浏览器 API 必须封装为能力
+
 - 禁止在业务组件里散落 `new IntersectionObserver` / `addEventListener` / `ResizeObserver`。
 - 统一封装为可复用能力（建议路径）：
   - `src/lib/shared/dom/*` 或 `src/lib/shared/actions/*`（Svelte actions）
@@ -33,47 +37,56 @@
   - 稳定引用（避免重复绑定）
 
 ## 4. 状态流：选择器/派生优先
+
 - 页面级数据：优先通过 `+page.server.ts/+page.ts load` 提供。
 - 跨层共享：`setContext/getContext` + store。
 - 订阅粒度：优先 `derived store` 或 `$derived`，组件只读最小数据。
 - 避免大对象 prop drilling。
 
 ## 5. Svelte 5 Runes 约束
+
 - `$state`: 本地可变状态
 - `$derived`: 派生状态（避免手写同步）
 - `$effect`: 只做副作用（DOM/网络/订阅），不做纯计算
 - `$props`: 统一 props 访问
 
 ## 6. 数据获取与 API 约定
+
 - API 请求统一通过 `src/lib/shared/clients/api.ts` 的 `getApi(fetch)`。
 - feature 模块 API 参考 `src/lib/features/post/api.ts`（优先接收 `fetch`）。
 - 服务端 load 中使用 `fetch` 版本；客户端调用可省略。
 
 ## 7. Markdown/TOC 规范
+
 - Markdown 渲染入口：`src/lib/shared/markdown`（`createMarkdownIt` / `renderMarkdown`）。
 - 结构化 TOC：应由后端/构建期生成（SEO 友好）。
 - 前端高亮：IntersectionObserver 只负责 active 交互（封装为 action）。
 - Markdown 组件增强：使用 `src/lib/shared/markdown/components` 注册/挂载。
 
 ## 8. 性能策略（静态优先 + 渐进增强）
+
 - 文章/列表/友链/归档：SSR/SSG 输出完整 HTML。
 - 评论/点赞/TOC 高亮/图片缩放等：client-only islands。
 - 重库只在 `onMount`/交互后动态 import。
 
 ## 9. SEO 与友链页面
+
 - 友链列表是强 SEO 页：必须 SSR/SSG 输出完整列表。
 - 客户端只做增强（shuffle、筛选、申请表单、动画）。
 
 ## 10. WebAuthn / Passkey
+
 - `navigator.credentials.*` 仅可在客户端触发（onMount/点击）。
 - 服务端只负责 challenge 签发与验证。
 
 ## 11. 设计系统与样式约束
+
 - 全局主题/Token：`src/routes/layout.css`（Tailwind v4 + @theme）。
 - 样式优先使用 Tailwind 类名；仅当表达不清晰/复用需要时才在 `<style>` 中使用 `@apply`，并用 `@reference` 引入 `$routes/layout.css`。
 - 视觉风格保持“温暖灰 + jade 主色 + serif/sans/mono”体系，不引入新的风格系统。
 
 ## 12. 禁止事项（硬性）
+
 - 不在页面组件里直接写 observer/event 绑定。
 - 不引入散装全局状态，必须收敛到 store/context。
 - 不在 SSR 阶段访问 `window/document/navigator`。
@@ -82,6 +95,7 @@
 - 禁止臆测：只基于代码/日志/已知事实给出结论与原因，不做凭空推断；不确定时先提出可验证的问题或给出需要的证据。
 
 ## 13. 可选落地路径建议（如需新增模块）
+
 - DOM actions: `src/lib/shared/actions/*.ts`
 - DOM helpers: `src/lib/shared/dom/*.ts`
 - 业务模块：`src/lib/features/<feature>/{api.ts,types.ts,components/*}`
@@ -90,18 +104,41 @@
 ---
 
 ## 14. 变更说明（新增）
+
 原因：使用 svatoms 的 `selectModelData` 时，selector 返回对象会在 model 细节变动时触发子组件重渲染，影响 action/update 稳定性。  
 改动范围：补充 svatoms 选择器去抖与等价判断用法规范。
 
 ## 15. svatoms 选择器用法（新增）
+
 - `selectModelData(selector, { equals })` 可用于避免 selector 返回派生对象时的无关重渲染。
 - 当 selector 返回对象/数组时，必须提供 `equals`，仅对关心字段做浅比较。
 - 推荐写法：
+
 ```ts
-const store = ctx.selectModelData(
-  (model) => model?.part ?? null,
-  { equals: (a, b) => a?.id === b?.id && a?.status === b?.status }
-);
+const store = ctx.selectModelData((model) => model?.part ?? null, {
+	equals: (a, b) => a?.id === b?.id && a?.status === b?.status
+});
 ```
+
+## 16. 内容数据流（强约束）
+
+- 内容主数据（文章详情、手记详情、页面详情、同类推荐等）必须走服务端 `+page.server.ts`，确保首屏可 SSR/SSG。
+- 在 `load` 中调用 feature API 时必须透传 `fetch`：`getXxx(fetch, ...)`；禁止在详情组件里用 `onMount` 补首屏关键数据。
+- 约定：先在服务端聚合完整页面模型，再一次性下发给页面组件，不要让子组件各自请求首屏内容。
+- 详情页中“相关内容/同期内容”属于内容主数据，默认与详情同一次 server load 拉取。
+
+## 17. 客户端实时与复杂异步（TanStack + QueryRoot）
+
+- 仅将“实时性强或交互触发”的数据放到客户端异步：如评论树刷新、交互指标轮询、实时更新、用户操作后重取。
+- 客户端异步统一使用 TanStack Query，并通过封装好的 `QueryRoot` 挂载异步组件。
+- 禁止在业务页面重复手写 `QueryClientProvider` 初始化逻辑；统一复用 `QueryRoot`。
+- 客户端请求 fetch 要传 `undefined`，通过 `getApi()` 即可；服务端必须传 `fetch`。
+
+## 18. svatoms 页面数据管线（落地约定）
+
+- 每个 feature 维护独立 context（如 `listCtx`、`detailCtx`），放在 `src/lib/features/<feature>/context.ts`。
+- 页面组件挂载模型时，若已有服务端初始数据，必须使用 `mountModelData(initialData)`；`null` 仅用于确实没有初始数据的场景（如纯客户端预览壳）。同时保留 `$effect` 中 `syncModelData(...)` 处理导航切换后的数据同步。
+- 子组件只通过 `selectModelData` 读取最小字段；selector 返回对象/数组时必须提供 `equals`（建议集中在 `selector-equals.ts`）。
+- 跨组件共享的数据（如 `relatedMoments`、`relatedPosts`）应并入 detail model，由 context 统一分发，避免 prop drilling 和重复请求。
 
 如需扩展本规范，请先解释原因与改动范围，再调整本文件。

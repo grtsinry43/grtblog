@@ -2,7 +2,10 @@ package comment
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -74,11 +77,12 @@ type CommentNode struct {
 }
 
 type PublicCommentPage struct {
-	Items    []*CommentNode
-	Total    int64
-	Page     int
-	Size     int
-	IsClosed bool
+	Items             []*CommentNode
+	Total             int64
+	Page              int
+	Size              int
+	IsClosed          bool
+	RequireModeration bool
 }
 
 func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd CreateCommentLoginCmd, meta RequestMeta) (*domaincomment.Comment, error) {
@@ -108,6 +112,7 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 	}
 	nicknamePtr := toPtr(nickname)
 	emailPtr := toPtr(strings.TrimSpace(user.Email))
+	visitorID := strings.TrimSpace(cmd.VisitorID)
 
 	isFriend := false
 	if !user.IsAdmin && s.friendLinkRepo != nil {
@@ -124,21 +129,24 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 	}
 
 	commentEntity := &domaincomment.Comment{
-		AreaID:   cmd.AreaID,
-		Content:  strings.TrimSpace(cmd.Content),
-		AuthorID: &user.ID,
-		NickName: nicknamePtr,
-		Email:    emailPtr,
-		Website:  nil,
-		IsOwner:  user.IsAdmin,
-		IsAuthor: user.IsAdmin,
-		IsFriend: isFriend,
-		IsViewed: isViewed,
-		IsTop:    false,
-		Status:   status,
-		ParentID: cmd.ParentID,
+		AreaID:    cmd.AreaID,
+		Content:   strings.TrimSpace(cmd.Content),
+		AuthorID:  &user.ID,
+		VisitorID: toPtr(visitorID),
+		NickName:  nicknamePtr,
+		Email:     emailPtr,
+		Website:   nil,
+		IsOwner:   user.IsAdmin,
+		IsAuthor:  user.IsAdmin,
+		IsFriend:  isFriend,
+		IsViewed:  isViewed,
+		IsTop:     false,
+		IsMy:      true,
+		Status:    status,
+		ParentID:  cmd.ParentID,
 	}
 	s.applyRequestMeta(commentEntity, meta)
+	commentEntity.Avatar = s.resolveCommentAvatar(ctx, commentEntity, nil)
 
 	if err := s.repo.Create(ctx, commentEntity); err != nil {
 		return nil, err
@@ -177,6 +185,7 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 	email := strings.TrimSpace(cmd.Email)
 	website := strings.TrimSpace(toValue(cmd.Website))
 	emailPtr := toPtr(email)
+	visitorID := strings.TrimSpace(cmd.VisitorID)
 
 	status, isViewed, err := s.resolveCreateStatus(ctx, false, nil, emailPtr)
 	if err != nil {
@@ -184,21 +193,24 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 	}
 
 	commentEntity := &domaincomment.Comment{
-		AreaID:   cmd.AreaID,
-		Content:  strings.TrimSpace(cmd.Content),
-		AuthorID: nil,
-		NickName: toPtr(nickname),
-		Email:    emailPtr,
-		Website:  toPtr(website),
-		IsOwner:  false,
-		IsAuthor: false,
-		IsFriend: false,
-		IsViewed: isViewed,
-		IsTop:    false,
-		Status:   status,
-		ParentID: cmd.ParentID,
+		AreaID:    cmd.AreaID,
+		Content:   strings.TrimSpace(cmd.Content),
+		AuthorID:  nil,
+		VisitorID: toPtr(visitorID),
+		NickName:  toPtr(nickname),
+		Email:     emailPtr,
+		Website:   toPtr(website),
+		IsOwner:   false,
+		IsAuthor:  false,
+		IsFriend:  false,
+		IsViewed:  isViewed,
+		IsTop:     false,
+		IsMy:      true,
+		Status:    status,
+		ParentID:  cmd.ParentID,
 	}
 	s.applyRequestMeta(commentEntity, meta)
+	commentEntity.Avatar = s.resolveCommentAvatar(ctx, commentEntity, nil)
 
 	if err := s.repo.Create(ctx, commentEntity); err != nil {
 		return nil, err
@@ -222,22 +234,34 @@ func (s *Service) ListPublicComments(ctx context.Context, cmd ListPublicComments
 	if err != nil {
 		return nil, err
 	}
+	requireModeration := false
+	if s.sysCfg != nil {
+		requireModeration = s.sysCfg.CommentSettings(ctx).RequireModeration
+	}
 	page, size := normalizePage(cmd.Page, cmd.PageSize)
 
-	items, err := s.repo.ListPublicByAreaID(ctx, domaincomment.PublicListOptions{AreaID: cmd.AreaID})
+	items, err := s.repo.ListPublicByAreaID(ctx, domaincomment.PublicListOptions{
+		AreaID:          cmd.AreaID,
+		ViewerAuthorID:  cmd.ViewerAuthorID,
+		ViewerVisitorID: strings.TrimSpace(cmd.ViewerVisitorID),
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	s.populateCommentOwnership(items, cmd.ViewerAuthorID, cmd.ViewerVisitorID)
+	s.populateCommentAvatars(ctx, items)
 	tree := buildCommentTree(items)
 	total := len(tree)
 	start := (page - 1) * size
 	if start >= total {
 		return &PublicCommentPage{
-			Items:    []*CommentNode{},
-			Total:    int64(total),
-			Page:     page,
-			Size:     size,
-			IsClosed: area.IsClosed,
+			Items:             []*CommentNode{},
+			Total:             int64(total),
+			Page:              page,
+			Size:              size,
+			IsClosed:          area.IsClosed,
+			RequireModeration: requireModeration,
 		}, nil
 	}
 	end := start + size
@@ -245,11 +269,12 @@ func (s *Service) ListPublicComments(ctx context.Context, cmd ListPublicComments
 		end = total
 	}
 	return &PublicCommentPage{
-		Items:    tree[start:end],
-		Total:    int64(total),
-		Page:     page,
-		Size:     size,
-		IsClosed: area.IsClosed,
+		Items:             tree[start:end],
+		Total:             int64(total),
+		Page:              page,
+		Size:              size,
+		IsClosed:          area.IsClosed,
+		RequireModeration: requireModeration,
 	}, nil
 }
 
@@ -275,6 +300,7 @@ func (s *Service) ListAdminComments(ctx context.Context, cmd ListAdminCommentsCm
 	if err != nil {
 		return nil, 0, err
 	}
+	s.populateCommentAvatars(ctx, items)
 	return items, total, nil
 }
 
@@ -331,9 +357,11 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 		IsAuthor: true,
 		IsViewed: true,
 		IsTop:    false,
+		IsMy:     true,
 		Status:   domaincomment.CommentStatusApproved,
 		ParentID: &parent.ID,
 	}
+	reply.Avatar = s.resolveCommentAvatar(ctx, reply, nil)
 	if err := s.repo.Create(ctx, reply); err != nil {
 		return nil, err
 	}
@@ -481,7 +509,7 @@ func (s *Service) resolveCreateStatus(ctx context.Context, isAdmin bool, authorI
 			return "", false, err
 		}
 		if blocked {
-			return domaincomment.CommentStatusRejected, false, nil
+			return "", false, domaincomment.ErrCommentBlocked
 		}
 	}
 
@@ -567,6 +595,27 @@ func (s *Service) ensureParentValid(ctx context.Context, areaID int64, parentID 
 	return nil
 }
 
+func (s *Service) populateCommentOwnership(items []*domaincomment.Comment, viewerAuthorID *int64, viewerVisitorID string) {
+	visitorID := strings.TrimSpace(viewerVisitorID)
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+
+		item.IsMy = false
+		if viewerAuthorID != nil && item.AuthorID != nil && *viewerAuthorID == *item.AuthorID {
+			item.IsMy = true
+			continue
+		}
+
+		if visitorID != "" {
+			if itemVisitorID := strings.TrimSpace(toValue(item.VisitorID)); itemVisitorID != "" && itemVisitorID == visitorID {
+				item.IsMy = true
+			}
+		}
+	}
+}
+
 func buildCommentTree(items []*domaincomment.Comment) []*CommentNode {
 	nodes := make(map[int64]*CommentNode, len(items))
 	for _, item := range items {
@@ -585,6 +634,69 @@ func buildCommentTree(items []*domaincomment.Comment) []*CommentNode {
 		roots = append(roots, node)
 	}
 	return roots
+}
+
+type commentAuthorSnapshot struct {
+	avatar string
+	email  string
+	found  bool
+}
+
+func (s *Service) populateCommentAvatars(ctx context.Context, items []*domaincomment.Comment) {
+	if len(items) == 0 {
+		return
+	}
+	cache := make(map[int64]commentAuthorSnapshot)
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		item.Avatar = s.resolveCommentAvatar(ctx, item, cache)
+	}
+}
+
+func (s *Service) resolveCommentAvatar(ctx context.Context, item *domaincomment.Comment, cache map[int64]commentAuthorSnapshot) *string {
+	if item == nil {
+		return nil
+	}
+
+	email := strings.TrimSpace(toValue(item.Email))
+	if item.AuthorID != nil && s.userRepo != nil {
+		uid := *item.AuthorID
+		info, ok := cache[uid]
+		if !ok {
+			user, err := s.userRepo.FindByID(ctx, uid)
+			if err == nil && user != nil {
+				info = commentAuthorSnapshot{
+					avatar: strings.TrimSpace(user.Avatar),
+					email:  strings.TrimSpace(user.Email),
+					found:  true,
+				}
+			} else {
+				info = commentAuthorSnapshot{found: false}
+			}
+			cache[uid] = info
+		}
+		if info.found {
+			if info.avatar != "" {
+				return toPtr(info.avatar)
+			}
+			if email == "" {
+				email = info.email
+			}
+		}
+	}
+
+	return buildCavatarURL(email)
+}
+
+func buildCavatarURL(email string) *string {
+	normalized := strings.ToLower(strings.TrimSpace(email))
+	if normalized == "" {
+		return nil
+	}
+	hash := md5.Sum([]byte(normalized))
+	return toPtr(fmt.Sprintf("https://cravatar.cn/avatar/%s?d=mp&s=240", hex.EncodeToString(hash[:])))
 }
 
 func normalizePage(page, size int) (int, int) {
