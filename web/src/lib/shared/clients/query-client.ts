@@ -15,9 +15,7 @@ const defaultOptions: QueryClientConfig = {
  * Get or lazily create a singleton QueryClient.
  * The import of `@tanstack/svelte-query` is deferred so it stays out of the SSR bundle.
  */
-export async function getOrCreateQueryClient(
-	options?: QueryClientConfig
-): Promise<QueryClient> {
+export async function getOrCreateQueryClient(options?: QueryClientConfig): Promise<QueryClient> {
 	if (singleton) return singleton;
 	const { QueryClient } = await import('@tanstack/svelte-query');
 	singleton = new QueryClient(options ?? defaultOptions);

@@ -69,11 +69,7 @@
 	);
 
 	const currentBlur = $derived(
-		isSpringDriven
-			? Math.max(0, 3 * (1 - progress.current))
-			: reducedMotion || visible
-				? 0
-				: 3
+		isSpringDriven ? Math.max(0, 3 * (1 - progress.current)) : reducedMotion || visible ? 0 : 3
 	);
 </script>
 

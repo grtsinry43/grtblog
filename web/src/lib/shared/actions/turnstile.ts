@@ -102,8 +102,7 @@ export const turnstileWidget = (node: HTMLElement, options: TurnstileRenderOptio
 				action: currentOptions.action,
 				callback: (token: string) => currentOptions.onToken?.(token),
 				'expired-callback': () => currentOptions.onExpired?.(),
-				'error-callback': () =>
-					currentOptions.onError?.(new Error('Turnstile 验证失败'))
+				'error-callback': () => currentOptions.onError?.(new Error('Turnstile 验证失败'))
 			});
 		} catch (error) {
 			currentOptions.onError?.(error);

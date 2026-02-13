@@ -37,7 +37,9 @@
 				{:else}
 					{@render content()}
 				{/if}
-				<BitsTooltip.Arrow class="fill-white dark:fill-ink-800 stroke-ink-100 dark:stroke-ink-700" />
+				<BitsTooltip.Arrow
+					class="fill-white dark:fill-ink-800 stroke-ink-100 dark:stroke-ink-700"
+				/>
 			</BitsTooltip.Content>
 		</BitsTooltip.Portal>
 	</BitsTooltip.Root>

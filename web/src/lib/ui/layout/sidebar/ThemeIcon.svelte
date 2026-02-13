@@ -59,16 +59,8 @@
 	class="h-10 w-10 rounded-default text-ink-400 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-ink-800 dark:hover:text-ink-100 flex items-center justify-center"
 >
 	{#if resolved === 'dark'}
-		<Sun class="theme-icon w-5 h-5 relative z-10" />
+		<Sun class="w-5 h-5 relative z-10" />
 	{:else}
-		<Moon class="theme-icon w-5 h-5 relative z-10" />
+		<Moon class="w-5 h-5 relative z-10" />
 	{/if}
 </button>
-
-<style lang="postcss">
-	@reference "$routes/layout.css";
-
-	.theme-icon {
-		@apply relative z-10 ;
-	}
-</style>

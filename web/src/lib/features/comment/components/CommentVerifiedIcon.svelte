@@ -2,10 +2,7 @@
 	import { BadgeCheck } from 'lucide-svelte';
 	import { Tooltip } from '$lib/ui/primitives';
 
-	let {
-		type,
-		content
-	} = $props<{
+	let { type, content } = $props<{
 		type: 'owner' | 'friend' | 'author';
 		content: string;
 	}>();
@@ -19,11 +16,7 @@
 
 <Tooltip {content}>
 	<span class="inline-flex items-center justify-center hover:opacity-80 transition-opacity">
-		<BadgeCheck 
-			size={15} 
-			fill="currentColor" 
-			class="{colors[type]} verified-icon" 
-		/>
+		<BadgeCheck size={15} fill="currentColor" class="{colors[type]} verified-icon" />
 		<span class="sr-only">{content}</span>
 	</span>
 </Tooltip>

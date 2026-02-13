@@ -1,5 +1,9 @@
 import { getApi } from '$lib/shared/clients/api';
-import type { PageDetail, PageLatestCheckResponse, PageListResponse } from '$lib/features/page/types';
+import type {
+	PageDetail,
+	PageLatestCheckResponse,
+	PageListResponse
+} from '$lib/features/page/types';
 
 type PageListOptions = {
 	page?: number;

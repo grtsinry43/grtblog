@@ -4,8 +4,9 @@
 	import { ArrowDown } from 'lucide-svelte';
 </script>
 
-<div class="hero-container min-h-[calc(100svh-5rem)] md:min-h-[calc(100svh-8rem)] flex flex-col justify-center w-full">
-	
+<div
+	class="hero-container min-h-[calc(100svh-5rem)] md:min-h-[calc(100svh-8rem)] flex flex-col justify-center w-full"
+>
 	<!-- [Desktop Version] - Original Style -->
 	<div class="hidden md:flex flex-col gap-20">
 		<div class="hero-info flex justify-center gap-36">
@@ -30,11 +31,11 @@
 				</div>
 			</FadeIn>
 		</div>
-		
+
 		<div class="flex flex-col gap-12 ml-4">
 			<FadeIn y={16} duration={900} delay={400}>
 				<div class="hero-motto font-serif text-2xl leading-relaxed text-ink-800 dark:text-ink-200">
-					热衷于在逻辑与感性的缝隙中构建数字花园。<br/>
+					热衷于在逻辑与感性的缝隙中构建数字花园。<br />
 					也许，代码是现代的诗歌，而文字是思想的快照。
 				</div>
 			</FadeIn>
@@ -53,7 +54,9 @@
 	<div class="flex md:hidden flex-col items-center pt-8">
 		<FadeIn y={15} duration={1000}>
 			<div class="relative mb-10">
-				<div class="absolute inset-0 translate-x-2 translate-y-2 border border-ink-200 dark:border-ink-800 rounded-default -z-10"></div>
+				<div
+					class="absolute inset-0 translate-x-2 translate-y-2 border border-ink-200 dark:border-ink-800 rounded-default -z-10"
+				></div>
 				<img
 					src="https://dogeoss.grtsinry43.com/img/author.jpeg"
 					alt="Author"
@@ -97,13 +100,18 @@
 	}
 
 	.hero-scroll-hint {
-		@apply absolute bottom-8 right-10 flex h-12 w-12 items-center justify-center text-ink-400 opacity-40;
+		@apply absolute right-10 bottom-8 flex h-12 w-12 items-center justify-center text-ink-400 opacity-40;
 		animation: hero-scroll-bounce 1.6s ease-in-out infinite;
 	}
 
 	@keyframes hero-scroll-bounce {
-		0%, 100% { transform: translateY(0); }
-		50% { transform: translateY(8px); }
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(8px);
+		}
 	}
 
 	/* 特别为移动端 SocialItem 去掉文字 */

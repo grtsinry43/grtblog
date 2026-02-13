@@ -1,20 +1,10 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { searchSite } from './service';
-	import { onMount, onDestroy } from 'svelte';
-	import {
-		X,
-		Search,
-		ArrowRight,
-		Clock,
-		Hash,
-		Map,
-		FileText,
-		Lightbulb,
-		BookOpen
-	} from 'lucide-svelte';
+	import { onMount } from 'svelte';
+	import { X, Search, ArrowRight, Clock, Hash, FileText, Lightbulb, BookOpen } from 'lucide-svelte';
 	import { uiState } from '$lib/shared/stores/ui.svelte';
-	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import { goto } from '$app/navigation';
 	import Loading from '$lib/ui/common/Loading.svelte';
 	import { buildMomentPath, buildPagePath, buildPostPath } from '$lib/shared/utils/content-path';
@@ -105,11 +95,6 @@
 		localStorage.setItem('search_history', JSON.stringify(newHistory));
 	}
 
-	$effect(() => {
-		if (query.data && debouncedSearchTerm) {
-		}
-	});
-
 	function handleInputKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && searchTerm) {
 			saveHistory(searchTerm);
@@ -122,7 +107,7 @@
 		else if (debouncedSearchTerm) saveHistory(debouncedSearchTerm);
 
 		closeWithAnimation();
-		goto(path);
+		goto(resolve(path));
 	}
 
 	const resolveSearchPath = (
@@ -194,13 +179,13 @@
 			class:translate-y-0={isAnimating}
 			class:translate-y-8={!isAnimating}
 			class:scale-100={isAnimating}
-				class:scale-95={!isAnimating}
-				class:opacity-100={isAnimating}
-				class:opacity-0={!isAnimating}
-			>
-				<!-- Input Header -->
-				<div
-					class="relative p-4 border-b border-ink-200 dark:border-ink-200/10 flex items-center gap-3 bg-ink-50 dark:bg-[#232323]"
+			class:scale-95={!isAnimating}
+			class:opacity-100={isAnimating}
+			class:opacity-0={!isAnimating}
+		>
+			<!-- Input Header -->
+			<div
+				class="relative p-4 border-b border-ink-200 dark:border-ink-200/10 flex items-center gap-3 bg-ink-50 dark:bg-[#232323]"
 			>
 				<Search size={18} class="text-ink-400 dark:text-ink-600 flex-shrink-0" strokeWidth={2} />
 				<input
@@ -243,7 +228,7 @@
 								>
 							</div>
 							<div class="flex flex-col gap-2">
-								{#each searchHistory as item}
+								{#each searchHistory as item (item)}
 									<button
 										onclick={() => {
 											searchTerm = item;
@@ -272,7 +257,7 @@
 							<Hash size={12} /> 猜你想找
 						</h3>
 						<div class="flex flex-wrap gap-2">
-							{#each suggestedTags as tag}
+							{#each suggestedTags as tag (tag)}
 								<button
 									onclick={() => {
 										searchTerm = tag;
@@ -293,7 +278,7 @@
 								<FileText size={12} /> 文章
 							</h3>
 							<div class="flex flex-col gap-1">
-								{#each query.data.articles as article}
+								{#each query.data.articles as article (article.id)}
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('article', article))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
@@ -301,9 +286,11 @@
 										<div
 											class="font-serif text-ink-900 dark:text-ink-200 group-hover:text-jade-600 transition-colors"
 										>
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 											{@html highlightKeywords(article.title, query.data.keywords)}
 										</div>
 										<div class="text-xs text-ink-400 mt-0.5 line-clamp-1">
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 											{@html highlightKeywords(article.snippet, query.data.keywords)}
 										</div>
 									</button>
@@ -320,7 +307,7 @@
 								<Lightbulb size={12} /> 手记
 							</h3>
 							<div class="flex flex-col gap-1">
-								{#each query.data.moments as moment}
+								{#each query.data.moments as moment (moment.id)}
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('moment', moment))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
@@ -328,9 +315,11 @@
 										<div
 											class="font-serif text-ink-900 dark:text-ink-200 group-hover:text-jade-600 transition-colors"
 										>
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 											{@html highlightKeywords(moment.title || moment.snippet, query.data.keywords)}
 										</div>
 										{#if moment.title}<div class="text-xs text-ink-400 mt-0.5 line-clamp-1">
+												<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 												{@html highlightKeywords(moment.snippet, query.data.keywords)}
 											</div>{/if}
 									</button>
@@ -347,7 +336,7 @@
 								<Lightbulb size={12} /> 思考
 							</h3>
 							<div class="flex flex-col gap-1">
-								{#each query.data.thinkings as thinking}
+								{#each query.data.thinkings as thinking (thinking.id)}
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('thinking', thinking))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
@@ -355,12 +344,14 @@
 										<div
 											class="font-serif text-ink-900 dark:text-ink-200 group-hover:text-jade-600 transition-colors"
 										>
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 											{@html highlightKeywords(
 												thinking.title || thinking.snippet,
 												query.data.keywords
 											)}
 										</div>
 										{#if thinking.title}<div class="text-xs text-ink-400 mt-0.5 line-clamp-1">
+												<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 												{@html highlightKeywords(thinking.snippet, query.data.keywords)}
 											</div>{/if}
 									</button>
@@ -377,7 +368,7 @@
 								<BookOpen size={12} /> 页面
 							</h3>
 							<div class="flex flex-col gap-1">
-								{#each query.data.pages as page}
+								{#each query.data.pages as page (page.id)}
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('page', page))}
 										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group"
@@ -385,6 +376,7 @@
 										<div
 											class="font-serif text-ink-900 dark:text-ink-200 group-hover:text-jade-600 transition-colors"
 										>
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 											{@html highlightKeywords(page.title, query.data.keywords)}
 										</div>
 									</button>

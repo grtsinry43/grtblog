@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PostSummary } from '$lib/features/post/types';
+	import { resolve } from '$app/paths';
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { FileText, Sparkles } from 'lucide-svelte';
 	import ArticleItem from '$lib/features/post/components/ArticleItem.svelte';
@@ -25,8 +25,7 @@
 	let size = sizeStore;
 
 	// Fluid Hover State
-	let hoveredIndex: number | null = $state(null);
-	let listContainer: HTMLElement;
+	let listContainer = $state<HTMLElement | null>(null);
 
 	// Spring stores for smooth animation
 	const hoverCoords = spring(
@@ -42,8 +41,8 @@
 	});
 
 	function handleMouseEnter(index: number, event: MouseEvent) {
-		hoveredIndex = index;
 		const target = event.currentTarget as HTMLElement;
+		if (!listContainer) return;
 		const parentRect = listContainer.getBoundingClientRect();
 		const targetRect = target.getBoundingClientRect();
 
@@ -55,7 +54,6 @@
 	}
 
 	function handleMouseLeave() {
-		hoveredIndex = null;
 		hoverOpacity.set(0);
 	}
 
@@ -71,7 +69,7 @@
 
 	const onPageChange = (page: number) => {
 		const safePage = Number.isFinite(page) && page > 1 ? page : 1;
-		goto(safePage === 1 ? '/posts/' : `/posts/page/${safePage}/`);
+		goto(resolve(safePage === 1 ? '/posts/' : `/posts/page/${safePage}/`));
 	};
 </script>
 
@@ -112,7 +110,7 @@
 				style:opacity={$hoverOpacity}
 			></div>
 
-			{#each $posts as post, i}
+			{#each $posts as post, i (post.id)}
 				<div
 					class="article-enter rounded-default transition-colors duration-300 opacity-0"
 					role="listitem"

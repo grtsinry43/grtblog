@@ -8,14 +8,10 @@
 
 	let { data } = $props();
 
-	const postDetailStore = postDetailCtx.mountModelData(data.post ?? null);
+	postDetailCtx.mountModelData(() => data.post ?? null);
 	const { updateModelData } = postDetailCtx.useModelActions();
 	const postIdStore = postDetailCtx.selectModelData((d) => d?.id ?? null);
 	const contentHashStore = postDetailCtx.selectModelData((d) => d?.contentHash ?? null);
-
-	$effect(() => {
-		postDetailCtx.syncModelData(postDetailStore, data.post ?? null);
-	});
 
 	$effect(() => {
 		if (!browser) return;

@@ -13,7 +13,12 @@
 		listOAuthProviders,
 		login
 	} from '$lib/features/auth/api';
-	import type { AuthApproachState, LoginReq, LoginResp, OAuthProvider } from '$lib/features/auth/types';
+	import type {
+		AuthApproachState,
+		LoginReq,
+		LoginResp,
+		OAuthProvider
+	} from '$lib/features/auth/types';
 	import { getToken } from '$lib/shared/token';
 	import { userStore } from '$lib/shared/stores/userStore';
 	import type { UserInfo } from '$lib/shared/types/user';
@@ -40,7 +45,7 @@
 		showPasswordLogin: false
 	};
 
-	AuthCtx.mountModelData(initialModel);
+	AuthCtx.mountModelData(() => initialModel);
 	const { updateModelData } = AuthCtx.useModelActions();
 	const authModel = AuthCtx.selectModelData((data) => data);
 
@@ -235,7 +240,7 @@
 		>
 			<div class="flex items-start justify-between">
 				<div>
-					<p class="text-xs font-mono text-ink-500"> 👋 欢迎回来 </p>
+					<p class="text-xs font-mono text-ink-500">👋 欢迎回来</p>
 					<h2 class="mt-1 text-2xl font-serif text-ink-900 dark:text-ink-100">
 						登录到 {$websiteName}
 					</h2>
@@ -296,12 +301,7 @@
 							}
 						}}
 					>
-						<AuthField
-							label="用户名 / 邮箱"
-							name="credential"
-							autocomplete="username"
-							required
-						/>
+						<AuthField label="用户名 / 邮箱" name="credential" autocomplete="username" required />
 
 						<AuthField
 							label="密码"
@@ -317,11 +317,7 @@
 							onError={handleTurnstileError}
 						/>
 
-						<input
-							type="hidden"
-							name="turnstileToken"
-							value={turnstileToken}
-						/>
+						<input type="hidden" name="turnstileToken" value={turnstileToken} />
 
 						{#if $authModel?.login.error}
 							<p class="text-sm text-cinnabar-600 dark:text-cinnabar-400">

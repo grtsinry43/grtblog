@@ -1,10 +1,7 @@
 <script lang="ts">
 	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import type { CommentNode } from '$lib/features/comment/types';
-	import {
-		createRelativeTimeTicker,
-		formatRelativeTimeWithSeconds
-	} from '$lib/shared/utils/date';
+	import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
 	import { MessageSquare, Monitor, Pin } from 'lucide-svelte';
 	import CommentItem from './CommentItem.svelte';
 	import CommentForm from './CommentForm.svelte';
@@ -14,7 +11,7 @@
 	import { Tooltip } from '$lib/ui/primitives';
 
 	let { comment } = $props<{ comment: CommentNode }>();
-	let relativeTime = $state(formatRelativeTimeWithSeconds(comment.createdAt));
+	let relativeTime = $state('');
 
 	const replyingToStore = commentAreaCtx.selectModelData((data) => data?.replyingTo ?? null);
 	const isClosedStore = commentAreaCtx.selectModelData((data) => data?.isClosed ?? false);
@@ -42,11 +39,7 @@
 	});
 </script>
 
-<div
-	class="flex gap-4 group relative"
-	id="comment-{comment.id}"
-	in:fly={{ y: 20, duration: 300 }}
->
+<div class="flex gap-4 group relative" id="comment-{comment.id}" in:fly={{ y: 20, duration: 300 }}>
 	<!-- Avatar -->
 	<div class="flex-shrink-0 pt-1">
 		<img
@@ -103,10 +96,10 @@
 			{#if comment.isTop}
 				<div class="absolute -top-1.5 -right-1.5 z-10 pointer-events-auto">
 					<Tooltip content="一定要看到的置顶回响">
-						<Pin 
-							size={16} 
-							class="text-amber-500 opacity-60 hover:opacity-100 transition-opacity rotate-45" 
-							strokeWidth={2} 
+						<Pin
+							size={16}
+							class="text-amber-500 opacity-60 hover:opacity-100 transition-opacity rotate-45"
+							strokeWidth={2}
 						/>
 					</Tooltip>
 				</div>

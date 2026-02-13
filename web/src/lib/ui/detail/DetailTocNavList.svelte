@@ -47,8 +47,14 @@
 		}
 	};
 
-	let { toc, contentRoot, activeAnchor, onAnchorChange, tone = 'jade', size = 'sm' }: Props =
-		$props();
+	let {
+		toc,
+		contentRoot,
+		activeAnchor,
+		onAnchorChange,
+		tone = 'jade',
+		size = 'sm'
+	}: Props = $props();
 
 	const toneClasses = $derived(toneClassMap[tone]);
 
@@ -73,7 +79,7 @@
 			? 'space-y-3 font-sans'
 			: `mt-2 space-y-1.5 border-l pl-3 ${toneClasses.sublistBorder}`}
 	>
-		{#each nodes as item}
+		{#each nodes as item (item.anchor)}
 			{@const isActive = activeAnchor === item.anchor}
 			{@const isExpanded = isNodeOrDescendantActive(item)}
 			<li class={depth === 0 ? 'space-y-2' : ''}>
@@ -86,9 +92,7 @@
 							: size === 'md'
 								? 'text-[13px] leading-6'
 								: 'text-[11px]'
-					} ${
-						depth === 0 ? toneClasses.parentHover : toneClasses.childHover
-					} ${
+					} ${depth === 0 ? toneClasses.parentHover : toneClasses.childHover} ${
 						isActive
 							? depth === 0
 								? toneClasses.parentActive
@@ -112,9 +116,7 @@
 	</ul>
 {/snippet}
 
-<div
-	class="custom-scrollbar max-h-[calc(100vh-20rem)] overflow-y-auto pr-2 scroll-smooth"
->
+<div class="custom-scrollbar max-h-[calc(100vh-20rem)] overflow-y-auto pr-2 scroll-smooth">
 	{@render tocList(toc, 0)}
 </div>
 

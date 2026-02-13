@@ -1,4 +1,6 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
+	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context';
 	import { getSiteIconUrl, resolveLinkSite } from '$lib/shared/markdown/link-icons';
@@ -64,7 +66,7 @@
 	<a
 		class={`group relative my-4 flex items-center justify-between gap-4 overflow-hidden rounded-default border border-ink-200/80 bg-white/80 px-5 py-4 shadow-subtle transition-all hover:-translate-y-0.5 hover:shadow-float dark:border-ink-800/60 dark:bg-ink-900/40 no-underline ${className}`.trim()}
 		data-site={site || undefined}
-		{href}
+		href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolve(href) : href}
 		{title}
 		{rel}
 		{target}
@@ -83,7 +85,9 @@
 		></span>
 
 		<span class="relative z-10 min-w-0 flex-1">
-			<span class="block truncate text-base font-semibold text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-100 dark:group-hover:text-jade-300">
+			<span
+				class="block truncate text-base font-semibold text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-100 dark:group-hover:text-jade-300"
+			>
 				{@render children?.()}
 			</span>
 			<span class="mt-1 block line-clamp-2 text-sm leading-relaxed text-ink-600 dark:text-ink-400">
@@ -100,7 +104,7 @@
 	<a
 		class={`md-link inline-flex items-center gap-[0.35em] underline decoration-1 underline-offset-2 ${className}`.trim()}
 		data-site={site || undefined}
-		{href}
+		href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolve(href) : href}
 		{title}
 		{rel}
 		{target}

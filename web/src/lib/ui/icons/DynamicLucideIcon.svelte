@@ -28,7 +28,7 @@
 
 {#if name}
 	{#if Icon}
-		<svelte:component this={Icon} {size} {strokeWidth} class={className} />
+		<Icon {size} {strokeWidth} class={className} />
 	{:else}
 		<span class={className} aria-hidden="true"></span>
 	{/if}

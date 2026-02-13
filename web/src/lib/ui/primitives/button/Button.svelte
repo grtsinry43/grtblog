@@ -9,7 +9,10 @@
 		content?: Snippet;
 		children?: Snippet;
 		icon?: Snippet;
-		action?: (node: HTMLElement, params?: unknown) => {
+		action?: (
+			node: HTMLElement,
+			params?: unknown
+		) => {
 			update?: (params?: unknown) => void;
 			destroy?: () => void;
 		};
@@ -86,7 +89,7 @@
 <Button.Root
 	bind:ref={element}
 	class={classes}
-	href={href}
+	{href}
 	type={type ?? 'button'}
 	disabled={isDisabled}
 	aria-disabled={isDisabled || undefined}

@@ -4,8 +4,9 @@
 	import { trackContentView } from '$lib/features/analytics/api';
 	import type { TrackViewContentType } from '$lib/features/analytics/types';
 	import { getOrCreateVisitorId, syncVisitorId } from '$lib/shared/visitor/visitor-id';
+	import { SvelteMap } from 'svelte/reactivity';
 
-	const trackedViewKeys = new Map<string, number>();
+	const trackedViewKeys = new SvelteMap<string, number>();
 	const dedupWindowMs = 30_000;
 
 	interface Props {

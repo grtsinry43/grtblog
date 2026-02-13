@@ -46,9 +46,7 @@ export const checkMomentLatest = async (
 	return result ?? null;
 };
 
-export const getRecentMoments = async (
-	fetcher?: typeof fetch
-): Promise<MomentListResponse> => {
+export const getRecentMoments = async (fetcher?: typeof fetch): Promise<MomentListResponse> => {
 	const api = getApi(fetcher);
 	const result = await api<MomentListResponse>('/public/moments/recent');
 	return result ?? { items: [], total: 0, page: 1, size: 5 };

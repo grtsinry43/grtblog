@@ -53,8 +53,7 @@
 	let { children, data } = $props();
 	let showRouteLoading = $state(false);
 
-	const websiteInfoStore = websiteInfoCtx.mountModelData(data.websiteInfo ?? null);
-	const detailPanelStore = detailPanelCtx.mountModelData(createEmptyDetailPanelModel());
+	websiteInfoCtx.mountModelData(() => data.websiteInfo ?? null);
 
 	const readDetailPanelFromPageData = (view: unknown): DetailPanelModel => {
 		const empty = createEmptyDetailPanelModel();
@@ -106,19 +105,16 @@
 		return empty;
 	};
 
-	$effect(() => {
-		websiteInfoCtx.syncModelData(websiteInfoStore, data.websiteInfo ?? null);
-	});
-
-	$effect(() => {
-		page.url.pathname;
-		page.data;
+	detailPanelCtx.mountModelData(() => {
+		const pathname = page.url.pathname;
+		const pageData = page.data;
 		const hash = browser ? window.location.hash.replace(/^#/, '') : '';
-		detailPanelCtx.syncModelData(detailPanelStore, {
-			...readDetailPanelFromPageData(page.data),
+		return {
+			...readDetailPanelFromPageData(pageData),
 			contentRoot: null,
-			activeAnchor: hash || null
-		});
+			activeAnchor:
+				pathname === (browser ? window.location.pathname : pathname) ? hash || null : null
+		};
 	});
 
 	const websiteName = websiteInfoCtx.selectModelData((data) => data?.website_name || 'grtBlog');

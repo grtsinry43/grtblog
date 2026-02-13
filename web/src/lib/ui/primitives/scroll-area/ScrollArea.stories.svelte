@@ -33,15 +33,15 @@
 			thumbClass={args.thumbClass}
 			cornerClass={args.cornerClass}
 		>
-			{#snippet children()}
-				<div class="space-y-3 text-[13px] text-ink-800 dark:text-ink-200">
-					{#each Array(18) as _, index}
-						<div class="rounded-default border border-ink-100/70 bg-white/70 px-3 py-2 dark:border-ink-800/40 dark:bg-ink-900/40">
-							Row {index + 1} · Scroll me
-						</div>
-					{/each}
-				</div>
-			{/snippet}
+			<div class="space-y-3 text-[13px] text-ink-800 dark:text-ink-200">
+				{#each Array.from({ length: 18 }, (_, index) => index + 1) as row (row)}
+					<div
+						class="rounded-default border border-ink-100/70 bg-white/70 px-3 py-2 dark:border-ink-800/40 dark:bg-ink-900/40"
+					>
+						Row {row} · Scroll me
+					</div>
+				{/each}
+			</div>
 		</ScrollArea>
 	{/snippet}
 </Story>

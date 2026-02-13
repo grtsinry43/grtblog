@@ -23,12 +23,9 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 		error(404, 'Moment not found');
 	}
 
-	let relatedPosts: MomentRelatedPost[] = [];
-	try {
-		relatedPosts = await getMomentRelatedPosts(fetch, detail.id);
-	} catch {
-		relatedPosts = [];
-	}
+	const relatedPosts: MomentRelatedPost[] = await getMomentRelatedPosts(fetch, detail.id).catch(
+		() => []
+	);
 
 	return {
 		moment: {

@@ -10,13 +10,7 @@
 	const postExtInfoStore = postDetailCtx.selectModelData((data) => data?.extInfo ?? null, {
 		equals: (a, b) => a === b
 	});
-	const imageExtInfoStore = imageExtInfoCtx.mountModelData(
-		buildImageExtInfoState($postExtInfoStore)
-	);
-
-	$effect(() => {
-		imageExtInfoCtx.syncModelData(imageExtInfoStore, buildImageExtInfoState($postExtInfoStore));
-	});
+	imageExtInfoCtx.mountModelData(() => buildImageExtInfoState($postExtInfoStore));
 </script>
 
 {#if $hasPostStore}

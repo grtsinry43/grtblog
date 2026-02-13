@@ -51,7 +51,7 @@
 </script>
 
 <div class={wrapperClasses}>
-	<textarea bind:value rows={rows} {placeholder} {oninput} class={textareaClasses}></textarea>
+	<textarea bind:value {rows} {placeholder} {oninput} class={textareaClasses}></textarea>
 </div>
 
 <style>

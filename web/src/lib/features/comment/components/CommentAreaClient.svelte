@@ -11,7 +11,7 @@
 	let { areaId, commentsCount = 0 }: { areaId: number; commentsCount?: number } = $props();
 	const isLoggedIn = false;
 
-	const initialModel = {
+	const createInitialModel = () => ({
 		areaId,
 		comments: [],
 		isLoading: true,
@@ -27,7 +27,7 @@
 		size: 10,
 		isClosed: false,
 		requireModeration: false
-	};
+	});
 
 	let currentPage = $state(1);
 	const pageSize = 10;
@@ -44,7 +44,7 @@
 			)
 	}));
 
-	commentAreaCtx.mountModelData(initialModel);
+	commentAreaCtx.mountModelData(() => createInitialModel());
 	const { updateModelData } = commentAreaCtx.useModelActions();
 	const commentAreaModel = commentAreaCtx.selectModelData((data) => data);
 
@@ -57,7 +57,7 @@
 	$effect(() => {
 		const data = query.data;
 		updateModelData((prev) => ({
-			...(prev ?? initialModel),
+			...(prev ?? createInitialModel()),
 			areaId,
 			comments: data?.items ?? prev?.comments ?? [],
 			isLoading: query.isLoading,

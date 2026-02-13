@@ -11,7 +11,7 @@ const config = {
 		adapter: adapter(),
 		alias: {
 			$shared: '../shared',
-			$routes: './src/routes',
+			$routes: './src/routes'
 		}
 	},
 	extensions: ['.svelte', '.svx']
