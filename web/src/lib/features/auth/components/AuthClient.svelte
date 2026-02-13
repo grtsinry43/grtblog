@@ -21,7 +21,6 @@
 	} from '$lib/features/auth/types';
 	import { getToken } from '$lib/shared/token';
 	import { userStore } from '$lib/shared/stores/userStore';
-	import type { UserInfo } from '$lib/shared/types/user';
 	import { AuthCtx } from '$lib/features/auth/context';
 	import AuthField from './AuthField.svelte';
 	import AuthOAuthList from './AuthOAuthList.svelte';
@@ -122,19 +121,11 @@
 		refetchOnWindowFocus: false
 	}));
 
-	createQuery(() => ({
+	const profileQuery = createQuery(() => ({
 		queryKey: ['auth-profile'],
 		enabled: !!token && !$userStore.isLogin,
 		retry: false,
-		queryFn: () => getProfile(),
-		onSuccess: (user: UserInfo) => {
-			userStore.setUser(user);
-		},
-		onError: () => {
-			// removeToken();
-			// token = null;
-			// userStore.clear();
-		}
+		queryFn: () => getProfile()
 	}));
 
 	const executeLogin = async (payload: LoginReq) => loginMutation.mutateAsync(payload);
@@ -225,6 +216,13 @@
 					setTurnstileState({ error: '人机验证加载失败，请检查网络或拦截设置' });
 				});
 			}
+		}
+	});
+
+	$effect(() => {
+		const profile = profileQuery.data;
+		if (profile && !$userStore.isLogin) {
+			userStore.setUser(profile);
 		}
 	});
 </script>

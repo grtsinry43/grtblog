@@ -11,10 +11,12 @@ import (
 
 func registerTaxonomyPublicRoutes(v2 fiber.Router, deps Dependencies) {
 	taxHandler := newTaxonomyHandler(deps)
+	tagContentHandler := newTagContentHandler(deps)
 
 	v2.Get("/categories", taxHandler.ListCategories)
 	v2.Get("/columns", taxHandler.ListColumns)
 	v2.Get("/tags", taxHandler.ListTags)
+	v2.Get("/tags/:id/contents", tagContentHandler.ListByTagID)
 }
 
 func registerTaxonomyAdminRoutes(v2 fiber.Router, deps Dependencies) {
@@ -46,4 +48,12 @@ func newTaxonomyHandler(deps Dependencies) *handler.TaxonomyHandler {
 	tagSvc := taxonomy.NewTagService(tagRepo)
 
 	return handler.NewTaxonomyHandler(categorySvc, columnSvc, tagSvc)
+}
+
+func newTagContentHandler(deps Dependencies) *handler.TagContentHandler {
+	return handler.NewTagContentHandler(
+		newArticleHandler(deps),
+		newMomentHandler(deps),
+		persistence.NewContentRepository(deps.DB),
+	)
 }

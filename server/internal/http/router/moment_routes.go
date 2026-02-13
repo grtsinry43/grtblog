@@ -18,6 +18,8 @@ func registerMomentPublicRoutes(v2 fiber.Router, deps Dependencies) {
 	publicGroup.Get("/:id/same-period-articles", momentHandler.ListSamePeriodArticles)
 	publicGroup.Get("/short/:shortUrl", momentHandler.GetMomentByShortURL) // GET /api/v2/moments/short/abc123
 	publicGroup.Post("/:id/latest", momentHandler.CheckMomentLatest)       // POST /api/v2/moments/123/latest
+
+	v2.Get("/columns/short/:shortUrl/moments", momentHandler.ListMomentsByColumnShortURL)
 }
 
 func registerMomentAuthRoutes(v2 fiber.Router, deps Dependencies) {

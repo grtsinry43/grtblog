@@ -314,9 +314,9 @@ func (h *EmailTemplateHandler) SubscribeEmail(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	respItems := make([]contract.EmailSubscriptionResp, len(items))
+	respItems := make([]contract.EmailPublicSubscriptionResp, len(items))
 	for i, item := range items {
-		respItems[i] = mapEmailSubscriptionResp(item, true)
+		respItems[i] = mapEmailPublicSubscriptionResp(item)
 	}
 	return response.SuccessWithMessage(c, contract.EmailSubscribeBatchResp{Items: respItems}, "订阅成功")
 }
@@ -460,6 +460,16 @@ func mapEmailSubscriptionResp(item *domainemail.Subscription, withToken bool) co
 		resp.Token = item.Token
 	}
 	return resp
+}
+
+func mapEmailPublicSubscriptionResp(item *domainemail.Subscription) contract.EmailPublicSubscriptionResp {
+	return contract.EmailPublicSubscriptionResp{
+		ID:        item.ID,
+		Email:     item.Email,
+		EventName: item.EventName,
+		CreatedAt: item.CreatedAt,
+		UpdatedAt: item.UpdatedAt,
+	}
 }
 
 func parseEmailVariables(raw json.RawMessage) (map[string]any, error) {

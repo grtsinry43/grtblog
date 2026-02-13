@@ -2,24 +2,32 @@
 	import { X, Mail, Check, BellRing, Newspaper, Coffee, Zap, Brain } from 'lucide-svelte';
 	import { fly, fade, scale } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { subscribeEmail } from './api';
+	import type { HomeSubscriptionPreference, PublicEmailEventName } from './types';
 
 	let { isOpen = $bindable(false) } = $props<{ isOpen: boolean }>();
 
 	let email = $state('');
 	let isSubmitting = $state(false);
 	let isSuccess = $state(false);
+	let submitError = $state('');
 
-	type PreferenceKey = 'posts' | 'moments' | 'pages' | 'thinkings';
-
-	let preferences = $state<Record<PreferenceKey, boolean>>({
+	let preferences = $state<Record<HomeSubscriptionPreference, boolean>>({
 		posts: true,
 		moments: true,
 		pages: false,
 		thinkings: true
 	});
 
+	const preferenceToEventName: Record<HomeSubscriptionPreference, PublicEmailEventName> = {
+		posts: 'article.created',
+		moments: 'moment.created',
+		pages: 'page.created',
+		thinkings: 'thinking.created'
+	};
+
 	const options: Array<{
-		id: PreferenceKey;
+		id: HomeSubscriptionPreference;
 		name: string;
 		desc: string;
 		icon: typeof Newspaper;
@@ -46,30 +54,54 @@
 			icon: Brain,
 			color: 'text-purple-500'
 		},
-		{ id: 'pages', name: '页面', desc: '站点重要更新通知', icon: Zap, color: 'text-blue-500' }
+		{ id: 'pages', name: '页面', desc: '站点页面新增通知', icon: Zap, color: 'text-blue-500' }
 	];
+
+	const selectedEventNames = $derived.by(() => {
+		const events: PublicEmailEventName[] = [];
+		for (const [key, checked] of Object.entries(preferences) as Array<
+			[HomeSubscriptionPreference, boolean]
+		>) {
+			if (checked) {
+				events.push(preferenceToEventName[key]);
+			}
+		}
+		return events;
+	});
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
-		if (!email) return;
+		if (!email.trim()) return;
+		if (selectedEventNames.length === 0) {
+			submitError = '请至少选择一个订阅分类';
+			return;
+		}
 
 		isSubmitting = true;
-		// 模拟 API 请求
-		await new Promise((resolve) => setTimeout(resolve, 1500));
-		isSubmitting = false;
-		isSuccess = true;
-
-		setTimeout(() => {
-			isOpen = false;
-			setTimeout(() => {
-				isSuccess = false;
-				email = '';
-			}, 500);
-		}, 2000);
+		submitError = '';
+		try {
+			await subscribeEmail({
+				email: email.trim(),
+				eventNames: selectedEventNames
+			});
+			isSuccess = true;
+			// setTimeout(() => {
+			// 	setTimeout(() => {
+			// 		isSuccess = false;
+			// 		email = '';
+			// 		submitError = '';
+			// 	}, 500);
+			// }, 2000);
+		} catch (error: unknown) {
+			submitError = error instanceof Error ? error.message : '订阅失败，请稍后重试';
+		} finally {
+			isSubmitting = false;
+		}
 	}
 
-	function toggleOption(id: PreferenceKey) {
+	function toggleOption(id: HomeSubscriptionPreference) {
 		preferences[id] = !preferences[id];
+		submitError = '';
 	}
 </script>
 
@@ -157,9 +189,17 @@
 						/>
 					</div>
 
+					{#if submitError}
+						<p
+							class="mt-3 rounded-default border border-cinnabar-200 bg-cinnabar-50 px-3 py-2 text-xs text-cinnabar-600 dark:border-cinnabar-900/50 dark:bg-cinnabar-900/20 dark:text-cinnabar-300"
+						>
+							{submitError}
+						</p>
+					{/if}
+
 					<button
 						type="submit"
-						disabled={isSubmitting || !email}
+						disabled={isSubmitting || !email.trim() || selectedEventNames.length === 0}
 						class="mt-6 w-full bg-ink-900 dark:bg-jade-600 text-white py-3.5 rounded-default font-medium text-sm hover:bg-jade-600 dark:hover:bg-jade-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 					>
 						{#if isSubmitting}
@@ -179,7 +219,7 @@
 					>
 						<Check size={32} />
 					</div>
-					<h4 class="text-lg font-medium mb-2">订阅成功！</h4>
+					<h4 class="text-lg font-medium mb-2">好耶，订阅成功！</h4>
 					<p class="text-sm text-ink-500">感谢你的关注，请留意你的收件箱（可能在垃圾箱哦）。</p>
 				</div>
 			{/if}

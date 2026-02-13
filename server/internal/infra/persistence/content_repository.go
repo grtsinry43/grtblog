@@ -45,6 +45,17 @@ func (r *ContentRepository) GetCategoryByID(ctx context.Context, id int64) (*con
 	return mapCategoryToDomain(rec), nil
 }
 
+func (r *ContentRepository) GetCategoryByShortURL(ctx context.Context, shortURL string) (*content.ArticleCategory, error) {
+	var rec model.ArticleCategory
+	if err := r.db.WithContext(ctx).Where("short_url = ?", shortURL).First(&rec).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, content.ErrCategoryNotFound
+		}
+		return nil, err
+	}
+	return mapCategoryToDomain(rec), nil
+}
+
 func (r *ContentRepository) ListCategories(ctx context.Context) ([]*content.ArticleCategory, error) {
 	var records []model.ArticleCategory
 	if err := r.db.WithContext(ctx).Order("name ASC").Find(&records).Error; err != nil {
@@ -103,6 +114,17 @@ func (r *ContentRepository) CreateColumn(ctx context.Context, column *content.Mo
 func (r *ContentRepository) GetColumnByID(ctx context.Context, id int64) (*content.MomentColumn, error) {
 	var rec model.MomentColumn
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&rec).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, content.ErrColumnNotFound
+		}
+		return nil, err
+	}
+	return mapColumnToDomain(rec), nil
+}
+
+func (r *ContentRepository) GetColumnByShortURL(ctx context.Context, shortURL string) (*content.MomentColumn, error) {
+	var rec model.MomentColumn
+	if err := r.db.WithContext(ctx).Where("short_url = ?", shortURL).First(&rec).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, content.ErrColumnNotFound
 		}
@@ -694,6 +716,13 @@ func (r *ContentRepository) ListArticles(ctx context.Context, options content.Ar
 	if options.AuthorID != nil {
 		query = query.Where("author_id = ?", *options.AuthorID)
 	}
+	if options.TagID != nil {
+		subQuery := r.db.WithContext(ctx).
+			Model(&model.ArticleTag{}).
+			Select("article_id").
+			Where("tag_id = ?", *options.TagID)
+		query = query.Where("id IN (?)", subQuery)
+	}
 	if options.Published != nil {
 		query = query.Where("is_published = ?", *options.Published)
 	}
@@ -737,6 +766,13 @@ func (r *ContentRepository) ListPublicArticles(ctx context.Context, options cont
 	}
 	if options.AuthorID != nil {
 		query = query.Where("author_id = ?", *options.AuthorID)
+	}
+	if options.TagID != nil {
+		subQuery := r.db.WithContext(ctx).
+			Model(&model.ArticleTag{}).
+			Select("article_id").
+			Where("tag_id = ?", *options.TagID)
+		query = query.Where("id IN (?)", subQuery)
 	}
 	if options.Search != nil && *options.Search != "" {
 		search := "%" + *options.Search + "%"

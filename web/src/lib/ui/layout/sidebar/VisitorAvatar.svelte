@@ -8,17 +8,13 @@
 {#if $userStore.isLogin}
 	<Button
 		variant="icon"
-		class="h-10 w-10 rounded-default ring-1 ring-ink-200 hover:ring-ink-300 dark:ring-ink-700 dark:hover:ring-ink-500"
+		class="h-10 w-10 !p-0 rounded-default overflow-hidden ring-1 ring-ink-200 hover:ring-ink-300 dark:ring-ink-700 dark:hover:ring-ink-500"
 		aria-label="用户头像"
 	>
 		{#if $userStore.userInfo?.avatar !== ''}
-			<img
-				src={$userStore.userInfo?.avatar}
-				alt="User avatar"
-				class="h-9 w-9 rounded-default object-cover"
-			/>
+			<img src={$userStore.userInfo?.avatar} alt="User avatar" class="h-full w-full object-cover" />
 		{:else}
-			<div class="h-9 w-9 rounded-default flex items-center justify-center">
+			<div class="h-full w-full flex items-center justify-center">
 				<span>{$userStore.userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}</span>
 			</div>
 		{/if}

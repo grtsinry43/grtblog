@@ -229,7 +229,12 @@
 
 <SearchModal />
 <FloatingWindow>
-	{#if windowStore.title === '申请友链'}
+	{#if windowStore.kind === 'tag-contents'}
+		<QueryRoot
+			loader={() => import('$lib/features/tag/components/TagContentsWindow.svelte')}
+			loaderProps={{ tagId: windowStore.data?.id, tagName: windowStore.data?.name }}
+		/>
+	{:else if windowStore.title === '申请友链'}
 		<QueryRoot
 			loader={() => import('$lib/features/friend-link/components/ApplyFriendForm.svelte')}
 		/>
@@ -254,5 +259,6 @@
 
 	:global(html) {
 		scroll-behavior: smooth;
+		scroll-padding-top: 80px;
 	}
 </style>

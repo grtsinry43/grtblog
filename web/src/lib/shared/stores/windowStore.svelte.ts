@@ -2,13 +2,17 @@ export class WindowManager {
 	isOpen = $state(false);
 	isMinimized = $state(false);
 	title = $state('系统终端');
+	kind = $state<string | null>(null);
 	position = $state({ x: 100, y: 100 });
 	openVersion = $state(0);
+	data = $state<any>(null);
 
 	constructor() {}
 
-	open(title: string) {
+	open(title: string, data: any = null, kind: string | null = null) {
 		this.title = title;
+		this.data = data;
+		this.kind = kind;
 		this.isOpen = true;
 		this.isMinimized = false;
 		this.openVersion += 1;

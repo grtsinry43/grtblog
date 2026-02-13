@@ -12,6 +12,8 @@ export const scrollToAnchor = (
 	if (!root) return;
 	const target = root.querySelector(`#${CSS.escape(anchor)}`) as HTMLElement | null;
 	if (!target) return;
-	target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	const offset = 80;
+	const top = target.getBoundingClientRect().top + window.scrollY - offset;
+	window.scrollTo({ top, behavior: 'smooth' });
 	if (typeof history !== 'undefined') history.replaceState(null, '', `#${anchor}`);
 };
