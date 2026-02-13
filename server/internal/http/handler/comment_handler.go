@@ -13,14 +13,16 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
+	"github.com/grtsinry43/grtblog-v2/server/internal/security/jwt"
 )
 
 type CommentHandler struct {
-	svc *comment.Service
+	svc        *comment.Service
+	jwtManager *jwt.Manager
 }
 
-func NewCommentHandler(svc *comment.Service) *CommentHandler {
-	return &CommentHandler{svc: svc}
+func NewCommentHandler(svc *comment.Service, jwtManager *jwt.Manager) *CommentHandler {
+	return &CommentHandler{svc: svc, jwtManager: jwtManager}
 }
 
 // CreateCommentLogin godoc
@@ -54,6 +56,7 @@ func (h *CommentHandler) CreateCommentLogin(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "请求体映射失败")
 	}
 	cmd.AreaID = areaID
+	cmd.VisitorID = strings.TrimSpace(req.VisitorID)
 
 	meta := comment.RequestMeta{
 		IP:        c.IP(),
@@ -99,6 +102,7 @@ func (h *CommentHandler) CreateCommentVisitor(c *fiber.Ctx) error {
 		cmd.Email = *req.Email
 	}
 	cmd.Website = req.Website
+	cmd.VisitorID = strings.TrimSpace(req.VisitorID)
 
 	meta := comment.RequestMeta{
 		IP:        c.IP(),
@@ -119,6 +123,8 @@ func (h *CommentHandler) CreateCommentVisitor(c *fiber.Ctx) error {
 // @Param areaId path int true "评论区ID"
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(10)
+// @Param size query int false "每页数量（兼容参数）"
+// @Param visitorId query string false "访客ID（使用前端埋点 visitorId）"
 // @Success 200 {object} contract.PublicCommentListResp
 // @Router /comments/areas/{areaId} [get]
 func (h *CommentHandler) ListCommentTree(c *fiber.Ctx) error {
@@ -126,13 +132,22 @@ func (h *CommentHandler) ListCommentTree(c *fiber.Ctx) error {
 	if err != nil {
 		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论区ID")
 	}
+
 	page := parseIntQuery(c, "page", 1)
-	pageSize := parseIntQuery(c, "pageSize", 10)
+	pageSize := parseIntQuery(c, "pageSize", 0)
+	if pageSize <= 0 {
+		pageSize = parseIntQuery(c, "size", 10)
+	}
+
+	viewerVisitorID := strings.TrimSpace(c.Query("visitorId"))
+	viewerAuthorID := h.resolveViewerAuthorID(c)
 
 	result, err := h.svc.ListPublicComments(c.Context(), comment.ListPublicCommentsCmd{
-		AreaID:   areaID,
-		Page:     page,
-		PageSize: pageSize,
+		AreaID:          areaID,
+		Page:            page,
+		PageSize:        pageSize,
+		ViewerAuthorID:  viewerAuthorID,
+		ViewerVisitorID: viewerVisitorID,
 	})
 	if err != nil {
 		return h.mapCommentError(c, err)
@@ -143,11 +158,12 @@ func (h *CommentHandler) ListCommentTree(c *fiber.Ctx) error {
 		respItems[i] = toCommentNodeResp(node)
 	}
 	return response.Success(c, contract.PublicCommentListResp{
-		Items:    respItems,
-		Total:    result.Total,
-		Page:     result.Page,
-		Size:     result.Size,
-		IsClosed: result.IsClosed,
+		Items:             respItems,
+		Total:             result.Total,
+		Page:              result.Page,
+		Size:              result.Size,
+		IsClosed:          result.IsClosed,
+		RequireModeration: result.RequireModeration,
 	})
 }
 
@@ -418,6 +434,8 @@ func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论区已关闭")
 	case errors.Is(err, domaincomment.ErrCommentDisabled):
 		return response.NewBizErrorWithMsg(response.ParamsError, "全站已关闭评论")
+	case errors.Is(err, domaincomment.ErrCommentBlocked):
+		return response.NewBizErrorWithMsg(response.Unauthorized, "你已被禁止评论")
 	case errors.Is(err, domaincomment.ErrCommentStatusInvalid):
 		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论状态")
 	default:
@@ -441,12 +459,48 @@ func parseBoolQuery(c *fiber.Ctx, key string, defaultVal bool) bool {
 	return val
 }
 
+func (h *CommentHandler) resolveViewerAuthorID(c *fiber.Ctx) *int64 {
+	if claims, ok := middleware.GetClaims(c); ok && claims != nil && claims.UserID > 0 {
+		id := claims.UserID
+		return &id
+	}
+
+	if h.jwtManager == nil {
+		return nil
+	}
+
+	token := extractBearerToken(c.Get("Authorization"))
+	if token == "" || strings.HasPrefix(token, "gt_") {
+		return nil
+	}
+
+	claims, err := h.jwtManager.Parse(token)
+	if err != nil || claims == nil || claims.UserID <= 0 {
+		return nil
+	}
+	id := claims.UserID
+	return &id
+}
+
+func extractBearerToken(header string) string {
+	raw := strings.TrimSpace(header)
+	if raw == "" {
+		return ""
+	}
+	parts := strings.SplitN(raw, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
+}
+
 func toCreateCommentResp(entity *domaincomment.Comment) contract.CreateCommentResp {
 	return contract.CreateCommentResp{
 		ID:        entity.ID,
 		AreaID:    entity.AreaID,
 		Content:   entity.Content,
 		NickName:  entity.NickName,
+		Avatar:    entity.Avatar,
 		Location:  entity.Location,
 		Platform:  entity.Platform,
 		Browser:   entity.Browser,
@@ -456,6 +510,7 @@ func toCreateCommentResp(entity *domaincomment.Comment) contract.CreateCommentRe
 		IsAuthor:  entity.IsAuthor,
 		IsViewed:  entity.IsViewed,
 		IsTop:     entity.IsTop,
+		IsMy:      entity.IsMy,
 		Status:    entity.Status,
 		ParentID:  entity.ParentID,
 		CreatedAt: entity.CreatedAt,
@@ -471,6 +526,7 @@ func toCommentNodeResp(node *comment.CommentNode) contract.CommentNodeResp {
 		AreaID:    node.Comment.AreaID,
 		Content:   publicContent(node.Comment),
 		NickName:  node.Comment.NickName,
+		Avatar:    node.Comment.Avatar,
 		Location:  node.Comment.Location,
 		Platform:  node.Comment.Platform,
 		Browser:   node.Comment.Browser,
@@ -480,6 +536,7 @@ func toCommentNodeResp(node *comment.CommentNode) contract.CommentNodeResp {
 		IsAuthor:  node.Comment.IsAuthor,
 		IsViewed:  node.Comment.IsViewed,
 		IsTop:     node.Comment.IsTop,
+		IsMy:      node.Comment.IsMy,
 		Status:    node.Comment.Status,
 		ParentID:  node.Comment.ParentID,
 		CreatedAt: node.Comment.CreatedAt,
@@ -512,6 +569,7 @@ func toAdminCommentResp(item *domaincomment.Comment) contract.AdminCommentResp {
 		Content:    content,
 		AuthorID:   item.AuthorID,
 		NickName:   item.NickName,
+		Avatar:     item.Avatar,
 		Email:      item.Email,
 		IP:         item.IP,
 		Location:   item.Location,

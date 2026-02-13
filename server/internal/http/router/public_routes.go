@@ -1,7 +1,10 @@
 package router
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendtimeline"
@@ -11,6 +14,7 @@ import (
 	apprss "github.com/grtsinry43/grtblog-v2/server/internal/app/rss"
 	appsearch "github.com/grtsinry43/grtblog-v2/server/internal/app/search"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
+	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 )
 
@@ -57,7 +61,18 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 
 	if deps.Analytics != nil {
 		analyticsHandler := handler.NewAnalyticsHandler(deps.Analytics)
-		public.Post("/analytics/view", analyticsHandler.TrackView)
+		viewGuard := public.Group("/analytics", limiter.New(limiter.Config{
+			Max:        120,
+			Expiration: time.Minute,
+			KeyGenerator: func(c *fiber.Ctx) string {
+				return c.IP()
+			},
+			LimitReached: func(c *fiber.Ctx) error {
+				handler.Audit(c, "analytics.view.rate_limited", map[string]any{"ip": c.IP()})
+				return response.NewBizErrorWithMsg(response.TooManyRequests, "")
+			},
+		}))
+		viewGuard.Post("/view", analyticsHandler.TrackView)
 	}
 	likeRepo := persistence.NewLikeRepository(deps.DB)
 	likeSvc := applike.NewService(likeRepo)

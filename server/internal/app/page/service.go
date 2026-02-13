@@ -145,8 +145,6 @@ func (s *Service) GetPageByShortURL(ctx context.Context, shortURL string) (*cont
 		return nil, err
 	}
 
-	_ = s.repo.UpdatePageViews(ctx, page.ID)
-
 	return page, nil
 }
 

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageDetail } from '$lib/features/page/types';
-	import DetailAiSummary from '$lib/shared/components/detail/DetailAiSummary.svelte';
-	import DetailCommentSection from '$lib/shared/components/detail/DetailCommentSection.svelte';
-	import DetailMarkdownContent from '$lib/shared/components/detail/DetailMarkdownContent.svelte';
+	import DetailAiSummary from '$lib/ui/detail/DetailAiSummary.svelte';
+	import DetailCommentSection from '$lib/ui/detail/DetailCommentSection.svelte';
+	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
 	import PageDetailTocSidebar from './PageDetailTocSidebar.svelte';
 
 	interface Props {

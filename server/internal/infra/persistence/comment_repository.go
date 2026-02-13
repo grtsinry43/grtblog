@@ -58,12 +58,28 @@ func (r *CommentRepository) FindByID(ctx context.Context, id int64) (*comment.Co
 
 func (r *CommentRepository) ListPublicByAreaID(ctx context.Context, options comment.PublicListOptions) ([]*comment.Comment, error) {
 	var recs []model.Comment
-	if err := r.db.WithContext(ctx).Unscoped().
-		Where("area_id = ? AND status = ?", options.AreaID, comment.CommentStatusApproved).
+	query := r.db.WithContext(ctx).Unscoped().Where("area_id = ?", options.AreaID)
+
+	approvedCond := "status = ?"
+	args := []any{comment.CommentStatusApproved}
+
+	if options.ViewerAuthorID != nil && *options.ViewerAuthorID > 0 {
+		approvedCond += " OR author_id = ?"
+		args = append(args, *options.ViewerAuthorID)
+	}
+
+	if visitorID := strings.TrimSpace(options.ViewerVisitorID); visitorID != "" {
+		approvedCond += " OR visitor_id = ?"
+		args = append(args, visitorID)
+	}
+
+	if err := query.
+		Where("("+approvedCond+")", args...).
 		Order("is_top DESC, created_at ASC").
 		Find(&recs).Error; err != nil {
 		return nil, err
 	}
+
 	out := make([]*comment.Comment, len(recs))
 	for i, rec := range recs {
 		entity := mapCommentToDomain(rec)
@@ -231,6 +247,7 @@ func mapCommentToDomain(rec model.Comment) comment.Comment {
 		AreaID:    rec.AreaID,
 		Content:   rec.Content,
 		AuthorID:  rec.AuthorID,
+		VisitorID: toPtr(rec.VisitorID),
 		NickName:  toPtr(rec.NickName),
 		IP:        toPtr(rec.IP),
 		Location:  toPtr(rec.Location),
@@ -243,6 +260,7 @@ func mapCommentToDomain(rec model.Comment) comment.Comment {
 		IsAuthor:  rec.IsAuthor,
 		IsViewed:  rec.IsViewed,
 		IsTop:     rec.IsTop,
+		IsMy:      false,
 		Status:    status,
 		ParentID:  rec.ParentID,
 		CreatedAt: rec.CreatedAt,
@@ -261,6 +279,7 @@ func mapCommentToModel(entity *comment.Comment) model.Comment {
 		AreaID:    entity.AreaID,
 		Content:   strings.TrimSpace(entity.Content),
 		AuthorID:  entity.AuthorID,
+		VisitorID: toValue(entity.VisitorID),
 		NickName:  toValue(entity.NickName),
 		IP:        toValue(entity.IP),
 		Location:  toValue(entity.Location),

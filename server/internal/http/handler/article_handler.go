@@ -264,6 +264,54 @@ func (h *ArticleHandler) GetArticle(c *fiber.Ctx) error {
 	return response.Success(c, articleResponse)
 }
 
+// ListSamePeriodMoments godoc
+// @Summary 获取文章同一时间的手记（两周内）
+// @Tags Article
+// @Produce json
+// @Param id path int true "文章ID"
+// @Success 200 {object} contract.SamePeriodMomentListResp
+// @Router /articles/{id}/same-period-moments [get]
+func (h *ArticleHandler) ListSamePeriodMoments(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的文章ID")
+	}
+
+	articleItem, err := h.svc.GetArticleByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	const windowDays = 14
+	const limit = 2
+	start := articleItem.CreatedAt.AddDate(0, 0, -windowDays)
+	end := articleItem.CreatedAt.AddDate(0, 0, windowDays)
+
+	moments, err := h.contentRepo.ListPublishedMomentsByCreatedAtRange(c.Context(), start, end, limit)
+	if err != nil {
+		return err
+	}
+
+	items := make([]contract.SamePeriodMomentItemResp, 0, len(moments))
+	for _, item := range moments {
+		resp := contract.SamePeriodMomentItemResp{
+			ID:        item.ID,
+			Title:     item.Title,
+			ShortURL:  item.ShortURL,
+			Summary:   item.Summary,
+			CreatedAt: item.CreatedAt,
+		}
+		if item.Image != nil {
+			resp.Image = splitImages(item.Image)
+		}
+		items = append(items, resp)
+	}
+
+	return response.Success(c, contract.SamePeriodMomentListResp{
+		Items: items,
+	})
+}
+
 // GetArticleByShortURL godoc
 // @Summary 根据短链接获取文章
 // @Tags Article

@@ -1,5 +1,10 @@
 import { getApi } from '$lib/shared/clients/api';
-import type { PostDetail, PostLatestCheckResponse, PostListResponse } from '$lib/features/post/types';
+import type {
+	PostDetail,
+	PostLatestCheckResponse,
+	PostListResponse,
+	PostRelatedMoment
+} from '$lib/features/post/types';
 
 type PostListOptions = {
 	page?: number;
@@ -45,4 +50,17 @@ export const getRecentPosts = async (fetcher?: typeof fetch): Promise<PostListRe
 	const api = getApi(fetcher);
 	const result = await api<PostListResponse>('/public/articles/recent');
 	return result ?? { items: [], total: 0, page: 1, size: 5 };
+};
+
+type PostRelatedMomentsResponse = {
+	items: PostRelatedMoment[];
+};
+
+export const getPostRelatedMoments = async (
+	fetcher: typeof fetch | undefined,
+	id: number
+): Promise<PostRelatedMoment[]> => {
+	const api = getApi(fetcher);
+	const result = await api<PostRelatedMomentsResponse>(`/articles/${id}/same-period-moments`);
+	return result?.items ?? [];
 };

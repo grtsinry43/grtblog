@@ -236,9 +236,6 @@ func (s *Service) GetArticleByShortURL(ctx context.Context, shortURL string) (*c
 		return nil, err
 	}
 
-	// 增加浏览量
-	_ = s.repo.UpdateArticleViews(ctx, article.ID)
-
 	return article, nil
 }
 

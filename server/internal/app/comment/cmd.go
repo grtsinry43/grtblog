@@ -1,24 +1,28 @@
 package comment
 
 type CreateCommentLoginCmd struct {
-	AreaID   int64
-	Content  string
-	ParentID *int64
+	AreaID    int64
+	Content   string
+	ParentID  *int64
+	VisitorID string
 }
 
 type CreateCommentVisitorCmd struct {
-	AreaID   int64
-	Content  string
-	ParentID *int64
-	NickName string
-	Email    string
-	Website  *string
+	AreaID    int64
+	Content   string
+	ParentID  *int64
+	NickName  string
+	Email     string
+	Website   *string
+	VisitorID string
 }
 
 type ListPublicCommentsCmd struct {
-	AreaID   int64
-	Page     int
-	PageSize int
+	AreaID          int64
+	Page            int
+	PageSize        int
+	ViewerAuthorID  *int64
+	ViewerVisitorID string
 }
 
 type ListAdminCommentsCmd struct {

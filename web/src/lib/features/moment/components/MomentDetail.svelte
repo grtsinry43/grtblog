@@ -30,6 +30,8 @@
 	};
 </script>
 
+<StickyHeader title={moment.title} />
+
 <div
 	class="relative z-10 grid gap-10 lg:grid-cols-[1fr_220px] lg:gap-16 max-w-[1200px] mx-auto animate-sheet-enter origin-right pb-24"
 >
@@ -62,8 +64,6 @@
 				<span class="tracking-widest">收起这一页</span>
 			</button>
 		</div>
-
-		<StickyHeader title={moment.title} />
 
 		<MomentDetailPaper
 			{moment}

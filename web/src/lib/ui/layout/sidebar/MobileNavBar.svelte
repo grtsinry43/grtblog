@@ -1,14 +1,17 @@
 <script lang="ts">
 	import type { NavMenuItem } from '$lib/features/navigation/types';
+	import { buildMomentPath, buildPostPath } from '$lib/shared/utils/content-path';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
+	import DetailTocNavList from '$lib/ui/detail/DetailTocNavList.svelte';
 	import ThemeIcon from './ThemeIcon.svelte';
-	import VisitorAvatar from './VisitorAvatar.svelte';
-	// TODO: Implement mobile TableOfContents using tocObserver action
-	import { Menu, X, ChevronDown, List } from 'lucide-svelte';
+	import { Menu, X, ChevronDown, List, Calendar, NotebookPen, FileText } from 'lucide-svelte';
 	import { page } from '$app/state';
-	import { slide, fade } from 'svelte/transition';
+	import { browser } from '$app/environment';
+	import { tick } from 'svelte';
+	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { onMount } from 'svelte';
+	import { websiteInfoCtx } from '$lib/features/website-info/context';
+	import { detailPanelCtx } from '$lib/shared/detail-panel/context';
 
 	let { menuTree = [] } = $props<{ menuTree: NavMenuItem[] }>();
 
@@ -19,7 +22,34 @@
 	let isMenuAnimating = $state(false);
 
 	// Interpolation progress: 0 (top/capsule) -> 1 (scrolled/full)
-	let navProgress = $derived(Math.max(0, Math.min(scrollY / 50, 1)));
+	let navProgress = $derived(Math.max(0, Math.min((scrollY || 0) / 50, 1)));
+	let domDetailTitle = $state('');
+
+	const websiteNameStore = websiteInfoCtx.selectModelData((data) => data?.website_name || '墨 手记');
+	const detailKindStore = detailPanelCtx.selectModelData((data) => data?.kind ?? null);
+	const detailTitleStore = detailPanelCtx.selectModelData((data) => data?.title ?? '');
+	const detailTocStore = detailPanelCtx.selectModelData((data) => data?.toc ?? []);
+	const relatedMomentsStore = detailPanelCtx.selectModelData((data) => data?.relatedMoments ?? []);
+	const relatedPostsStore = detailPanelCtx.selectModelData((data) => data?.relatedPosts ?? []);
+	const tocContentRootStore = detailPanelCtx.selectModelData((data) => data?.contentRoot ?? null, {
+		equals: (a, b) => a === b
+	});
+	const tocActiveAnchorStore = detailPanelCtx.selectModelData((data) => data?.activeAnchor ?? null);
+	const { updateModelData: updateDetailPanel } = detailPanelCtx.useModelActions();
+
+	const currentTitle = $derived($detailTitleStore || domDetailTitle);
+	const showPageTitle = $derived(navProgress > 0.5 && Boolean(currentTitle));
+
+	type TocTone = 'jade' | 'cinnabar' | 'ink';
+	const currentTocTone = $derived.by<TocTone>(() => {
+		if ($detailKindStore === 'moment') return 'cinnabar';
+		if ($detailKindStore === 'post') return 'jade';
+		return 'ink';
+	});
+	const hasRelatedContent = $derived(
+		($detailKindStore === 'post' && $relatedMomentsStore.length > 0) ||
+			($detailKindStore === 'moment' && $relatedPostsStore.length > 0)
+	);
 
 	const isActive = (href: string) =>
 		page.url.pathname === href || page.url.pathname.startsWith(href + '/');
@@ -42,18 +72,57 @@
 		isMobileMenuOpen = false;
 	}
 
+	function formatDate(dateStr: string): string {
+		const date = new Date(dateStr);
+		return `${date.getMonth() + 1}月${date.getDate()}日`;
+	}
+
+	function handleRelatedNavigate() {
+		isTocOpen = false;
+	}
+
+	const handleTocAnchorChange = (anchor: string) => {
+		updateDetailPanel((prev) => {
+			if (!prev || prev.activeAnchor === anchor) return prev;
+			return { ...prev, activeAnchor: anchor };
+		});
+		isTocOpen = false;
+	};
+
 	$effect(() => {
 		isMobileMenuOpen;
 		isMenuAnimating = true;
 		const timer = setTimeout(() => (isMenuAnimating = false), 500);
 		return () => clearTimeout(timer);
 	});
+
+	$effect(() => {
+		page.url.pathname;
+		$detailTitleStore;
+		if (!browser) {
+			domDetailTitle = '';
+			return;
+		}
+		if ($detailTitleStore) {
+			domDetailTitle = '';
+			return;
+		}
+		tick().then(() => {
+			const heading = document.querySelector('main article h1, main h1');
+			domDetailTitle = heading?.textContent?.trim() ?? '';
+		});
+	});
+
+	$effect(() => {
+		page.url.pathname;
+		isTocOpen = false;
+	});
 </script>
 
 <svelte:window bind:scrollY />
 
 <div
-	class="fixed z-50 flex justify-center transition-all ease-[cubic-bezier(0.23,1,0.32,1)] lg:hidden"
+	class="fixed z-50 flex justify-center transition-all ease-[cubic-bezier(0.23,1,0.32,1)] md:hidden"
 	class:duration-0={!isMobileMenuOpen && !isMenuAnimating}
 	class:duration-500={isMobileMenuOpen || isMenuAnimating}
 	class:top-0={isMobileMenuOpen}
@@ -85,13 +154,13 @@
 		<!-- 1. Collapsed Header -->
 		<div class="relative z-10 flex h-12 items-center justify-between px-3">
 			<!-- Left: Avatar & Title -->
-			<div class="flex items-center gap-3">
+			<div class="flex items-center gap-3 overflow-hidden">
 				<button
 					onclick={(e) => {
 						e.stopPropagation();
 						isMobileMenuOpen = !isMobileMenuOpen;
 					}}
-					class="flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-90"
+					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
 				>
 					<div
 						class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700"
@@ -105,28 +174,41 @@
 				</button>
 
 				<div
-					class="flex flex-col justify-center transition-all duration-300"
+					class="relative flex flex-col justify-center transition-all duration-300"
 					class:opacity-0={isMobileMenuOpen}
 				>
-					<span
-						class="max-w-[200px] truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
-					>
-						墨 手记
-					</span>
+					{#if showPageTitle}
+						<span
+							transition:fly={{ y: 10, duration: 300 }}
+							class="max-w-[200px] truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
+						>
+							{currentTitle}
+						</span>
+					{:else}
+						<span
+							transition:fly={{ y: -10, duration: 300 }}
+							class="max-w-[200px] truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
+						>
+							{$websiteNameStore}
+						</span>
+					{/if}
 				</div>
 			</div>
 
 			<!-- Right: Actions -->
 			<div class="flex items-center gap-1">
-				<button
-					onclick={(e) => {
-						e.stopPropagation();
-						isTocOpen = true;
-					}}
-					class="flex h-9 w-9 items-center justify-center rounded-full text-ink-600 transition-colors hover:bg-black/5 dark:text-ink-300 dark:hover:bg-white/10"
-				>
-					<List size={20} />
-				</button>
+				{#if $detailTocStore.length > 0 || hasRelatedContent}
+					<button
+						onclick={(e) => {
+							e.stopPropagation();
+							isMobileMenuOpen = false;
+							isTocOpen = true;
+						}}
+						class="flex h-9 w-9 items-center justify-center rounded-full text-ink-600 transition-colors hover:bg-black/5 dark:text-ink-300 dark:hover:bg-white/10"
+					>
+						<List size={20} />
+					</button>
+				{/if}
 
 				<button
 					onclick={(e) => {
@@ -147,7 +229,7 @@
 		<!-- 2. Expanded Content -->
 		{#if isMobileMenuOpen}
 			<div
-				transition:slide={{ duration: 400, axis: 'y' }}
+				transition:fly={{ y: -12, duration: 380, easing: cubicOut, opacity: 0 }}
 				class="no-scrollbar relative z-10 flex max-h-[75vh] flex-col overflow-y-auto px-2 pb-6 pt-0"
 			>
 				<!-- Decoration Header -->
@@ -228,7 +310,7 @@
 							<!-- Submenu -->
 							{#if hasChildren && isExpanded}
 								<div
-									transition:slide={{ duration: 300, easing: cubicOut }}
+									transition:fly={{ y: -6, duration: 260, easing: cubicOut, opacity: 0 }}
 									class="relative mb-2 mt-1 flex flex-col gap-1"
 								>
 									<!-- Vertical Line -->
@@ -296,7 +378,103 @@
 	{/if}
 </div>
 
-<!-- TODO: Mobile TableOfContents (placeholder removed, needs proper implementation) -->
+{#if isTocOpen}
+	<div
+		transition:fade={{ duration: 220 }}
+		class="fixed inset-0 z-[55] bg-ink-900/20 backdrop-blur-[2px] md:hidden"
+		onclick={() => (isTocOpen = false)}
+		role="presentation"
+	></div>
+	<aside
+		transition:fly={{ x: 32, duration: 260, easing: cubicOut, opacity: 0 }}
+		class="fixed inset-y-0 right-0 z-[60] h-full w-[82vw] max-w-[360px] border-l border-ink-200/70 bg-white/95 shadow-glass-lg backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/95 md:hidden"
+	>
+		<div class="flex h-14 items-center justify-between border-b border-ink-100/80 px-4 dark:border-ink-800/70">
+			<span class="font-mono text-[10px] font-bold tracking-[0.2em] text-ink-400 uppercase">
+				本页导航
+			</span>
+			<button
+				class="rounded-full p-1 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-100"
+				onclick={() => (isTocOpen = false)}
+			>
+				<X size={16} />
+			</button>
+		</div>
+		<div class="h-[calc(100%-3.5rem)] overflow-y-auto p-4">
+			<div class="space-y-6">
+				{#if $detailTocStore.length > 0}
+					<DetailTocNavList
+						toc={$detailTocStore}
+						contentRoot={$tocContentRootStore}
+						activeAnchor={$tocActiveAnchorStore}
+						onAnchorChange={handleTocAnchorChange}
+						tone={currentTocTone}
+						size="md"
+					/>
+				{/if}
+				{#if $detailKindStore === 'post' && $relatedMomentsStore.length > 0}
+					<section class="space-y-3 border-t border-ink-100/80 pt-4 dark:border-ink-800/70">
+						<div class="flex items-center gap-2 text-cinnabar-600 dark:text-cinnabar-400">
+							<NotebookPen size={14} />
+							<span class="font-mono text-[10px] font-bold tracking-[0.14em] uppercase">
+								同期手记
+							</span>
+						</div>
+						<div class="space-y-2.5">
+							{#each $relatedMomentsStore.slice(0, 2) as moment (moment.id)}
+								<a
+									href={buildMomentPath(moment.shortUrl, moment.createdAt)}
+									onclick={handleRelatedNavigate}
+									class="block rounded-default border border-ink-100/80 bg-ink-50/40 p-3 transition-colors hover:border-cinnabar-200 hover:bg-white dark:border-ink-700/70 dark:bg-ink-900/40 dark:hover:border-cinnabar-800"
+								>
+									<div class="mb-1 flex items-center gap-1 text-[11px] text-ink-400">
+										<Calendar size={11} />
+										{formatDate(moment.createdAt)}
+									</div>
+									<p class="line-clamp-2 text-[13px] font-semibold leading-5 text-ink-700 dark:text-ink-200">
+										{moment.title}
+									</p>
+									<p class="mt-1 line-clamp-2 text-[12px] leading-5 text-ink-500 dark:text-ink-400">
+										{moment.summary}
+									</p>
+								</a>
+							{/each}
+						</div>
+					</section>
+				{:else if $detailKindStore === 'moment' && $relatedPostsStore.length > 0}
+					<section class="space-y-3 border-t border-ink-100/80 pt-4 dark:border-ink-800/70">
+						<div class="flex items-center gap-2 text-jade-600 dark:text-jade-400">
+							<FileText size={14} />
+							<span class="font-mono text-[10px] font-bold tracking-[0.14em] uppercase">
+								同期文章
+							</span>
+						</div>
+						<div class="space-y-2.5">
+							{#each $relatedPostsStore.slice(0, 2) as post (post.id)}
+								<a
+									href={buildPostPath(post.shortUrl)}
+									onclick={handleRelatedNavigate}
+									class="block rounded-default border border-ink-100/80 bg-ink-50/40 p-3 transition-colors hover:border-jade-200 hover:bg-white dark:border-ink-700/70 dark:bg-ink-900/40 dark:hover:border-jade-800"
+								>
+									<div class="mb-1 flex items-center gap-1 text-[11px] text-ink-400">
+										<Calendar size={11} />
+										{formatDate(post.createdAt)}
+									</div>
+									<p class="line-clamp-2 text-[13px] font-semibold leading-5 text-ink-700 dark:text-ink-200">
+										{post.title}
+									</p>
+									<p class="mt-1 line-clamp-2 text-[12px] leading-5 text-ink-500 dark:text-ink-400">
+										{post.summary}
+									</p>
+								</a>
+							{/each}
+						</div>
+					</section>
+				{/if}
+			</div>
+		</div>
+	</aside>
+{/if}
 
 <style>
 	/* Use reference if needed, though Tailwind classes usually suffice */

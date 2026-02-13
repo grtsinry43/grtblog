@@ -25,6 +25,15 @@ export type PostSummary = {
 	updatedAt: string;
 };
 
+export type PostRelatedMoment = {
+	id: number;
+	title: string;
+	shortUrl: string;
+	summary: string;
+	image?: string[];
+	createdAt: string;
+};
+
 export type PostDetail = {
 	id: number;
 	title: string;
@@ -50,6 +59,7 @@ export type PostDetail = {
 	isTop: boolean;
 	isHot: boolean;
 	isOriginal: boolean;
+	relatedMoments?: PostRelatedMoment[];
 	createdAt: string;
 	updatedAt: string;
 };

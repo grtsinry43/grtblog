@@ -1,7 +1,6 @@
 import { getApi } from '$lib/shared/clients/api';
 import type {
 	CommentCreateResponse,
-	CommentNode,
 	CommentListResponse,
 	CreateCommentLoginPayload,
 	CreateCommentVisitorPayload
@@ -11,10 +10,18 @@ export const getCommentTree = async (
 	fetcher: typeof fetch | undefined,
 	areaId: number,
 	page = 1,
-	size = 10
+	size = 10,
+	visitorId?: string
 ): Promise<CommentListResponse | null> => {
 	const api = getApi(fetcher);
-	return api<CommentListResponse>(`/comments/areas/${areaId}?page=${page}&size=${size}`);
+	const query = new URLSearchParams({
+		page: String(page),
+		size: String(size)
+	});
+	if (visitorId?.trim()) {
+		query.set('visitorId', visitorId.trim());
+	}
+	return api<CommentListResponse>(`/comments/areas/${areaId}?${query.toString()}`);
 };
 
 export const createCommentLogin = async (

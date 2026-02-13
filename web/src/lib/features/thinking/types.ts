@@ -1,9 +1,3 @@
-export type ThinkingMetrics = {
-	views: number;
-	likes: number;
-	comments: number;
-};
-
 export type ThinkingItem = {
 	id: number;
 	commentId: number;
@@ -11,7 +5,9 @@ export type ThinkingItem = {
 	authorId: number;
 	authorName?: string;
 	avatar?: string;
-	metrics: ThinkingMetrics;
+	views: number;
+	likes: number;
+	comments: number;
 	createdAt: string;
 	updatedAt: string;
 };

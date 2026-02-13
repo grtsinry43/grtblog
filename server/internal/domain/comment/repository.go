@@ -3,7 +3,9 @@ package comment
 import "context"
 
 type PublicListOptions struct {
-	AreaID int64
+	AreaID          int64
+	ViewerAuthorID  *int64
+	ViewerVisitorID string
 }
 
 type AdminListOptions struct {
