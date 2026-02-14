@@ -1,35 +1,31 @@
 import { browser } from '$app/environment';
-import { checkPostLatest } from '$lib/features/post/api';
-import type { PostContentPayload, PostDetail } from '$lib/features/post/types';
+import { checkMomentLatest } from '$lib/features/moment/api';
+import type { MomentContentPayload, MomentDetail } from '$lib/features/moment/types';
 import { realtimeWSCore } from '$lib/shared/ws/realtime-core';
 import { toast } from 'svelte-sonner';
 
-export type PostLiveUpdateCallbacks = {
+export type MomentLiveUpdateCallbacks = {
 	getId: () => number | null;
 	getContentHash: () => string | null;
-	updatePost: (updater: (prev: PostDetail | null) => PostDetail | null) => void;
+	updateMoment: (updater: (prev: MomentDetail | null) => MomentDetail | null) => void;
 };
 
-/**
- * Creates a live-update controller for a post detail page.
- * Handles: WebSocket connection for real-time pushes + polling via checkPostLatest.
- */
-export function createPostLiveUpdate(callbacks: PostLiveUpdateCallbacks) {
+export function createMomentLiveUpdate(callbacks: MomentLiveUpdateCallbacks) {
 	if (!browser) return { start() {}, destroy() {} };
 
 	let unsubscribeContent: (() => void) | null = null;
 
 	const triggerUpdateHint = () => {
-		toast.success('作者修改了内容，已为您自动更新了呀！', { duration: 3000 });
+		toast.success('手记已更新，内容已自动刷新。', { duration: 3000 });
 	};
 
-	const applyPayload = (payload: PostContentPayload) => {
-		callbacks.updatePost((prev) => {
+	const applyPayload = (payload: MomentContentPayload) => {
+		callbacks.updateMoment((prev) => {
 			if (!prev) return prev;
 			return {
 				...prev,
 				title: payload.title ?? prev.title,
-				leadIn: payload.leadIn ?? prev.leadIn,
+				summary: payload.summary ?? prev.summary,
 				toc: payload.toc ?? prev.toc,
 				content: payload.content ?? prev.content,
 				contentHash: payload.contentHash || prev.contentHash
@@ -44,40 +40,38 @@ export function createPostLiveUpdate(callbacks: PostLiveUpdateCallbacks) {
 		if (!id || !contentHash) return;
 
 		try {
-			const latest = await checkPostLatest(undefined, id, contentHash);
+			const latest = await checkMomentLatest(undefined, id, contentHash);
 			if (!latest || latest.latest) return;
 
 			applyPayload({
 				contentHash: latest.contentHash,
 				title: latest.title,
-				leadIn: latest.leadIn,
+				summary: latest.summary,
 				toc: latest.toc,
 				content: latest.content
 			});
 		} catch {
-			toast.error('检查文章更新时出错了，请检查您的网络连接', { duration: 5000 });
+			toast.error('检查手记更新时失败，请稍后重试', { duration: 5000 });
 		}
 	};
 
-	const subscribe = (postId: number) => {
+	const subscribe = (momentId: number) => {
 		realtimeWSCore.start();
-		realtimeWSCore.setContentSubscription({ contentType: 'article', contentId: postId });
+		realtimeWSCore.setContentSubscription({ contentType: 'moment', contentId: momentId });
 
 		unsubscribeContent?.();
 		unsubscribeContent = realtimeWSCore.onContent((data: unknown) => {
-			if (!data || typeof data !== 'object') {
-				return;
-			}
+			if (!data || typeof data !== 'object') return;
 
-			const payload = data as PostContentPayload;
+			const payload = data as MomentContentPayload;
 			if (!payload?.contentHash) return;
 			applyPayload(payload);
 		});
 	};
 
 	return {
-		start(postId: number) {
-			subscribe(postId);
+		start(momentId: number) {
+			subscribe(momentId);
 			void refreshIfNeeded();
 		},
 		destroy() {

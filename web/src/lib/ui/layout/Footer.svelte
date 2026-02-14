@@ -15,9 +15,19 @@
 		Activity
 	} from 'lucide-svelte';
 
-	// Mock 数据，后续可以接入后台或 Store
+	type Props = {
+		onlineCount?: number;
+		presenceConnected?: boolean;
+		onOpenPresence?: () => void;
+	};
+
+	let {
+		onlineCount = 0,
+		presenceConnected = false,
+		onOpenPresence = () => {}
+	}: Props = $props();
+
 	const currentYear = new Date().getFullYear();
-	const onlineCount = 3;
 
 	const footerSections = [
 		{
@@ -112,8 +122,9 @@
 						A blog framework for developers
 					</p>
 				</div>
-				<div
-					class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-jade-500/5 border border-jade-500/10 w-fit"
+				<button
+					onclick={onOpenPresence}
+					class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-jade-500/5 border border-jade-500/10 w-fit hover:bg-jade-500/10 transition-colors"
 				>
 					<span class="relative flex h-1.5 w-1.5">
 						<span
@@ -122,9 +133,13 @@
 						<span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-jade-500"></span>
 					</span>
 					<span class="text-[10px] font-mono text-jade-700/80 dark:text-jade-400/80">
-						正在有 {onlineCount} 位小伙伴看着我的网站呐
+						{#if presenceConnected}
+							正在有 {onlineCount} 位小伙伴看着我的网站呐
+						{:else}
+							正在同步在线状态...
+						{/if}
 					</span>
-				</div>
+				</button>
 			</div>
 		</div>
 

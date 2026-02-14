@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/gofiber/websocket/v2"
@@ -13,10 +14,11 @@ import (
 type WSHandler struct {
 	manager      *ws.Manager
 	analyticsSvc *analytics.Service
+	presenceHub  *ws.PresenceHub
 }
 
-func NewWSHandler(manager *ws.Manager, analyticsSvc *analytics.Service) *WSHandler {
-	return &WSHandler{manager: manager, analyticsSvc: analyticsSvc}
+func NewWSHandler(manager *ws.Manager, analyticsSvc *analytics.Service, presenceHub *ws.PresenceHub) *WSHandler {
+	return &WSHandler{manager: manager, analyticsSvc: analyticsSvc, presenceHub: presenceHub}
 }
 
 func (h *WSHandler) Handle(conn *websocket.Conn) {
@@ -78,6 +80,128 @@ func (h *WSHandler) HandleNotification(conn *websocket.Conn) {
 		}
 	}
 	h.manager.Leave(roomKey, client)
+	if h.analyticsSvc != nil {
+		_ = h.analyticsSvc.TrackOnlineSample(context.Background(), h.manager.CurrentConnections())
+	}
+}
+
+func (h *WSHandler) HandlePresence(conn *websocket.Conn) {
+	if h.manager == nil || h.presenceHub == nil {
+		return
+	}
+
+	roomKey := ws.PresenceRoomKey()
+	client, cached := h.manager.Join(roomKey, conn)
+	if client == nil {
+		return
+	}
+	h.presenceHub.Register(client)
+	if h.analyticsSvc != nil {
+		_ = h.analyticsSvc.TrackOnlineSample(context.Background(), h.manager.CurrentConnections())
+	}
+
+	for _, payload := range cached {
+		_ = client.Write(payload)
+	}
+
+	for {
+		_, data, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		var payload ws.PresenceClientPayload
+		if err := json.Unmarshal(data, &payload); err != nil {
+			continue
+		}
+		h.presenceHub.Update(client, payload)
+	}
+
+	h.presenceHub.Unregister(client)
+	h.manager.Leave(roomKey, client)
+	if h.analyticsSvc != nil {
+		_ = h.analyticsSvc.TrackOnlineSample(context.Background(), h.manager.CurrentConnections())
+	}
+}
+
+type realtimeInboundMessage struct {
+	Type        string `json:"type"`
+	ContentType string `json:"contentType"`
+	ContentID   int64  `json:"contentId"`
+	URL         string `json:"url"`
+}
+
+func (h *WSHandler) HandleRealtime(conn *websocket.Conn) {
+	if h.manager == nil || h.presenceHub == nil {
+		return
+	}
+
+	rootRoom := ws.RealtimeRoomKey()
+	client, cachedRoot := h.manager.Join(rootRoom, conn)
+	if client == nil {
+		return
+	}
+	cachedPresence := h.manager.JoinClient(ws.PresenceRoomKey(), client)
+	h.presenceHub.Register(client)
+	if h.analyticsSvc != nil {
+		_ = h.analyticsSvc.TrackOnlineSample(context.Background(), h.manager.CurrentConnections())
+	}
+	for _, payload := range cachedRoot {
+		_ = client.Write(payload)
+	}
+	for _, payload := range cachedPresence {
+		_ = client.Write(payload)
+	}
+
+	currentContentRoom := ""
+	for {
+		_, data, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+
+		var msg realtimeInboundMessage
+		if err := json.Unmarshal(data, &msg); err != nil {
+			continue
+		}
+
+		switch msg.Type {
+		case "presence.report":
+			h.presenceHub.Update(client, ws.PresenceClientPayload{
+				ContentType: msg.ContentType,
+				URL:         msg.URL,
+			})
+		case "content.subscribe":
+			roomKey, ok := ws.ContentRoomKey(msg.ContentType, msg.ContentID)
+			if !ok {
+				continue
+			}
+			if currentContentRoom == roomKey {
+				continue
+			}
+
+			if currentContentRoom != "" {
+				h.manager.Leave(currentContentRoom, client)
+			}
+			cachedContent := h.manager.JoinClient(roomKey, client)
+			currentContentRoom = roomKey
+			for _, payload := range cachedContent {
+				_ = client.Write(payload)
+			}
+		case "content.unsubscribe":
+			if currentContentRoom == "" {
+				continue
+			}
+			h.manager.Leave(currentContentRoom, client)
+			currentContentRoom = ""
+		}
+	}
+
+	if currentContentRoom != "" {
+		h.manager.Leave(currentContentRoom, client)
+	}
+	h.presenceHub.Unregister(client)
+	h.manager.Leave(ws.PresenceRoomKey(), client)
+	h.manager.Leave(rootRoom, client)
 	if h.analyticsSvc != nil {
 		_ = h.analyticsSvc.TrackOnlineSample(context.Background(), h.manager.CurrentConnections())
 	}

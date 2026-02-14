@@ -18,6 +18,9 @@
 	import FloatingWindow from '$lib/ui/common/FloatingWindow.svelte';
 	import { uiState } from '$lib/shared/stores/ui.svelte';
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
+	import { presenceStore } from '$lib/features/presence/store.svelte';
+	import { resolvePresenceView } from '$lib/features/presence/resolve-view';
+	import PresencePagesWindow from '$lib/features/presence/components/PresencePagesWindow.svelte';
 
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
@@ -142,9 +145,17 @@
 	// Initialize theme on mount
 	const theme = themeManager;
 
+	function openPresenceWindow() {
+		windowStore.open('在线页面', null, 'presence-pages');
+	}
+
 	onMount(() => {
 		initTheme(theme);
 		consoleLogInfo();
+		presenceStore.start();
+		return () => {
+			presenceStore.stop();
+		};
 	});
 
 	startThemeSync(theme);
@@ -168,6 +179,15 @@
 		}
 
 		showRouteLoading = false;
+	});
+
+	$effect(() => {
+		if (!browser) return;
+
+		const report = resolvePresenceView(page.url.pathname, page.data);
+		if (!report) return;
+
+		presenceStore.reportView(report);
 	});
 </script>
 
@@ -214,7 +234,11 @@
 			{@render children()}
 		</div>
 	</main>
-	<Footer />
+	<Footer
+		onlineCount={presenceStore.online}
+		presenceConnected={presenceStore.isConnected}
+		onOpenPresence={openPresenceWindow}
+	/>
 </div>
 
 {#if showRouteLoading}
@@ -238,6 +262,8 @@
 		<QueryRoot
 			loader={() => import('$lib/features/friend-link/components/ApplyFriendForm.svelte')}
 		/>
+	{:else if windowStore.kind === 'presence-pages'}
+		<PresencePagesWindow />
 	{:else}
 		<div class="flex flex-col gap-3"></div>
 	{/if}
