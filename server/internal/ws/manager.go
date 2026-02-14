@@ -11,6 +11,8 @@ import (
 type Manager struct {
 	mu              sync.RWMutex
 	rooms           map[string]*room
+	clientRooms     map[*Client]map[string]struct{}
+	onlineClients   map[*Client]struct{}
 	cacheSize       int
 	roomTTL         time.Duration
 	cleanupInterval time.Duration
@@ -77,6 +79,8 @@ func NewManager(cfg Config) *Manager {
 	}
 	manager := &Manager{
 		rooms:           make(map[string]*room),
+		clientRooms:     make(map[*Client]map[string]struct{}),
+		onlineClients:   make(map[*Client]struct{}),
 		cacheSize:       cacheSize,
 		roomTTL:         roomTTL,
 		cleanupInterval: cleanupInterval,
@@ -92,55 +96,68 @@ func (m *Manager) Join(roomKey string, conn *websocket.Conn) (*Client, [][]byte)
 		return nil, nil
 	}
 
-	m.mu.Lock()
-	rm := m.rooms[roomKey]
-	if rm == nil {
-		rm = &room{
-			clients:      make(map[*Client]struct{}),
-			cache:        []cachedMessage{},
-			lastActivity: time.Now(),
-		}
-		m.rooms[roomKey] = rm
-	}
 	cl := &Client{conn: conn}
-	rm.mu.Lock()
-	rm.clients[cl] = struct{}{}
-	rm.lastActivity = time.Now()
-	cached := make([][]byte, len(rm.cache))
-	for i, msg := range rm.cache {
-		cached[i] = append([]byte(nil), msg.payload...)
+	m.mu.Lock()
+	cached := m.joinRoomLocked(roomKey, cl)
+	if _, exists := m.onlineClients[cl]; !exists {
+		m.onlineClients[cl] = struct{}{}
+		m.currentOnline++
+		m.joinTotal++
 	}
-	rm.mu.Unlock()
-	m.currentOnline++
-	m.joinTotal++
 	m.mu.Unlock()
 
 	return cl, cached
+}
+
+func (m *Manager) JoinClient(roomKey string, cl *Client) [][]byte {
+	if roomKey == "" || cl == nil {
+		return nil
+	}
+
+	m.mu.Lock()
+	cached := m.joinRoomLocked(roomKey, cl)
+	m.mu.Unlock()
+
+	return cached
 }
 
 func (m *Manager) Leave(roomKey string, cl *Client) {
 	if roomKey == "" || cl == nil {
 		return
 	}
-	m.mu.RLock()
-	rm := m.rooms[roomKey]
-	m.mu.RUnlock()
-	if rm == nil {
+
+	m.mu.Lock()
+	m.leaveRoomLocked(roomKey, cl)
+	m.releaseClientIfNoRoomsLocked(cl)
+	m.mu.Unlock()
+}
+
+func (m *Manager) DropClient(cl *Client) {
+	if cl == nil {
 		return
 	}
-	rm.mu.Lock()
-	_, existed := rm.clients[cl]
-	delete(rm.clients, cl)
-	rm.lastActivity = time.Now()
-	rm.mu.Unlock()
-	if existed {
-		m.mu.Lock()
+
+	m.mu.Lock()
+	rooms := m.clientRooms[cl]
+	for roomKey := range rooms {
+		rm := m.rooms[roomKey]
+		if rm == nil {
+			continue
+		}
+		rm.mu.Lock()
+		delete(rm.clients, cl)
+		rm.lastActivity = time.Now()
+		rm.mu.Unlock()
+	}
+	delete(m.clientRooms, cl)
+	if _, exists := m.onlineClients[cl]; exists {
+		delete(m.onlineClients, cl)
 		if m.currentOnline > 0 {
 			m.currentOnline--
 		}
 		m.leaveTotal++
-		m.mu.Unlock()
 	}
+	m.mu.Unlock()
 }
 
 func (m *Manager) Broadcast(roomKey string, payload []byte) {
@@ -171,7 +188,7 @@ func (m *Manager) Broadcast(roomKey string, payload []byte) {
 	for _, cl := range clients {
 		if err := cl.Write(payload); err != nil {
 			writeErrs++
-			m.Leave(roomKey, cl)
+			m.DropClient(cl)
 		}
 	}
 	atomic.AddInt64(&m.broadcastTotal, 1)
@@ -180,6 +197,75 @@ func (m *Manager) Broadcast(roomKey string, payload []byte) {
 		atomic.AddInt64(&m.broadcastErrors, writeErrs)
 	}
 	m.recordBroadcastLatency(time.Since(start))
+}
+
+func (m *Manager) joinRoomLocked(roomKey string, cl *Client) [][]byte {
+	rm := m.rooms[roomKey]
+	if rm == nil {
+		rm = &room{
+			clients:      make(map[*Client]struct{}),
+			cache:        []cachedMessage{},
+			lastActivity: time.Now(),
+		}
+		m.rooms[roomKey] = rm
+	}
+
+	rm.mu.Lock()
+	rm.clients[cl] = struct{}{}
+	rm.lastActivity = time.Now()
+	cached := make([][]byte, len(rm.cache))
+	for i, msg := range rm.cache {
+		cached[i] = append([]byte(nil), msg.payload...)
+	}
+	rm.mu.Unlock()
+
+	rooms := m.clientRooms[cl]
+	if rooms == nil {
+		rooms = make(map[string]struct{})
+		m.clientRooms[cl] = rooms
+	}
+	rooms[roomKey] = struct{}{}
+
+	return cached
+}
+
+func (m *Manager) leaveRoomLocked(roomKey string, cl *Client) {
+	rm := m.rooms[roomKey]
+	if rm == nil {
+		return
+	}
+
+	rm.mu.Lock()
+	delete(rm.clients, cl)
+	rm.lastActivity = time.Now()
+	rm.mu.Unlock()
+
+	rooms := m.clientRooms[cl]
+	if rooms == nil {
+		return
+	}
+	delete(rooms, roomKey)
+	if len(rooms) == 0 {
+		delete(m.clientRooms, cl)
+	}
+}
+
+func (m *Manager) releaseClientIfNoRoomsLocked(cl *Client) {
+	if cl == nil {
+		return
+	}
+	if rooms := m.clientRooms[cl]; len(rooms) > 0 {
+		return
+	}
+	if _, exists := m.onlineClients[cl]; !exists {
+		return
+	}
+
+	delete(m.onlineClients, cl)
+	if m.currentOnline > 0 {
+		m.currentOnline--
+	}
+	m.leaveTotal++
 }
 
 func (m *Manager) Close() {

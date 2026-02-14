@@ -9,11 +9,32 @@ import (
 	"github.com/gofiber/websocket/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
+	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
 
 func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
-	wsHandler := handler.NewWSHandler(manager, deps.Analytics)
+	contentRepo := persistence.NewContentRepository(deps.DB)
+	thinkingRepo := persistence.NewThinkingRepository(deps.DB)
+	presenceResolver := ws.NewPresenceTitleResolver(contentRepo, thinkingRepo)
+	presenceHub := ws.NewPresenceHub(manager, presenceResolver)
+	wsHandler := handler.NewWSHandler(manager, deps.Analytics, presenceHub)
+
+	v2.Use("/ws/realtime", func(c *fiber.Ctx) error {
+		if !websocket.IsWebSocketUpgrade(c) {
+			return fiber.ErrUpgradeRequired
+		}
+		return c.Next()
+	})
+	v2.Get("/ws/realtime", websocket.New(wsHandler.HandleRealtime))
+
+	v2.Use("/ws/presence", func(c *fiber.Ctx) error {
+		if !websocket.IsWebSocketUpgrade(c) {
+			return fiber.ErrUpgradeRequired
+		}
+		return c.Next()
+	})
+	v2.Get("/ws/presence", websocket.New(wsHandler.HandlePresence))
 
 	v2.Use("/ws", func(c *fiber.Ctx) error {
 		path := c.Path()
