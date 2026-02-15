@@ -14,7 +14,7 @@
 </script>
 
 <div class="homepage-container">
-	<Hero />
+	<Hero config={data.homeTheme?.hero} />
 
 	<div class="max-w-300 mx-auto px-6 py-12 md:py-20">
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24">
@@ -31,7 +31,7 @@
 							</h2>
 						</div>
 						<a
-							href={resolve('/posts')}
+							href={resolve('/posts', {})}
 							class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
 						>
 							<span>查看全部</span>
@@ -60,7 +60,7 @@
 							</h2>
 						</div>
 						<a
-							href={resolve('/moments')}
+							href={resolve('/moments', {})}
 							class="flex items-center gap-1 text-xs font-mono text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group"
 						>
 							<span>查看全部</span>
@@ -78,10 +78,10 @@
 		</div>
 
 		<!-- New Inspiration Grid -->
-		<InspirationGrid />
+		<InspirationGrid config={data.homeTheme?.inspiration} stats={data.inspirationStats} />
 
 		<!-- New Activity Pulse -->
-		<ActivityPulse />
+		<ActivityPulse pulse={data.activityPulse} config={data.homeTheme?.activityPulse} />
 
 		<!-- New Subscribe Section -->
 		<SubscribeSection />

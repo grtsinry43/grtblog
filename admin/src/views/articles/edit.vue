@@ -12,6 +12,7 @@ import {
   NForm,
   NFormItem,
   NInput,
+  NInputNumber,
   NModal,
   NPopover,
   NSelect,
@@ -37,7 +38,8 @@ defineOptions({ name: 'ArticleEdit' })
 const message = useMessage()
 
 // 1. 初始化表单核心逻辑
-const { form, loading, saving, imageProcessing, isCreating, fetch, save, extInfo } = useArticleForm()
+const { form, loading, saving, imageProcessing, isCreating, fetch, save, extInfo, baseExtInfo } =
+  useArticleForm()
 
 // 2. 初始化分类与标签逻辑
 // 将表单中的响应式属性传给 Hook，实现双向绑定
@@ -66,6 +68,9 @@ const previewFrameRef = ref<HTMLIFrameElement | null>(null)
 const previewReady = ref(false)
 const publicUrl = ref('')
 const loadedArticle = ref<ArticleDetail | null>(null)
+const isYearSummary = ref(false)
+const yearSummaryYear = ref(new Date().getFullYear())
+const yearSummaryReady = ref(false)
 
 const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
 const PREVIEW_POST_TYPE = 'grtblog-preview:post'
@@ -148,6 +153,46 @@ function sendPreviewPayload() {
   )
 }
 
+function normalizeYearSummaryValue(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const year = Math.floor(value)
+    return year >= 1900 && year <= 3000 ? year : null
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value.trim(), 10)
+    return Number.isFinite(parsed) && parsed >= 1900 && parsed <= 3000 ? parsed : null
+  }
+  return null
+}
+
+function readYearSummaryFromExtInfo(value: unknown): number | null {
+  if (!value || typeof value !== 'object') return null
+  return normalizeYearSummaryValue((value as Record<string, unknown>).is_year_summary)
+}
+
+function applyYearSummaryToExtInfo(target: Record<string, unknown>) {
+  if (isYearSummary.value) {
+    target.is_year_summary = yearSummaryYear.value
+  } else {
+    delete target.is_year_summary
+  }
+}
+
+function syncYearSummaryToExtInfo() {
+  const nextBase = baseExtInfo.value ? { ...baseExtInfo.value } : {}
+  applyYearSummaryToExtInfo(nextBase)
+  baseExtInfo.value = Object.keys(nextBase).length > 0 ? nextBase : null
+
+  const nextExtInfo = extInfo.value ? { ...extInfo.value } : {}
+  applyYearSummaryToExtInfo(nextExtInfo)
+  extInfo.value = Object.keys(nextExtInfo).length > 0 ? nextExtInfo : null
+}
+
+async function handleSave() {
+  syncYearSummaryToExtInfo()
+  await save()
+}
+
 let previewTimer: number | null = null
 function schedulePreviewPayload() {
   if (!showPreview.value || previewMode.value !== 'page') return
@@ -179,6 +224,16 @@ onMounted(async () => {
 
   const [data] = await Promise.all([fetch(), fetchWebsiteInfo()])
   loadedArticle.value = data as ArticleDetail | null
+  const summaryYear = readYearSummaryFromExtInfo(data?.extInfo ?? null)
+  if (summaryYear) {
+    isYearSummary.value = true
+    yearSummaryYear.value = summaryYear
+  } else {
+    isYearSummary.value = false
+    yearSummaryYear.value = new Date().getFullYear()
+  }
+  yearSummaryReady.value = true
+  syncYearSummaryToExtInfo()
   if (data?.tags) {
     setInitialTags(data.tags)
   }
@@ -215,6 +270,11 @@ watch([showPreview, previewMode, previewUrl], () => {
 
 watch(previewUrl, () => {
   previewReady.value = false
+})
+
+watch([isYearSummary, yearSummaryYear], () => {
+  if (!yearSummaryReady.value) return
+  syncYearSummaryToExtInfo()
 })
 </script>
 
@@ -292,7 +352,7 @@ watch(previewUrl, () => {
             size="medium"
             :loading="saving"
             :disabled="saving || imageProcessing"
-            @click="save"
+            @click="handleSave"
             class="px-5 font-medium shadow-sm active:scale-95"
           >
             <template #icon><component :is="actionIcon" /></template>
@@ -570,6 +630,28 @@ watch(previewUrl, () => {
                   v-model:value="form.isOriginal"
                   size="small"
                 />
+              </div>
+              <div class="col-span-2 rounded-lg px-4 py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm">这是年终总结</span>
+                  <NSwitch
+                    v-model:value="isYearSummary"
+                    size="small"
+                  />
+                </div>
+                <div
+                  v-if="isYearSummary"
+                  class="mt-3"
+                >
+                  <NInputNumber
+                    v-model:value="yearSummaryYear"
+                    :min="1900"
+                    :max="3000"
+                    :precision="0"
+                    class="w-full"
+                    placeholder="输入年份，例如 2024"
+                  />
+                </div>
               </div>
             </div>
           </div>

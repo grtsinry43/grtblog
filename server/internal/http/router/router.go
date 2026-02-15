@@ -122,6 +122,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	}
 	deps.ISR = isrSvc
 	isr.RegisterArticleSubscribers(eventBus, isrSvc)
+	isr.RegisterMomentSubscribers(eventBus, isrSvc)
 	deps.Observability = observability.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, eventBus, deps.HTTPStats, wsManager, htmlSnapshotSvc, isrSvc)
 
 	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
