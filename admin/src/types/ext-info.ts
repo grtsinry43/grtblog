@@ -7,4 +7,6 @@ export interface ImageExtInfoItem {
 
 export interface ContentExtInfo {
   images?: ImageExtInfoItem[]
+  is_year_summary?: number
+  [key: string]: unknown
 }

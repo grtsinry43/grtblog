@@ -147,6 +147,7 @@ export function useArticleForm() {
     saving,
     imageProcessing: processing,
     extInfo,
+    baseExtInfo,
     isCreating,
     isDirty,
     fetch,

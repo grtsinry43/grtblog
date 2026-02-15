@@ -9,6 +9,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendtimeline"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/home"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	applike "github.com/grtsinry43/grtblog-v2/server/internal/app/like"
 	apprss "github.com/grtsinry43/grtblog-v2/server/internal/app/rss"
@@ -31,6 +32,12 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 
 	momentHandler := newMomentHandler(deps)
 	public.Get("/moments/recent", momentHandler.ListRecentPublicMoments)
+
+	homeSvc := home.NewService(deps.DB)
+	homeHandler := handler.NewHomeHandler(homeSvc)
+	public.Get("/home/activity-pulse", homeHandler.GetActivityPulse)
+	public.Get("/home/inspiration-stats", homeHandler.GetInspirationStats)
+	public.Get("/home/timeline-by-year", homeHandler.GetTimelineByYear)
 
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
 	friendLinkSvc := friendlink.NewLinkService(friendLinkRepo)

@@ -14,11 +14,10 @@
 				<h2
 					class="text-base font-serif font-medium text-ink-900 dark:text-ink-100 flex items-center justify-center md:justify-start gap-2"
 				>
-					<span class="w-1.5 h-1.5 rounded-full bg-jade-500 animate-pulse"></span>
-					花园回响
+					订阅更新
 				</h2>
-				<p class="text-[11px] text-ink-400 font-mono italic">
-					捕捉逻辑的每一次跳动，让感性的回声在你的收件箱降落。
+				<p class="text-[11px] text-ink-400 font-mono">
+					欢迎通过邮件或 RSS 订阅，第一时间获取最新文章和手记等内容的更新通知。
 				</p>
 			</div>
 
@@ -32,7 +31,7 @@
 				</button>
 
 				<a
-					href={resolve('/feed')}
+					href={resolve('/feed', {})}
 					class="px-5 py-2.5 text-xs font-medium bg-jade-50/50 dark:bg-jade-500/5 border border-jade-200/60 dark:border-jade-800/60 text-jade-700 dark:text-jade-300 rounded-default hover:border-jade-500/50 hover:text-jade-600 transition-all flex items-center gap-2 group"
 				>
 					<Rss size={13} class="group-hover:text-amber-500 transition-colors" />

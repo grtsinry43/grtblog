@@ -1,4 +1,4 @@
-export type WebsiteInfoThemeExtendInfo = Record<string, string>;
+export type WebsiteInfoThemeExtendInfo = Record<string, unknown>;
 
 export interface WebsiteInfoMap {
 	api_url?: string;
