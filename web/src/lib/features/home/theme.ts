@@ -47,7 +47,10 @@ const defaultThemeConfig: HomeThemeConfig = {
 		avatarUrl: 'https://dogeoss.grtsinry43.com/img/author.jpeg',
 		description: 'Java & JavaScript full-stack developer committed to crafting excellent software.',
 		titleTemplate: defaultHeroTemplate,
-		mottoLines: ['热衷于在逻辑与感性的缝隙中构建数字花园。', '也许，代码是现代的诗歌，而文字是思想的快照。'],
+		mottoLines: [
+			'热衷于在逻辑与感性的缝隙中构建数字花园。',
+			'也许，代码是现代的诗歌，而文字是思想的快照。'
+		],
 		socials: defaultHeroSocials
 	},
 	activityPulse: {
@@ -341,7 +344,9 @@ const parseInspiration = (value: unknown): HomeInspirationThemeConfig | undefine
 	};
 };
 
-export const resolveHomeThemeConfig = (websiteInfo: WebsiteInfoMap | null | undefined): HomeThemeConfig => {
+export const resolveHomeThemeConfig = (
+	websiteInfo: WebsiteInfoMap | null | undefined
+): HomeThemeConfig => {
 	const themeRaw = websiteInfo?.theme_extend_info;
 	if (!isRecord(themeRaw)) {
 		return defaultThemeConfig;
@@ -400,11 +405,7 @@ export const resolveHomeThemeConfig = (websiteInfo: WebsiteInfoMap | null | unde
 			items: defaultThemeConfig.inspiration?.now?.items
 		};
 	}
-	if (
-		!inspiration.stats ||
-		!Array.isArray(inspiration.stats) ||
-		inspiration.stats.length === 0
-	) {
+	if (!inspiration.stats || !Array.isArray(inspiration.stats) || inspiration.stats.length === 0) {
 		inspiration.stats = defaultThemeConfig.inspiration?.stats;
 	}
 	if (

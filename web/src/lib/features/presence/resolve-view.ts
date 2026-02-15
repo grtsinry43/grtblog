@@ -22,7 +22,10 @@ const normalizePath = (pathname: string): string => {
 	return pathname;
 };
 
-export const resolvePresenceView = (pathname: string, data: unknown): PresenceClientReport | null => {
+export const resolvePresenceView = (
+	pathname: string,
+	data: unknown
+): PresenceClientReport | null => {
 	const currentPath = normalizePath(pathname);
 	const routeData = (data ?? {}) as RouteData;
 

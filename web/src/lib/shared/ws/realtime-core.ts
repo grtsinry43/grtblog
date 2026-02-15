@@ -147,7 +147,7 @@ class RealtimeWSCore {
 	private scheduleReconnect() {
 		if (this.reconnectTimer || !this.started) return;
 
-		const delay = Math.min(1000*(2 ** Math.min(this.reconnectAttempts, 4)), 15000);
+		const delay = Math.min(1000 * 2 ** Math.min(this.reconnectAttempts, 4), 15000);
 		this.reconnectAttempts += 1;
 		this.reconnectTimer = setTimeout(() => {
 			this.reconnectTimer = null;

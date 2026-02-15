@@ -39,8 +39,11 @@ export const getHomeActivityPulse = async (
 	const query = new URLSearchParams({
 		days
 	});
-	const result = await api<HomeActivityPulseData>(`/public/home/activity-pulse?${query.toString()}`);
-	const fallbackDays = options.days === 'all' ? 0 : options.days && options.days > 0 ? Math.floor(options.days) : 365;
+	const result = await api<HomeActivityPulseData>(
+		`/public/home/activity-pulse?${query.toString()}`
+	);
+	const fallbackDays =
+		options.days === 'all' ? 0 : options.days && options.days > 0 ? Math.floor(options.days) : 365;
 	return (
 		result ?? {
 			days: fallbackDays,

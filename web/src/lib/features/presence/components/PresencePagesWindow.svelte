@@ -28,7 +28,9 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	<div class="rounded-default border border-ink-100/60 dark:border-ink-800/60 bg-ink-50/50 dark:bg-ink-950/40 px-3 py-2">
+	<div
+		class="rounded-default border border-ink-100/60 dark:border-ink-800/60 bg-ink-50/50 dark:bg-ink-950/40 px-3 py-2"
+	>
 		<p class="text-[11px] font-mono text-ink-500 dark:text-ink-400">
 			{#if connected}
 				当前在线连接：<span class="font-bold text-jade-600 dark:text-jade-400">{online}</span>
@@ -39,7 +41,9 @@
 	</div>
 
 	{#if pages.length === 0}
-		<div class="py-10 text-center text-xs font-serif text-ink-400 dark:text-ink-500">暂时还没有可展示的在线页面</div>
+		<div class="py-10 text-center text-xs font-serif text-ink-400 dark:text-ink-500">
+			暂时还没有可展示的在线页面
+		</div>
 	{:else}
 		<div class="flex flex-col gap-2">
 			{#each pages as item (item.contentType + ':' + item.url)}
@@ -50,10 +54,14 @@
 				>
 					<div class="flex items-center justify-between gap-3">
 						<div class="min-w-0 flex items-center gap-2">
-							<span class="shrink-0 text-[10px] font-mono text-jade-700/80 dark:text-jade-400/80 uppercase tracking-[0.12em]">
+							<span
+								class="shrink-0 text-[10px] font-mono text-jade-700/80 dark:text-jade-400/80 uppercase tracking-[0.12em]"
+							>
 								{labelFor(item.contentType)}
 							</span>
-							<span class="truncate text-sm font-serif text-ink-700 dark:text-ink-200 group-hover:text-jade-700 dark:group-hover:text-jade-300">
+							<span
+								class="truncate text-sm font-serif text-ink-700 dark:text-ink-200 group-hover:text-jade-700 dark:group-hover:text-jade-300"
+							>
 								{item.title || item.url}
 							</span>
 						</div>

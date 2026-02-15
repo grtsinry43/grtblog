@@ -10,7 +10,8 @@
 		HomeWordCountStats
 	} from './types';
 
-	let { config, stats }: { config?: HomeInspirationThemeConfig; stats?: HomeInspirationStatsData } = $props();
+	let { config, stats }: { config?: HomeInspirationThemeConfig; stats?: HomeInspirationStatsData } =
+		$props();
 
 	const iconMap: Record<HomeInspirationIconName, typeof Quote> = {
 		quote: Quote,
@@ -59,12 +60,16 @@
 	];
 
 	const sectionTitle = $derived(config?.sectionTitle || '灵感与实验场');
-	const quoteText = $derived(config?.quote?.text || '“The best way to predict the future is to invent it.”');
+	const quoteText = $derived(
+		config?.quote?.text || '“The best way to predict the future is to invent it.”'
+	);
 	const quoteAuthor = $derived(config?.quote?.author || 'Alan Kay');
 	const nowTitle = $derived(config?.now?.title || 'Now / 正在');
 	const nowItems = $derived.by(
 		() =>
-			(config?.now?.items && config.now.items.length > 0 ? config.now.items : defaultNowItems) as Array<{
+			(config?.now?.items && config.now.items.length > 0
+				? config.now.items
+				: defaultNowItems) as Array<{
 				id: string;
 				label: string;
 				value: string;
@@ -90,7 +95,10 @@
 	const wordStats = $derived(stats?.words);
 	const githubStats = $derived(stats?.github);
 
-	function resolveIcon(name: HomeInspirationIconName | undefined, fallback: typeof Quote): typeof Quote {
+	function resolveIcon(
+		name: HomeInspirationIconName | undefined,
+		fallback: typeof Quote
+	): typeof Quote {
 		if (!name) {
 			return fallback;
 		}
@@ -194,7 +202,11 @@
 			<div class="space-y-4">
 				{#each nowItems as item (item.id)}
 					<div class="flex items-start gap-3">
-						<svelte:component this={resolveIcon(item.icon, Code2)} size={16} class="mt-0.5 text-ink-400" />
+						<svelte:component
+							this={resolveIcon(item.icon, Code2)}
+							size={16}
+							class="mt-0.5 text-ink-400"
+						/>
 						<div>
 							<div class="text-[10px] font-mono text-ink-400 uppercase">{item.label}</div>
 							<div class="text-sm font-medium">{item.value}</div>

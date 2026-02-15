@@ -40,7 +40,9 @@
 				<div class="space-y-3">
 					<div class="flex items-center gap-2 px-1">
 						<span class="h-px w-3 bg-jade-500/30"></span>
-						<span class="font-mono text-[9px] font-bold tracking-[0.2em] text-ink-400 uppercase">Articles</span>
+						<span class="font-mono text-[9px] font-bold tracking-[0.2em] text-ink-400 uppercase"
+							>Articles</span
+						>
 					</div>
 					<div class="flex flex-col">
 						{#each contents.articles as article}
@@ -66,7 +68,9 @@
 				<div class="space-y-3">
 					<div class="flex items-center gap-2 px-1">
 						<span class="h-px w-3 bg-cinnabar-500/30"></span>
-						<span class="font-mono text-[9px] font-bold tracking-[0.2em] text-ink-400 uppercase">Moments</span>
+						<span class="font-mono text-[9px] font-bold tracking-[0.2em] text-ink-400 uppercase"
+							>Moments</span
+						>
 					</div>
 					<div class="flex flex-col">
 						{#each contents.moments as moment}

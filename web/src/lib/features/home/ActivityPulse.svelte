@@ -65,18 +65,16 @@
 	const totalMoments = $derived(pulse?.totalMoments ?? 0);
 	const chartDays = $derived(pulse?.days ?? activityData.length ?? 365);
 	const title = $derived(config?.title ?? '创作律动');
-	const subtitle = $derived(config?.subtitle ?? `近 ${chartDays} 天的数字足迹：逻辑的向上生长，感性的向下扎根。`);
+	const subtitle = $derived(
+		config?.subtitle ?? `近 ${chartDays} 天的数字足迹：逻辑的向上生长，感性的向下扎根。`
+	);
 	const statusLabel = $derived(config?.statusLabel ?? pulse?.statusLabel ?? 'Steady');
 	const rangeStartLabel = $derived(config?.rangeLabelStart ?? pulse?.startDate ?? 'Start');
 	const rangeEndLabel = $derived(config?.rangeLabelEnd ?? pulse?.endDate ?? 'Today');
 	const postsLegend = $derived(config?.legend?.posts ?? 'Article');
 	const momentsLegend = $derived(config?.legend?.moments ?? 'Moment');
-	const maxPostsInView = $derived(
-		Math.max(...displayData.map((item) => item.posts), 0)
-	);
-	const maxMomentsInView = $derived(
-		Math.max(...displayData.map((item) => item.moments), 0)
-	);
+	const maxPostsInView = $derived(Math.max(...displayData.map((item) => item.posts), 0));
+	const maxMomentsInView = $derived(Math.max(...displayData.map((item) => item.moments), 0));
 
 	function calcBarHeight(value: number, maxValue: number): string {
 		if (maxValue <= 0 || value <= 0) {

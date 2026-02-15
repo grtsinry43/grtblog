@@ -151,6 +151,18 @@ body {
 	scrollbar-width: none;
 }
 
+@utility shadow-jade-glow {
+	box-shadow:
+		0 10px 30px -10px rgba(20, 184, 166, 0.25),
+		inset 0 0 12px rgba(20, 184, 166, 0.05);
+}
+
+@utility shadow-jade-glow-dark {
+	box-shadow:
+		0 10px 40px -12px rgba(0, 0, 0, 0.5),
+		inset 0 0 15px rgba(45, 212, 191, 0.08);
+}
+
 @utility article-enter {
 	animation: article-enter 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }

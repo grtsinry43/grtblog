@@ -300,11 +300,7 @@
 		class:backdrop-blur-[3px]={isAnimating}
 		class:backdrop-blur-none={!isAnimating}
 	>
-		<button
-			type="button"
-			class="absolute inset-0"
-			aria-label="关闭搜索弹窗"
-			onclick={onClose}
+		<button type="button" class="absolute inset-0" aria-label="关闭搜索弹窗" onclick={onClose}
 		></button>
 
 		<div
@@ -373,7 +369,9 @@
 											searchTerm = item;
 										}}
 										onmouseenter={() => setActiveItem(`history:${item}`)}
-										class="group flex w-[calc(100%+2rem)] items-center justify-between rounded-sm px-4 py-3 -mx-4 text-left transition-colors hover:bg-ink-100 dark:hover:bg-ink-800/50 {isItemActive(`history:${item}`)
+										class="group flex w-[calc(100%+2rem)] items-center justify-between rounded-sm px-4 py-3 -mx-4 text-left transition-colors hover:bg-ink-100 dark:hover:bg-ink-800/50 {isItemActive(
+											`history:${item}`
+										)
 											? 'bg-ink-100 dark:bg-ink-800/50'
 											: ''}"
 									>
@@ -393,9 +391,7 @@
 						<div class="py-12 flex flex-col items-center justify-center text-center">
 							<Search size={24} class="mb-3 text-ink-300 dark:text-ink-600" />
 							<p class="font-serif text-sm text-ink-700 dark:text-ink-200">输入关键词开始搜索</p>
-							<p class="mt-1 text-xs text-ink-400 dark:text-ink-500">
-								支持文章、手记、页面、思考
-							</p>
+							<p class="mt-1 text-xs text-ink-400 dark:text-ink-500">支持文章、手记、页面、思考</p>
 						</div>
 					{/if}
 				{:else if query.data}
@@ -411,7 +407,9 @@
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('article', article))}
 										onmouseenter={() => setActiveItem(`article:${article.id}`)}
-										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(`article:${article.id}`)
+										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(
+											`article:${article.id}`
+										)
 											? 'bg-ink-100 dark:bg-ink-800/50'
 											: ''}"
 									>
@@ -443,7 +441,9 @@
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('moment', moment))}
 										onmouseenter={() => setActiveItem(`moment:${moment.id}`)}
-										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(`moment:${moment.id}`)
+										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(
+											`moment:${moment.id}`
+										)
 											? 'bg-ink-100 dark:bg-ink-800/50'
 											: ''}"
 									>
@@ -475,7 +475,9 @@
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('thinking', thinking))}
 										onmouseenter={() => setActiveItem(`thinking:${thinking.id}`)}
-										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(`thinking:${thinking.id}`)
+										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(
+											`thinking:${thinking.id}`
+										)
 											? 'bg-ink-100 dark:bg-ink-800/50'
 											: ''}"
 									>
@@ -510,7 +512,9 @@
 									<button
 										onclick={() => handleResultClick(resolveSearchPath('page', page))}
 										onmouseenter={() => setActiveItem(`page:${page.id}`)}
-										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(`page:${page.id}`)
+										class="text-left py-2 px-3 -mx-3 rounded-sm hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors group {isItemActive(
+											`page:${page.id}`
+										)
 											? 'bg-ink-100 dark:bg-ink-800/50'
 											: ''}"
 									>
@@ -527,13 +531,17 @@
 					{/if}
 
 					{#if query.data.articles.length === 0 && query.data.moments.length === 0 && query.data.pages.length === 0 && query.data.thinkings.length === 0}
-						<div class="py-12 flex flex-col items-center justify-center text-ink-500 dark:text-ink-400">
+						<div
+							class="py-12 flex flex-col items-center justify-center text-ink-500 dark:text-ink-400"
+						>
 							<Search size={32} class="mb-2 opacity-60" />
 							<span class="font-serif text-sm">未找到相关内容</span>
 						</div>
 					{/if}
 				{:else if query.isError}
-					<div class="py-12 flex flex-col items-center justify-center text-cinnabar-600 dark:text-cinnabar-400">
+					<div
+						class="py-12 flex flex-col items-center justify-center text-cinnabar-600 dark:text-cinnabar-400"
+					>
 						<span class="font-serif text-sm">搜索出错，请稍后重试</span>
 					</div>
 				{/if}
