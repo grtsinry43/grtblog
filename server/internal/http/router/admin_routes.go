@@ -166,4 +166,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	adminLogs.Get("/observability/storage", observabilityHandler.GetStorage)
 	adminLogs.Get("/observability/timeline", observabilityHandler.GetTimeline)
 	adminLogs.Get("/observability/alerts", observabilityHandler.GetAlerts)
+	adminLogs.Get("/observability/pages", observabilityHandler.GetPageState)
+	adminLogs.Post("/observability/pages/bootstrap", observabilityHandler.BootstrapPages)
+	adminLogs.Post("/observability/pages/invalidate", observabilityHandler.InvalidatePages)
 }

@@ -1,9 +1,11 @@
 import { error } from '@sveltejs/kit';
 import { getMomentDetail, getMomentRelatedPosts } from '$lib/features/moment/api';
 import type { MomentRelatedPost } from '$lib/features/moment/types';
+import { trackISRDeps } from '$lib/server/isr-deps';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, params }) => {
+export const load: PageServerLoad = async (event) => {
+	const { fetch, params } = event;
 	const detail = await getMomentDetail(fetch, params.slug);
 	if (!detail) {
 		error(404, 'Moment not found');
@@ -22,6 +24,7 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 	) {
 		error(404, 'Moment not found');
 	}
+	trackISRDeps(event, `moment:detail:${detail.id}`);
 
 	const relatedPosts: MomentRelatedPost[] = await getMomentRelatedPosts(fetch, detail.id).catch(
 		() => []

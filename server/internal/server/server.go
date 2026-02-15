@@ -21,6 +21,8 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
@@ -44,6 +46,7 @@ type Server struct {
 	articleSvc *article.Service
 	sysCfgSvc  *sysconfig.Service
 	analytics  *analytics.Service
+	isrSvc     *isr.Service
 	fedSync    *appfed.SyncWorker
 	fedDeliver *appfed.DeliveryService
 }
@@ -120,6 +123,8 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	})
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
 	analyticsSvc := analytics.NewService(cfg, db, redisClient)
+	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, "", redisClient, cfg.Redis.Prefix)
+	isrSvc := isr.NewService(redisClient, cfg.Redis.Prefix, htmlSnapshotSvc, contentRepo)
 	httpStats := metrics.NewHTTPStats(6 * time.Hour)
 	fedCfgSvc := federationconfig.NewService(persistence.NewFederationConfigRepository(db))
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
@@ -152,15 +157,17 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 
 	// 注册路由
 	router.Register(app, router.Dependencies{
-		DB:         db,
-		Config:     cfg,
-		JWTManager: jwtManager,
-		Turnstile:  turnstileClient,
-		SysConfig:  sysCfgSvc,
-		EventBus:   eventBus,
-		Redis:      redisClient,
-		Analytics:  analyticsSvc,
-		HTTPStats:  httpStats,
+		DB:           db,
+		Config:       cfg,
+		JWTManager:   jwtManager,
+		Turnstile:    turnstileClient,
+		SysConfig:    sysCfgSvc,
+		EventBus:     eventBus,
+		Redis:        redisClient,
+		Analytics:    analyticsSvc,
+		HTTPStats:    httpStats,
+		HTMLSnapshot: htmlSnapshotSvc,
+		ISR:          isrSvc,
 	})
 
 	return &Server{
@@ -173,6 +180,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		articleSvc: articleSvc,
 		sysCfgSvc:  sysCfgSvc,
 		analytics:  analyticsSvc,
+		isrSvc:     isrSvc,
 		fedSync:    fedSync,
 		fedDeliver: fedDeliver,
 	}
@@ -184,6 +192,10 @@ func (s *Server) Start() error {
 	go s.runHotArticleSyncWorker()
 	if s.analytics != nil {
 		go s.analytics.RunViewEventWorker(s.ctx)
+	}
+	if s.isrSvc != nil {
+		go s.runISRBootstrapIfNeeded()
+		go s.isrSvc.RunWorker(s.ctx, 20, time.Second)
 	}
 	if s.fedSync != nil {
 		go s.fedSync.Run(s.ctx, 30*time.Minute)
@@ -207,6 +219,35 @@ func (s *Server) runFederationRetryWorker() {
 			_ = s.fedDeliver.ProcessRetryQueue(s.ctx, 20)
 		}
 	}
+}
+
+func (s *Server) runISRBootstrapIfNeeded() {
+	ctx, cancel := context.WithTimeout(s.ctx, 15*time.Minute)
+	defer cancel()
+
+	log.Printf("[isr] bootstrap check start")
+	need, err := s.isrSvc.NeedsBootstrap(ctx)
+	if err != nil {
+		log.Printf("[isr] bootstrap check failed: %v", err)
+		return
+	}
+	if !need {
+		snapshot, snapErr := s.isrSvc.Snapshot(ctx, 5, 5)
+		if snapErr != nil {
+			log.Printf("[isr] bootstrap skipped (not needed)")
+			return
+		}
+		log.Printf("[isr] bootstrap skipped urlKeys=%d depKeys=%d queueDepth=%d", snapshot.URLKeyCount, snapshot.DepKeyCount, snapshot.QueueDepth)
+		return
+	}
+
+	log.Printf("[isr] bootstrap start")
+	report, err := s.isrSvc.Bootstrap(ctx)
+	if err != nil {
+		log.Printf("[isr] bootstrap failed: %v", err)
+		return
+	}
+	log.Printf("[isr] bootstrap done routes=%d rendered=%d failed=%d durationMs=%d", report.TotalRoutes, report.RenderedCount, len(report.Failed), report.DurationMS)
 }
 
 // Shutdown gracefully stops Fiber and background workers.

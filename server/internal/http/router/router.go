@@ -17,6 +17,7 @@ import (
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	appnav "github.com/grtsinry43/grtblog-v2/server/internal/app/navigation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/observability"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
@@ -46,6 +47,8 @@ type Dependencies struct {
 	Analytics     *analytics.Service
 	HTTPStats     *metrics.HTTPStats
 	Observability *observability.Service
+	HTMLSnapshot  *htmlsnapshot.Service
+	ISR           *isr.Service
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -108,9 +111,18 @@ func Register(app *fiber.App, deps Dependencies) {
 	email.RegisterSubscribers(eventBus, emailDispatcher)
 
 	contentRepo := persistence.NewContentRepository(deps.DB)
-	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, "")
-	htmlsnapshot.RegisterArticleUpdateSubscriber(eventBus, htmlSnapshotSvc)
-	deps.Observability = observability.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, eventBus, deps.HTTPStats, wsManager, htmlSnapshotSvc)
+	htmlSnapshotSvc := deps.HTMLSnapshot
+	if htmlSnapshotSvc == nil {
+		htmlSnapshotSvc = htmlsnapshot.NewService(contentRepo, "", deps.Redis, deps.Config.Redis.Prefix)
+	}
+	deps.HTMLSnapshot = htmlSnapshotSvc
+	isrSvc := deps.ISR
+	if isrSvc == nil {
+		isrSvc = isr.NewService(deps.Redis, deps.Config.Redis.Prefix, htmlSnapshotSvc, contentRepo)
+	}
+	deps.ISR = isrSvc
+	isr.RegisterArticleSubscribers(eventBus, isrSvc)
+	deps.Observability = observability.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, eventBus, deps.HTTPStats, wsManager, htmlSnapshotSvc, isrSvc)
 
 	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
 	fedCfgSvc := federationconfig.NewService(fedCfgRepo)

@@ -3,17 +3,22 @@ package htmlsnapshot
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 )
@@ -22,14 +27,28 @@ const (
 	defaultBaseURL = "http://localhost:3000"
 	pageSize       = 100
 	listPageSize   = 10
+
+	depsHeader = "x-grt-deps"
+
+	defaultRecentActivityLimit = 200
 )
+
+var ErrRemoteNotFound = errors.New("remote page not found")
+
+type contextKey string
+
+const renderTriggerContextKey contextKey = "htmlsnapshot:render-trigger"
 
 type Service struct {
 	contentRepo content.Repository
 	baseURL     string
 	client      *http.Client
+	redis       *redis.Client
+	redisPrefix string
 	metricsMu   sync.Mutex
 	metrics     MetricsSnapshot
+	activityMu  sync.Mutex
+	activities  []RenderActivity
 }
 
 type MetricsSnapshot struct {
@@ -46,63 +65,59 @@ type MetricsSnapshot struct {
 	lastDurationSamples []int64
 }
 
-func NewService(contentRepo content.Repository, baseURL string) *Service {
+type RenderDetail struct {
+	URLPath      string   `json:"urlPath"`
+	Trigger      string   `json:"trigger"`
+	Status       string   `json:"status"`
+	Deps         []string `json:"deps,omitempty"`
+	UpdatedFiles []string `json:"updatedFiles,omitempty"`
+	RemovedFiles []string `json:"removedFiles,omitempty"`
+	DurationMS   int64    `json:"durationMs"`
+	Error        string   `json:"error,omitempty"`
+}
+
+type RenderActivity struct {
+	GeneratedAt  time.Time `json:"generatedAt"`
+	URLPath      string    `json:"urlPath"`
+	Trigger      string    `json:"trigger"`
+	Status       string    `json:"status"`
+	DurationMS   int64     `json:"durationMs"`
+	Deps         []string  `json:"deps,omitempty"`
+	UpdatedFiles []string  `json:"updatedFiles,omitempty"`
+	RemovedFiles []string  `json:"removedFiles,omitempty"`
+	Error        string    `json:"error,omitempty"`
+}
+
+func NewService(contentRepo content.Repository, baseURL string, redisClient *redis.Client, redisPrefix string) *Service {
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
 	return &Service{
 		contentRepo: contentRepo,
-		baseURL:     baseURL,
+		baseURL:     strings.TrimRight(baseURL, "/"),
 		client: &http.Client{
 			Timeout: 15 * time.Second,
 		},
+		redis:       redisClient,
+		redisPrefix: redisPrefix,
 		metrics: MetricsSnapshot{
 			lastDurationSamples: make([]int64, 0, 256),
 		},
+		activities: make([]RenderActivity, 0, defaultRecentActivityLimit),
 	}
 }
 
 func (s *Service) RefreshPostsHTML(ctx context.Context) error {
 	start := time.Now()
-	successCount := int64(0)
+	renderedFiles := int64(0)
 	var runErr error
-	s.metricsMu.Lock()
-	s.metrics.TotalJobs++
-	s.metricsMu.Unlock()
 	defer func() {
 		durationMS := time.Since(start).Milliseconds()
-		s.metricsMu.Lock()
-		defer s.metricsMu.Unlock()
-		s.metrics.LastDurationMS = durationMS
-		s.metrics.LastRenderedFiles = successCount
-		s.metrics.TotalRenderedFiles += successCount
-		s.metrics.lastDurationSamples = append(s.metrics.lastDurationSamples, durationMS)
-		if len(s.metrics.lastDurationSamples) > 256 {
-			s.metrics.lastDurationSamples = s.metrics.lastDurationSamples[len(s.metrics.lastDurationSamples)-256:]
-		}
-		if runErr != nil {
-			s.metrics.FailedJobs++
-			s.metrics.LastFailureAt = time.Now().UTC()
-		} else {
-			s.metrics.SuccessJobs++
-			s.metrics.LastSuccessAt = time.Now().UTC()
-		}
-		var total int64
-		samples := append([]int64(nil), s.metrics.lastDurationSamples...)
-		for _, sample := range samples {
-			total += sample
-		}
-		if len(samples) > 0 {
-			s.metrics.AverageDurationMS = float64(total) / float64(len(samples))
-			s.metrics.P95DurationMS = percentile95(samples)
-		}
+		s.recordMetrics(durationMS, renderedFiles, runErr)
 	}()
 
-	outputDir := filepath.Join("storage", "html", "posts")
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		runErr = err
-		return err
-	}
+	paths := make([]string, 0, 256)
+	paths = append(paths, "/", "/posts", "/posts/page/1")
 
 	page := 1
 	var totalArticles int64
@@ -125,23 +140,7 @@ func (s *Service) RefreshPostsHTML(ctx context.Context) error {
 			if strings.Contains(shortURL, "/") || strings.Contains(shortURL, "\\") {
 				continue
 			}
-
-			escaped := url.PathEscape(shortURL)
-			pageURL := fmt.Sprintf("%s/posts/%s", s.baseURL, escaped)
-			pageDir := filepath.Join(outputDir, shortURL)
-			if err := os.MkdirAll(pageDir, 0o755); err != nil {
-				runErr = err
-				return err
-			}
-			dirIndexPath := filepath.Join(pageDir, "index.html")
-			if err := s.fetchAndSave(ctx, pageURL, dirIndexPath); err == nil {
-				successCount++
-			}
-			dataURL := fmt.Sprintf("%s/posts/%s/__data.json", s.baseURL, escaped)
-			dataPath := filepath.Join(pageDir, "__data.json")
-			if err := s.fetchAndSaveOptional(ctx, dataURL, dataPath); err == nil {
-				successCount++
-			}
+			paths = append(paths, fmt.Sprintf("/posts/%s", shortURL))
 		}
 
 		if len(articles) == 0 || int64(page*pageSize) >= total {
@@ -150,56 +149,153 @@ func (s *Service) RefreshPostsHTML(ctx context.Context) error {
 		page++
 	}
 
-	indexURL := fmt.Sprintf("%s/posts/", s.baseURL)
-	indexPath := filepath.Join(outputDir, "index.html")
-	if err := s.fetchAndSave(ctx, indexURL, indexPath); err != nil {
-		runErr = err
-		return fmt.Errorf("fetch index: %w", err)
-	}
-	successCount++
-	indexDataURL := fmt.Sprintf("%s/posts/__data.json", s.baseURL)
-	indexDataPath := filepath.Join(outputDir, "__data.json")
-	if err := s.fetchAndSaveOptional(ctx, indexDataURL, indexDataPath); err == nil {
-		successCount++
-	}
-
 	totalPages := int64(1)
 	if listPageSize > 0 && totalArticles > 0 {
 		totalPages = (totalArticles + listPageSize - 1) / listPageSize
 	}
-	for page := int64(1); page <= totalPages; page++ {
-		pageDir := filepath.Join(outputDir, "page", fmt.Sprintf("%d", page))
-		if err := os.MkdirAll(pageDir, 0o755); err != nil {
+	for page := int64(2); page <= totalPages; page++ {
+		paths = append(paths, fmt.Sprintf("/posts/page/%d", page))
+	}
+
+	for _, routePath := range uniquePaths(paths) {
+		detail, err := s.renderURLDetailed(WithRenderTrigger(ctx, "snapshot:refresh"), routePath, false)
+		if err != nil {
 			runErr = err
-			return err
+			return fmt.Errorf("render %s: %w", routePath, err)
 		}
-		pageURL := fmt.Sprintf("%s/posts/page/%d/", s.baseURL, page)
-		pageIndexPath := filepath.Join(pageDir, "index.html")
-		if err := s.fetchAndSave(ctx, pageURL, pageIndexPath); err == nil {
-			successCount++
-		}
-		pageDataURL := fmt.Sprintf("%s/posts/page/%d/__data.json", s.baseURL, page)
-		pageDataPath := filepath.Join(pageDir, "__data.json")
-		if err := s.fetchAndSaveOptional(ctx, pageDataURL, pageDataPath); err == nil {
-			successCount++
-		}
+		renderedFiles += int64(len(detail.UpdatedFiles))
 	}
 
-	rootURL := fmt.Sprintf("%s/", s.baseURL)
-	rootPath := filepath.Join("storage", "html", "index.html")
-	if err := s.fetchAndSave(ctx, rootURL, rootPath); err != nil {
-		runErr = err
-		return fmt.Errorf("fetch root: %w", err)
-	}
-	successCount++
-	rootDataURL := fmt.Sprintf("%s/__data.json", s.baseURL)
-	rootDataPath := filepath.Join("storage", "html", "__data.json")
-	if err := s.fetchAndSaveOptional(ctx, rootDataURL, rootDataPath); err == nil {
-		successCount++
-	}
-	log.Printf("[html-snapshot] done success=%d duration=%s", successCount, time.Since(start))
-
+	log.Printf("[html-snapshot] done files=%d duration=%s", renderedFiles, time.Since(start))
 	return nil
+}
+
+func (s *Service) RenderURL(ctx context.Context, rawURLPath string) (int64, error) {
+	detail, err := s.RenderURLDetailed(ctx, rawURLPath)
+	return int64(len(detail.UpdatedFiles)), err
+}
+
+func (s *Service) RenderURLDetailed(ctx context.Context, rawURLPath string) (RenderDetail, error) {
+	return s.renderURLDetailed(ctx, rawURLPath, true)
+}
+
+func (s *Service) renderURLDetailed(ctx context.Context, rawURLPath string, trackMetrics bool) (RenderDetail, error) {
+	start := time.Now()
+	detail := RenderDetail{
+		URLPath: strings.TrimSpace(rawURLPath),
+		Trigger: renderTriggerFromContext(ctx),
+		Status:  "success",
+	}
+
+	finalize := func(err error) (RenderDetail, error) {
+		detail.DurationMS = time.Since(start).Milliseconds()
+		if err != nil {
+			detail.Status = "error"
+			detail.Error = err.Error()
+		}
+		s.recordActivity(detail)
+		if trackMetrics {
+			s.recordMetrics(detail.DurationMS, int64(len(detail.UpdatedFiles)), err)
+		}
+		return detail, err
+	}
+
+	urlPath, err := NormalizeURLPath(rawURLPath)
+	if err != nil {
+		return finalize(err)
+	}
+	detail.URLPath = urlPath
+
+	htmlPath, dataPath := resolveOutputPaths(urlPath)
+	htmlURL := s.pageURL(urlPath)
+	htmlBody, deps, err := s.fetchRequiredWithDeps(ctx, htmlURL)
+	if err != nil {
+		if !errors.Is(err, ErrRemoteNotFound) {
+			return finalize(err)
+		}
+
+		detail.Status = "not_found"
+		removed, rmErr := removeIfExists(htmlPath)
+		if rmErr != nil {
+			return finalize(rmErr)
+		}
+		if removed {
+			detail.RemovedFiles = append(detail.RemovedFiles, filepath.ToSlash(htmlPath))
+		}
+
+		removed, rmErr = removeIfExists(dataPath)
+		if rmErr != nil {
+			return finalize(rmErr)
+		}
+		if removed {
+			detail.RemovedFiles = append(detail.RemovedFiles, filepath.ToSlash(dataPath))
+		}
+
+		if depErr := s.syncURLDependencies(ctx, urlPath, nil); depErr != nil {
+			log.Printf("[html-snapshot] clear deps failed url=%s err=%v", urlPath, depErr)
+		}
+		return finalize(nil)
+	}
+	detail.Deps = append([]string(nil), deps...)
+
+	if err := writeFileAtomically(htmlPath, htmlBody); err != nil {
+		return finalize(err)
+	}
+	detail.UpdatedFiles = append(detail.UpdatedFiles, filepath.ToSlash(htmlPath))
+
+	if err := s.syncURLDependencies(ctx, urlPath, deps); err != nil {
+		log.Printf("[html-snapshot] sync deps failed url=%s err=%v", urlPath, err)
+	}
+
+	dataURL := s.dataURL(urlPath)
+	dataBody, hasData, err := s.fetchOptional(ctx, dataURL)
+	if err != nil {
+		return finalize(err)
+	}
+	if !hasData {
+		removed, rmErr := removeIfExists(dataPath)
+		if rmErr != nil {
+			return finalize(rmErr)
+		}
+		if removed {
+			detail.RemovedFiles = append(detail.RemovedFiles, filepath.ToSlash(dataPath))
+		}
+		return finalize(nil)
+	}
+	if err := writeFileAtomically(dataPath, dataBody); err != nil {
+		return finalize(err)
+	}
+	detail.UpdatedFiles = append(detail.UpdatedFiles, filepath.ToSlash(dataPath))
+
+	return finalize(nil)
+}
+
+func NormalizeURLPath(rawURLPath string) (string, error) {
+	candidate := strings.TrimSpace(rawURLPath)
+	if candidate == "" {
+		return "/", nil
+	}
+
+	if strings.HasPrefix(candidate, "http://") || strings.HasPrefix(candidate, "https://") {
+		parsed, err := url.Parse(candidate)
+		if err != nil {
+			return "", err
+		}
+		candidate = parsed.EscapedPath()
+	}
+
+	if idx := strings.IndexAny(candidate, "?#"); idx >= 0 {
+		candidate = candidate[:idx]
+	}
+	if !strings.HasPrefix(candidate, "/") {
+		candidate = "/" + candidate
+	}
+
+	cleaned := path.Clean(candidate)
+	if cleaned == "." {
+		return "/", nil
+	}
+	return cleaned, nil
 }
 
 func (s *Service) MetricsSnapshot() MetricsSnapshot {
@@ -210,66 +306,343 @@ func (s *Service) MetricsSnapshot() MetricsSnapshot {
 	return out
 }
 
-func (s *Service) fetchAndSave(ctx context.Context, pageURL, filePath string) error {
+func (s *Service) RecentActivities(limit int) []RenderActivity {
+	if limit <= 0 {
+		limit = 20
+	}
+	s.activityMu.Lock()
+	defer s.activityMu.Unlock()
+	if len(s.activities) == 0 {
+		return nil
+	}
+
+	start := 0
+	if len(s.activities) > limit {
+		start = len(s.activities) - limit
+	}
+	out := make([]RenderActivity, 0, len(s.activities)-start)
+	for idx := len(s.activities) - 1; idx >= start; idx-- {
+		item := s.activities[idx]
+		item.Deps = append([]string(nil), item.Deps...)
+		item.UpdatedFiles = append([]string(nil), item.UpdatedFiles...)
+		item.RemovedFiles = append([]string(nil), item.RemovedFiles...)
+		out = append(out, item)
+	}
+	return out
+}
+
+func WithRenderTrigger(ctx context.Context, trigger string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	trigger = strings.TrimSpace(trigger)
+	if trigger == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, renderTriggerContextKey, trigger)
+}
+
+func renderTriggerFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return "manual"
+	}
+	trigger, _ := ctx.Value(renderTriggerContextKey).(string)
+	trigger = strings.TrimSpace(trigger)
+	if trigger == "" {
+		return "manual"
+	}
+	return trigger
+}
+
+func (s *Service) pageURL(urlPath string) string {
+	if urlPath == "/" {
+		return s.baseURL + "/"
+	}
+	return s.baseURL + urlPath
+}
+
+func (s *Service) dataURL(urlPath string) string {
+	if urlPath == "/" {
+		return s.baseURL + "/__data.json"
+	}
+	return s.baseURL + urlPath + "/__data.json"
+}
+
+func resolveOutputPaths(urlPath string) (htmlPath string, dataPath string) {
+	root := filepath.Join("storage", "html")
+	if urlPath == "/" {
+		return filepath.Join(root, "index.html"), filepath.Join(root, "__data.json")
+	}
+
+	relative := filepath.FromSlash(strings.TrimPrefix(urlPath, "/"))
+	dir := filepath.Join(root, relative)
+	return filepath.Join(dir, "index.html"), filepath.Join(dir, "__data.json")
+}
+
+func (s *Service) fetchRequiredWithDeps(ctx context.Context, pageURL string) ([]byte, []string, error) {
 	reqCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, pageURL, nil)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+		return nil, nil, ErrRemoteNotFound
+	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("unexpected status: %s", resp.Status)
+		return nil, nil, fmt.Errorf("unexpected status: %s", resp.Status)
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-
-	return os.WriteFile(filePath, data, 0o644)
+	deps := parseDepsHeader(resp.Header.Get(depsHeader))
+	return data, deps, nil
 }
 
-func (s *Service) fetchAndSaveOptional(ctx context.Context, pageURL, filePath string) error {
+func (s *Service) fetchOptional(ctx context.Context, pageURL string) ([]byte, bool, error) {
 	reqCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, pageURL, nil)
 	if err != nil {
-		return err
+		return nil, false, err
 	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return err
+		return nil, false, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusNoContent {
-		_ = os.Remove(filePath)
-		return nil
+		return nil, false, nil
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("unexpected status: %s", resp.Status)
+		return nil, false, fmt.Errorf("unexpected status: %s", resp.Status)
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return nil, false, err
 	}
 	if len(bytes.TrimSpace(data)) == 0 {
-		_ = os.Remove(filePath)
+		return nil, false, nil
+	}
+	return data, true, nil
+}
+
+func (s *Service) recordActivity(detail RenderDetail) {
+	activity := RenderActivity{
+		GeneratedAt:  time.Now().UTC(),
+		URLPath:      detail.URLPath,
+		Trigger:      detail.Trigger,
+		Status:       detail.Status,
+		DurationMS:   detail.DurationMS,
+		Deps:         append([]string(nil), detail.Deps...),
+		UpdatedFiles: append([]string(nil), detail.UpdatedFiles...),
+		RemovedFiles: append([]string(nil), detail.RemovedFiles...),
+		Error:        detail.Error,
+	}
+
+	s.activityMu.Lock()
+	defer s.activityMu.Unlock()
+	s.activities = append(s.activities, activity)
+	if len(s.activities) > defaultRecentActivityLimit {
+		s.activities = s.activities[len(s.activities)-defaultRecentActivityLimit:]
+	}
+}
+
+func (s *Service) recordMetrics(durationMS int64, renderedFiles int64, runErr error) {
+	s.metricsMu.Lock()
+	defer s.metricsMu.Unlock()
+
+	s.metrics.TotalJobs++
+	s.metrics.LastDurationMS = durationMS
+	s.metrics.LastRenderedFiles = renderedFiles
+	s.metrics.TotalRenderedFiles += renderedFiles
+	s.metrics.lastDurationSamples = append(s.metrics.lastDurationSamples, durationMS)
+	if len(s.metrics.lastDurationSamples) > 256 {
+		s.metrics.lastDurationSamples = s.metrics.lastDurationSamples[len(s.metrics.lastDurationSamples)-256:]
+	}
+	if runErr != nil {
+		s.metrics.FailedJobs++
+		s.metrics.LastFailureAt = time.Now().UTC()
+	} else {
+		s.metrics.SuccessJobs++
+		s.metrics.LastSuccessAt = time.Now().UTC()
+	}
+
+	var total int64
+	samples := append([]int64(nil), s.metrics.lastDurationSamples...)
+	for _, sample := range samples {
+		total += sample
+	}
+	if len(samples) > 0 {
+		s.metrics.AverageDurationMS = float64(total) / float64(len(samples))
+		s.metrics.P95DurationMS = percentile95(samples)
+	}
+}
+
+func writeFileAtomically(filePath string, body []byte) error {
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp(dir, ".snapshot-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	closed := false
+	defer func() {
+		if !closed {
+			_ = tmp.Close()
+		}
+		_ = os.Remove(tmpName)
+	}()
+
+	if _, err := tmp.Write(body); err != nil {
+		return err
+	}
+	if err := tmp.Chmod(0o644); err != nil {
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	closed = true
+	return os.Rename(tmpName, filePath)
+}
+
+func removeIfExists(filePath string) (bool, error) {
+	if err := os.Remove(filePath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func parseDepsHeader(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
 		return nil
 	}
 
-	return os.WriteFile(filePath, data, 0o644)
+	if strings.HasPrefix(raw, "[") {
+		var items []string
+		if err := json.Unmarshal([]byte(raw), &items); err == nil {
+			return normalizeDeps(items)
+		}
+	}
+
+	return normalizeDeps(strings.Split(raw, ","))
+}
+
+func normalizeDeps(deps []string) []string {
+	set := make(map[string]struct{}, len(deps))
+	out := make([]string, 0, len(deps))
+	for _, dep := range deps {
+		normalized := strings.TrimSpace(dep)
+		if normalized == "" {
+			continue
+		}
+		if _, exists := set[normalized]; exists {
+			continue
+		}
+		set[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func (s *Service) syncURLDependencies(ctx context.Context, urlPath string, deps []string) error {
+	if s.redis == nil {
+		return nil
+	}
+
+	urlKey := s.urlDepsKey(urlPath)
+	oldDeps, err := s.redis.SMembers(ctx, urlKey).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return err
+	}
+
+	oldSet := make(map[string]struct{}, len(oldDeps))
+	for _, item := range oldDeps {
+		normalized := strings.TrimSpace(item)
+		if normalized == "" {
+			continue
+		}
+		oldSet[normalized] = struct{}{}
+	}
+
+	newDeps := normalizeDeps(deps)
+	newSet := make(map[string]struct{}, len(newDeps))
+	for _, dep := range newDeps {
+		newSet[dep] = struct{}{}
+	}
+
+	pipe := s.redis.TxPipeline()
+	for dep := range oldSet {
+		if _, keep := newSet[dep]; keep {
+			continue
+		}
+		pipe.SRem(ctx, s.depURLsKey(dep), urlPath)
+	}
+
+	pipe.Del(ctx, urlKey)
+	if len(newDeps) > 0 {
+		members := make([]any, 0, len(newDeps))
+		for _, dep := range newDeps {
+			members = append(members, dep)
+		}
+		pipe.SAdd(ctx, urlKey, members...)
+		for _, dep := range newDeps {
+			pipe.SAdd(ctx, s.depURLsKey(dep), urlPath)
+		}
+	}
+
+	_, err = pipe.Exec(ctx)
+	return err
+}
+
+func (s *Service) depURLsKey(dep string) string {
+	return fmt.Sprintf("%sisr:dep:%s", s.redisPrefix, dep)
+}
+
+func (s *Service) urlDepsKey(urlPath string) string {
+	return fmt.Sprintf("%sisr:url:%s", s.redisPrefix, url.QueryEscape(urlPath))
+}
+
+func uniquePaths(items []string) []string {
+	seen := make(map[string]struct{}, len(items))
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		normalized, err := NormalizeURLPath(item)
+		if err != nil {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func percentile95(values []int64) float64 {

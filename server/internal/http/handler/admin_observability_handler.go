@@ -111,6 +111,48 @@ func (h *AdminObservabilityHandler) GetAlerts(c *fiber.Ctx) error {
 	return response.Success(c, data)
 }
 
+func (h *AdminObservabilityHandler) GetPageState(c *fiber.Ctx) error {
+	if h == nil || h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "observability service 未初始化")
+	}
+	trackedLimit := c.QueryInt("tracked_limit", 200)
+	recentLimit := c.QueryInt("recent_limit", 30)
+	routeLimit := c.QueryInt("route_limit", 500)
+	data, err := h.svc.GetPageState(c.UserContext(), trackedLimit, recentLimit, routeLimit)
+	if err != nil {
+		return err
+	}
+	return response.Success(c, data)
+}
+
+func (h *AdminObservabilityHandler) BootstrapPages(c *fiber.Ctx) error {
+	if h == nil || h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "observability service 未初始化")
+	}
+	data, err := h.svc.BootstrapPages(c.UserContext())
+	if err != nil {
+		return err
+	}
+	return response.Success(c, data)
+}
+
+func (h *AdminObservabilityHandler) InvalidatePages(c *fiber.Ctx) error {
+	if h == nil || h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "observability service 未初始化")
+	}
+	var req observability.PageInvalidateRequest
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&req); err != nil {
+			return response.NewBizErrorWithCause(response.ParamsError, "invalid invalidate payload", err)
+		}
+	}
+	data, err := h.svc.InvalidatePages(c.UserContext(), req)
+	if err != nil {
+		return err
+	}
+	return response.Success(c, data)
+}
+
 func parseWindowParam(raw string, fallback time.Duration) time.Duration {
 	if raw == "" {
 		return fallback

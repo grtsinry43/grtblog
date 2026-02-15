@@ -132,3 +132,110 @@ export interface ObservabilityAlerts {
     createdAt: string
   }>
 }
+
+export interface ObservabilityPageRouteCatalog {
+  total: number
+  items: string[]
+  truncated: boolean
+}
+
+export interface ObservabilityTrackedPage {
+  urlPath: string
+  deps: string[]
+}
+
+export interface ObservabilityInvalidationActivity {
+  generatedAt: string
+  source: string
+  depKeys: string[]
+  candidateUrls: string[]
+  enqueuedUrls: string[]
+  renderedUrls: string[]
+}
+
+export interface ObservabilityRenderActivity {
+  generatedAt: string
+  urlPath: string
+  trigger: string
+  status: string
+  durationMs: number
+  deps?: string[]
+  updatedFiles?: string[]
+  removedFiles?: string[]
+  error?: string
+}
+
+export interface ObservabilityRenderRecord {
+  urlPath: string
+  trigger: string
+  status: string
+  deps?: string[]
+  updatedFiles?: string[]
+  removedFiles?: string[]
+  durationMs: number
+  error?: string
+  renderedCount: number
+}
+
+export interface ObservabilityBootstrapReport {
+  generatedAt: string
+  startedAt: string
+  finishedAt: string
+  durationMs: number
+  totalRoutes: number
+  renderedCount: number
+  routes: string[]
+  rendered: ObservabilityRenderRecord[]
+  failed: ObservabilityRenderRecord[]
+}
+
+export interface ObservabilityPageStateSnapshot {
+  generatedAt: string
+  queueDepth: number
+  depKeyCount: number
+  urlKeyCount: number
+  trackedPages: ObservabilityTrackedPage[]
+  recentInvalidations: ObservabilityInvalidationActivity[]
+  recentRenderActivity: ObservabilityRenderActivity[]
+  lastBootstrap?: ObservabilityBootstrapReport
+}
+
+export interface ObservabilityPageTreeNode {
+  name: string
+  path: string
+  nodeType: 'directory' | 'file'
+  size?: number
+  routePath?: string
+  hasHtml?: boolean
+  hasData?: boolean
+  tracked?: boolean
+  deps?: string[]
+  children?: ObservabilityPageTreeNode[]
+}
+
+export interface ObservabilityPageState {
+  generatedAt: string
+  snapshot?: ObservabilityPageStateSnapshot
+  routeCatalog: ObservabilityPageRouteCatalog
+  tree?: ObservabilityPageTreeNode
+}
+
+export interface ObservabilityInvalidatePayload {
+  depKeys?: string[]
+  urls?: string[]
+  source?: string
+  syncRender?: boolean
+}
+
+export interface ObservabilityInvalidateReport {
+  generatedAt: string
+  source: string
+  depKeys: string[]
+  directUrls: string[]
+  matchedUrls: string[]
+  candidateUrls: string[]
+  enqueuedUrls: string[]
+  rendered: ObservabilityRenderRecord[]
+  queueDepth: number
+  trackedUrlKeys: number
+}

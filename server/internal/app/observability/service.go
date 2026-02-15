@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -17,6 +18,7 @@ import (
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/metrics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
@@ -29,6 +31,7 @@ type Service struct {
 	httpStats   *metrics.HTTPStats
 	wsManager   *ws.Manager
 	renderer    *htmlsnapshot.Service
+	isr         *isr.Service
 	startedAt   time.Time
 
 	fedCounter *federationCounter
@@ -160,6 +163,39 @@ type Alerts struct {
 	Items       []AlertItem `json:"items"`
 }
 
+type RouteCatalog struct {
+	Total     int      `json:"total"`
+	Items     []string `json:"items"`
+	Truncated bool     `json:"truncated"`
+}
+
+type PageTreeNode struct {
+	Name      string         `json:"name"`
+	Path      string         `json:"path"`
+	NodeType  string         `json:"nodeType"`
+	Size      int64          `json:"size,omitempty"`
+	RoutePath string         `json:"routePath,omitempty"`
+	HasHTML   bool           `json:"hasHtml,omitempty"`
+	HasData   bool           `json:"hasData,omitempty"`
+	Tracked   bool           `json:"tracked,omitempty"`
+	Deps      []string       `json:"deps,omitempty"`
+	Children  []PageTreeNode `json:"children,omitempty"`
+}
+
+type PageStatePlane struct {
+	GeneratedAt  time.Time          `json:"generatedAt"`
+	Snapshot     *isr.StateSnapshot `json:"snapshot,omitempty"`
+	RouteCatalog RouteCatalog       `json:"routeCatalog"`
+	Tree         *PageTreeNode      `json:"tree,omitempty"`
+}
+
+type PageInvalidateRequest struct {
+	DepKeys    []string `json:"depKeys"`
+	URLs       []string `json:"urls"`
+	Source     string   `json:"source"`
+	SyncRender *bool    `json:"syncRender"`
+}
+
 type AlertItem struct {
 	ID        int64     `json:"id"`
 	Type      string    `json:"type"`
@@ -169,7 +205,7 @@ type AlertItem struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-func NewService(db *gorm.DB, redisClient *redis.Client, redisPrefix string, events appEvent.Bus, httpStats *metrics.HTTPStats, wsManager *ws.Manager, renderer *htmlsnapshot.Service) *Service {
+func NewService(db *gorm.DB, redisClient *redis.Client, redisPrefix string, events appEvent.Bus, httpStats *metrics.HTTPStats, wsManager *ws.Manager, renderer *htmlsnapshot.Service, isrSvc *isr.Service) *Service {
 	svc := &Service{
 		db:          db,
 		redis:       redisClient,
@@ -178,6 +214,7 @@ func NewService(db *gorm.DB, redisClient *redis.Client, redisPrefix string, even
 		httpStats:   httpStats,
 		wsManager:   wsManager,
 		renderer:    renderer,
+		isr:         isrSvc,
 		startedAt:   time.Now(),
 	}
 	if events != nil {
@@ -488,6 +525,71 @@ func (s *Service) GetAlerts(ctx context.Context, limit int) (*Alerts, error) {
 	return result, nil
 }
 
+func (s *Service) GetPageState(ctx context.Context, trackedLimit, recentLimit, routeLimit int) (*PageStatePlane, error) {
+	result := &PageStatePlane{
+		GeneratedAt: time.Now().UTC(),
+		RouteCatalog: RouteCatalog{
+			Items: make([]string, 0),
+		},
+	}
+
+	trackedDeps := map[string][]string{}
+	if s.isr != nil {
+		snapshot, err := s.isr.Snapshot(ctx, trackedLimit, recentLimit)
+		if err != nil {
+			return nil, err
+		}
+		result.Snapshot = snapshot
+		for _, page := range snapshot.TrackedPages {
+			trackedDeps[page.URLPath] = append([]string(nil), page.Deps...)
+		}
+
+		routes, err := s.isr.DiscoverRoutes(ctx)
+		if err != nil {
+			return nil, err
+		}
+		result.RouteCatalog.Total = len(routes)
+		if routeLimit <= 0 {
+			routeLimit = 500
+		}
+		if len(routes) > routeLimit {
+			result.RouteCatalog.Items = append(result.RouteCatalog.Items, routes[:routeLimit]...)
+			result.RouteCatalog.Truncated = true
+		} else {
+			result.RouteCatalog.Items = append(result.RouteCatalog.Items, routes...)
+		}
+	}
+
+	tree, err := buildPageTree("storage/html", trackedDeps)
+	if err != nil {
+		return nil, err
+	}
+	result.Tree = tree
+	return result, nil
+}
+
+func (s *Service) BootstrapPages(ctx context.Context) (*isr.BootstrapReport, error) {
+	if s.isr == nil {
+		return nil, errors.New("isr service not configured")
+	}
+	return s.isr.Bootstrap(ctx)
+}
+
+func (s *Service) InvalidatePages(ctx context.Context, req PageInvalidateRequest) (*isr.InvalidateReport, error) {
+	if s.isr == nil {
+		return nil, errors.New("isr service not configured")
+	}
+	source := strings.TrimSpace(req.Source)
+	if source == "" {
+		source = "admin:manual"
+	}
+	syncRender := true
+	if req.SyncRender != nil {
+		syncRender = *req.SyncRender
+	}
+	return s.isr.InvalidateWithReport(ctx, req.DepKeys, req.URLs, source, syncRender)
+}
+
 func snapshotHTTP(stats *metrics.HTTPStats, window time.Duration) metrics.HTTPWindowSnapshot {
 	if stats == nil {
 		return metrics.HTTPWindowSnapshot{Window: window}
@@ -527,6 +629,108 @@ func directoryStat(path string) DirectoryStat {
 		return nil
 	})
 	return stat
+}
+
+func buildPageTree(root string, tracked map[string][]string) (*PageTreeNode, error) {
+	if tracked == nil {
+		tracked = map[string][]string{}
+	}
+	info, err := os.Stat(root)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &PageTreeNode{
+				Name:     "html",
+				Path:     "/",
+				NodeType: "directory",
+			}, nil
+		}
+		return nil, err
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("%s is not a directory", root)
+	}
+	node, err := buildPageTreeNode(root, "", tracked)
+	if err != nil {
+		return nil, err
+	}
+	node.Name = "html"
+	node.Path = "/"
+	return &node, nil
+}
+
+func buildPageTreeNode(root, rel string, tracked map[string][]string) (PageTreeNode, error) {
+	absPath := root
+	if rel != "" {
+		absPath = filepath.Join(root, rel)
+	}
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return PageTreeNode{}, err
+	}
+
+	if !info.IsDir() {
+		return PageTreeNode{
+			Name:     info.Name(),
+			Path:     routePathFromRel(rel),
+			NodeType: "file",
+			Size:     info.Size(),
+		}, nil
+	}
+
+	entries, err := os.ReadDir(absPath)
+	if err != nil {
+		return PageTreeNode{}, err
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+
+	node := PageTreeNode{
+		Name:     info.Name(),
+		Path:     routePathFromRel(rel),
+		NodeType: "directory",
+	}
+
+	hasIndex := false
+	hasData := false
+	for _, entry := range entries {
+		childRel := entry.Name()
+		if rel != "" {
+			childRel = filepath.Join(rel, entry.Name())
+		}
+		child, err := buildPageTreeNode(root, childRel, tracked)
+		if err != nil {
+			return PageTreeNode{}, err
+		}
+		node.Children = append(node.Children, child)
+		if entry.IsDir() {
+			continue
+		}
+		if entry.Name() == "index.html" {
+			hasIndex = true
+		}
+		if entry.Name() == "__data.json" {
+			hasData = true
+		}
+	}
+
+	if hasIndex {
+		routePath := routePathFromRel(rel)
+		node.RoutePath = routePath
+		node.HasHTML = true
+		node.HasData = hasData
+		if deps, ok := tracked[routePath]; ok {
+			node.Tracked = true
+			node.Deps = append([]string(nil), deps...)
+			sort.Strings(node.Deps)
+		}
+	}
+	return node, nil
+}
+
+func routePathFromRel(rel string) string {
+	if rel == "" {
+		return "/"
+	}
+	return "/" + filepath.ToSlash(rel)
 }
 
 type eventHandlerFunc func(ctx context.Context, event appEvent.Event) error

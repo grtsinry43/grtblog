@@ -543,7 +543,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     name: 'advancedInfo',
     icon: 'iconify ph--info',
     label: '高级信息',
-    redirect: 'advanced/overview',
+    redirect: 'advanced/render-details',
     children: [
       {
         path: 'overview',
@@ -555,6 +555,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
           showTab: true,
         },
         component: 'advanced/index',
+      },
+      {
+        path: 'render-details',
+        name: 'advancedRenderDetails',
+        label: '渲染详情',
+        icon: 'iconify ph--lightning',
+        meta: {
+          componentName: 'AdvancedRenderDetails',
+          showTab: true,
+        },
+        component: 'advanced/render-details',
       },
     ],
   },
