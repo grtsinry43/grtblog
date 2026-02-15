@@ -1,10 +1,15 @@
 import { request } from './http'
+
 import type {
   ObservabilityAlerts,
   ObservabilityControlPlane,
   ObservabilityFederation,
+  ObservabilityInvalidatePayload,
+  ObservabilityInvalidateReport,
   ObservabilityOverview,
+  ObservabilityPageState,
   ObservabilityRealtime,
+  ObservabilityBootstrapReport,
   ObservabilityStorage,
   ObservabilityTimeline,
 } from '@/types/observability'
@@ -50,5 +55,25 @@ export function getObservabilityAlerts(limit = 50) {
   return request<ObservabilityAlerts>('/admin/observability/alerts', {
     method: 'GET',
     query: { limit },
+  })
+}
+
+export function getObservabilityPages(query?: { tracked_limit?: number; recent_limit?: number; route_limit?: number }) {
+  return request<ObservabilityPageState>('/admin/observability/pages', {
+    method: 'GET',
+    query: query as any,
+  })
+}
+
+export function bootstrapObservabilityPages() {
+  return request<ObservabilityBootstrapReport>('/admin/observability/pages/bootstrap', {
+    method: 'POST',
+  })
+}
+
+export function invalidateObservabilityPages(payload: ObservabilityInvalidatePayload) {
+  return request<ObservabilityInvalidateReport>('/admin/observability/pages/invalidate', {
+    method: 'POST',
+    body: payload,
   })
 }
