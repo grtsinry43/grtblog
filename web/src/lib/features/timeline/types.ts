@@ -49,4 +49,8 @@ export type UnifiedTimelineItem = {
 	image?: string;
 	publishedAt: Date;
 	year: string;
+	// Layout properties calculated at runtime
+	targetX?: number;
+	targetY?: number;
+	monthIndex?: number;
 };

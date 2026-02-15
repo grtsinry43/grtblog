@@ -9,4 +9,4 @@
 	<meta name="description" content="A visual timeline of my digital footprint." />
 </svelte:head>
 
-<TimelineList items={data.items} />
+<TimelineList {data} />

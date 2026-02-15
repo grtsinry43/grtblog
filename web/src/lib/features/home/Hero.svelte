@@ -36,18 +36,22 @@
 	};
 
 	const titleTemplate = $derived(
-		config?.titleTemplate && config.titleTemplate.length > 0 ? config.titleTemplate : defaultTitleTemplate
+		config?.titleTemplate && config.titleTemplate.length > 0
+			? config.titleTemplate
+			: defaultTitleTemplate
 	);
 	const description = $derived(config?.description || defaultDescription);
 	const avatarUrl = $derived(config?.avatarUrl || defaultAvatarUrl);
 	const mottoLines = $derived(
 		config?.mottoLines && config.mottoLines.length > 0 ? config.mottoLines : defaultMottoLines
 	);
-	const socials = $derived(config?.socials && config.socials.length > 0 ? config.socials : defaultSocials);
+	const socials = $derived(
+		config?.socials && config.socials.length > 0 ? config.socials : defaultSocials
+	);
 
 	function resolveNodeClass(node: HomeHeroTemplateNode): string {
 		const baseClass = node.type === 'h1' ? 'text-ink-900 dark:text-ink-100' : '';
-		const variantClass = node.variant ? variantClassMap[node.variant] ?? '' : '';
+		const variantClass = node.variant ? (variantClassMap[node.variant] ?? '') : '';
 		const customClass = node.className ?? '';
 		return `${baseClass} ${variantClass} ${customClass}`.trim();
 	}

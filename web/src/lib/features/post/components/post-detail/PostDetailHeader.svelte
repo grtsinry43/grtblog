@@ -44,7 +44,9 @@
 	<div class="space-y-4">
 		<div class="flex items-center gap-3">
 			<Badge variant="soft">专题</Badge>
-			<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase">{$categoryNameStore}</span>
+			<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase"
+				>{$categoryNameStore}</span
+			>
 		</div>
 
 		<h1

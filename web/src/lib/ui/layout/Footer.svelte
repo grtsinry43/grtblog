@@ -21,11 +21,7 @@
 		onOpenPresence?: () => void;
 	};
 
-	let {
-		onlineCount = 0,
-		presenceConnected = false,
-		onOpenPresence = () => {}
-	}: Props = $props();
+	let { onlineCount = 0, presenceConnected = false, onOpenPresence = () => {} }: Props = $props();
 
 	const currentYear = new Date().getFullYear();
 
