@@ -175,6 +175,7 @@ const onBeforeUpload = async (options: { file: { file: File | null } }) => {
 }
 
 const handleConfirmCrop = async () => {
+  if (!cropper) return
   const result = cropper.getFile()
   if (!result) return
 
@@ -182,6 +183,7 @@ const handleConfirmCrop = async () => {
   try {
     // vue-picture-cropper's getFile might return a Promise
     const file = await result
+    if (!file) return
     const res = await uploadFile(file, 'picture')
     profileForm.avatar = res.publicUrl
     showCropper.value = false

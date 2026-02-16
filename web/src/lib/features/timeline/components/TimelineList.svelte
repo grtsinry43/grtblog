@@ -12,7 +12,9 @@
 		};
 	}>();
 
-	const { timelineItems: items, timelineMonths: months, totalWidth } = data;
+	const items = $derived(data.timelineItems);
+	const months = $derived(data.timelineMonths);
+	const totalWidth = $derived(data.totalWidth);
 
 	let innerHeight = $state(0);
 	let innerWidth = $state(0);

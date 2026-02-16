@@ -114,18 +114,21 @@ export default defineComponent({
         key: 'isEnabled',
         width: 100,
         render: (row) => (
-          <NTag
-            size='small'
-            type={row.isEnabled ? 'success' : 'default'}
-            bordered={false}
+          <span
             style={{ cursor: 'pointer' }}
             onClick={() => handleToggleEnabled(row)}
           >
-            {{
-              default: () => row.isEnabled ? '已启用' : '已禁用',
-              icon: () => <span class={`iconify ${row.isEnabled ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`} />,
-            }}
-          </NTag>
+            <NTag
+              size='small'
+              type={row.isEnabled ? 'success' : 'default'}
+              bordered={false}
+            >
+              {{
+                default: () => row.isEnabled ? '已启用' : '已禁用',
+                icon: () => <span class={`iconify ${row.isEnabled ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`} />,
+              }}
+            </NTag>
+          </span>
         ),
       },
       {

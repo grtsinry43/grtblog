@@ -113,7 +113,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	htmlSnapshotSvc := deps.HTMLSnapshot
 	if htmlSnapshotSvc == nil {
-		htmlSnapshotSvc = htmlsnapshot.NewService(contentRepo, "", deps.Redis, deps.Config.Redis.Prefix)
+		htmlSnapshotSvc = htmlsnapshot.NewService(contentRepo, deps.Config.App.HTMLSnapshotBaseURL, deps.Redis, deps.Config.Redis.Prefix)
 	}
 	deps.HTMLSnapshot = htmlSnapshotSvc
 	isrSvc := deps.ISR

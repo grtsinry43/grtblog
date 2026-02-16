@@ -1,5 +1,12 @@
 import { request } from './http'
-import type { ContentExtInfo, TOCNode } from '@/types/ext-info' // Assuming TOCNode and ContentExtInfo are defined here or similar
+import type { ContentExtInfo } from '@/types/ext-info'
+
+export interface TOCNode {
+  id: string
+  text: string
+  level: number
+  children?: TOCNode[]
+}
 
 export interface PageListItem {
   id: number
@@ -69,18 +76,18 @@ export interface UpdatePagePayload {
   extInfo?: ContentExtInfo
 }
 
-function stripEmpty<T extends Record<string, unknown>>(value: T) {
+function stripEmpty<T extends object>(value: T): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(value).filter(
       ([, entry]) => entry !== undefined && entry !== null && entry !== '',
     ),
-  ) as T
+  )
 }
 
 export function listPages(params: ListPagesParams) {
   return request<PageListResponse>('/pages', {
     method: 'GET',
-    query: stripEmpty(params as Record<string, unknown>),
+    query: stripEmpty(params),
   })
 }
 

@@ -60,7 +60,7 @@ const connectWs = async () => {
     scheduleReconnect()
     return
   }
-  const wsUrl = 'ws://localhost:5555/api/v2/ws/notifications'
+  const wsUrl = buildWsUrl()
 
   if (ws.value) {
     ws.value.close(1000, 'refresh')

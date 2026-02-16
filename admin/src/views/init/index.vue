@@ -22,6 +22,7 @@ import ThemeModePopover from '@/layout/header/action/ThemeModePopover.vue'
 import router from '@/router'
 import { getSetupState, login, register } from '@/services/auth'
 import { ApiError } from '@/services/http'
+import { bootstrapObservabilityPages } from '@/services/observability'
 import { updateWebsiteInfo } from '@/services/website-info'
 import { useUserStore, usePreferencesStore } from '@/stores'
 import ThemeColorPopover from '@/views/sign-in/component/ThemeColorPopover.vue'
@@ -42,9 +43,8 @@ const configProviderProps = getConfigProviderProps()
 // 将主题色转换为 RGB 格式供 CSS 使用
 function hexToRgb(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  return result
-    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
-    : '0, 0, 0'
+  if (!result || !result[1] || !result[2] || !result[3]) return '0, 0, 0'
+  return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
 }
 
 const primaryColorRgb = computed(() => hexToRgb(preferencesStore.themeColor))
@@ -205,7 +205,18 @@ async function submitSetup() {
       await Promise.all(tasks)
     }
 
-    message.success('初始化完成')
+    let bootstrapFailed = false
+    try {
+      await bootstrapObservabilityPages()
+    } catch {
+      bootstrapFailed = true
+    }
+
+    if (bootstrapFailed) {
+      message.warning('初始化完成，但全量页面渲染触发失败，可在高级页手动执行一次')
+    } else {
+      message.success('初始化完成，已触发全量页面渲染')
+    }
     await router.replace({ path: '/' })
   } catch (error) {
     if (error instanceof ApiError) return

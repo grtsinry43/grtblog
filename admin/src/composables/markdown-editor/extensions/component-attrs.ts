@@ -23,7 +23,7 @@ export const componentAttributeSource = (context: CompletionContext): Completion
   const closeIndex = textBefore.indexOf('}', openIndex)
   if (closeIndex !== -1) return null
 
-  const { name } = parseComponentInfo(headerMatch[1])
+  const { name } = parseComponentInfo(headerMatch[1] ?? '')
   const component = getMarkdownComponent(name)
   if (!component || component.attrs.length === 0) return null
 

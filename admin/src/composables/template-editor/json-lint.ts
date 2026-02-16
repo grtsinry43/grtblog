@@ -88,9 +88,9 @@ export function formatTemplateJson(input: string) {
   let formatted = JSON.stringify(parsed, null, 2)
   for (const item of placeholders) {
     if (item.inString) {
-      formatted = formatted.replaceAll(item.placeholder, item.token)
+      formatted = formatted.split(item.placeholder).join(item.token)
     } else {
-      formatted = formatted.replaceAll(`"${item.placeholder}"`, item.token)
+      formatted = formatted.split(`"${item.placeholder}"`).join(item.token)
     }
   }
   return formatted

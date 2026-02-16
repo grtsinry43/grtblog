@@ -102,12 +102,12 @@ export interface UpdateArticlePayload {
   extInfo?: ContentExtInfo | null
 }
 
-function stripEmpty<T extends Record<string, unknown>>(value: T) {
+function stripEmpty<T extends object>(value: T): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(value).filter(
       ([, entry]) => entry !== undefined && entry !== null && entry !== '',
     ),
-  ) as T
+  )
 }
 
 export function listArticles(params: ListArticlesParams) {

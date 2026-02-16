@@ -10,8 +10,10 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig((env) => {
   const envVars = loadEnv(env.mode, process.cwd(), '')
   const apiProxyTarget = envVars.VITE_API_PROXY_TARGET || 'http://localhost:8080'
+  const appBase = envVars.VITE_APP_BASE || '/'
 
   return {
+    base: appBase,
     plugins: [vue(), vueJsx(), tailwindcss(), vueDevTools()],
     resolve: {
       alias: {
