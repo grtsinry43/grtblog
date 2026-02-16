@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { NAvatar } from 'naive-ui'
 
 import type { AvatarProps } from 'naive-ui'
@@ -7,13 +8,14 @@ interface UserAvatarProps extends /** @vue-ignore */ AvatarProps {
   src?: string
 }
 
-defineProps<UserAvatarProps>()
+const props = defineProps<UserAvatarProps>()
+const avatarProps = computed(() => ({
+  ...props,
+  round: props.round ?? true,
+}))
 </script>
 <template>
-  <NAvatar
-    round
-    v-bind="$props"
-  >
+  <NAvatar v-bind="avatarProps">
     <template #fallback>
       <svg
         xmlns="http://www.w3.org/2000/svg"

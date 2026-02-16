@@ -19,9 +19,10 @@ type Config struct {
 
 // AppConfig contains Fiber specific settings.
 type AppConfig struct {
-	Name string
-	Port string
-	Env  string
+	Name                string
+	Port                string
+	Env                 string
+	HTMLSnapshotBaseURL string
 }
 
 // DatabaseConfig captures everything required to boot GORM.
@@ -67,9 +68,10 @@ type GeoIPConfig struct {
 func Load() Config {
 	return Config{
 		App: AppConfig{
-			Name: getEnv("APP_NAME", "grtblog-server"),
-			Port: getEnv("APP_PORT", "8080"),
-			Env:  strings.ToLower(getEnv("APP_ENV", "development")),
+			Name:                getEnv("APP_NAME", "grtblog-server"),
+			Port:                getEnv("APP_PORT", "8080"),
+			Env:                 strings.ToLower(getEnv("APP_ENV", "development")),
+			HTMLSnapshotBaseURL: strings.TrimRight(getEnv("HTMLSNAPSHOT_BASE_URL", "http://localhost:3000"), "/"),
 		},
 		Database: DatabaseConfig{
 			Driver:      strings.ToLower(getEnv("DB_DRIVER", "postgres")),

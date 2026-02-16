@@ -76,7 +76,7 @@ export default defineComponent({
               </NFormItem>
             </NForm>
 
-            {error.value && <NAlert type='error' title='请求失败' content={error.value} />}
+            {error.value && <NAlert type='error' title='请求失败'>{error.value}</NAlert>}
 
             {result.value && (
               <div class='space-y-6'>

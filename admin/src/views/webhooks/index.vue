@@ -59,6 +59,8 @@ type HeaderRow = {
   value: string
 }
 
+type StatusTagType = 'default' | 'success' | 'error'
+
 defineOptions({
   name: 'WebhookList',
 })
@@ -109,6 +111,10 @@ watch(
       // Usually users want to see variables for what they just clicked.
       // We'll pick the last one. If multiple, it's ambiguous, but better than nothing.
       const lastEvent = newEvents[newEvents.length - 1]
+      if (!lastEvent) {
+        currentEventFields.value = []
+        return
+      }
       try {
         const item = await getEventCatalogItem(lastEvent)
         currentEventFields.value = item.fields
@@ -173,7 +179,7 @@ const historyFailureCount = computed(
   () => history.value.filter((item) => item.responseStatus < 200 || item.responseStatus >= 300).length,
 )
 const latestHistory = computed(() => history.value[0] ?? null)
-const latestHistoryStatus = computed(() => {
+const latestHistoryStatus = computed<{ label: string; type: StatusTagType }>(() => {
   const entry = latestHistory.value
   if (!entry) {
     return { label: '暂无', type: 'default' as const }
@@ -196,7 +202,7 @@ const isTestOnly = computed({
     historyFilters.isTest = value ? true : null
   },
 })
-const detailStatus = computed(() => {
+const detailStatus = computed<{ label: string; type: StatusTagType }>(() => {
   const entry = activeHistory.value
   if (!entry) {
     return { label: '-', type: 'default' as const }

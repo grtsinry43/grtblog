@@ -50,11 +50,11 @@ function calcDominantColor(ctx: CanvasRenderingContext2D, width: number, height:
   let count = 0
 
   for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3]
+    const alpha = data[i + 3] ?? 0
     if (alpha < 16) continue
-    r += data[i]
-    g += data[i + 1]
-    b += data[i + 2]
+    r += data[i] ?? 0
+    g += data[i + 1] ?? 0
+    b += data[i + 2] ?? 0
     count += 1
   }
 

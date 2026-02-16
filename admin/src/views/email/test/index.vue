@@ -29,8 +29,9 @@ async function fetchTemplates() {
   templatesList.value = list
   
   templateOptions.value = list.map((t) => ({ label: `${t.name} (${t.code})`, value: t.code }))
-  if (list && list.length > 0) {
-    form.code = list[0].code
+  const first = list[0]
+  if (first) {
+    form.code = first.code
     handleTemplateChange(form.code)
   }
 }

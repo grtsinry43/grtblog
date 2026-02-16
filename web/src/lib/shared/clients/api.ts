@@ -57,6 +57,22 @@ const defaults: FetchOptions = {
 
 export const api = ofetch.create(defaults);
 
+const defaultInternalApiBaseURL = 'http://localhost:8080/api/v2';
+
+function resolveInternalApiBaseURL(): string {
+	if (typeof process === 'undefined' || !process.env) {
+		return defaultInternalApiBaseURL;
+	}
+	const raw = (process.env.INTERNAL_API_BASE_URL || '').trim();
+	if (!raw) {
+		return defaultInternalApiBaseURL;
+	}
+	if (raw.endsWith('/api/v2')) {
+		return raw;
+	}
+	return `${raw.replace(/\/+$/, '')}/api/v2`;
+}
+
 export const createServerApi = (svelteFetch: typeof fetch) => {
 	return ofetch.create({
 		...defaults,
@@ -64,8 +80,8 @@ export const createServerApi = (svelteFetch: typeof fetch) => {
 		// @ts-expect-error
 		// eslint-disable-next-line
 		fetch: svelteFetch as any, // 替换底层 fetch 为 SvelteKit 的特供版
-		// 如果需要服务端走内网 DNS，可以在这里覆盖 baseURL
-		baseURL: 'http://localhost:8080/api/v2'
+		// 服务端优先走容器内网地址；默认回退到 localhost 便于本地开发
+		baseURL: resolveInternalApiBaseURL()
 	});
 };
 

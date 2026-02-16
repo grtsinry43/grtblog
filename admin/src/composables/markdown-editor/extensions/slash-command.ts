@@ -42,7 +42,7 @@ export const slashCommandSource = (context: CompletionContext): CompletionResult
   }
 
   // 4. 获取搜索词 (斜线后的部分)
-  const query = match[1]
+  const query = match[1] ?? ''
 
   // 5. 【关键步骤】手动筛选选项
   // 如果没有这一步，输入 /h 时，会显示所有选项，体验不好

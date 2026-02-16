@@ -391,7 +391,7 @@ onMounted(fetchProviders)
           <NSwitch v-model:value="form.enabled" />
         </NFormItem>
         <NFormItem label="Extra Params" :feedback="extraJsonError || ''" :validation-status="extraJsonError ? 'error' : undefined">
-          <TemplateEditor v-model:value="form.extraParams" language="json" />
+          <TemplateEditor v-model="form.extraParams" />
         </NFormItem>
         <div class="flex justify-end gap-2 pt-4">
           <NButton secondary @click="formVisible = false">取消</NButton>

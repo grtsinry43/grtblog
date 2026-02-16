@@ -11,6 +11,7 @@ import {
   NSpace,
   NTag,
   NTreeSelect,
+  type TreeSelectOption,
   useMessage,
 } from 'naive-ui'
 
@@ -102,7 +103,7 @@ const collectDescendantIds = (item: NavMenuItem | null, set: Set<number>) => {
   item.children?.forEach((child) => collectDescendantIds(child, set))
 }
 
-const buildTreeOptions = (items: NavMenuItem[], blocked: Set<number>) => {
+const buildTreeOptions = (items: NavMenuItem[], blocked: Set<number>): TreeSelectOption[] => {
   return items
     .filter((item) => !blocked.has(item.id))
     .map((item) => ({

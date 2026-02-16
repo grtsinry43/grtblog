@@ -123,7 +123,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	})
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
 	analyticsSvc := analytics.NewService(cfg, db, redisClient)
-	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, "", redisClient, cfg.Redis.Prefix)
+	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, cfg.App.HTMLSnapshotBaseURL, redisClient, cfg.Redis.Prefix)
 	isrSvc := isr.NewService(redisClient, cfg.Redis.Prefix, htmlSnapshotSvc, contentRepo)
 	httpStats := metrics.NewHTTPStats(6 * time.Hour)
 	fedCfgSvc := federationconfig.NewService(persistence.NewFederationConfigRepository(db))

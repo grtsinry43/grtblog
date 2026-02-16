@@ -9,8 +9,8 @@
 		visibleIndex: number;
 	}>();
 
-	const isSummary = item.type === 'yearSummary';
-	const aspectRatio = isSummary ? 'aspect-[3/2]' : 'aspect-[2/1]';
+	const isSummary = $derived(item.type === 'yearSummary');
+	const aspectRatio = $derived(isSummary ? 'aspect-[3/2]' : 'aspect-[2/1]');
 
 	const iconMap = {
 		post: Newspaper,
@@ -19,7 +19,7 @@
 		yearSummary: ArrowUpRight
 	};
 
-	const Icon = iconMap[item.type];
+	const Icon = $derived(iconMap[item.type]);
 
 	const formattedDate = $derived(
 		new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit' }).format(item.publishedAt)

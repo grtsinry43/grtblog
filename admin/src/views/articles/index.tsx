@@ -216,18 +216,21 @@ export default defineComponent({
         key: 'isPublished',
         width: 120,
         render: (row) => (
-          <NTag
-            size='small'
-            type={row.isPublished ? 'success' : 'default'}
-            bordered={false}
+          <span
             style={{ cursor: 'pointer' }}
             onClick={() => handleTogglePublished(row)}
           >
-            {{
-              default: () => row.isPublished ? '已发布' : '草稿',
-              icon: () => <span class={`iconify ${row.isPublished ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`} />,
-            }}
-          </NTag>
+            <NTag
+              size='small'
+              type={row.isPublished ? 'success' : 'default'}
+              bordered={false}
+            >
+              {{
+                default: () => row.isPublished ? '已发布' : '草稿',
+                icon: () => <span class={`iconify ${row.isPublished ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`} />,
+              }}
+            </NTag>
+          </span>
         ),
         sorter: (row1, row2) => Number(row1.isPublished) - Number(row2.isPublished),
       },
@@ -237,18 +240,21 @@ export default defineComponent({
         width: 180,
         render: (row) => (
           <NSpace size={4}>
-            <NTag
-              size='small'
-              type={row.isTop ? 'warning' : 'default'}
-              bordered={false}
+            <span
               style={{ cursor: 'pointer' }}
               onClick={() => handleToggleTop(row)}
             >
-              {{
-                default: () => row.isTop ? '置顶' : '未置顶',
-                icon: () => <span class={`iconify ${row.isTop ? 'ph--push-pin-fill' : 'ph--push-pin'} size-3.5`} />,
-              }}
-            </NTag>
+              <NTag
+                size='small'
+                type={row.isTop ? 'warning' : 'default'}
+                bordered={false}
+              >
+                {{
+                  default: () => row.isTop ? '置顶' : '未置顶',
+                  icon: () => <span class={`iconify ${row.isTop ? 'ph--push-pin-fill' : 'ph--push-pin'} size-3.5`} />,
+                }}
+              </NTag>
+            </span>
             {row.isOriginal ? (
               <NTag size='small' type='success' bordered={false}>原创</NTag>
             ) : (
