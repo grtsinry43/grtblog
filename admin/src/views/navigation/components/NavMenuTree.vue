@@ -22,6 +22,7 @@ import {
   DocumentTextOutline,
 } from '@vicons/ionicons5'
 
+import { normalizeNavMenuIconValue, navMenuIconOptions } from '@/constants/nav-menu-icons'
 import type { NavMenuItem } from '@/services/navigation'
 
 defineOptions({
@@ -44,6 +45,14 @@ const dragGroup = {
   name: 'nav-menu',
   pull: true,
   put: true,
+}
+
+const iconClassMap = new Map(navMenuIconOptions.map((item) => [item.value, item.iconClass]))
+
+const resolveIconClass = (icon?: string | null) => {
+  const normalized = normalizeNavMenuIconValue(icon)
+  if (!normalized) return null
+  return iconClassMap.get(normalized) ?? null
 }
 
 // ================= 核心逻辑修改开始 =================
@@ -119,6 +128,10 @@ const handleChildUpdate = (element: NavMenuItem, newChildren: NavMenuItem[]) => 
               :size="8"
             >
               <span class="text-sm font-medium">{{ element.name }}</span>
+              <span
+                v-if="resolveIconClass(element.icon)"
+                :class="[resolveIconClass(element.icon), 'size-4 text-neutral-500 dark:text-neutral-300']"
+              />
               <NTag
                 v-if="element.icon"
                 :bordered="false"

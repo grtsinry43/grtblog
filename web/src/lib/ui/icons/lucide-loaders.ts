@@ -7,6 +7,15 @@ import Feather from 'lucide-svelte/icons/feather';
 import Hash from 'lucide-svelte/icons/hash';
 import Archive from 'lucide-svelte/icons/archive';
 import Ellipsis from 'lucide-svelte/icons/ellipsis';
+import House from 'lucide-svelte/icons/house';
+import PenTool from 'lucide-svelte/icons/pen-tool';
+import Image from 'lucide-svelte/icons/image';
+import User from 'lucide-svelte/icons/user';
+import Terminal from 'lucide-svelte/icons/terminal';
+import Coffee from 'lucide-svelte/icons/coffee';
+import Sparkles from 'lucide-svelte/icons/sparkles';
+import Code from 'lucide-svelte/icons/code';
+import List from 'lucide-svelte/icons/list';
 import { Github, Mail, Rss } from 'lucide-svelte';
 
 export type LucideIconComponent = ComponentType<{
@@ -19,12 +28,21 @@ export type LucideIconComponent = ComponentType<{
 const lucideIcons = {
 	moon: Moon,
 	sun: Sun,
+	house: House,
 	'book-open': BookOpen,
 	aperture: Aperture,
 	feather: Feather,
 	hash: Hash,
+	'pen-tool': PenTool,
 	archive: Archive,
 	ellipsis: Ellipsis,
+	image: Image,
+	user: User,
+	terminal: Terminal,
+	coffee: Coffee,
+	sparkles: Sparkles,
+	code: Code,
+	list: List,
 	github: Github,
 	mail: Mail,
 	rss: Rss

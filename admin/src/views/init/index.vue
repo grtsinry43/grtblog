@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import {
+  NAlert,
   NButton,
+  NCard,
   NConfigProvider,
   NForm,
   NFormItem,
   NH1,
   NH2,
   NInput,
-  NResult,
   NSpin,
   NStep,
   NSteps,
+  NTag,
   useMessage,
   type GlobalThemeOverrides,
 } from 'naive-ui'
@@ -137,6 +139,15 @@ async function loadSetupState() {
   } finally {
     loadingState.value = false
   }
+}
+
+function goToSignIn() {
+  router.replace({
+    name: 'signIn',
+    query: {
+      r: '/settings/site-info',
+    },
+  })
 }
 
 async function handleNextStep() {
@@ -488,33 +499,97 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Existing User State (Full Centered) -->
+        <!-- Existing User State -->
         <div
           v-else
-          class="flex h-screen w-full items-center justify-center bg-neutral-50 dark:bg-neutral-950"
+          class="flex h-screen w-full overflow-hidden"
         >
+          <!-- Left: Brand -->
           <div
-            class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-12 text-center shadow-xl dark:bg-neutral-900"
+            class="brand-panel relative hidden flex-[0_0_45%] flex-col justify-center overflow-hidden px-20 lg:flex"
+            :style="{
+              background: `linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.05) 0%, rgba(var(--primary-color-rgb), 0.02) 100%)`,
+            }"
           >
             <div
-              class="absolute top-0 left-0 h-1 w-full"
-              :style="{ background: `rgb(var(--primary-color-rgb))` }"
+              class="absolute inset-0 z-0 opacity-[0.03] mix-blend-multiply dark:mix-blend-overlay"
+              :style="{ backgroundImage: `url(${noiseBg})` }"
             ></div>
-            <NResult
-              status="info"
-              title="准备就绪"
-              description="系统检测到管理员账户已存在，无需重复初始化。"
-              size="large"
-              class="mb-8"
-            />
-            <NButton
-              type="primary"
-              size="large"
-              block
-              @click="router.replace({ name: 'signIn' })"
-            >
-              前往登录
-            </NButton>
+            <div
+              class="absolute -top-[10%] -left-[10%] z-0 h-[600px] w-[600px] rounded-full bg-white opacity-40 blur-3xl dark:opacity-5"
+            ></div>
+
+            <div class="relative z-10 max-w-lg">
+              <div class="mb-10 flex items-center gap-3 opacity-60">
+                <div
+                  class="h-1 w-10 rounded-full"
+                  :style="{ background: `rgb(var(--primary-color-rgb))` }"
+                ></div>
+                <span
+                  class="text-[10px] font-bold tracking-[0.2em] text-neutral-500 uppercase dark:text-neutral-400"
+                  >Welcome aboard</span
+                >
+              </div>
+
+              <NH1
+                class="mb-6 text-4xl leading-tight font-bold tracking-tight text-neutral-900 dark:text-white"
+              >
+                开启您的
+                <br />
+                <span :style="{ color: `rgb(var(--primary-color-rgb))` }">创作之旅</span>
+              </NH1>
+
+              <div
+                class="text-base leading-relaxed font-light text-neutral-500 dark:text-neutral-400"
+              >
+                <p class="mb-3">只需简单几步，即可构建您的专属个人空间。</p>
+                <p>精致的写作体验与强大的管理功能，让分享变得前所未有的简单。</p>
+              </div>
+
+              <div
+                class="mt-20 flex items-center gap-4 text-[10px] font-medium tracking-widest text-neutral-400 uppercase"
+              >
+                <span>GRTBLOG V2.0.0</span>
+                <span class="h-0.5 w-0.5 rounded-full bg-neutral-300"></span>
+                <span>DESIGNED FOR CREATORS</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Result -->
+          <div
+            class="flex flex-1 flex-col items-center justify-center bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
+          >
+            <div class="w-full max-w-[420px]">
+              <NCard
+                size="large"
+                bordered
+              >
+                <div class="mb-4 flex items-center justify-between">
+                </div>
+                <h3 class="text-base font-semibold text-neutral-800 dark:text-neutral-100">
+                  就要完成了！
+                </h3>
+                <p class="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-300">
+                  站点存在管理员用户，但站点基础信息还未完善噢。
+                </p>
+                <NAlert
+                  type="warning"
+                  :show-icon="false"
+                  class="mt-4 mb-6"
+                >
+                  请登录后将进入设置 > 站点信息，补全站点名称、公开地址和描述等信息。
+                </NAlert>
+                <NButton
+                  type="primary"
+                  size="large"
+                  block
+                  @click="goToSignIn"
+                >
+                  前往登录并完善站点信息
+                </NButton>
+              </NCard>
+            </div>
           </div>
         </div>
       </template>

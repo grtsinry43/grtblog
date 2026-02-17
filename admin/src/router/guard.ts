@@ -53,7 +53,7 @@ export function setupRouterGuard(router: Router) {
     if (to.name === 'signIn') {
       try {
         const setupState = await getCachedSetupState()
-        if (setupState.needsSetup) {
+        if (setupState.needsSetup && !setupState.hasUser) {
           next({ name: 'init' })
           return false
         }
