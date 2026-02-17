@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref, type VNodeChild } from 'vue'
 import {
   NButton,
   NCard,
@@ -11,12 +11,13 @@ import {
   NSpace,
   NTag,
   NTreeSelect,
+  type SelectOption,
   type TreeSelectOption,
   useMessage,
 } from 'naive-ui'
 
 import { ScrollContainer } from '@/components'
-import { navMenuIconOptions } from '@/constants/nav-menu-icons'
+import { navMenuIconOptions, normalizeNavMenuIconValue } from '@/constants/nav-menu-icons'
 import {
   createNavMenu,
   deleteNavMenu,
@@ -63,6 +64,40 @@ const formRules = {
     message: '请输入菜单链接',
     trigger: ['blur', 'input'],
   },
+}
+
+const iconOptionMap = new Map(navMenuIconOptions.map((item) => [item.value, item]))
+const iconSelectOptions: SelectOption[] = navMenuIconOptions.map((item) => ({
+  label: item.label,
+  value: item.value,
+}))
+
+const selectedIconOption = computed(() => {
+  if (!formState.icon) return null
+  return iconOptionMap.get(formState.icon) ?? null
+})
+
+const renderIconOptionLabel = (option: SelectOption): VNodeChild => {
+  const rawValue = typeof option.value === 'string' ? option.value : null
+  const displayLabel =
+    typeof option.label === 'string' || typeof option.label === 'number'
+      ? String(option.label)
+      : rawValue ?? ''
+  if (!rawValue) {
+    return displayLabel
+  }
+  const iconOption = iconOptionMap.get(rawValue)
+  if (!iconOption) {
+    return displayLabel
+  }
+  return h(
+    'div',
+    { class: 'flex items-center gap-2' },
+    [
+      h('span', { class: `${iconOption.iconClass} size-4 text-neutral-600 dark:text-neutral-300` }),
+      h('span', iconOption.label),
+    ],
+  )
 }
 
 const resetForm = () => {
@@ -133,7 +168,7 @@ const openEdit = (item: NavMenuItem) => {
   formState.name = item.name
   formState.url = item.url
   formState.parentId = item.parentId ?? 0
-  formState.icon = item.icon ?? null
+  formState.icon = normalizeNavMenuIconValue(item.icon) ?? null
   modalOpen.value = true
 }
 
@@ -193,7 +228,7 @@ const handleSubmit = async () => {
     name: formState.name.trim(),
     url: formState.url.trim(),
     parentId,
-    icon: formState.icon || null,
+    icon: normalizeNavMenuIconValue(formState.icon) ?? null,
   }
 
   try {
@@ -276,11 +311,16 @@ onMounted(() => {
         <NFormItem label="图标">
           <NSelect
             v-model:value="formState.icon"
-            :options="navMenuIconOptions"
+            :options="iconSelectOptions"
+            :render-label="renderIconOptionLabel"
             placeholder="选择图标（可选）"
             clearable
             filterable
           />
+          <div v-if="selectedIconOption" class="mt-2 inline-flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+            <span :class="[selectedIconOption.iconClass, 'size-4']" />
+            <span>{{ selectedIconOption.label }}</span>
+          </div>
         </NFormItem>
       </NForm>
 

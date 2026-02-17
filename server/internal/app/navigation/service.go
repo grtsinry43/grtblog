@@ -31,7 +31,10 @@ func (s *Service) Create(ctx context.Context, cmd CreateNavMenuCmd) (*domain.Nav
 		return nil, err
 	}
 
-	icon := normalizeIcon(cmd.Icon)
+	icon, err := normalizeIcon(cmd.Icon)
+	if err != nil {
+		return nil, err
+	}
 
 	menu := &domain.NavMenu{
 		Name:     strings.TrimSpace(cmd.Name),
@@ -58,7 +61,11 @@ func (s *Service) Update(ctx context.Context, cmd UpdateNavMenuCmd) (*domain.Nav
 	menu.URL = strings.TrimSpace(cmd.URL)
 
 	if cmd.Icon != nil {
-		menu.Icon = normalizeIcon(cmd.Icon)
+		icon, err := normalizeIcon(cmd.Icon)
+		if err != nil {
+			return nil, err
+		}
+		menu.Icon = icon
 	}
 
 	if cmd.ParentID != nil {
@@ -104,13 +111,31 @@ func (s *Service) UpdateOrder(ctx context.Context, items []NavMenuOrderItem) err
 	return s.repo.UpdateOrder(ctx, updates)
 }
 
-func normalizeIcon(icon *string) *string {
+func normalizeIcon(icon *string) (*string, error) {
 	if icon == nil {
-		return nil
+		return nil, nil
 	}
 	value := strings.TrimSpace(*icon)
 	if value == "" {
-		return nil
+		return nil, nil
 	}
-	return &value
+
+	if _, ok := navMenuIconWhitelist[value]; !ok {
+		return nil, domain.ErrInvalidNavMenuIcon
+	}
+	return &value, nil
+}
+
+var navMenuIconWhitelist = map[string]struct{}{
+	"house":     {},
+	"book-open": {},
+	"pen-tool":  {},
+	"archive":   {},
+	"image":     {},
+	"user":      {},
+	"terminal":  {},
+	"coffee":    {},
+	"sparkles":  {},
+	"code":      {},
+	"list":      {},
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -81,7 +82,7 @@ func (h *NavMenuHandler) Create(c *fiber.Ctx) error {
 		Icon:     req.Icon,
 	})
 	if err != nil {
-		return err
+		return h.mapNavMenuError(err)
 	}
 
 	return response.SuccessWithMessage[contract.NavMenuResp](c, toNavMenuResp(created), "菜单创建成功")
@@ -126,7 +127,7 @@ func (h *NavMenuHandler) Update(c *fiber.Ctx) error {
 		Sort:     req.Sort,
 	})
 	if err != nil {
-		return err
+		return h.mapNavMenuError(err)
 	}
 
 	return response.SuccessWithMessage[contract.NavMenuResp](c, toNavMenuResp(updated), "菜单更新成功")
@@ -151,6 +152,13 @@ func (h *NavMenuHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	return response.SuccessWithMessage[any](c, nil, "菜单已删除")
+}
+
+func (h *NavMenuHandler) mapNavMenuError(err error) error {
+	if errors.Is(err, navigation.ErrInvalidNavMenuIcon) {
+		return response.NewBizErrorWithCause(response.ParamsError, "菜单图标不在白名单中", err)
+	}
+	return err
 }
 
 // Reorder godoc
