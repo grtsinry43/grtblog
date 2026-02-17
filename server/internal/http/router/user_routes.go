@@ -18,13 +18,19 @@ func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *
 
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	oauthRepo := persistence.NewOAuthProviderRepository(deps.DB)
-	authSvc := auth.NewService(identityRepo, oauthRepo, deps.JWTManager, nil, deps.Config.Auth)
+	var stateStore auth.StateStore
+	if deps.Redis != nil {
+		stateStore = auth.NewRedisStateStore(deps.Redis, deps.Config.Redis.Prefix)
+	}
+	authSvc := auth.NewService(identityRepo, oauthRepo, deps.JWTManager, stateStore, deps.Config.Auth)
 	authHandler := handler.NewAuthHandler(authSvc, nil, nil, nil)
 	authenticated.Get("/auth/access-info", authHandler.AccessInfo)
 	authenticated.Get("/auth/profile", authHandler.Profile)
 	authenticated.Put("/auth/profile", authHandler.UpdateProfile)
 	authenticated.Put("/auth/password", authHandler.ChangePassword)
 	authenticated.Get("/auth/oauth-bindings", authHandler.ListOAuthBindings)
+	authenticated.Post("/auth/oauth-bindings/:provider/callback", authHandler.BindOAuth)
+	authenticated.Delete("/auth/oauth-bindings/:provider", authHandler.UnbindOAuth)
 
 	friendLinkRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
 	friendLinkSvc := friendlink.NewService(friendLinkRepo, deps.EventBus)

@@ -19,7 +19,8 @@
 		LoginResp,
 		OAuthProvider
 	} from '$lib/features/auth/types';
-	import { getToken } from '$lib/shared/token';
+	import { openOAuthPopup, saveOAuthFlowMeta, waitForOAuthPopupResult } from '$lib/features/auth/oauth-flow';
+	import { getToken, setToken } from '$lib/shared/token';
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { AuthCtx } from '$lib/features/auth/context';
 	import AuthField from './AuthField.svelte';
@@ -134,9 +135,35 @@
 		if (!browser) return;
 		setOAuthState({ loadingKey: provider.key, error: '' });
 		try {
-			const redirectUri = window.location.href;
+			const redirectUri = `${window.location.origin}/auth/providers/${provider.key}/callback`;
 			const res = await authorizeOAuthProvider(provider.key, redirectUri);
-			window.location.href = res.authUrl;
+			saveOAuthFlowMeta(res.state, {
+				mode: 'login',
+				provider: provider.key,
+				returnTo: window.location.href,
+				createdAt: Date.now()
+			});
+			const popup = openOAuthPopup(res.authUrl, provider.key);
+			if (!popup) {
+				window.location.href = res.authUrl;
+				return;
+			}
+			const result = await waitForOAuthPopupResult({
+				provider: provider.key,
+				mode: 'login',
+				popup
+			});
+			if (!result.success || !result.token || !result.user) {
+				setOAuthState({
+					loadingKey: null,
+					error: result.error || 'OAuth 登录失败'
+				});
+				return;
+			}
+			setToken(result.token);
+			userStore.setUser(result.user);
+			authModalStore.close();
+			setOAuthState({ loadingKey: null, error: '' });
 		} catch (err) {
 			setOAuthState({
 				loadingKey: null,
@@ -144,6 +171,7 @@
 			});
 		}
 	};
+
 
 	const handleTurnstileToken = (value: string) => {
 		turnstileToken = value;

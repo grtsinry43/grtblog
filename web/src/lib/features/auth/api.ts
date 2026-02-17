@@ -41,6 +41,19 @@ export const authorizeOAuthProvider = async (
 	return result;
 };
 
+export const callbackOAuthProvider = async (
+	provider: string,
+	payload: { code: string; state: string },
+	fetcher?: typeof fetch
+): Promise<LoginResp> => {
+	const api = getApi(fetcher);
+	const result = await api<LoginResp>(`/auth/providers/${provider}/callback`, {
+		method: 'POST',
+		body: payload
+	});
+	return result;
+};
+
 export const getTurnstileState = async (fetcher?: typeof fetch): Promise<TurnstileStateResp> => {
 	const api = getApi(fetcher);
 	const result = await api<TurnstileStateResp>('/auth/turnstile');

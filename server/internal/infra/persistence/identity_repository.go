@@ -96,9 +96,9 @@ func (r *IdentityRepository) FindByCredential(ctx context.Context, credential st
 func (r *IdentityRepository) FindByOAuth(ctx context.Context, providerKey, oauthID string) (*identity.User, error) {
 	var rec model.User
 	err := r.db.WithContext(ctx).
-		Table("user_oauth").
+		Model(&model.User{}).
 		Select("app_user.*").
-		Joins("JOIN app_user ON app_user.id = user_oauth.user_id").
+		Joins("JOIN user_oauth ON app_user.id = user_oauth.user_id").
 		Where("user_oauth.provider_key = ? AND user_oauth.oauth_id = ?", providerKey, oauthID).
 		First(&rec).Error
 	if err != nil {
@@ -124,6 +124,32 @@ func (r *IdentityRepository) BindOAuth(ctx context.Context, link identity.UserOA
 		Columns:   []clause.Column{{Name: "provider_key"}, {Name: "oauth_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"user_id", "access_token", "refresh_token", "expires_at", "updated_at"}),
 	}).Create(&rec).Error
+}
+
+func (r *IdentityRepository) BindOAuthByProvider(ctx context.Context, link identity.UserOAuth) error {
+	rec := model.UserOAuth{
+		UserID:       link.UserID,
+		ProviderKey:  link.ProviderKey,
+		OAuthID:      link.OAuthID,
+		AccessToken:  link.AccessToken,
+		RefreshToken: link.RefreshToken,
+		ExpiresAt:    link.ExpiresAt,
+	}
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}, {Name: "provider_key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"oauth_id", "access_token", "refresh_token", "expires_at", "updated_at"}),
+	}).Create(&rec).Error
+}
+
+func (r *IdentityRepository) UnbindOAuth(ctx context.Context, userID int64, providerKey string) error {
+	res := r.db.WithContext(ctx).Where("user_id = ? AND provider_key = ?", userID, providerKey).Delete(&model.UserOAuth{})
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return identity.ErrOAuthBindingNotFound
+	}
+	return nil
 }
 
 func (r *IdentityRepository) UpdateProfile(ctx context.Context, userID int64, nickname, avatar, email string) (*identity.User, error) {

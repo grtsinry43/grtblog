@@ -11,6 +11,9 @@
 	import { tick } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { userStore } from '$lib/shared/stores/userStore';
+	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
+	import { authModalStore } from '$lib/shared/stores/authModalStore';	import { User } from 'lucide-svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context';
 	import { detailPanelCtx } from '$lib/shared/detail-panel/context';
 
@@ -247,6 +250,32 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
+					{#if $userStore.isLogin}
+						<button
+							type="button"
+							onclick={() => {
+								handleNavigate();
+								windowStore.open('用户中心', null, 'user-center');
+							}}
+							class="mb-2 flex w-full items-center gap-3 rounded-default border border-jade-200 bg-jade-50/70 px-3 py-2 text-jade-700 dark:border-jade-800 dark:bg-jade-900/30 dark:text-jade-200"
+						>
+							<User size={16} />
+							<span class="text-sm font-medium">用户中心</span>
+						</button>
+					{:else}
+						<button
+							type="button"
+							class="mb-2 flex items-center gap-3 rounded-default border border-ink-200 bg-white/60 px-3 py-2 text-ink-700 dark:border-ink-700 dark:bg-ink-800/60 dark:text-ink-200"
+							onclick={() => {
+								isMobileMenuOpen = false;
+								authModalStore.open('mobile-nav');
+							}}
+						>
+							<User size={16} />
+							<span class="text-sm font-medium">登录后使用用户中心</span>
+						</button>
+					{/if}
+
 					{#each menuTree as item (item.url)}
 						{@const active = isParentActive(item)}
 						{@const hasChildren = item.children && item.children.length > 0}

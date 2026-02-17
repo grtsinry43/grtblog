@@ -268,6 +268,10 @@
 		/>
 	{:else if windowStore.kind === 'presence-pages'}
 		<PresencePagesWindow />
+	{:else if windowStore.kind === 'user-center'}
+		<QueryRoot
+			loader={() => import('$lib/features/user-center/components/UserCenterWindow.svelte')}
+		/>
 	{:else}
 		<div class="flex flex-col gap-3"></div>
 	{/if}

@@ -18,6 +18,8 @@ import (
 
 var (
 	ErrProviderNotConfigured = errors.New("oauth provider not configured")
+	ErrRegisterClosed        = errors.New("register is only allowed for initial admin setup")
+	ErrLastOAuthBinding      = errors.New("cannot unbind last oauth binding for non-admin user")
 )
 
 // ExternalProvider 用于未来扩展 OAuth/OIDC, 当前仅定义接口。
@@ -115,6 +117,8 @@ func (s *Service) Register(ctx context.Context, cmd RegisterCmd) (*identity.User
 		return nil, err
 	} else if total == 0 {
 		user.IsAdmin = true
+	} else {
+		return nil, ErrRegisterClosed
 	}
 	if err := s.users.Create(ctx, user); err != nil {
 		return nil, err
@@ -132,6 +136,9 @@ func (s *Service) Login(ctx context.Context, cmd LoginCmd) (*LoginResult, error)
 		return nil, err
 	}
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(cmd.Password)) != nil {
+		return nil, identity.ErrInvalidCredentials
+	}
+	if !user.IsAdmin {
 		return nil, identity.ErrInvalidCredentials
 	}
 	token, claims, err := s.manager.Generate(user.ID, user.IsAdmin)
@@ -203,14 +210,18 @@ func (s *Service) LoginWithProvider(ctx context.Context, cmd OAuthLoginCmd) (*Lo
 			if err != nil {
 				return nil, err
 			}
-			exp := token.Expiry
-			if bindErr := s.users.BindOAuth(ctx, identity.UserOAuth{
+			var expPtr *time.Time
+			if !token.Expiry.IsZero() {
+				exp := token.Expiry
+				expPtr = &exp
+			}
+			if bindErr := s.users.BindOAuthByProvider(ctx, identity.UserOAuth{
 				UserID:       user.ID,
 				ProviderKey:  providerCfg.ProviderKey,
 				OAuthID:      external.ProviderID,
 				AccessToken:  token.AccessToken,
 				RefreshToken: token.RefreshToken,
-				ExpiresAt:    &exp,
+				ExpiresAt:    expPtr,
 			}); bindErr != nil {
 				return nil, bindErr
 			}
@@ -298,6 +309,82 @@ func (s *Service) ListOAuthBindings(ctx context.Context, userID int64) ([]identi
 		return nil, identity.ErrInvalidCredentials
 	}
 	return s.users.ListOAuthBindings(ctx, userID)
+}
+
+func (s *Service) BindOAuth(ctx context.Context, userID int64, cmd OAuthLoginCmd) error {
+	if userID == 0 || cmd.Provider == "" || cmd.Code == "" || cmd.State == "" {
+		return identity.ErrInvalidCredentials
+	}
+	if s.oauthRepo == nil || s.stateStore == nil {
+		return ErrProviderNotConfigured
+	}
+	providerCfg, err := s.oauthRepo.GetByKey(ctx, cmd.Provider)
+	if err != nil {
+		return err
+	}
+	stateData, err := s.stateStore.Load(ctx, cmd.State)
+	if err != nil {
+		return err
+	}
+	if stateData.Provider != cmd.Provider {
+		return errors.New("state/provider mismatch")
+	}
+	defer s.stateStore.Delete(ctx, cmd.State)
+
+	conf := buildOAuth2Config(providerCfg)
+	options := []oauth2.AuthCodeOption{}
+	if providerCfg.PKCERequired && stateData.CodeVerifier != "" {
+		options = append(options, oauth2.SetAuthURLParam("code_verifier", stateData.CodeVerifier))
+	}
+	token, err := conf.Exchange(ctx, cmd.Code, options...)
+	if err != nil {
+		return err
+	}
+	external, err := fetchExternalIdentity(ctx, providerCfg, token)
+	if err != nil {
+		return err
+	}
+	owner, err := s.users.FindByOAuth(ctx, providerCfg.ProviderKey, external.ProviderID)
+	if err == nil && owner.ID != userID {
+		return identity.ErrOAuthAlreadyBound
+	}
+	if err != nil && !errors.Is(err, identity.ErrUserNotFound) {
+		return err
+	}
+
+	var expPtr *time.Time
+	if !token.Expiry.IsZero() {
+		exp := token.Expiry
+		expPtr = &exp
+	}
+	return s.users.BindOAuthByProvider(ctx, identity.UserOAuth{
+		UserID:       userID,
+		ProviderKey:  providerCfg.ProviderKey,
+		OAuthID:      external.ProviderID,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		ExpiresAt:    expPtr,
+	})
+}
+
+func (s *Service) UnbindOAuth(ctx context.Context, userID int64, provider string) error {
+	if userID == 0 || strings.TrimSpace(provider) == "" {
+		return identity.ErrInvalidCredentials
+	}
+	user, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !user.IsAdmin {
+		bindings, err := s.users.ListOAuthBindings(ctx, userID)
+		if err != nil {
+			return err
+		}
+		if len(bindings) <= 1 {
+			return ErrLastOAuthBinding
+		}
+	}
+	return s.users.UnbindOAuth(ctx, userID, provider)
 }
 
 // IsInitialized 用于判断是否已完成初始化（存在至少一个用户）。
@@ -476,6 +563,23 @@ func (s *Service) registerOAuthUser(ctx context.Context, ext *ExternalIdentity) 
 		user.IsAdmin = true
 	}
 	if err := s.users.Create(ctx, user); err != nil {
+		if errors.Is(err, identity.ErrUserExists) {
+			email := strings.TrimSpace(ext.Email)
+			if email != "" {
+				if existed, findErr := s.users.FindByEmail(ctx, email); findErr == nil {
+					return existed, nil
+				} else if !errors.Is(findErr, identity.ErrUserNotFound) {
+					return nil, findErr
+				}
+			}
+			if username != "" {
+				if existed, findErr := s.users.FindByUsername(ctx, username); findErr == nil {
+					return existed, nil
+				} else if !errors.Is(findErr, identity.ErrUserNotFound) {
+					return nil, findErr
+				}
+			}
+		}
 		return nil, err
 	}
 	return user, nil

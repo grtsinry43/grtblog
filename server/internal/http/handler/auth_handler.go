@@ -55,6 +55,9 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 	user, err := h.svc.Register(c.Context(), cmd)
 	if err != nil {
+		if errors.Is(err, auth.ErrRegisterClosed) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "仅允许初始化管理员账号，普通用户请使用 OAuth 登录")
+		}
 		if errors.Is(err, identity.ErrUserExists) {
 			return response.NewBizErrorWithMsg(response.ParamsError, "用户名或邮箱已存在")
 		}
@@ -195,6 +198,63 @@ func (h *AuthHandler) ListOAuthBindings(c *fiber.Ctx) error {
 		return err
 	}
 	return response.Success(c, items)
+}
+
+// BindOAuth 绑定当前用户的 OAuth 账号。
+func (h *AuthHandler) BindOAuth(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+	provider := c.Params("provider")
+	var req contract.OAuthCallbackReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if req.Code == "" || req.State == "" || provider == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "provider/code/state 不能为空")
+	}
+	if err := h.svc.BindOAuth(c.Context(), claims.UserID, auth.OAuthLoginCmd{
+		Provider: provider,
+		Code:     req.Code,
+		State:    req.State,
+	}); err != nil {
+		if errors.Is(err, identity.ErrOAuthAlreadyBound) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "该第三方账号已绑定其他用户")
+		}
+		return err
+	}
+	Audit(c, "auth.bind_oauth", map[string]any{
+		"userId":   claims.UserID,
+		"provider": provider,
+	})
+	return response.SuccessWithMessage[any](c, nil, "绑定成功")
+}
+
+// UnbindOAuth 解绑当前用户的 OAuth 账号。
+func (h *AuthHandler) UnbindOAuth(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+	provider := c.Params("provider")
+	if provider == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "provider 不能为空")
+	}
+	if err := h.svc.UnbindOAuth(c.Context(), claims.UserID, provider); err != nil {
+		if errors.Is(err, auth.ErrLastOAuthBinding) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "至少保留一种登录方式，当前账号无法解绑最后一个 OAuth")
+		}
+		if errors.Is(err, identity.ErrOAuthBindingNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "该账号未绑定此提供方")
+		}
+		return err
+	}
+	Audit(c, "auth.unbind_oauth", map[string]any{
+		"userId":   claims.UserID,
+		"provider": provider,
+	})
+	return response.SuccessWithMessage[any](c, nil, "解绑成功")
 }
 
 // AccessInfo 返回当前登录用户的角色/权限。
