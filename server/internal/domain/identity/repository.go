@@ -14,6 +14,8 @@ type Repository interface {
 	ListOAuthBindings(ctx context.Context, userID int64) ([]UserOAuthBinding, error)
 	FindByOAuth(ctx context.Context, providerKey, oauthID string) (*User, error)
 	BindOAuth(ctx context.Context, link UserOAuth) error
+	BindOAuthByProvider(ctx context.Context, link UserOAuth) error
+	UnbindOAuth(ctx context.Context, userID int64, providerKey string) error
 	CountUsers(ctx context.Context) (int64, error)
 	ListAdmins(ctx context.Context) ([]User, error)
 }

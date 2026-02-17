@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { authLoginModal } from '$lib/shared/actions/auth-login-modal';
-	import { UserIcon } from 'lucide-svelte';
-	import Button from '$lib/ui/primitives/button/Button.svelte';
+	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
+	import { UserIcon } from 'lucide-svelte';	import Button from '$lib/ui/primitives/button/Button.svelte';
 </script>
 
 {#if $userStore.isLogin}
 	<Button
 		variant="icon"
+		onclick={() => windowStore.open('用户中心', null, 'user-center')}
 		class="h-10 w-10 !p-0 rounded-default overflow-hidden ring-1 ring-ink-200 hover:ring-ink-300 dark:ring-ink-700 dark:hover:ring-ink-500"
-		aria-label="用户头像"
+		aria-label="用户中心"
 	>
 		{#if $userStore.userInfo?.avatar !== ''}
 			<img src={$userStore.userInfo?.avatar} alt="User avatar" class="h-full w-full object-cover" />
