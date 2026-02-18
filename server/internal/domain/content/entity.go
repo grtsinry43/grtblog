@@ -34,6 +34,12 @@ type Tag struct {
 	DeletedAt *time.Time
 }
 
+type TagPublicItem struct {
+	ID           int64
+	Name         string
+	ArticleCount int64
+}
+
 type ArticleTag struct {
 	ID        int64
 	ArticleID int64

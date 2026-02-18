@@ -312,6 +312,28 @@ func (h *TaxonomyHandler) ListTags(c *fiber.Ctx) error {
 	return response.Success(c, resp)
 }
 
+// ListPublicTags godoc
+// @Summary 获取公开标签列表（含文章数量）
+// @Tags Public
+// @Produce json
+// @Success 200 {object} []contract.TagPublicResp
+// @Router /public/tags [get]
+func (h *TaxonomyHandler) ListPublicTags(c *fiber.Ctx) error {
+	items, err := h.tags.ListPublicWithArticleCount(c.Context())
+	if err != nil {
+		return err
+	}
+	resp := make([]contract.TagPublicResp, len(items))
+	for i, item := range items {
+		resp[i] = contract.TagPublicResp{
+			ID:           item.ID,
+			Name:         item.Name,
+			ArticleCount: item.ArticleCount,
+		}
+	}
+	return response.Success(c, resp)
+}
+
 // CreateTag godoc
 // @Summary 创建标签
 // @Tags Tag

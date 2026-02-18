@@ -29,6 +29,12 @@ type TagItemResp struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+type TagPublicResp struct {
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	ArticleCount int64  `json:"articleCount"`
+}
+
 // EmptyRespEnvelope 仅用于 swagger 展示。
 type EmptyRespEnvelope struct {
 	Code   int           `json:"code"`
