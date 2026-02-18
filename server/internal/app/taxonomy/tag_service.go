@@ -19,6 +19,10 @@ func (s *TagService) List(ctx context.Context) ([]*content.Tag, error) {
 	return s.repo.List(ctx)
 }
 
+func (s *TagService) ListPublicWithArticleCount(ctx context.Context) ([]*content.TagPublicItem, error) {
+	return s.repo.ListPublicWithArticleCount(ctx)
+}
+
 func (s *TagService) Create(ctx context.Context, name string) (*content.Tag, error) {
 	tag := &content.Tag{
 		Name: strings.TrimSpace(name),

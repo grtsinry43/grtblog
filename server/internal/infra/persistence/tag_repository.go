@@ -38,6 +38,37 @@ func (r *TagRepository) List(ctx context.Context) ([]*content.Tag, error) {
 	return result, nil
 }
 
+func (r *TagRepository) ListPublicWithArticleCount(ctx context.Context) ([]*content.TagPublicItem, error) {
+	type tagPublicRecord struct {
+		ID           int64
+		Name         string
+		ArticleCount int64
+	}
+
+	var records []tagPublicRecord
+	err := r.db.WithContext(ctx).
+		Model(&model.Tag{}).
+		Select("tag.id AS id, tag.name AS name, COUNT(article.id) AS article_count").
+		Joins("LEFT JOIN article_tag ON article_tag.tag_id = tag.id").
+		Joins("LEFT JOIN article ON article.id = article_tag.article_id AND article.is_published = ? AND article.deleted_at IS NULL", true).
+		Group("tag.id, tag.name").
+		Order("article_count DESC, tag.name ASC").
+		Scan(&records).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*content.TagPublicItem, len(records))
+	for i, rec := range records {
+		result[i] = &content.TagPublicItem{
+			ID:           rec.ID,
+			Name:         rec.Name,
+			ArticleCount: rec.ArticleCount,
+		}
+	}
+	return result, nil
+}
+
 func (r *TagRepository) GetByID(ctx context.Context, id int64) (*content.Tag, error) {
 	rec, err := r.repo.FirstByID(ctx, id)
 	if err != nil {

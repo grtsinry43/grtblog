@@ -23,6 +23,7 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	public := v2.Group("/public")
 	public.Get("/website-info", websiteInfoHandler.PublicList)
 	public.Get("/nav-menus", navMenuHandler.ListPublic)
+	public.Get("/tags", newTaxonomyHandler(deps).ListPublicTags)
 
 	htmlSnapshotHandler := handler.NewHTMLSnapshotHandler(htmlSnapshotSvc)
 	public.Post("/html/posts/refresh", htmlSnapshotHandler.RefreshPostsHTML)

@@ -6,6 +6,12 @@ export type Tag = {
 	name: string;
 };
 
+export type PublicTag = {
+	id: number;
+	name: string;
+	articleCount: number;
+};
+
 export type TagContents = {
 	articles: PostSummary[];
 	moments: MomentSummary[];
