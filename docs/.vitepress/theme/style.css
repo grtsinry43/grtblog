@@ -45,10 +45,10 @@
   --vp-c-brand-3: var(--color-jade-700);
   --vp-c-brand-soft: var(--color-jade-50);
   
-  --vp-c-bg: var(--color-ink-50);
-  --vp-c-bg-alt: var(--color-ink-100);
-  --vp-c-bg-elv: var(--color-ink-0);
-  --vp-c-bg-soft: var(--color-ink-100);
+  --vp-c-bg: #f4f1ee; /* Deeper, warmer 'brownish-yellow' light background */
+  --vp-c-bg-alt: #ebe7e0;
+  --vp-c-bg-elv: #f9f7f4;
+  --vp-c-bg-soft: #ebe7e0;
 
   --vp-c-text-1: var(--color-ink-900);
   --vp-c-text-2: var(--color-ink-600);
@@ -68,7 +68,7 @@
   --vp-radius-large: 3px;
 
   /* Texture */
-  --texture-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  --texture-noise: url("/noise.png");
 
   /* Glass / Frosted Effect Variables */
   --vp-nav-bg-color: rgba(250, 250, 249, 0.7); /* Ink-50 with opacity */
