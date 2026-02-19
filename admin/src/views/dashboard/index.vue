@@ -622,7 +622,12 @@ onUnmounted(disposeAll)
       <div class="col-span-1 lg:col-span-5">
         <div class="flex flex-col rounded border border-naive-border bg-naive-card transition-[background-color,border-color]" style="height: 380px">
             <div class="flex items-center justify-between px-5 pt-4">
-                 <span class="text-base font-medium text-neutral-600 dark:text-neutral-300">访问来源</span>
+                 <div class="flex items-center gap-2">
+                    <span class="text-base font-medium text-neutral-600 dark:text-neutral-300">访问来源</span>
+                    <span class="rounded bg-amber-100 px-2 py-0.5 text-[11px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      浏览埋点聚合
+                    </span>
+                 </div>
                  <div class="flex items-center gap-x-1 rounded bg-neutral-100 p-0.5 dark:bg-neutral-800">
                     <button 
                         v-for="tab in [

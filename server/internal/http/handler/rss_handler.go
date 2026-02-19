@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/xml"
 	"strings"
+	"time"
 
 	"github.com/aclr/feeds"
 	"github.com/gofiber/fiber/v2"
@@ -10,11 +11,12 @@ import (
 )
 
 type RSSHandler struct {
-	svc *apprss.Service
+	svc       *apprss.Service
+	accessSvc *apprss.AccessAnalyticsService
 }
 
-func NewRSSHandler(svc *apprss.Service) *RSSHandler {
-	return &RSSHandler{svc: svc}
+func NewRSSHandler(svc *apprss.Service, accessSvc *apprss.AccessAnalyticsService) *RSSHandler {
+	return &RSSHandler{svc: svc, accessSvc: accessSvc}
 }
 
 // GetFeed godoc
@@ -25,6 +27,16 @@ func NewRSSHandler(svc *apprss.Service) *RSSHandler {
 // @Success 200 {string} string "rss xml"
 // @Router /public/rss.xml [get]
 func (h *RSSHandler) GetFeed(c *fiber.Ctx) error {
+	if h.accessSvc != nil {
+		_ = h.accessSvc.RecordAccess(c.Context(), apprss.AccessMeta{
+			Path:       c.Path(),
+			IP:         c.IP(),
+			UserAgent:  c.Get("User-Agent"),
+			ClientHint: extractRSSClientHint(c),
+			At:         time.Now(),
+		})
+	}
+
 	limit := c.QueryInt("limit", 20)
 	aggFeed, err := h.svc.Build(c.Context(), c.BaseURL(), limit)
 	if err != nil {
@@ -83,6 +95,26 @@ func (h *RSSHandler) GetFeed(c *fiber.Ctx) error {
 
 	c.Set(fiber.HeaderContentType, "application/xml; charset=utf-8")
 	return c.SendString(output)
+}
+
+func extractRSSClientHint(c *fiber.Ctx) string {
+	keys := []string{
+		"X-Reader",
+		"X-Client",
+		"X-Requested-With",
+		"Sec-CH-UA-Platform",
+		"Sec-CH-UA",
+	}
+	for _, key := range keys {
+		v := strings.TrimSpace(c.Get(key))
+		if v != "" {
+			if len(v) > 128 {
+				return v[:128]
+			}
+			return v
+		}
+	}
+	return ""
 }
 
 func appendRSSExtensions(raw string, c *fiber.Ctx, feedID string, userID string) string {

@@ -220,6 +220,98 @@ func (h *CommentHandler) ListAdminComments(c *fiber.Ctx) error {
 	})
 }
 
+// ListAdminVisitors godoc
+// @Summary 获取访客画像列表（管理端）
+// @Tags CommentAdmin
+// @Produce json
+// @Param keyword query string false "关键词（visitorId/昵称/邮箱/IP/地区/设备）"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(20)
+// @Success 200 {object} contract.AdminVisitorListResp
+// @Security JWTAuth
+// @Router /admin/visitors [get]
+func (h *CommentHandler) ListAdminVisitors(c *fiber.Ctx) error {
+	page := parseIntQuery(c, "page", 1)
+	pageSize := parseIntQuery(c, "pageSize", 20)
+	keyword := strings.TrimSpace(c.Query("keyword"))
+
+	items, total, err := h.svc.ListAdminVisitors(c.Context(), comment.ListAdminVisitorsCmd{
+		Keyword:  keyword,
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		return h.mapCommentError(c, err)
+	}
+
+	respItems := make([]contract.AdminVisitorResp, len(items))
+	for i := range items {
+		respItems[i] = toAdminVisitorResp(items[i])
+	}
+	return response.Success(c, contract.AdminVisitorListResp{
+		Items: respItems,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
+	})
+}
+
+// GetAdminVisitorProfile godoc
+// @Summary 获取访客画像详情（管理端）
+// @Tags CommentAdmin
+// @Produce json
+// @Param visitorId path string true "访客ID"
+// @Param recentLimit query int false "最近评论数量" default(20)
+// @Success 200 {object} contract.AdminVisitorProfileResp
+// @Security JWTAuth
+// @Router /admin/visitors/{visitorId} [get]
+func (h *CommentHandler) GetAdminVisitorProfile(c *fiber.Ctx) error {
+	visitorID := strings.TrimSpace(c.Params("visitorId"))
+	recentLimit := parseIntQuery(c, "recentLimit", 20)
+
+	profile, recentComments, err := h.svc.GetVisitorProfile(c.Context(), comment.GetVisitorProfileCmd{
+		VisitorID:   visitorID,
+		RecentLimit: recentLimit,
+	})
+	if err != nil {
+		return h.mapCommentError(c, err)
+	}
+
+	recentItems := make([]contract.AdminVisitorRecentCommentResp, 0, len(recentComments))
+	for _, item := range recentComments {
+		recentItems = append(recentItems, contract.AdminVisitorRecentCommentResp{
+			ID:        item.ID,
+			AreaID:    item.AreaID,
+			Content:   item.Content,
+			Status:    item.Status,
+			CreatedAt: item.CreatedAt,
+			IsDeleted: item.IsDeleted,
+		})
+	}
+
+	return response.Success(c, contract.AdminVisitorProfileResp{
+		Profile:        toAdminVisitorResp(*profile),
+		RecentComments: recentItems,
+	})
+}
+
+// GetAdminVisitorInsights godoc
+// @Summary 获取访客画像统计图数据（管理端）
+// @Tags CommentAdmin
+// @Produce json
+// @Param days query int false "统计天数（默认30，最大180）"
+// @Success 200 {object} contract.AdminVisitorInsightsResp
+// @Security JWTAuth
+// @Router /admin/visitors/insights [get]
+func (h *CommentHandler) GetAdminVisitorInsights(c *fiber.Ctx) error {
+	days := parseIntQuery(c, "days", 30)
+	insights, err := h.svc.GetVisitorInsights(c.Context(), comment.GetVisitorInsightsCmd{Days: days})
+	if err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.Success(c, toAdminVisitorInsightsResp(insights))
+}
+
 // MarkCommentsViewed godoc
 // @Summary 批量标记评论已读/未读（管理端）
 // @Tags CommentAdmin
@@ -438,6 +530,8 @@ func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "你已被禁止评论")
 	case errors.Is(err, domaincomment.ErrCommentStatusInvalid):
 		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论状态")
+	case errors.Is(err, domaincomment.ErrVisitorNotFound):
+		return response.NewBizErrorWithMsg(response.NotFound, "访客不存在")
 	default:
 		return err
 	}
@@ -587,6 +681,99 @@ func toAdminCommentResp(item *domaincomment.Comment) contract.AdminCommentResp {
 		UpdatedAt:  item.UpdatedAt,
 		DeletedAt:  item.DeletedAt,
 		IsDeleted:  item.DeletedAt != nil,
+	}
+}
+
+func toAdminVisitorResp(item domaincomment.VisitorProfile) contract.AdminVisitorResp {
+	return contract.AdminVisitorResp{
+		VisitorID:        item.VisitorID,
+		NickName:         item.NickName,
+		Email:            item.Email,
+		Website:          item.Website,
+		IP:               item.IP,
+		Location:         item.Location,
+		Platform:         item.Platform,
+		Browser:          item.Browser,
+		TotalComments:    item.TotalComments,
+		ApprovedComments: item.ApprovedComments,
+		PendingComments:  item.PendingComments,
+		RejectedComments: item.RejectedComments,
+		BlockedComments:  item.BlockedComments,
+		DeletedComments:  item.DeletedComments,
+		TopComments:      item.TopComments,
+		ActiveDays:       item.ActiveDays,
+		TotalLikes:       item.TotalLikes,
+		UniqueLikedItems: item.UniqueLikedItems,
+		TotalViews:       item.TotalViews,
+		UniqueViewItems:  item.UniqueViewItems,
+		FirstSeenAt:      item.FirstSeenAt,
+		LastSeenAt:       item.LastSeenAt,
+		LastLikedAt:      item.LastLikedAt,
+		LastViewedAt:     item.LastViewedAt,
+	}
+}
+
+func toAdminVisitorInsightsResp(item *domaincomment.VisitorInsights) contract.AdminVisitorInsightsResp {
+	if item == nil {
+		return contract.AdminVisitorInsightsResp{}
+	}
+	platformTop := make([]contract.AdminVisitorDistributionResp, 0, len(item.PlatformTop))
+	for _, row := range item.PlatformTop {
+		platformTop = append(platformTop, contract.AdminVisitorDistributionResp{
+			Name:  row.Name,
+			Count: row.Count,
+		})
+	}
+	browserTop := make([]contract.AdminVisitorDistributionResp, 0, len(item.BrowserTop))
+	for _, row := range item.BrowserTop {
+		browserTop = append(browserTop, contract.AdminVisitorDistributionResp{
+			Name:  row.Name,
+			Count: row.Count,
+		})
+	}
+	locationTop := make([]contract.AdminVisitorDistributionResp, 0, len(item.LocationTop))
+	for _, row := range item.LocationTop {
+		locationTop = append(locationTop, contract.AdminVisitorDistributionResp{
+			Name:  row.Name,
+			Count: row.Count,
+		})
+	}
+	trend := make([]contract.AdminVisitorTrendResp, 0, len(item.Trend))
+	for _, row := range item.Trend {
+		trend = append(trend, contract.AdminVisitorTrendResp{
+			Date:              row.Date,
+			ActiveVisitors:    row.ActiveVisitors,
+			NewVisitors:       row.NewVisitors,
+			ReturningVisitors: row.ReturningVisitors,
+			Views:             row.Views,
+			Likes:             row.Likes,
+			Comments:          row.Comments,
+		})
+	}
+
+	return contract.AdminVisitorInsightsResp{
+		Days:        item.Days,
+		GeneratedAt: item.GeneratedAt,
+		DataSource:  item.DataSource,
+		PlatformTop: platformTop,
+		BrowserTop:  browserTop,
+		LocationTop: locationTop,
+		Trend:       trend,
+		Funnel: contract.AdminVisitorFunnelResp{
+			ViewVisitors:      item.Funnel.ViewVisitors,
+			LikeVisitors:      item.Funnel.LikeVisitors,
+			CommentVisitors:   item.Funnel.CommentVisitors,
+			LikeRate:          item.Funnel.LikeRate,
+			CommentRateByView: item.Funnel.CommentRateByView,
+			CommentRateByLike: item.Funnel.CommentRateByLike,
+		},
+		Segments: contract.AdminVisitorSegmentsResp{
+			Active1D:      item.Segments.Active1D,
+			Active3D:      item.Segments.Active3D,
+			Active7D:      item.Segments.Active7D,
+			Active30D:     item.Segments.Active30D,
+			HighlyEngaged: item.Segments.HighlyEngaged,
+		},
 	}
 }
 

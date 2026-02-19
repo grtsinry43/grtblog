@@ -245,6 +245,48 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     component: 'comments/index',
   },
   {
+    path: 'audience',
+    name: 'audienceManagement',
+    icon: 'iconify ph--users-three',
+    label: '用户与访客',
+    redirect: 'audience/users',
+    children: [
+      {
+        path: 'users',
+        name: 'siteUserManagement',
+        icon: 'iconify ph--users',
+        label: '本站用户',
+        meta: {
+          componentName: 'SiteUserManagement',
+          showTab: true,
+        },
+        component: 'users/index',
+      },
+      {
+        path: 'visitors',
+        name: 'visitorProfileManagement',
+        icon: 'iconify ph--users-three',
+        label: '访客画像',
+        meta: {
+          componentName: 'VisitorProfileList',
+          showTab: true,
+        },
+        component: 'visitors/index',
+      },
+      {
+        path: 'rss',
+        name: 'rssAccessStats',
+        icon: 'iconify ph--rss',
+        label: 'RSS访问统计',
+        meta: {
+          componentName: 'RssAccessStats',
+          showTab: true,
+        },
+        component: 'rss/index',
+      },
+    ],
+  },
+  {
     path: 'friend-links',
     name: 'friendLinkManagement',
     icon: 'iconify ph--link',

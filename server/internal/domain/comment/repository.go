@@ -16,6 +16,12 @@ type AdminListOptions struct {
 	PageSize     int
 }
 
+type AdminVisitorListOptions struct {
+	Keyword  string
+	Page     int
+	PageSize int
+}
+
 type CommentRepository interface {
 	GetAreaByID(ctx context.Context, id int64) (*CommentArea, error)
 	SetAreaClosed(ctx context.Context, areaID int64, isClosed bool) error
@@ -30,4 +36,7 @@ type CommentRepository interface {
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	SetTopStatus(ctx context.Context, id int64, isTop bool) error
 	ExistsBlockedIdentity(ctx context.Context, authorID *int64, email *string) (bool, error)
+	ListVisitors(ctx context.Context, options AdminVisitorListOptions) ([]VisitorProfile, int64, error)
+	GetVisitorProfile(ctx context.Context, visitorID string, recentLimit int) (*VisitorProfile, []VisitorRecentComment, error)
+	GetVisitorInsights(ctx context.Context, days int) (*VisitorInsights, error)
 }
