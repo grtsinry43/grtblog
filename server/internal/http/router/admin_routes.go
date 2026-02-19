@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminstats"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminuser"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
@@ -55,6 +56,9 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	commentHandler := newCommentHandler(deps)
 	admin.Get("/comments", commentHandler.ListAdminComments)
+	admin.Get("/visitors", commentHandler.ListAdminVisitors)
+	admin.Get("/visitors/insights", commentHandler.GetAdminVisitorInsights)
+	admin.Get("/visitors/:visitorId", commentHandler.GetAdminVisitorProfile)
 	admin.Put("/comments/viewed", commentHandler.MarkCommentsViewed)
 	admin.Post("/comments/:id/reply", commentHandler.ReplyComment)
 	admin.Put("/comments/:id/status", commentHandler.UpdateCommentStatus)
@@ -62,6 +66,15 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Put("/comments/:id/top", commentHandler.SetCommentTop)
 	admin.Delete("/comments/:id", commentHandler.DeleteComment)
 	admin.Put("/comments/areas/:areaId/close", commentHandler.SetCommentAreaClose)
+
+	adminUserSvc := adminuser.NewService(identityRepo)
+	adminUserHandler := handler.NewAdminUserHandler(adminUserSvc)
+	admin.Get("/users", adminUserHandler.ListUsers)
+	admin.Put("/users/:id", adminUserHandler.UpdateUser)
+
+	rssAccessSvc := newRSSAccessAnalyticsService(deps)
+	rssAdminHandler := handler.NewRSSAdminHandler(rssAccessSvc)
+	admin.Get("/rss/access-stats", rssAdminHandler.GetAccessStats)
 
 	if sysCfgSvc != nil {
 		sysConfigHandler := handler.NewSysConfigHandler(sysCfgSvc)

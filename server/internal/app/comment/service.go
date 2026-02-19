@@ -304,6 +304,43 @@ func (s *Service) ListAdminComments(ctx context.Context, cmd ListAdminCommentsCm
 	return items, total, nil
 }
 
+func (s *Service) ListAdminVisitors(ctx context.Context, cmd ListAdminVisitorsCmd) ([]domaincomment.VisitorProfile, int64, error) {
+	page, size := normalizePage(cmd.Page, cmd.PageSize)
+	return s.repo.ListVisitors(ctx, domaincomment.AdminVisitorListOptions{
+		Keyword:  strings.TrimSpace(cmd.Keyword),
+		Page:     page,
+		PageSize: size,
+	})
+}
+
+func (s *Service) GetVisitorProfile(ctx context.Context, cmd GetVisitorProfileCmd) (*domaincomment.VisitorProfile, []domaincomment.VisitorRecentComment, error) {
+	visitorID := strings.TrimSpace(cmd.VisitorID)
+	if visitorID == "" {
+		return nil, nil, domaincomment.ErrVisitorNotFound
+	}
+
+	recentLimit := cmd.RecentLimit
+	if recentLimit <= 0 {
+		recentLimit = 20
+	}
+	if recentLimit > 100 {
+		recentLimit = 100
+	}
+
+	return s.repo.GetVisitorProfile(ctx, visitorID, recentLimit)
+}
+
+func (s *Service) GetVisitorInsights(ctx context.Context, cmd GetVisitorInsightsCmd) (*domaincomment.VisitorInsights, error) {
+	days := cmd.Days
+	if days <= 0 {
+		days = 30
+	}
+	if days > 180 {
+		days = 180
+	}
+	return s.repo.GetVisitorInsights(ctx, days)
+}
+
 func (s *Service) MarkCommentsViewed(ctx context.Context, cmd MarkCommentsViewedCmd) error {
 	if len(cmd.IDs) == 0 {
 		return nil

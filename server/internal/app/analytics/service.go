@@ -287,9 +287,52 @@ func (s *Service) processViewEvent(ctx context.Context, event ViewTrackEvent) er
 		return err
 	}
 
+	if err := s.recordVisitorView(ctx, event); err != nil {
+		return err
+	}
+
 	s.recordSourceStats(ctx, event)
 
 	return nil
+}
+
+func (s *Service) recordVisitorView(ctx context.Context, event ViewTrackEvent) error {
+	if strings.TrimSpace(event.VisitorID) == "" {
+		return nil
+	}
+	nowAt := event.At.UTC()
+	info := s.uaParser.Resolve(event.UserAgent)
+	platform := strings.TrimSpace(info.Platform)
+	browser := strings.TrimSpace(info.Browser)
+	location := ""
+	if s.geo != nil {
+		location = strings.TrimSpace(s.geo.Resolve(event.IP))
+	}
+	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "visitor_id"},
+			{Name: "content_type"},
+			{Name: "content_id"},
+		},
+		DoUpdates: clause.Assignments(map[string]any{
+			"last_view_at": gorm.Expr("EXCLUDED.last_view_at"),
+			"view_count":   gorm.Expr("analytics_visitor_view.view_count + 1"),
+			"platform":     gorm.Expr("EXCLUDED.platform"),
+			"browser":      gorm.Expr("EXCLUDED.browser"),
+			"location":     gorm.Expr("EXCLUDED.location"),
+			"updated_at":   gorm.Expr("NOW()"),
+		}),
+	}).Create(&model.AnalyticsVisitorView{
+		VisitorID:   event.VisitorID,
+		ContentType: event.ContentType,
+		ContentID:   event.ContentID,
+		Platform:    platform,
+		Browser:     browser,
+		Location:    location,
+		FirstViewAt: nowAt,
+		LastViewAt:  nowAt,
+		ViewCount:   1,
+	}).Error
 }
 
 func (s *Service) recordSourceStats(ctx context.Context, event ViewTrackEvent) {

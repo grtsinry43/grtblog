@@ -18,6 +18,17 @@ type Repository interface {
 	UnbindOAuth(ctx context.Context, userID int64, providerKey string) error
 	CountUsers(ctx context.Context) (int64, error)
 	ListAdmins(ctx context.Context) ([]User, error)
+	CountActiveAdmins(ctx context.Context) (int64, error)
+	ListUsers(ctx context.Context, options UserListOptions) ([]User, int64, error)
+	UpdateAdminUser(ctx context.Context, userID int64, nickname, email string, isActive, isAdmin bool) (*User, error)
+}
+
+type UserListOptions struct {
+	Keyword    string
+	OnlyAdmin  *bool
+	OnlyActive *bool
+	Page       int
+	PageSize   int
 }
 
 // OAuthProviderRepository 提供 OAuth/OIDC 提供方配置。

@@ -259,6 +259,87 @@ func (r *IdentityRepository) ListAdmins(ctx context.Context) ([]identity.User, e
 	return users, nil
 }
 
+func (r *IdentityRepository) CountActiveAdmins(ctx context.Context) (int64, error) {
+	var total int64
+	if err := r.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("is_admin = ? AND is_active = ?", true, true).
+		Count(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+func (r *IdentityRepository) ListUsers(ctx context.Context, options identity.UserListOptions) ([]identity.User, int64, error) {
+	query := r.db.WithContext(ctx).Model(&model.User{})
+	keyword := strings.TrimSpace(options.Keyword)
+	if keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where(
+			"username LIKE ? OR nickname LIKE ? OR email LIKE ?",
+			like, like, like,
+		)
+	}
+	if options.OnlyAdmin != nil {
+		query = query.Where("is_admin = ?", *options.OnlyAdmin)
+	}
+	if options.OnlyActive != nil {
+		query = query.Where("is_active = ?", *options.OnlyActive)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if total == 0 {
+		return []identity.User{}, 0, nil
+	}
+
+	page := options.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := options.PageSize
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	offset := (page - 1) * pageSize
+
+	var records []model.User
+	if err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(pageSize).
+		Find(&records).Error; err != nil {
+		return nil, 0, err
+	}
+
+	users := make([]identity.User, len(records))
+	for i := range records {
+		users[i] = mapUserToDomain(records[i])
+	}
+	return users, total, nil
+}
+
+func (r *IdentityRepository) UpdateAdminUser(ctx context.Context, userID int64, nickname, email string, isActive, isAdmin bool) (*identity.User, error) {
+	updates := map[string]any{
+		"nickname":   strings.TrimSpace(nickname),
+		"email":      strings.TrimSpace(email),
+		"is_active":  isActive,
+		"is_admin":   isAdmin,
+		"updated_at": time.Now(),
+	}
+	if err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
+		if isUniqueConstraint(err) {
+			return nil, identity.ErrUserExists
+		}
+		return nil, err
+	}
+	return r.FindByID(ctx, userID)
+}
+
 func isUniqueConstraint(err error) bool {
 	if err == nil {
 		return false

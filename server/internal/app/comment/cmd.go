@@ -33,6 +33,21 @@ type ListAdminCommentsCmd struct {
 	PageSize     int
 }
 
+type ListAdminVisitorsCmd struct {
+	Keyword  string
+	Page     int
+	PageSize int
+}
+
+type GetVisitorProfileCmd struct {
+	VisitorID   string
+	RecentLimit int
+}
+
+type GetVisitorInsightsCmd struct {
+	Days int
+}
+
 type ReplyCommentCmd struct {
 	ParentID int64
 	Content  string

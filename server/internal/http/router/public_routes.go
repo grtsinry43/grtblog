@@ -64,8 +64,10 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 		persistence.NewWebsiteInfoRepository(deps.DB),
 		persistence.NewIdentityRepository(deps.DB),
 	)
-	rssHandler := handler.NewRSSHandler(rssSvc)
+	rssAccessSvc := newRSSAccessAnalyticsService(deps)
+	rssHandler := handler.NewRSSHandler(rssSvc, rssAccessSvc)
 	public.Get("/rss.xml", rssHandler.GetFeed)
+	public.Get("/feed", rssHandler.GetFeed)
 
 	if deps.Analytics != nil {
 		analyticsHandler := handler.NewAnalyticsHandler(deps.Analytics)
