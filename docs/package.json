@@ -1,0 +1,16 @@
+{
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.16"
+  },
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/victor-mono": "^5.2.8",
+    "@fontsource/google-sans": "^5.2.1",
+    "@fontsource/noto-serif-sc": "^5.2.9",
+    "vue": "^3.5.28"
+  }
+}
