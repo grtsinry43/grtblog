@@ -34,6 +34,8 @@ export default defineConfig({
             { text: '本地开发', link: '/dev/getting-started' },
             { text: '后端架构', link: '/dev/backend' },
             { text: '前端架构', link: '/dev/frontend' },
+            { text: 'svatoms 数据流', link: '/dev/svatoms' },
+            { text: 'svmarkdown 渲染', link: '/dev/svmarkdown' },
             { text: '管理后台', link: '/dev/admin' },
             { text: '贡献指南', link: '/dev/contributing' },
           ]

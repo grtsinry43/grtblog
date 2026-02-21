@@ -169,6 +169,48 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-jade-100);
 }
 
+/* Announcement Bar Layout Fix */
+:root {
+  --announcement-height: 40px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --announcement-height: 56px;
+  }
+}
+
+/* 当横幅显示时，修正各组件位置 */
+html.has-announcement .VPNav {
+  top: var(--announcement-height) !important;
+}
+
+/* 侧边栏：起始位置需要加上横幅高度 */
+html.has-announcement .VPSidebar {
+  top: calc(var(--vp-nav-height) + var(--announcement-height)) !important;
+}
+
+/* 移动端本地导航 */
+html.has-announcement .VPLocalNav {
+  top: var(--announcement-height) !important;
+}
+
+/* 关键：把内容区整体向下推 */
+/* 我们不改 --vp-nav-height，而是给内容容器增加额外的 padding-top */
+html.has-announcement #VPContent {
+  padding-top: calc(var(--vp-nav-height) + var(--announcement-height)) !important;
+}
+
+/* 首页保持原样，不需要额外下移（VitePress 默认会处理导航栏高度） */
+html.has-announcement .VPHome {
+  margin-top: 0 !important;
+}
+
+/* 锚点跳转偏移修正 */
+html.has-announcement {
+  scroll-padding-top: calc(var(--vp-nav-height) + var(--announcement-height));
+}
+
 /* Global Border Radius Enforcement */
 *, ::before, ::after {
   --rounded-default: 3px;
