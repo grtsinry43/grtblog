@@ -7,43 +7,41 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
-// FederationConfigHandler provides settings-center style APIs for federation_config.
-type FederationConfigHandler struct {
-	svc *federationconfig.Service
+type ActivityPubConfigHandler struct {
+	svc *activitypubconfig.Service
 }
 
-func NewFederationConfigHandler(svc *federationconfig.Service) *FederationConfigHandler {
-	return &FederationConfigHandler{svc: svc}
+func NewActivityPubConfigHandler(svc *activitypubconfig.Service) *ActivityPubConfigHandler {
+	return &ActivityPubConfigHandler{svc: svc}
 }
 
-// ListFederationConfig lists federation config items.
-// @Summary 联合配置列表
-// @Tags FederationAdmin
+// ListActivityPubConfig lists activitypub config items.
+// @Summary ActivityPub 配置列表
+// @Tags ActivityPubAdmin
 // @Accept json
 // @Produce json
 // @Param keys query string false "指定配置 key（逗号分隔）"
 // @Success 200 {object} contract.SysConfigTreeResp
 // @Security BearerAuth
-// @Router /admin/federation/config [get]
+// @Router /admin/activitypub/config [get]
 // @Security JWTAuth
-func (h *FederationConfigHandler) ListFederationConfig(c *fiber.Ctx) error {
-	keys, err := parseAndValidateFederationConfigKeys(c.Query("keys"), "federation.")
+func (h *ActivityPubConfigHandler) ListActivityPubConfig(c *fiber.Ctx) error {
+	keys, err := parseAndValidateActivityPubConfigKeys(c.Query("keys"), "activitypub.")
 	if err != nil {
 		return response.NewBizErrorWithMsg(response.ParamsError, err.Error())
 	}
-
 	items, err := h.svc.ListConfigs(c.Context(), keys)
 	if err != nil {
 		return err
 	}
-	items = filterFederationConfigsByPrefix(items, "federation.")
+	items = filterActivityPubConfigsByPrefix(items, "activitypub.")
 	tree, err := buildSysConfigTree(items)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "配置解析失败", err)
@@ -51,17 +49,17 @@ func (h *FederationConfigHandler) ListFederationConfig(c *fiber.Ctx) error {
 	return response.Success(c, tree)
 }
 
-// UpdateFederationConfig updates federation config items.
-// @Summary 更新联合配置
-// @Tags FederationAdmin
+// UpdateActivityPubConfig updates activitypub config items.
+// @Summary 更新 ActivityPub 配置
+// @Tags ActivityPubAdmin
 // @Accept json
 // @Produce json
 // @Param request body contract.SysConfigBatchUpdateReq true "配置更新参数"
 // @Success 200 {object} contract.SysConfigTreeResp
 // @Security BearerAuth
-// @Router /admin/federation/config [put]
+// @Router /admin/activitypub/config [put]
 // @Security JWTAuth
-func (h *FederationConfigHandler) UpdateFederationConfig(c *fiber.Ctx) error {
+func (h *ActivityPubConfigHandler) UpdateActivityPubConfig(c *fiber.Ctx) error {
 	var req contract.SysConfigBatchUpdateReq
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
@@ -76,10 +74,10 @@ func (h *FederationConfigHandler) UpdateFederationConfig(c *fiber.Ctx) error {
 		if key == "" {
 			return response.NewBizErrorWithMsg(response.ParamsError, "key 不能为空")
 		}
-		if !strings.HasPrefix(key, "federation.") {
-			return response.NewBizErrorWithMsg(response.ParamsError, "仅允许更新 federation.* 配置")
+		if !strings.HasPrefix(key, "activitypub.") {
+			return response.NewBizErrorWithMsg(response.ParamsError, "仅允许更新 activitypub.* 配置")
 		}
-		if key == "federation.instanceURL" && item.Value != nil {
+		if key == "activitypub.instanceURL" && item.Value != nil {
 			var instanceURL string
 			if err := json.Unmarshal(json.RawMessage(*item.Value), &instanceURL); err != nil {
 				return response.NewBizErrorWithMsg(response.ParamsError, "instanceURL 必须为字符串")
@@ -113,7 +111,7 @@ func (h *FederationConfigHandler) UpdateFederationConfig(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	updated = filterFederationConfigsByPrefix(updated, "federation.")
+	updated = filterActivityPubConfigsByPrefix(updated, "activitypub.")
 	tree, err := buildSysConfigTree(updated)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "配置解析失败", err)
@@ -121,7 +119,7 @@ func (h *FederationConfigHandler) UpdateFederationConfig(c *fiber.Ctx) error {
 	return response.SuccessWithMessage(c, tree, "更新成功")
 }
 
-func parseAndValidateFederationConfigKeys(raw string, prefix string) ([]string, error) {
+func parseAndValidateActivityPubConfigKeys(raw string, prefix string) ([]string, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, nil
 	}
@@ -145,7 +143,7 @@ func parseAndValidateFederationConfigKeys(raw string, prefix string) ([]string, 
 	return keys, nil
 }
 
-func filterFederationConfigsByPrefix(items []domainconfig.SysConfig, prefix string) []domainconfig.SysConfig {
+func filterActivityPubConfigsByPrefix(items []domainconfig.SysConfig, prefix string) []domainconfig.SysConfig {
 	out := make([]domainconfig.SysConfig, 0, len(items))
 	for _, item := range items {
 		if strings.HasPrefix(strings.TrimSpace(item.Key), prefix) {

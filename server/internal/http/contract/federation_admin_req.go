@@ -49,3 +49,9 @@ type FederationReviewDecisionReq struct {
 type FederationInstanceStatusUpdateReq struct {
 	Status string `json:"status"`
 }
+
+type FederationActivityPubPublishReq struct {
+	SourceType string `json:"source_type"`
+	SourceID   int64  `json:"source_id"`
+	Summary    string `json:"summary,omitempty"`
+}

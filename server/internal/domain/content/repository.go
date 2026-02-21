@@ -11,6 +11,7 @@ type Repository interface {
 	CreateArticle(ctx context.Context, article *Article) error
 	GetArticleByID(ctx context.Context, id int64) (*Article, error)
 	GetArticleByShortURL(ctx context.Context, shortURL string) (*Article, error)
+	GetArticleByActivityPubObjectID(ctx context.Context, objectID string) (*Article, error)
 	UpdateArticle(ctx context.Context, article *Article) error
 	DeleteArticle(ctx context.Context, id int64) error
 	ListArticles(ctx context.Context, options ArticleListOptionsInternal) ([]*Article, int64, error)

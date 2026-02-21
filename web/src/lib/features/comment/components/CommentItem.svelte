@@ -18,7 +18,7 @@
 	const { updateModelData } = commentAreaCtx.useModelActions();
 
 	const handleReply = () => {
-		if (comment.isDeleted) return;
+		if (comment.isDeleted || !comment.canReply) return;
 		updateModelData((prev) => (prev ? { ...prev, replyingTo: comment } : prev));
 		const item = document.getElementById(`comment-${comment.id}`);
 		if (item) {
@@ -29,6 +29,24 @@
 	};
 
 	const cx = (...args: (string | boolean | undefined | null)[]) => args.filter(Boolean).join(' ');
+
+	const formatFederatedProtocol = (protocol?: string | null) => {
+		const value = (protocol ?? '').trim().toLowerCase();
+		if (!value) return 'Federated';
+		if (value === 'activitypub') return 'ActivityPub';
+		return protocol ?? 'Federated';
+	};
+
+	const parseFederatedHost = (actor?: string | null) => {
+		const raw = (actor ?? '').trim();
+		if (!raw) return null;
+		try {
+			const parsed = new URL(raw);
+			return parsed.host || null;
+		} catch {
+			return null;
+		}
+	};
 
 	$effect(() => {
 		relativeTime = formatRelativeTimeWithSeconds(comment.createdAt);
@@ -79,6 +97,16 @@
 					{comment.status === 'pending' ? '审核中，仅自己可见' : '未通过，仅自己可见'}
 				</span>
 			{/if}
+			{#if comment.isFederated}
+				<span
+					class="text-[10px] rounded-sm px-1.5 py-0.5 bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+				>
+					来自联邦 · {formatFederatedProtocol(comment.federatedProtocol)}
+					{#if parseFederatedHost(comment.federatedActor)}
+						@{parseFederatedHost(comment.federatedActor)}
+					{/if}
+				</span>
+			{/if}
 
 			<span class="text-[10px] text-ink-400 font-mono ml-auto">
 				{relativeTime}
@@ -121,7 +149,7 @@
 		</div>
 
 		<div class="flex items-center gap-4 mt-2.5 mb-4">
-			{#if !$isClosedStore && !comment.isDeleted}
+			{#if !$isClosedStore && !comment.isDeleted && comment.canReply}
 				<button
 					onclick={handleReply}
 					class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-jade-600 transition-colors font-medium"

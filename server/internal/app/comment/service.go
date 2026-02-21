@@ -142,6 +142,7 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 		IsViewed:  isViewed,
 		IsTop:     false,
 		IsMy:      true,
+		CanReply:  true,
 		Status:    status,
 		ParentID:  cmd.ParentID,
 	}
@@ -206,6 +207,7 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 		IsViewed:  isViewed,
 		IsTop:     false,
 		IsMy:      true,
+		CanReply:  true,
 		Status:    status,
 		ParentID:  cmd.ParentID,
 	}
@@ -395,6 +397,7 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 		IsViewed: true,
 		IsTop:    false,
 		IsMy:     true,
+		CanReply: true,
 		Status:   domaincomment.CommentStatusApproved,
 		ParentID: &parent.ID,
 	}
@@ -608,6 +611,9 @@ func (s *Service) ensureParentValid(ctx context.Context, areaID int64, parentID 
 	}
 	if parent.AreaID != areaID {
 		return domaincomment.ErrCommentParentNotFound
+	}
+	if !parent.CanReply {
+		return domaincomment.ErrCommentReplyDisabled
 	}
 
 	chainLength := 1

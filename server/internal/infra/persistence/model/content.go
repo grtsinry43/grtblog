@@ -55,27 +55,29 @@ type MomentTopic struct {
 func (MomentTopic) TableName() string { return "moment_topic" }
 
 type Article struct {
-	ID          int64          `gorm:"column:id;primaryKey"`
-	Title       string         `gorm:"column:title;size:255;not null"`
-	Summary     string         `gorm:"column:summary;type:text;not null"`
-	AISummary   *string        `gorm:"column:ai_summary;type:text"`
-	LeadIn      *string        `gorm:"column:lead_in;type:text"`
-	TOC         []byte         `gorm:"column:toc;type:jsonb;not null"`
-	Content     string         `gorm:"column:content;type:text;not null"`
-	ContentHash string         `gorm:"column:content_hash;size:32;not null"`
-	AuthorID    int64          `gorm:"column:author_id;not null"`
-	Cover       *string        `gorm:"column:cover;size:255"`
-	CategoryID  *int64         `gorm:"column:category_id"`
-	CommentID   *int64         `gorm:"column:comment_id"`
-	ShortURL    string         `gorm:"column:short_url;size:255;not null"`
-	IsPublished bool           `gorm:"column:is_published"`
-	IsTop       bool           `gorm:"column:is_top"`
-	IsHot       bool           `gorm:"column:is_hot"`
-	IsOriginal  bool           `gorm:"column:is_original"`
-	ExtInfo     []byte         `gorm:"column:ext_info;type:jsonb"`
-	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime"`
-	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	ID                         int64          `gorm:"column:id;primaryKey"`
+	Title                      string         `gorm:"column:title;size:255;not null"`
+	Summary                    string         `gorm:"column:summary;type:text;not null"`
+	AISummary                  *string        `gorm:"column:ai_summary;type:text"`
+	LeadIn                     *string        `gorm:"column:lead_in;type:text"`
+	TOC                        []byte         `gorm:"column:toc;type:jsonb;not null"`
+	Content                    string         `gorm:"column:content;type:text;not null"`
+	ContentHash                string         `gorm:"column:content_hash;size:32;not null"`
+	AuthorID                   int64          `gorm:"column:author_id;not null"`
+	Cover                      *string        `gorm:"column:cover;size:255"`
+	CategoryID                 *int64         `gorm:"column:category_id"`
+	CommentID                  *int64         `gorm:"column:comment_id"`
+	ShortURL                   string         `gorm:"column:short_url;size:255;not null"`
+	ActivityPubObjectID        *string        `gorm:"column:activitypub_object_id;size:500"`
+	ActivityPubLastPublishedAt *time.Time     `gorm:"column:activitypub_last_published_at"`
+	IsPublished                bool           `gorm:"column:is_published"`
+	IsTop                      bool           `gorm:"column:is_top"`
+	IsHot                      bool           `gorm:"column:is_hot"`
+	IsOriginal                 bool           `gorm:"column:is_original"`
+	ExtInfo                    []byte         `gorm:"column:ext_info;type:jsonb"`
+	CreatedAt                  time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt                  time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt                  gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (Article) TableName() string { return "article" }

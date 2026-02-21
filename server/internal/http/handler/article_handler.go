@@ -3,12 +3,14 @@ package handler
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/jinzhu/copier"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
 	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
@@ -24,14 +26,16 @@ type ArticleHandler struct {
 	contentRepo content.Repository
 	commentRepo domaincomment.CommentRepository
 	userRepo    identity.Repository
+	apCfgSvc    *activitypubconfig.Service
 }
 
-func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository) *ArticleHandler {
+func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository, apCfgSvc *activitypubconfig.Service) *ArticleHandler {
 	return &ArticleHandler{
 		svc:         svc,
 		contentRepo: contentRepo,
 		commentRepo: commentRepo,
 		userRepo:    userRepo,
+		apCfgSvc:    apCfgSvc,
 	}
 }
 
@@ -644,6 +648,9 @@ func (h *ArticleHandler) toArticleResp(ctx context.Context, article *content.Art
 	resp.TOC = mapTOCNodes(article.TOC)
 	resp.ExtInfo = jsonRawFromBytes(article.ExtInfo)
 	resp.AllowComment = h.allowCommentByAreaID(ctx, article.CommentID)
+	fediverseReplyURL, fediverseObjectURL := h.buildFediverseReplyLinks(ctx, article)
+	resp.FediverseReplyURL = fediverseReplyURL
+	resp.FediverseObjectURL = fediverseObjectURL
 
 	if len(tags) > 0 {
 		resp.Tags = make([]contract.TagResp, len(tags))
@@ -749,6 +756,71 @@ func (h *ArticleHandler) allowCommentByAreaID(ctx context.Context, areaID *int64
 	}
 	return !area.IsClosed
 }
+
+func (h *ArticleHandler) buildFediverseReplyLinks(ctx context.Context, article *content.Article) (*string, *string) {
+	if h.apCfgSvc == nil || article == nil {
+		return nil, nil
+	}
+	settings, err := h.apCfgSvc.Settings(ctx)
+	if err != nil || !settings.Enabled {
+		return nil, nil
+	}
+	baseURL := strings.TrimRight(strings.TrimSpace(settings.InstanceURL), "/")
+	if baseURL == "" {
+		return nil, nil
+	}
+	shortURL := strings.Trim(strings.TrimSpace(article.ShortURL), "/")
+	if shortURL == "" {
+		return nil, nil
+	}
+
+	articleURL := baseURL + "/posts/" + shortURL
+	objectURL := ""
+	if article.ActivityPubObjectID != nil {
+		objectURL = strings.TrimSpace(*article.ActivityPubObjectID)
+	}
+	if objectURL == "" {
+		objectURL = baseURL + "/ap/objects/article-" + strconv.FormatInt(article.ID, 10)
+	}
+	var objectPtr *string
+	if strings.TrimSpace(objectURL) != "" {
+		objectPtr = &objectURL
+	}
+
+	replyTemplate := strings.TrimSpace(settings.FediverseReplyTemplate)
+	if replyTemplate == "" {
+		return nil, objectPtr
+	}
+	replyURL := buildFediverseReplyURL(replyTemplate, articleURL, objectURL)
+	replyURL = strings.TrimSpace(replyURL)
+	if replyURL == "" {
+		return nil, objectPtr
+	}
+	return &replyURL, objectPtr
+}
+
+func buildFediverseReplyURL(template string, articleURL string, objectURL string) string {
+	tpl := strings.TrimSpace(template)
+	if tpl == "" {
+		return ""
+	}
+	encodedArticle := url.QueryEscape(strings.TrimSpace(articleURL))
+	encodedObject := url.QueryEscape(strings.TrimSpace(objectURL))
+	replaced := false
+	if strings.Contains(tpl, "{url}") {
+		tpl = strings.ReplaceAll(tpl, "{url}", encodedArticle)
+		replaced = true
+	}
+	if strings.Contains(tpl, "{object}") {
+		tpl = strings.ReplaceAll(tpl, "{object}", encodedObject)
+		replaced = true
+	}
+	if replaced {
+		return tpl
+	}
+	return tpl + encodedArticle
+}
+
 func mapTOCNodes(nodes []content.TOCNode) []contract.TOCNode {
 	result := make([]contract.TOCNode, len(nodes))
 	for i, node := range nodes {

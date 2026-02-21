@@ -5,6 +5,7 @@
 	interface Props {
 		commentAreaId?: number | null;
 		commentsCount?: number;
+		fediverseReplyUrl?: string | null;
 		containerClass?: string;
 		fallbackText?: string;
 		fallbackSize?: string;
@@ -14,6 +15,7 @@
 	let {
 		commentAreaId = null,
 		commentsCount = 0,
+		fediverseReplyUrl = null,
 		containerClass = '',
 		fallbackText = '评论区在赶来的路上...',
 		fallbackSize = 'w-8 h-8',
@@ -32,7 +34,8 @@
 			loader={() => import('$lib/features/comment/components/CommentAreaClient.svelte')}
 			loaderProps={{
 				areaId: commentAreaId,
-				commentsCount
+				commentsCount,
+				fediverseReplyUrl
 			}}
 			fallback={commentFallback}
 		/>

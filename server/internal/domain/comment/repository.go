@@ -26,6 +26,7 @@ type CommentRepository interface {
 	GetAreaByID(ctx context.Context, id int64) (*CommentArea, error)
 	SetAreaClosed(ctx context.Context, areaID int64, isClosed bool) error
 	FindByID(ctx context.Context, id int64) (*Comment, error)
+	FindByFederatedObjectID(ctx context.Context, objectID string) (*Comment, error)
 	ListPublicByAreaID(ctx context.Context, options PublicListOptions) ([]*Comment, error)
 	ListForAdmin(ctx context.Context, options AdminListOptions) ([]*Comment, int64, error)
 	Create(ctx context.Context, comment *Comment) error

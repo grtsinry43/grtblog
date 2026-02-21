@@ -97,3 +97,35 @@ type FederationInstanceDetailResp struct {
 	CreatedAt       string  `json:"created_at"`
 	UpdatedAt       string  `json:"updated_at"`
 }
+
+type FederationActivityPubPublishResp struct {
+	ActivityID   string   `json:"activity_id"`
+	ObjectID     string   `json:"object_id"`
+	SourceType   string   `json:"source_type"`
+	SourceID     int64    `json:"source_id"`
+	Deliveries   int      `json:"deliveries"`
+	SuccessCount int      `json:"success_count"`
+	FailureCount int      `json:"failure_count"`
+	FailedTarget []string `json:"failed_target,omitempty"`
+	PublishedAt  string   `json:"published_at"`
+}
+
+type FederationActivityPubFollowerResp struct {
+	ID                int64   `json:"id"`
+	ActorID           string  `json:"actor_id"`
+	InboxURL          string  `json:"inbox_url"`
+	SharedInboxURL    *string `json:"shared_inbox_url,omitempty"`
+	PreferredUsername *string `json:"preferred_username,omitempty"`
+	DisplayName       *string `json:"display_name,omitempty"`
+	Status            string  `json:"status"`
+	FollowedAt        string  `json:"followed_at"`
+	LastSeenAt        *string `json:"last_seen_at,omitempty"`
+	UpdatedAt         string  `json:"updated_at"`
+}
+
+type FederationActivityPubFollowerListResp struct {
+	Items []FederationActivityPubFollowerResp `json:"items"`
+	Total int64                               `json:"total"`
+	Page  int                                 `json:"page"`
+	Size  int                                 `json:"size"`
+}

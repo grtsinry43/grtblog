@@ -29,6 +29,10 @@ export type CommentCreateResponse = {
 	isViewed: boolean;
 	isTop: boolean;
 	isMy: boolean;
+	isFederated?: boolean;
+	federatedProtocol?: string | null;
+	federatedActor?: string | null;
+	canReply: boolean;
 	status: string;
 	parentId?: number | null;
 	createdAt: string;
@@ -53,6 +57,10 @@ export type CommentNode = {
 	isViewed: boolean;
 	isTop: boolean;
 	isMy: boolean;
+	isFederated?: boolean;
+	federatedProtocol?: string | null;
+	federatedActor?: string | null;
+	canReply: boolean;
 	status: string;
 	parentId?: number | null;
 	createdAt: string;

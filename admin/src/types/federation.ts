@@ -131,3 +131,41 @@ export interface FederationInstanceListReq {
     pageSize?: number
     keyword?: string
 }
+
+export interface FederationActivityPubPublishReq {
+    source_type: 'article' | 'moment' | 'thinking'
+    source_id: number
+    summary?: string
+}
+
+export interface FederationActivityPubPublishResp {
+    activity_id: string
+    object_id: string
+    source_type: string
+    source_id: number
+    deliveries: number
+    success_count: number
+    failure_count: number
+    failed_target?: string[]
+    published_at: string
+}
+
+export interface FederationActivityPubFollowerResp {
+    id: number
+    actor_id: string
+    inbox_url: string
+    shared_inbox_url?: string
+    preferred_username?: string
+    display_name?: string
+    status: string
+    followed_at: string
+    last_seen_at?: string
+    updated_at: string
+}
+
+export interface FederationActivityPubFollowerListResp {
+    items: FederationActivityPubFollowerResp[]
+    total: number
+    page: number
+    size: number
+}

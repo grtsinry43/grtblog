@@ -531,23 +531,25 @@ func (r *ContentRepository) CreateArticle(ctx context.Context, article *content.
 	}
 
 	articleModel := &model.Article{
-		Title:       article.Title,
-		Summary:     article.Summary,
-		AISummary:   article.AISummary,
-		LeadIn:      article.LeadIn,
-		TOC:         tocBytes,
-		Content:     article.Content,
-		ContentHash: article.ContentHash,
-		AuthorID:    article.AuthorID,
-		Cover:       article.Cover,
-		CategoryID:  article.CategoryID,
-		ShortURL:    article.ShortURL,
-		IsPublished: article.IsPublished,
-		IsTop:       article.IsTop,
-		IsHot:       article.IsHot,
-		IsOriginal:  article.IsOriginal,
-		ExtInfo:     article.ExtInfo,
-		CreatedAt:   article.CreatedAt,
+		Title:                      article.Title,
+		Summary:                    article.Summary,
+		AISummary:                  article.AISummary,
+		LeadIn:                     article.LeadIn,
+		TOC:                        tocBytes,
+		Content:                    article.Content,
+		ContentHash:                article.ContentHash,
+		AuthorID:                   article.AuthorID,
+		Cover:                      article.Cover,
+		CategoryID:                 article.CategoryID,
+		ShortURL:                   article.ShortURL,
+		ActivityPubObjectID:        article.ActivityPubObjectID,
+		ActivityPubLastPublishedAt: article.ActivityPubLastPublishedAt,
+		IsPublished:                article.IsPublished,
+		IsTop:                      article.IsTop,
+		IsHot:                      article.IsHot,
+		IsOriginal:                 article.IsOriginal,
+		ExtInfo:                    article.ExtInfo,
+		CreatedAt:                  article.CreatedAt,
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -614,6 +616,23 @@ func (r *ContentRepository) GetArticleByShortURL(ctx context.Context, shortURL s
 	return r.modelToArticle(&articleModel), nil
 }
 
+// GetArticleByActivityPubObjectID 根据 ActivityPub Object ID 获取文章
+func (r *ContentRepository) GetArticleByActivityPubObjectID(ctx context.Context, objectID string) (*content.Article, error) {
+	objectID = strings.TrimSpace(objectID)
+	if objectID == "" {
+		return nil, content.ErrArticleNotFound
+	}
+	var articleModel model.Article
+	result := r.db.WithContext(ctx).Where("activitypub_object_id = ?", objectID).Limit(1).Find(&articleModel)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, content.ErrArticleNotFound
+	}
+	return r.modelToArticle(&articleModel), nil
+}
+
 // UpdateArticle 更新文章
 func (r *ContentRepository) UpdateArticle(ctx context.Context, article *content.Article) error {
 	tocBytes, err := tocToBytes(article.TOC)
@@ -623,22 +642,24 @@ func (r *ContentRepository) UpdateArticle(ctx context.Context, article *content.
 
 	now := time.Now()
 	updates := map[string]any{
-		"title":        article.Title,
-		"summary":      article.Summary,
-		"ai_summary":   article.AISummary,
-		"lead_in":      article.LeadIn,
-		"toc":          tocBytes,
-		"content":      article.Content,
-		"content_hash": article.ContentHash,
-		"category_id":  article.CategoryID,
-		"cover":        article.Cover,
-		"short_url":    article.ShortURL,
-		"is_published": article.IsPublished,
-		"is_top":       article.IsTop,
-		"is_hot":       article.IsHot,
-		"is_original":  article.IsOriginal,
-		"ext_info":     article.ExtInfo,
-		"updated_at":   now,
+		"title":                         article.Title,
+		"summary":                       article.Summary,
+		"ai_summary":                    article.AISummary,
+		"lead_in":                       article.LeadIn,
+		"toc":                           tocBytes,
+		"content":                       article.Content,
+		"content_hash":                  article.ContentHash,
+		"category_id":                   article.CategoryID,
+		"cover":                         article.Cover,
+		"short_url":                     article.ShortURL,
+		"activitypub_object_id":         article.ActivityPubObjectID,
+		"activitypub_last_published_at": article.ActivityPubLastPublishedAt,
+		"is_published":                  article.IsPublished,
+		"is_top":                        article.IsTop,
+		"is_hot":                        article.IsHot,
+		"is_original":                   article.IsOriginal,
+		"ext_info":                      article.ExtInfo,
+		"updated_at":                    now,
 	}
 	if err := r.db.WithContext(ctx).
 		Model(&model.Article{}).
@@ -1369,27 +1390,29 @@ func (r *ContentRepository) modelToArticle(am *model.Article) *content.Article {
 	}
 
 	return &content.Article{
-		ID:          am.ID,
-		Title:       am.Title,
-		Summary:     am.Summary,
-		AISummary:   am.AISummary,
-		LeadIn:      am.LeadIn,
-		TOC:         toc,
-		Content:     am.Content,
-		ContentHash: am.ContentHash,
-		AuthorID:    am.AuthorID,
-		Cover:       am.Cover,
-		CategoryID:  am.CategoryID,
-		CommentID:   am.CommentID,
-		ShortURL:    am.ShortURL,
-		IsPublished: am.IsPublished,
-		IsTop:       am.IsTop,
-		IsHot:       am.IsHot,
-		IsOriginal:  am.IsOriginal,
-		ExtInfo:     am.ExtInfo,
-		CreatedAt:   am.CreatedAt,
-		UpdatedAt:   am.UpdatedAt,
-		DeletedAt:   timeToTimePtr(am.DeletedAt.Time),
+		ID:                         am.ID,
+		Title:                      am.Title,
+		Summary:                    am.Summary,
+		AISummary:                  am.AISummary,
+		LeadIn:                     am.LeadIn,
+		TOC:                        toc,
+		Content:                    am.Content,
+		ContentHash:                am.ContentHash,
+		AuthorID:                   am.AuthorID,
+		Cover:                      am.Cover,
+		CategoryID:                 am.CategoryID,
+		CommentID:                  am.CommentID,
+		ShortURL:                   am.ShortURL,
+		ActivityPubObjectID:        am.ActivityPubObjectID,
+		ActivityPubLastPublishedAt: am.ActivityPubLastPublishedAt,
+		IsPublished:                am.IsPublished,
+		IsTop:                      am.IsTop,
+		IsHot:                      am.IsHot,
+		IsOriginal:                 am.IsOriginal,
+		ExtInfo:                    am.ExtInfo,
+		CreatedAt:                  am.CreatedAt,
+		UpdatedAt:                  am.UpdatedAt,
+		DeletedAt:                  timeToTimePtr(am.DeletedAt.Time),
 	}
 }
 

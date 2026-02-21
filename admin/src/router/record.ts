@@ -369,6 +369,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         },
         component: 'federation/settings',
       },
+      {
+        path: 'activitypub-settings',
+        name: 'activityPubSettings',
+        label: 'ActivityPub设置',
+        icon: 'iconify ph--globe-hemisphere-west',
+        meta: {
+          componentName: 'ActivityPubSettings',
+          showTab: true,
+        },
+        component: 'activitypub/settings',
+      },
     ],
   },
   {
