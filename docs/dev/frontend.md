@@ -101,6 +101,14 @@ lib/features/post/components/       <- 业务组件
 - **字体**：Sans / Serif / Mono 三套字体
 - **样式优先使用 Tailwind 类名**；复用场景可用 `@apply`
 
+## 模型数据流（svatoms）
+
+项目使用作者编写的 `svatoms` 库管理页面级数据流，通过 `createModelDataContext` 创建 context，在页面 `mountModelData` 挂载、子组件 `selectModelData` 消费。详见 [svatoms 数据流](/dev/svatoms)。
+
+## Markdown 渲染（svmarkdown）
+
+项目使用作者编写的 `svmarkdown` 库将 Markdown 解析为 AST 并以 Svelte 组件树渲染，所有 Markdown 元素均可映射到自定义组件。详见 [svmarkdown 渲染](/dev/svmarkdown)。
+
 ## 共享 Markdown 组件
 
 `shared/markdown/components.ts` 定义了自定义 Markdown 组件（相册、卡片等），**Admin 和 Web 共用**。修改时两端都需要适配。
