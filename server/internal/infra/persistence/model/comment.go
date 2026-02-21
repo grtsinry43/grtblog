@@ -20,28 +20,33 @@ type CommentArea struct {
 func (CommentArea) TableName() string { return "comment_area" }
 
 type Comment struct {
-	ID        int64          `gorm:"column:id;primaryKey"`
-	AreaID    int64          `gorm:"column:area_id;not null"`
-	Content   string         `gorm:"column:content;type:text;not null"`
-	AuthorID  *int64         `gorm:"column:author_id"`
-	VisitorID string         `gorm:"column:visitor_id;size:255"`
-	NickName  string         `gorm:"column:nick_name;size:45"`
-	IP        string         `gorm:"column:ip;size:45"`
-	Location  string         `gorm:"column:location;size:255"`
-	Platform  string         `gorm:"column:platform;size:45"`
-	Browser   string         `gorm:"column:browser;size:45"`
-	Email     string         `gorm:"column:email;size:255"`
-	Website   string         `gorm:"column:website;size:255"`
-	IsOwner   bool           `gorm:"column:is_owner"`
-	IsFriend  bool           `gorm:"column:is_friend"`
-	IsAuthor  bool           `gorm:"column:is_author"`
-	IsViewed  bool           `gorm:"column:is_viewed"`
-	IsTop     bool           `gorm:"column:is_top"`
-	Status    string         `gorm:"column:status;size:20;not null"`
-	ParentID  *int64         `gorm:"column:parent_id"`
-	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time      `gorm:"column:updated_at;autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	ID                int64          `gorm:"column:id;primaryKey"`
+	AreaID            int64          `gorm:"column:area_id;not null"`
+	Content           string         `gorm:"column:content;type:text;not null"`
+	AuthorID          *int64         `gorm:"column:author_id"`
+	VisitorID         string         `gorm:"column:visitor_id;size:255"`
+	NickName          string         `gorm:"column:nick_name;size:45"`
+	IP                string         `gorm:"column:ip;size:45"`
+	Location          string         `gorm:"column:location;size:255"`
+	Platform          string         `gorm:"column:platform;size:45"`
+	Browser           string         `gorm:"column:browser;size:45"`
+	Email             string         `gorm:"column:email;size:255"`
+	Website           string         `gorm:"column:website;size:255"`
+	IsOwner           bool           `gorm:"column:is_owner"`
+	IsFriend          bool           `gorm:"column:is_friend"`
+	IsAuthor          bool           `gorm:"column:is_author"`
+	IsViewed          bool           `gorm:"column:is_viewed"`
+	IsTop             bool           `gorm:"column:is_top"`
+	IsFederated       bool           `gorm:"column:is_federated;not null"`
+	FederatedProtocol string         `gorm:"column:federated_protocol;size:20"`
+	FederatedActor    string         `gorm:"column:federated_actor;size:500"`
+	FederatedObjectID string         `gorm:"column:federated_object_id;size:500"`
+	AllowLocalReply   bool           `gorm:"column:allow_local_reply;not null"`
+	Status            string         `gorm:"column:status;size:20;not null"`
+	ParentID          *int64         `gorm:"column:parent_id"`
+	CreatedAt         time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt         time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt         gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (Comment) TableName() string { return "comment" }

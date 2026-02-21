@@ -4,29 +4,31 @@ import "time"
 
 // ArticleResp 文章响应。
 type ArticleResp struct {
-	ID           int64        `json:"id"`
-	Title        string       `json:"title"`
-	Summary      string       `json:"summary"`
-	AISummary    *string      `json:"aiSummary,omitempty"`
-	LeadIn       *string      `json:"leadIn,omitempty"`
-	TOC          []TOCNode    `json:"toc,omitempty"`
-	Content      string       `json:"content"`
-	ContentHash  string       `json:"contentHash"`
-	AuthorID     int64        `json:"authorId"`
-	Cover        *string      `json:"cover,omitempty"`
-	CategoryID   *int64       `json:"categoryId,omitempty"`
-	CommentID    *int64       `json:"commentAreaId,omitempty"`
-	ShortURL     string       `json:"shortUrl"`
-	IsPublished  bool         `json:"isPublished"`
-	IsTop        bool         `json:"isTop"`
-	IsHot        bool         `json:"isHot"`
-	AllowComment bool         `json:"allowComment"`
-	IsOriginal   bool         `json:"isOriginal"`
-	ExtInfo      *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
-	Tags         []TagResp    `json:"tags,omitempty"`
-	Metrics      *MetricsResp `json:"metrics,omitempty"`
-	CreatedAt    time.Time    `json:"createdAt"`
-	UpdatedAt    time.Time    `json:"updatedAt"`
+	ID                 int64        `json:"id"`
+	Title              string       `json:"title"`
+	Summary            string       `json:"summary"`
+	AISummary          *string      `json:"aiSummary,omitempty"`
+	LeadIn             *string      `json:"leadIn,omitempty"`
+	TOC                []TOCNode    `json:"toc,omitempty"`
+	Content            string       `json:"content"`
+	ContentHash        string       `json:"contentHash"`
+	AuthorID           int64        `json:"authorId"`
+	Cover              *string      `json:"cover,omitempty"`
+	CategoryID         *int64       `json:"categoryId,omitempty"`
+	CommentID          *int64       `json:"commentAreaId,omitempty"`
+	ShortURL           string       `json:"shortUrl"`
+	FediverseReplyURL  *string      `json:"fediverseReplyUrl,omitempty"`
+	FediverseObjectURL *string      `json:"fediverseObjectUrl,omitempty"`
+	IsPublished        bool         `json:"isPublished"`
+	IsTop              bool         `json:"isTop"`
+	IsHot              bool         `json:"isHot"`
+	AllowComment       bool         `json:"allowComment"`
+	IsOriginal         bool         `json:"isOriginal"`
+	ExtInfo            *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
+	Tags               []TagResp    `json:"tags,omitempty"`
+	Metrics            *MetricsResp `json:"metrics,omitempty"`
+	CreatedAt          time.Time    `json:"createdAt"`
+	UpdatedAt          time.Time    `json:"updatedAt"`
 }
 
 // TOCNode 目录节点。

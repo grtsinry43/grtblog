@@ -53,27 +53,29 @@ type MomentTopic struct {
 }
 
 type Article struct {
-	ID          int64
-	Title       string
-	Summary     string
-	AISummary   *string
-	LeadIn      *string
-	TOC         []TOCNode
-	Content     string
-	ContentHash string
-	AuthorID    int64
-	Cover       *string
-	CategoryID  *int64
-	CommentID   *int64
-	ShortURL    string
-	IsPublished bool
-	IsTop       bool
-	IsHot       bool
-	IsOriginal  bool
-	ExtInfo     []byte
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   *time.Time
+	ID                         int64
+	Title                      string
+	Summary                    string
+	AISummary                  *string
+	LeadIn                     *string
+	TOC                        []TOCNode
+	Content                    string
+	ContentHash                string
+	AuthorID                   int64
+	Cover                      *string
+	CategoryID                 *int64
+	CommentID                  *int64
+	ShortURL                   string
+	ActivityPubObjectID        *string
+	ActivityPubLastPublishedAt *time.Time
+	IsPublished                bool
+	IsTop                      bool
+	IsHot                      bool
+	IsOriginal                 bool
+	ExtInfo                    []byte
+	CreatedAt                  time.Time
+	UpdatedAt                  time.Time
+	DeletedAt                  *time.Time
 }
 
 type ArticleMetrics struct {

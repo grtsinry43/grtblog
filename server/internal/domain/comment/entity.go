@@ -13,35 +13,40 @@ type CommentArea struct {
 }
 
 type Comment struct {
-	ID         int64
-	AreaID     int64
-	Content    string
-	AuthorID   *int64
-	VisitorID  *string
-	NickName   *string
-	Avatar     *string
-	IP         *string
-	Location   *string
-	Platform   *string
-	Browser    *string
-	Email      *string
-	Website    *string
-	IsOwner    bool
-	IsFriend   bool
-	IsAuthor   bool
-	IsViewed   bool
-	IsTop      bool
-	IsMy       bool
-	Status     string
-	AreaType   *string
-	AreaName   *string
-	AreaTitle  *string
-	AreaRefID  *int64
-	AreaClosed *bool
-	ParentID   *int64
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  *time.Time
+	ID                int64
+	AreaID            int64
+	Content           string
+	AuthorID          *int64
+	VisitorID         *string
+	NickName          *string
+	Avatar            *string
+	IP                *string
+	Location          *string
+	Platform          *string
+	Browser           *string
+	Email             *string
+	Website           *string
+	IsOwner           bool
+	IsFriend          bool
+	IsAuthor          bool
+	IsViewed          bool
+	IsTop             bool
+	IsMy              bool
+	IsFederated       bool
+	FederatedProtocol *string
+	FederatedActor    *string
+	FederatedObjectID *string
+	CanReply          bool
+	Status            string
+	AreaType          *string
+	AreaName          *string
+	AreaTitle         *string
+	AreaRefID         *int64
+	AreaClosed        *bool
+	ParentID          *int64
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	DeletedAt         *time.Time
 }
 
 type VisitorProfile struct {

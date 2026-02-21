@@ -102,6 +102,25 @@ func (r *CommentRepository) FindByID(ctx context.Context, id int64) (*comment.Co
 	return &entity, nil
 }
 
+func (r *CommentRepository) FindByFederatedObjectID(ctx context.Context, objectID string) (*comment.Comment, error) {
+	objectID = strings.TrimSpace(objectID)
+	if objectID == "" {
+		return nil, comment.ErrCommentNotFound
+	}
+	var rec model.Comment
+	if err := r.db.WithContext(ctx).
+		Where("federated_object_id = ?", objectID).
+		Limit(1).
+		Find(&rec).Error; err != nil {
+		return nil, err
+	}
+	if rec.ID == 0 {
+		return nil, comment.ErrCommentNotFound
+	}
+	entity := mapCommentToDomain(rec)
+	return &entity, nil
+}
+
 func (r *CommentRepository) ListPublicByAreaID(ctx context.Context, options comment.PublicListOptions) ([]*comment.Comment, error) {
 	var recs []model.Comment
 	query := r.db.WithContext(ctx).Unscoped().Where("area_id = ?", options.AreaID)
@@ -1068,30 +1087,39 @@ func mapCommentToDomain(rec model.Comment) comment.Comment {
 	if status == "" {
 		status = comment.CommentStatusApproved
 	}
+	canReply := rec.AllowLocalReply
+	if !rec.IsFederated && !canReply {
+		canReply = true
+	}
 	return comment.Comment{
-		ID:        rec.ID,
-		AreaID:    rec.AreaID,
-		Content:   rec.Content,
-		AuthorID:  rec.AuthorID,
-		VisitorID: toPtr(rec.VisitorID),
-		NickName:  toPtr(rec.NickName),
-		IP:        toPtr(rec.IP),
-		Location:  toPtr(rec.Location),
-		Platform:  toPtr(rec.Platform),
-		Browser:   toPtr(rec.Browser),
-		Email:     toPtr(rec.Email),
-		Website:   toPtr(rec.Website),
-		IsOwner:   rec.IsOwner,
-		IsFriend:  rec.IsFriend,
-		IsAuthor:  rec.IsAuthor,
-		IsViewed:  rec.IsViewed,
-		IsTop:     rec.IsTop,
-		IsMy:      false,
-		Status:    status,
-		ParentID:  rec.ParentID,
-		CreatedAt: rec.CreatedAt,
-		UpdatedAt: rec.UpdatedAt,
-		DeletedAt: timeToPtr(rec.DeletedAt),
+		ID:                rec.ID,
+		AreaID:            rec.AreaID,
+		Content:           rec.Content,
+		AuthorID:          rec.AuthorID,
+		VisitorID:         toPtr(rec.VisitorID),
+		NickName:          toPtr(rec.NickName),
+		IP:                toPtr(rec.IP),
+		Location:          toPtr(rec.Location),
+		Platform:          toPtr(rec.Platform),
+		Browser:           toPtr(rec.Browser),
+		Email:             toPtr(rec.Email),
+		Website:           toPtr(rec.Website),
+		IsOwner:           rec.IsOwner,
+		IsFriend:          rec.IsFriend,
+		IsAuthor:          rec.IsAuthor,
+		IsViewed:          rec.IsViewed,
+		IsTop:             rec.IsTop,
+		IsMy:              false,
+		IsFederated:       rec.IsFederated,
+		FederatedProtocol: toPtr(rec.FederatedProtocol),
+		FederatedActor:    toPtr(rec.FederatedActor),
+		FederatedObjectID: toPtr(rec.FederatedObjectID),
+		CanReply:          canReply,
+		Status:            status,
+		ParentID:          rec.ParentID,
+		CreatedAt:         rec.CreatedAt,
+		UpdatedAt:         rec.UpdatedAt,
+		DeletedAt:         timeToPtr(rec.DeletedAt),
 	}
 }
 
@@ -1100,29 +1128,38 @@ func mapCommentToModel(entity *comment.Comment) model.Comment {
 	if status == "" {
 		status = comment.CommentStatusPending
 	}
+	allowLocalReply := entity.CanReply
+	if !entity.IsFederated && !allowLocalReply {
+		allowLocalReply = true
+	}
 	return model.Comment{
-		ID:        entity.ID,
-		AreaID:    entity.AreaID,
-		Content:   strings.TrimSpace(entity.Content),
-		AuthorID:  entity.AuthorID,
-		VisitorID: toValue(entity.VisitorID),
-		NickName:  toValue(entity.NickName),
-		IP:        toValue(entity.IP),
-		Location:  toValue(entity.Location),
-		Platform:  toValue(entity.Platform),
-		Browser:   toValue(entity.Browser),
-		Email:     toValue(entity.Email),
-		Website:   toValue(entity.Website),
-		IsOwner:   entity.IsOwner,
-		IsFriend:  entity.IsFriend,
-		IsAuthor:  entity.IsAuthor,
-		IsViewed:  entity.IsViewed,
-		IsTop:     entity.IsTop,
-		Status:    status,
-		ParentID:  entity.ParentID,
-		CreatedAt: entity.CreatedAt,
-		UpdatedAt: entity.UpdatedAt,
-		DeletedAt: gorm.DeletedAt{Time: timeToValue(entity.DeletedAt), Valid: entity.DeletedAt != nil},
+		ID:                entity.ID,
+		AreaID:            entity.AreaID,
+		Content:           strings.TrimSpace(entity.Content),
+		AuthorID:          entity.AuthorID,
+		VisitorID:         toValue(entity.VisitorID),
+		NickName:          toValue(entity.NickName),
+		IP:                toValue(entity.IP),
+		Location:          toValue(entity.Location),
+		Platform:          toValue(entity.Platform),
+		Browser:           toValue(entity.Browser),
+		Email:             toValue(entity.Email),
+		Website:           toValue(entity.Website),
+		IsOwner:           entity.IsOwner,
+		IsFriend:          entity.IsFriend,
+		IsAuthor:          entity.IsAuthor,
+		IsViewed:          entity.IsViewed,
+		IsTop:             entity.IsTop,
+		IsFederated:       entity.IsFederated,
+		FederatedProtocol: toValue(entity.FederatedProtocol),
+		FederatedActor:    toValue(entity.FederatedActor),
+		FederatedObjectID: toValue(entity.FederatedObjectID),
+		AllowLocalReply:   allowLocalReply,
+		Status:            status,
+		ParentID:          entity.ParentID,
+		CreatedAt:         entity.CreatedAt,
+		UpdatedAt:         entity.UpdatedAt,
+		DeletedAt:         gorm.DeletedAt{Time: timeToValue(entity.DeletedAt), Valid: entity.DeletedAt != nil},
 	}
 }
 

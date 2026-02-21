@@ -6,6 +6,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	appap "github.com/grtsinry43/grtblog-v2/server/internal/app/activitypub"
+	appapcfg "github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminstats"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminuser"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
@@ -98,9 +101,13 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
 	fedCfgSvc := federationconfig.NewService(fedCfgRepo)
+	apCfgSvc := appapcfg.NewService(fedCfgRepo)
 	fedCfgHandler := handler.NewFederationConfigHandler(fedCfgSvc)
+	activityPubCfgHandler := handler.NewActivityPubConfigHandler(apCfgSvc)
 	admin.Get("/federation/config", fedCfgHandler.ListFederationConfig)
 	admin.Put("/federation/config", fedCfgHandler.UpdateFederationConfig)
+	admin.Get("/activitypub/config", activityPubCfgHandler.ListActivityPubConfig)
+	admin.Put("/activitypub/config", activityPubCfgHandler.UpdateActivityPubConfig)
 
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	instanceRepo := persistence.NewFederationInstanceRepository(deps.DB)
@@ -119,9 +126,24 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		instanceRepo,
 		outbound,
 	)
+	activityPubSvc := appap.NewService(
+		apCfgSvc,
+		persistence.NewActivityPubFollowerRepository(deps.DB),
+		persistence.NewActivityPubOutboxRepository(deps.DB),
+		contentRepo,
+		persistence.NewThinkingRepository(deps.DB),
+		persistence.NewCommentRepository(deps.DB),
+		identityRepo,
+		adminnotification.NewService(persistence.NewAdminNotificationRepository(deps.DB), deps.EventBus),
+	)
+	activityPubAdminHandler := handler.NewActivityPubAdminHandler(activityPubSvc)
 	admin.Post("/federation/friendlinks/request", federationAdminHandler.RequestFriendLink)
 	admin.Post("/federation/citations/request", federationAdminHandler.SendCitation)
 	admin.Post("/federation/mentions/notify", federationAdminHandler.SendMention)
+	admin.Post("/activitypub/publish", activityPubAdminHandler.Publish)
+	admin.Get("/activitypub/followers", activityPubAdminHandler.ListFollowers)
+	admin.Post("/federation/activitypub/publish", activityPubAdminHandler.Publish)
+	admin.Get("/federation/activitypub/followers", activityPubAdminHandler.ListFollowers)
 	admin.Get("/federation/remote/check", federationAdminHandler.CheckRemote)
 	admin.Get("/federation/instances", federationAdminHandler.ListInstances)
 	admin.Get("/federation/instances/:id", federationAdminHandler.GetInstance)

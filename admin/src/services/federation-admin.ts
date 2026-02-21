@@ -3,6 +3,9 @@ import type {
   FederationAdminCitationReq,
   FederationAdminFriendLinkRequestReq,
   FederationAdminMentionReq,
+  FederationActivityPubFollowerListResp,
+  FederationActivityPubPublishReq,
+  FederationActivityPubPublishResp,
   FederationAdminProxyResp,
   FederationAdminRemoteCheckResp,
   FederationInstanceDetailResp,
@@ -99,5 +102,22 @@ export function updateFederationInstanceStatus(id: number | string, status: stri
   return request<void>(`/admin/federation/instances/${id}/status`, {
     method: 'PUT',
     body: { status },
+  })
+}
+
+export function publishFederationActivityPub(payload: FederationActivityPubPublishReq) {
+  return request<FederationActivityPubPublishResp>('/admin/activitypub/publish', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function listFederationActivityPubFollowers(page = 1, pageSize = 20) {
+  return request<FederationActivityPubFollowerListResp>('/admin/activitypub/followers', {
+    method: 'GET',
+    query: {
+      page,
+      pageSize,
+    },
   })
 }
