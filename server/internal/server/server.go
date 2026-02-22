@@ -68,6 +68,11 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		AppName:           cfg.App.Name,
 		EnablePrintRoutes: cfg.App.Env == "development",
 		BodyLimit:         bodyLimit,
+		// Trust local reverse proxy (e.g. nginx on same host) and read real client IP from X-Real-IP.
+		ProxyHeader:             "X-Real-IP",
+		EnableIPValidation:      true,
+		EnableTrustedProxyCheck: true,
+		TrustedProxies:          []string{"127.0.0.1", "::1"},
 
 		// 核心：全局错误处理，自动把业务错误包装成统一响应
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
