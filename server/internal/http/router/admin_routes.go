@@ -66,6 +66,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Get("/visitors/insights", commentHandler.GetAdminVisitorInsights)
 	admin.Get("/visitors/:visitorId", commentHandler.GetAdminVisitorProfile)
 	admin.Put("/comments/viewed", commentHandler.MarkCommentsViewed)
+	admin.Post("/comments/import", commentHandler.ImportComment)
 	admin.Post("/comments/:id/reply", commentHandler.ReplyComment)
 	admin.Put("/comments/:id/status", commentHandler.UpdateCommentStatus)
 	admin.Put("/comments/:id/author", commentHandler.SetCommentAuthor)

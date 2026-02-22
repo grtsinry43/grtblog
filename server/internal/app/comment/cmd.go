@@ -1,5 +1,7 @@
 package comment
 
+import "time"
+
 type CreateCommentLoginCmd struct {
 	AreaID    int64
 	Content   string
@@ -72,4 +74,34 @@ type SetCommentTopCmd struct {
 type MarkCommentsViewedCmd struct {
 	IDs      []int64
 	IsViewed bool
+}
+
+type ImportCommentCmd struct {
+	ID                *int64
+	AreaID            int64
+	Content           string
+	AuthorID          *int64
+	VisitorID         *string
+	NickName          *string
+	IP                *string
+	Location          *string
+	Platform          *string
+	Browser           *string
+	Email             *string
+	Website           *string
+	IsOwner           *bool
+	IsFriend          *bool
+	IsAuthor          *bool
+	IsViewed          *bool
+	IsTop             *bool
+	IsFederated       *bool
+	FederatedProtocol *string
+	FederatedActor    *string
+	FederatedObjectID *string
+	CanReply          *bool
+	Status            *string
+	ParentID          *int64
+	CreatedAt         *time.Time
+	UpdatedAt         *time.Time
+	DeletedAt         *time.Time
 }

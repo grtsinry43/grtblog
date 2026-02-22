@@ -231,6 +231,77 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 	return commentEntity, nil
 }
 
+func (s *Service) ImportComment(ctx context.Context, cmd ImportCommentCmd) (*domaincomment.Comment, error) {
+	if err := s.ensureAreaExists(ctx, cmd.AreaID); err != nil {
+		return nil, err
+	}
+
+	content := strings.TrimSpace(cmd.Content)
+	if content == "" && cmd.DeletedAt == nil {
+		return nil, domaincomment.ErrCommentContentEmpty
+	}
+
+	if cmd.ParentID != nil {
+		parent, err := s.repo.FindByID(ctx, *cmd.ParentID)
+		if err != nil {
+			if errors.Is(err, domaincomment.ErrCommentNotFound) {
+				return nil, domaincomment.ErrCommentParentNotFound
+			}
+			return nil, err
+		}
+		if parent.AreaID != cmd.AreaID {
+			return nil, domaincomment.ErrCommentParentNotFound
+		}
+	}
+
+	status := domaincomment.CommentStatusApproved
+	if cmd.Status != nil {
+		status = normalizeCommentStatus(*cmd.Status)
+		if status == "" {
+			return nil, domaincomment.ErrCommentStatusInvalid
+		}
+	}
+
+	entity := &domaincomment.Comment{
+		AreaID:            cmd.AreaID,
+		Content:           content,
+		AuthorID:          normalizeInt64Ptr(cmd.AuthorID),
+		VisitorID:         normalizePtr(cmd.VisitorID),
+		NickName:          normalizePtr(cmd.NickName),
+		IP:                normalizePtr(cmd.IP),
+		Location:          normalizePtr(cmd.Location),
+		Platform:          normalizePtr(cmd.Platform),
+		Browser:           normalizePtr(cmd.Browser),
+		Email:             normalizePtr(cmd.Email),
+		Website:           normalizePtr(cmd.Website),
+		IsOwner:           boolOrDefault(cmd.IsOwner, false),
+		IsFriend:          boolOrDefault(cmd.IsFriend, false),
+		IsAuthor:          boolOrDefault(cmd.IsAuthor, false),
+		IsViewed:          boolOrDefault(cmd.IsViewed, false),
+		IsTop:             boolOrDefault(cmd.IsTop, false),
+		IsMy:              false,
+		IsFederated:       boolOrDefault(cmd.IsFederated, false),
+		FederatedProtocol: normalizePtr(cmd.FederatedProtocol),
+		FederatedActor:    normalizePtr(cmd.FederatedActor),
+		FederatedObjectID: normalizePtr(cmd.FederatedObjectID),
+		CanReply:          boolOrDefault(cmd.CanReply, true),
+		Status:            status,
+		ParentID:          normalizeInt64Ptr(cmd.ParentID),
+		CreatedAt:         timeOrZero(cmd.CreatedAt),
+		UpdatedAt:         timeOrZero(cmd.UpdatedAt),
+		DeletedAt:         cmd.DeletedAt,
+	}
+
+	if cmd.ID != nil && *cmd.ID > 0 {
+		entity.ID = *cmd.ID
+	}
+
+	if err := s.repo.Create(ctx, entity); err != nil {
+		return nil, err
+	}
+	return entity, nil
+}
+
 func (s *Service) ListPublicComments(ctx context.Context, cmd ListPublicCommentsCmd) (*PublicCommentPage, error) {
 	area, err := s.repo.GetAreaByID(ctx, cmd.AreaID)
 	if err != nil {
@@ -870,6 +941,42 @@ func toPtr(val string) *string {
 func toValue(val *string) string {
 	if val == nil {
 		return ""
+	}
+	return *val
+}
+
+func normalizePtr(val *string) *string {
+	if val == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*val)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
+func normalizeInt64Ptr(val *int64) *int64 {
+	if val == nil {
+		return nil
+	}
+	if *val <= 0 {
+		return nil
+	}
+	v := *val
+	return &v
+}
+
+func boolOrDefault(val *bool, fallback bool) bool {
+	if val == nil {
+		return fallback
+	}
+	return *val
+}
+
+func timeOrZero(val *time.Time) time.Time {
+	if val == nil {
+		return time.Time{}
 	}
 	return *val
 }

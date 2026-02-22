@@ -345,6 +345,33 @@ func (h *CommentHandler) MarkCommentsViewed(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "已标记未读")
 }
 
+// ImportComment godoc
+// @Summary 导入评论（管理端，全字段）
+// @Tags CommentAdmin
+// @Accept json
+// @Produce json
+// @Param request body contract.ImportCommentReq true "评论导入参数"
+// @Success 200 {object} contract.CreateCommentResp
+// @Security JWTAuth
+// @Router /admin/comments/import [post]
+func (h *CommentHandler) ImportComment(c *fiber.Ctx) error {
+	var req contract.ImportCommentReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+
+	var cmd comment.ImportCommentCmd
+	if err := copier.Copy(&cmd, req); err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "请求体映射失败")
+	}
+
+	created, err := h.svc.ImportComment(c.Context(), cmd)
+	if err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage(c, toCreateCommentResp(created), "评论导入成功")
+}
+
 // ReplyComment godoc
 // @Summary 快捷回复评论（管理端）
 // @Tags CommentAdmin
