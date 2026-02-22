@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { postDetailCtx } from '$lib/features/post/context';
 	import { sameMetrics } from './selector-equals';
 	import { formatDateCN } from '$lib/shared/utils/date';
@@ -8,6 +9,7 @@
 	import Badge from '$lib/ui/primitives/badge/Badge.svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import TagList from '$lib/features/tag/components/TagList.svelte';
+	import { buildCategoryPath } from '$lib/shared/utils/content-path';
 
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
@@ -18,7 +20,14 @@
 		equals: sameMetrics
 	});
 	const tagsStore = postDetailCtx.selectModelData((data) => data?.tags ?? []);
-	const categoryNameStore = postDetailCtx.selectModelData((data) => data?.categoryName ?? '未分类');
+	const categoryNameStore = postDetailCtx.selectModelData((data) => data?.categoryName ?? '');
+	const categoryShortUrlStore = postDetailCtx.selectModelData(
+		(data) => data?.categoryShortUrl ?? ''
+	);
+	const categoryLabelStore = $derived.by(() => {
+		const categoryName = ($categoryNameStore || '').trim();
+		return categoryName || '未分类';
+	});
 
 	function goBack() {
 		history.back();
@@ -43,10 +52,19 @@
 
 	<div class="space-y-4">
 		<div class="flex items-center gap-3">
-			<Badge variant="soft">专题</Badge>
-			<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase"
-				>{$categoryNameStore}</span
-			>
+			<Badge variant="soft">文章</Badge>
+			{#if $categoryShortUrlStore}
+				<a
+					href={resolve(buildCategoryPath($categoryShortUrlStore))}
+					class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
+				>
+					{categoryLabelStore}
+				</a>
+			{:else}
+				<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase"
+					>{categoryLabelStore}</span
+				>
+			{/if}
 		</div>
 
 		<h1

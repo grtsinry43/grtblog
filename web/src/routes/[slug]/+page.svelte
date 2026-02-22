@@ -7,20 +7,19 @@
 	import ContentViewTracker from '$lib/features/analytics/components/ContentViewTracker.svelte';
 
 	let { data }: { data: PageData } = $props();
-	let pageModel = $state<PageDetailModel | null>(null);
+	let pageModel = $state<PageDetailModel>(data.page);
 
 	$effect(() => {
-		pageModel = data.page ?? null;
-	});
-
-	$effect(() => {
-		if (!browser || !pageModel?.id) return;
+		if (!browser) return;
 
 		const liveUpdate = createPageLiveUpdate({
-			getId: () => pageModel?.id ?? null,
-			getContentHash: () => pageModel?.contentHash ?? null,
+			getId: () => pageModel.id,
+			getContentHash: () => pageModel.contentHash,
 			updatePage: (updater) => {
-				pageModel = updater(pageModel);
+				const next = updater(pageModel);
+				if (next) {
+					pageModel = next;
+				}
 			}
 		});
 		liveUpdate.start(pageModel.id);
@@ -29,4 +28,4 @@
 </script>
 
 <PageDetail page={pageModel} />
-<ContentViewTracker contentType="page" contentId={pageModel?.id ?? 0} />
+<ContentViewTracker contentType="page" contentId={pageModel.id} />

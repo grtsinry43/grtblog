@@ -25,6 +25,7 @@
 </script>
 
 <div
+	id="thinking-{item.id}"
 	class="flex gap-4 py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 hover:bg-ink-50/30 dark:hover:bg-white/5 -mx-4 px-4 sm:mx-0 sm:px-0 transition-colors rounded-default"
 >
 	<!-- Avatar Column -->

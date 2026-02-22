@@ -289,6 +289,14 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <Toaster />
+{#snippet globalNotificationFallback()}
+	<div></div>
+{/snippet}
+<QueryRoot
+	loader={() =>
+		import('$lib/features/global-notification/components/GlobalNotificationClient.svelte')}
+	fallback={globalNotificationFallback}
+/>
 {#snippet authFallback()}
 	<div></div>
 {/snippet}

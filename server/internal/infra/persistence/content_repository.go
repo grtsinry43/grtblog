@@ -701,29 +701,58 @@ func (r *ContentRepository) DeleteArticle(ctx context.Context, id int64) error {
 }
 
 // SyncHotArticles 根据指标同步热门文章状态
-func (r *ContentRepository) SyncHotArticles(ctx context.Context, vT, lT, cT int64) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 1. 将符合条件且当前非热门的文章设为热门
-		err := tx.Exec(`
-			UPDATE article 
-			SET is_hot = true 
-			WHERE id IN (
-				SELECT article_id FROM article_metrics 
-				WHERE views >= ? OR likes >= ? OR comments >= ?
-			) AND is_hot = false`, vT, lT, cT).Error
-		if err != nil {
+func (r *ContentRepository) SyncHotArticles(ctx context.Context, vT, lT, cT int64) ([]content.HotArticleMarked, error) {
+	result := make([]content.HotArticleMarked, 0)
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		hotMetrics := tx.Model(&model.ArticleMetrics{}).
+			Select("article_id").
+			Where("views >= ? OR likes >= ? OR comments >= ?", vT, lT, cT)
+
+		var promoteRows []struct {
+			ID          int64  `gorm:"column:id"`
+			Title       string `gorm:"column:title"`
+			ShortURL    string `gorm:"column:short_url"`
+			IsPublished bool   `gorm:"column:is_published"`
+		}
+		if err := tx.Model(&model.Article{}).
+			Select("id", "title", "short_url", "is_published").
+			Where("id IN (?)", hotMetrics).
+			Where("is_hot = ?", false).
+			Find(&promoteRows).Error; err != nil {
 			return err
 		}
 
-		// 2. 将不再符合条件且当前是热门的文章取消热门
-		return tx.Exec(`
-			UPDATE article 
-			SET is_hot = false 
-			WHERE id NOT IN (
-				SELECT article_id FROM article_metrics 
-				WHERE views >= ? OR likes >= ? OR comments >= ?
-			) AND is_hot = true`, vT, lT, cT).Error
+		if len(promoteRows) > 0 {
+			ids := make([]int64, 0, len(promoteRows))
+			for _, row := range promoteRows {
+				ids = append(ids, row.ID)
+				result = append(result, content.HotArticleMarked{
+					ID:          row.ID,
+					Title:       row.Title,
+					ShortURL:    row.ShortURL,
+					IsPublished: row.IsPublished,
+				})
+			}
+			if err := tx.Model(&model.Article{}).
+				Where("id IN ?", ids).
+				Updates(map[string]any{"is_hot": true, "updated_at": time.Now()}).Error; err != nil {
+				return err
+			}
+		}
+
+		// 将不再满足阈值且当前是热门的文章取消热门状态
+		if err := tx.Model(&model.Article{}).
+			Where("id NOT IN (?)", hotMetrics).
+			Where("is_hot = ?", true).
+			Updates(map[string]any{"is_hot": false, "updated_at": time.Now()}).Error; err != nil {
+			return err
+		}
+		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // ListArticles 获取文章列表（内部使用，包含未发布）

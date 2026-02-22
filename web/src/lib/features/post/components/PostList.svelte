@@ -14,6 +14,14 @@
 		size: number;
 	};
 
+	interface Props {
+		basePath?: string;
+		title?: string;
+		description?: string;
+	}
+
+	let { basePath = '/posts', title = '文章归档', description = '按时间顺序排布的思考、笔记与技术沉淀。在这里，你可以找到所有历史文章的快照。' }: Props = $props();
+
 	const postsStore = postListCtx.selectModelData((state) => state?.posts ?? []);
 	const totalStore = postListCtx.selectModelData((state) => state?.pagination?.total ?? 0);
 	const pageStore = postListCtx.selectModelData((state) => state?.pagination?.page ?? 1);
@@ -69,7 +77,7 @@
 
 	const onPageChange = (page: number) => {
 		const safePage = Number.isFinite(page) && page > 1 ? page : 1;
-		goto(resolve(safePage === 1 ? '/posts/' : `/posts/page/${safePage}/`));
+		goto(resolve(safePage === 1 ? `${basePath}/` : `${basePath}/page/${safePage}/`));
 	};
 </script>
 
@@ -82,14 +90,14 @@
 			<h1
 				class="font-serif text-2xl sm:text-4xl font-medium tracking-tight text-ink-950 dark:text-ink-50"
 			>
-				文章归档
+				{title}
 			</h1>
 			<span class="hidden sm:inline-block h-px w-12 bg-jade-500/50"></span>
 		</div>
 		<p
 			class="max-w-2xl text-sm sm:text-base leading-relaxed text-ink-500 dark:text-ink-400 font-normal"
 		>
-			按时间顺序排布的思考、笔记与技术沉淀。在这里，你可以找到所有历史文章的快照。
+			{description}
 		</p>
 	</header>
 

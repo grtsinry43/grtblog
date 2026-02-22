@@ -76,3 +76,15 @@ func (e ArticleDeleted) Name() string { return "article.deleted" }
 func (e ArticleDeleted) OccurredAt() time.Time {
 	return e.At
 }
+
+type ArticleHotMarked struct {
+	ID       int64
+	Title    string
+	ShortURL string
+	At       time.Time
+}
+
+func (e ArticleHotMarked) Name() string { return "article.hot_marked" }
+func (e ArticleHotMarked) OccurredAt() time.Time {
+	return e.At
+}

@@ -3,7 +3,7 @@
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { ArrowRight } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
-	import { buildMomentPath } from '$lib/shared/utils/content-path';
+	import { buildMomentPath, buildColumnPath } from '$lib/shared/utils/content-path';
 
 	interface Props {
 		moment: MomentSummary;
@@ -18,15 +18,10 @@
 		() =>
 			`${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
 	);
-
-	function getSeason(date: Date) {
-		const month = date.getMonth() + 1;
-		if (month >= 3 && month <= 5) return '春';
-		if (month >= 6 && month <= 8) return '夏';
-		if (month >= 9 && month <= 11) return '秋';
-		return '冬';
-	}
-	const season = $derived(getSeason(dateObj));
+	const columnLabel = $derived.by(() => {
+		const name = (moment.columnName || '').trim();
+		return name || '未分类手记';
+	});
 
 	// Navigate to detail
 	const handleClick = () => {
@@ -66,11 +61,21 @@
 			class="flex-1 flex flex-col items-center gap-4 [writing-mode:vertical-rl] text-center select-none"
 		>
 			<!-- Season Stamp -->
-			<span
-				class="font-serif text-[10px] text-cinnabar-500 border border-cinnabar-500/30 px-1 py-2 rounded-sm tracking-widest opacity-70 group-hover:opacity-100 transition-opacity"
-			>
-				{season}
-			</span>
+			{#if moment.columnShortUrl}
+				<a
+					href={resolve(buildColumnPath(moment.columnShortUrl))}
+					class="font-serif text-[10px] text-cinnabar-500 border border-cinnabar-500/30 px-1 py-2 rounded-sm tracking-widest opacity-70 hover:opacity-100 transition-opacity hover:bg-cinnabar-500/10"
+					onclick={(e) => e.stopPropagation()}
+				>
+					{columnLabel}
+				</a>
+			{:else}
+				<span
+					class="font-serif text-[10px] text-cinnabar-500 border border-cinnabar-500/30 px-1 py-2 rounded-sm tracking-widest opacity-70 group-hover:opacity-100 transition-opacity"
+				>
+					{columnLabel}
+				</span>
+			{/if}
 
 			<!-- Title -->
 			<h3

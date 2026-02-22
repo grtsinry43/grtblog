@@ -10,12 +10,11 @@
 		moment: MomentDetail;
 		dateStr: string;
 		dateNo: string;
-		column: string;
 		onActiveAnchorChange: (anchor: string | null) => void;
 		onContentRootChange: (node: HTMLElement | null) => void;
 	}
 
-	let { moment, dateStr, dateNo, column, onActiveAnchorChange, onContentRootChange }: Props =
+	let { moment, dateStr, dateNo, onActiveAnchorChange, onContentRootChange }: Props =
 		$props();
 </script>
 
@@ -35,7 +34,7 @@
 				<div class="flex items-center gap-3 text-xs font-mono text-ink-800/40 dark:text-ink-200/40">
 					<span>NO. {dateNo}</span>
 					<span>—</span>
-					<span class="font-serif text-cinnabar-500">{column}</span>
+					<span class="font-serif text-cinnabar-500">手记</span>
 				</div>
 				<div class="text-ink-800/40 dark:text-ink-200/40">
 					<Sun size={18} stroke-width={1.5} />

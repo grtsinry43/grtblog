@@ -9,6 +9,7 @@
 	import Textarea from '$lib/ui/primitives/textarea/Textarea.svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
+	import { userStore } from '$lib/shared/stores/userStore';
 	import CommentEmojiPickerClient from './CommentEmojiPickerClient.svelte';
 
 	interface Props {
@@ -20,7 +21,6 @@
 	const queryClient = useQueryClient();
 	let content = $state('');
 	const areaIdStore = commentAreaCtx.selectModelData((data) => data?.areaId ?? 0);
-	const isLoggedInStore = commentAreaCtx.selectModelData((data) => data?.isLoggedIn ?? false);
 	const guestNameStore = commentAreaCtx.selectModelData((data) => data?.guestName ?? '');
 	const guestEmailStore = commentAreaCtx.selectModelData((data) => data?.guestEmail ?? '');
 	const guestSiteStore = commentAreaCtx.selectModelData((data) => data?.guestSite ?? '');
@@ -33,11 +33,15 @@
 	const showReplyingTo = $derived(
 		parentId && $replyingToStore && $replyingToStore.id === parentId ? $replyingToStore : null
 	);
+	const loginDisplayName = $derived(
+		$userStore.userInfo?.nickname || $userStore.userInfo?.username || '已登录用户'
+	);
+	const loginAccount = $derived($userStore.userInfo?.username || '');
 
 	const mutation = createMutation(() => ({
 		mutationFn: async () => {
 			const visitorId = getOrCreateVisitorId();
-			if ($isLoggedInStore) {
+			if ($userStore.isLogin) {
 				return await createCommentLogin(undefined, $areaIdStore, { content, parentId, visitorId });
 			}
 			if (!$guestNameStore || !$guestEmailStore) throw new Error('请填写称呼和邮箱');
@@ -94,19 +98,35 @@
 
 <div class="w-full font-serif text-ink-900 dark:text-ink-100">
 	<!-- User Info / Guest Form -->
-	{#if $isLoggedInStore}
-		<div class="flex gap-5 animate-in slide-in-from-bottom-2 duration-300">
-			<div class="flex-shrink-0 pt-1">
-				<div
-					class="w-10 h-10 rounded-full bg-ink-800 dark:bg-ink-200 text-ink-50 dark:text-ink-900 flex items-center justify-center font-serif font-bold text-sm shadow-inner"
-				>
-					我
-				</div>
+	{#if $userStore.isLogin}
+		<div
+			class="mb-6 flex items-center gap-3 rounded-default border border-ink-200/70 bg-ink-50/70 px-4 py-3 animate-in slide-in-from-bottom-2 duration-300 dark:border-ink-700/60 dark:bg-ink-800/20"
+		>
+			<div class="flex-shrink-0">
+				{#if $userStore.userInfo?.avatar}
+					<img
+						src={$userStore.userInfo.avatar}
+						alt={loginDisplayName}
+						class="h-11 w-11 rounded-full object-cover ring-1 ring-ink-200/70 dark:ring-ink-700/70"
+					/>
+				{:else}
+					<div
+						class="flex h-11 w-11 items-center justify-center rounded-full bg-ink-800 text-sm font-bold text-ink-50 shadow-inner dark:bg-ink-200 dark:text-ink-900"
+					>
+						{loginDisplayName.charAt(0).toUpperCase() || '我'}
+					</div>
+				{/if}
 			</div>
-			<div class="flex-1">
-				<div class="text-xs text-ink-800/50 dark:text-ink-200/50 font-serif mb-3">
-					Writing as <span class="text-ink-900 dark:text-ink-100 font-medium">Guest</span>
+			<div class="min-w-0 flex-1 leading-tight">
+				<div class="text-[11px] tracking-wider text-ink-800/55 dark:text-ink-200/55">账号评论身份</div>
+				<div class="mt-1 truncate text-sm font-medium text-ink-900 dark:text-ink-100">
+					{loginDisplayName}
 				</div>
+				{#if loginAccount}
+					<div class="mt-1 truncate font-mono text-[11px] text-ink-800/55 dark:text-ink-200/55">
+						@{loginAccount}
+					</div>
+				{/if}
 			</div>
 		</div>
 	{:else}

@@ -16,5 +16,6 @@ export const getThinkingList = async (
 		pageSize: String(pageSize)
 	});
 	const result = await api<ThinkingListResponse>(`/thinkings?${query.toString()}`);
-	return result ?? { items: [], total: 0 };
+	const data = result ?? { items: [], total: 0 };
+	return { ...data, page, size: pageSize };
 };

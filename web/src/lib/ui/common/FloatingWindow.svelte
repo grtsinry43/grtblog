@@ -2,7 +2,7 @@
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { draggable } from '$lib/shared/actions/draggable';
 	import { X, Minus, Maximize2, Minimize2 } from 'lucide-svelte';
-	import { scale, fly, fade } from 'svelte/transition';
+	import { scale, fly } from 'svelte/transition';
 	import { backOut, cubicIn, expoOut } from 'svelte/easing';
 	import { tick, type Snippet } from 'svelte';
 
@@ -152,7 +152,7 @@
 		class="floating-window fixed z-[999] bg-white/65 dark:bg-ink-900/60 backdrop-blur-xl noise-surface overflow-hidden
         {isMobile
 			? 'inset-x-0 bottom-0 w-full rounded-t-default border-t border-ink-200/50 dark:border-ink-700/50 shadow-2xl noise-strong'
-			: 'w-[90vw] rounded-default border border-ink-200/50 shadow-float dark:shadow-glass md:min-w-[450px] md:max-w-[92vw] md:resize'}"
+			: 'w-[90vw] rounded-default border border-ink-200/50 dark:border-ink-700/50 shadow-float dark:shadow-glass md:min-w-[450px] md:max-w-[92vw] md:resize'}"
 		class:window-expanded={windowStore.isExpanded && !isMobile}
 		class:window-outside-pulse={outsidePulse && !isMobile}
 		style={windowStyle}

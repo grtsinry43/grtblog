@@ -7,6 +7,8 @@
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { browser } from '$app/environment';
 	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
+	import { userStore } from '$lib/shared/stores/userStore';
+	import { authModalStore } from '$lib/shared/stores/authModalStore';
 
 	let {
 		areaId,
@@ -17,15 +19,13 @@
 		commentsCount?: number;
 		fediverseReplyUrl?: string | null;
 	} = $props();
-	const isLoggedIn = false;
-
 	const createInitialModel = () => ({
 		areaId,
 		comments: [],
 		isLoading: true,
 		isError: false,
 		replyingTo: null,
-		isLoggedIn: false,
+		isLoggedIn: $userStore.isLogin,
 		guestName: '',
 		guestEmail: '',
 		guestSite: '',
@@ -56,10 +56,6 @@
 	const { updateModelData } = commentAreaCtx.useModelActions();
 	const commentAreaModel = commentAreaCtx.selectModelData((data) => data);
 
-	const toggleLogin = () => {
-		updateModelData((prev) => (prev ? { ...prev, isLoggedIn: !prev.isLoggedIn } : prev));
-	};
-
 	const displayCount = $derived(commentsCount);
 
 	$effect(() => {
@@ -77,6 +73,10 @@
 			isClosed: data?.isClosed ?? prev?.isClosed ?? false,
 			requireModeration: data?.requireModeration ?? prev?.requireModeration ?? false
 		}));
+	});
+
+	$effect(() => {
+		updateModelData((prev) => (prev ? { ...prev, isLoggedIn: $userStore.isLogin } : prev));
 	});
 
 	const totalPages = $derived(Math.ceil(($commentAreaModel?.total ?? 0) / pageSize));
@@ -103,6 +103,11 @@
 			copied = false;
 		}
 	};
+
+	const openFediverseReply = () => {
+		if (!browser || !normalizedFediverseReplyUrl) return;
+		window.open(normalizedFediverseReplyUrl, '_blank', 'noopener,noreferrer');
+	};
 </script>
 
 <div class="mt-16 pt-10 border-t border-ink-100 dark:border-ink-800/50" id="comments">
@@ -118,12 +123,18 @@
 					>
 				{/if}
 			</div>
-			<button
-				onclick={toggleLogin}
-				class="text-[10px] text-ink-800/40 dark:text-ink-200/40 hover:text-jade-600 dark:hover:text-jade-400 underline decoration-dotted underline-offset-4 font-serif transition-colors outline-none"
-			>
-				[ {isLoggedIn ? '切换至访客' : '已有账号登录'} ]
-			</button>
+			{#if !$userStore.isLogin}
+				<button
+					onclick={() => authModalStore.open('comment-area')}
+					class="text-[10px] text-ink-800/40 dark:text-ink-200/40 hover:text-jade-600 dark:hover:text-jade-400 underline decoration-dotted underline-offset-4 font-serif transition-colors outline-none"
+				>
+					[ 登录后评论 ]
+				</button>
+			{:else}
+				<div class="text-[10px] text-jade-700 dark:text-jade-400 font-serif tracking-wide">
+					已登录，评论将自动使用账号身份
+				</div>
+			{/if}
 		</div>
 
 		<div class="mb-16">
@@ -137,13 +148,6 @@
 					<span class="text-sm font-serif tracking-widest">评论已关闭</span>
 				</div>
 			{:else}
-				{#if $commentAreaModel?.requireModeration}
-					<div
-						class="mb-4 rounded-default border border-amber-300/60 bg-amber-50/70 px-4 py-2 text-xs text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200"
-					>
-						当前评论区已开启审核，评论提交后会先进入审核流程，通过后公开展示。
-					</div>
-				{/if}
 				<CommentForm />
 			{/if}
 		</div>
@@ -219,14 +223,13 @@
 							>
 								<div class="i-lucide-copy w-3.5 h-3.5"></div>
 							</button>
-							<a
-								href={normalizedFediverseReplyUrl}
-								target="_blank"
-								rel="nofollow noopener noreferrer"
-								class="px-3 py-1.5 bg-ink-900 text-ink-50 text-xs rounded-default hover:bg-jade-600 transition-colors"
-							>
-								前往
-							</a>
+								<button
+									type="button"
+									onclick={openFediverseReply}
+									class="px-3 py-1.5 bg-ink-900 text-ink-50 text-xs rounded-default hover:bg-jade-600 transition-colors"
+								>
+									前往
+								</button>
 						</div>
 						<div class="text-[10px] text-ink-400 dark:text-ink-500">
 							链接由站点 ActivityPub 配置生成，可用于 Mastodon / Misskey 等实例追溯并回复。

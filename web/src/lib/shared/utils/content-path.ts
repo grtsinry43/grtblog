@@ -30,6 +30,12 @@ export const buildPostPath = (slug: string): string => `/posts/${encodeURICompon
 
 export const buildPagePath = (slug: string): string => `/${encodeURIComponent(slug)}`;
 
+export const buildCategoryPath = (slug: string): string =>
+	`/categories/${encodeURIComponent(slug)}`;
+
+export const buildColumnPath = (slug: string): string =>
+	`/columns/${encodeURIComponent(slug)}`;
+
 export const buildMomentPath = (slug: string, createdAt: string | Date): string => {
 	const encodedSlug = encodeURIComponent(slug);
 	const dateParts = parseDateParts(createdAt);
