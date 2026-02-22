@@ -218,6 +218,7 @@ SET group_path   = 'notification/email/subscription',
     meta         = '{"placeholder":"1.2.3.4,5.6.7.8"}'::jsonb
 WHERE config_key = 'email.subscription.blockedIPs';
 
+-- +goose StatementBegin
 INSERT INTO email_template (code,
                             name,
                             event_name,
@@ -230,40 +231,820 @@ INSERT INTO email_template (code,
 VALUES ('subscription.notify',
         '邮件订阅通知',
         'article.created',
-        '[订阅更新] {{.Title}}',
-        '<!doctype html><html><body><h2>{{.website_name}} 有新内容发布</h2><p>标题：{{.Title}}</p><p>访问链接：<a href="{{.public_url}}/articles/short/{{.ShortURL}}">{{.public_url}}/articles/short/{{.ShortURL}}</a></p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
-        '【{{.website_name}}】有新内容发布\n\n标题：{{.Title}}\n访问链接：{{.public_url}}/articles/short/{{.ShortURL}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+        '[{{.website_name}}] 订阅更新：{{with index . "Title"}}{{.}}{{else}}新内容发布{{end}}',
+        $subscription_html$
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订阅更新通知</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fafaf9;
+            font-family: "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", Georgia, "Nimbus Roman No9 L", "Songti SC", "serif";
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #fafaf9;
+            padding-bottom: 60px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e7e5e4;
+        }
+        .top-bar {
+            height: 4px;
+            background-color: #14b8a6;
+        }
+        .vertical-line {
+            width: 1px;
+            height: 30px;
+            background-color: rgba(20, 184, 166, 0.3);
+            margin: 0 auto;
+        }
+        .header {
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+        .logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid #e7e5e4;
+            padding: 2px;
+        }
+        .site-name {
+            display: block;
+            margin-top: 15px;
+            font-family: "Noto Serif SC", serif;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1c1917;
+            letter-spacing: 0.1em;
+        }
+        .content {
+            padding: 20px 40px;
+            color: #44403c;
+        }
+        .greeting {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        .highlight {
+            color: #0f766e;
+            font-weight: 600;
+        }
+        .comment-box {
+            position: relative;
+            background-color: #fafaf9;
+            border-left: 2px solid #14b8a6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 2px;
+        }
+        .comment-meta {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            color: #a8a29e;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+        }
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1c1917;
+        }
+        .origin-comment {
+            font-size: 13px;
+            color: #78716c;
+            border-top: 1px solid #e7e5e4;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-style: italic;
+        }
+        .action-area {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #1c1917;
+            color: #ffffff !important;
+            padding: 12px 32px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 2px;
+            letter-spacing: 0.2em;
+        }
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #a8a29e;
+            line-height: 2;
+        }
+        .footer a {
+            color: #14b8a6;
+            text-decoration: none;
+        }
+        @media screen and (max-width: 600px) {
+            .content { padding: 20px; }
+            .btn { width: 100%; box-sizing: border-box; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="top-bar"></div>
+            <div class="header">
+                <div class="vertical-line"></div>
+                {{with index . "theme_extend_info"}}{{with index . "home"}}{{with index . "hero"}}{{with index . "avatarUrl"}}<img src="{{.}}" alt="Logo" class="logo-img">{{end}}{{end}}{{end}}{{end}}
+                <span class="site-name">{{.website_name}}</span>
+            </div>
+            <div class="content">
+                <div class="greeting">
+                    亲爱的朋友，<br>
+                    您订阅的站点 <span class="highlight">{{.website_name}}</span> 有了新的更新，
+                    发布了一篇新的 <span class="highlight">{{with index . "ContentType"}}{{.}}{{else}}文章{{end}}</span>。
+                </div>
+                <div class="comment-box">
+                    <div class="comment-meta">
+                        New Post Published · <span>{{.occurredAt}}</span>
+                    </div>
+                    <div class="comment-text">
+                        {{with index . "Title"}}{{.}}{{else}}未命名内容{{end}}
+                    </div>
+                    <div class="origin-comment">
+                        <div style="margin-bottom: 5px; font-size: 11px; opacity: 0.7;">内容类型 / 访问地址：</div>
+                        <div>
+                            {{with index . "ContentType"}}{{.}}{{else}}文章{{end}} ·
+                            {{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/posts/{{with index . "ShortURL"}}{{.}}{{else}}{{end}}{{end}}
+                        </div>
+                    </div>
+                </div>
+                <div class="action-area">
+                    <a href="{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/posts/{{with index . "ShortURL"}}{{.}}{{else}}{{end}}{{end}}" class="btn">前往阅读</a>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                    <span style="display: inline-block; width: 40px; height: 1px; background: #14b8a6; vertical-align: middle; opacity: 0.2;"></span>
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                </div>
+            </div>
+            <div class="footer">
+                <p>Powered by <a href="https://grtblog.js.org/">grtblog-v2</a></p>
+                <p style="font-family: monospace; letter-spacing: 0.05em;">© 2022-2026 grtsinry43</p>
+                <p>这是一封系统自动发出的邮件，无需回复。<br>愿你在文字的世界里觅得宁静。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+$subscription_html$,
+        $subscription_text$
+【{{.website_name}}】订阅更新通知
+
+内容类型：{{with index . "ContentType"}}{{.}}{{else}}文章{{end}}
+标题：{{with index . "Title"}}{{.}}{{else}}未命名内容{{end}}
+阅读链接：{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/posts/{{with index . "ShortURL"}}{{.}}{{else}}{{end}}{{end}}
+
+事件：{{.eventName}}
+时间：{{.occurredAt}}
+$subscription_text$,
         '[]'::jsonb,
         TRUE,
         TRUE),
        ('comment.reply.notify',
         '评论收到回复通知',
         'comment.reply',
-        '[评论回复] 您收到一条新回复',
-        '<!doctype html><html><body><h2>您收到一条评论回复</h2><p>被回复内容：</p><blockquote style="margin:12px 0;padding:8px 12px;border-left:3px solid #ddd;">{{.ParentContent}}</blockquote><p>回复内容：</p><blockquote style="margin:12px 0;padding:8px 12px;border-left:3px solid #4f46e5;">{{.ReplyContent}}</blockquote><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
-        '您收到一条评论回复\n\n被回复内容：{{.ParentContent}}\n回复内容：{{.ReplyContent}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+        '[{{.website_name}}] 您收到一条新评论回复',
+        $comment_reply_html$
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评论回复通知</title>
+    <style>
+        /* 邮件客户端兼容性基础设置 */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fafaf9; /* Ink 50 */
+            font-family: "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", Georgia, "Nimbus Roman No9 L", "Songti SC", "serif";
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #fafaf9;
+            padding-bottom: 60px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e7e5e4;
+        }
+
+        /* 装饰元素 */
+        .top-bar {
+            height: 4px;
+            background-color: #14b8a6; /* Jade 500 */
+        }
+        .vertical-line {
+            width: 1px;
+            height: 30px;
+            background-color: rgba(20, 184, 166, 0.3);
+            margin: 0 auto;
+        }
+
+        /* 头部 */
+        .header {
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+        .logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid #e7e5e4; /* Ink 200 */
+            padding: 2px;
+        }
+        .site-name {
+            display: block;
+            margin-top: 15px;
+            font-family: "Noto Serif SC", serif;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1c1917; /* Ink 900 */
+            letter-spacing: 0.1em;
+        }
+
+        /* 正文内容 */
+        .content {
+            padding: 20px 40px;
+            color: #44403c; /* Ink 700 */
+        }
+        .greeting {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        .highlight {
+            color: #0f766e; /* Jade 700 */
+            font-weight: 600;
+        }
+
+        /* 评论区块设计 - 模仿 ThinkingItem */
+        .comment-box {
+            position: relative;
+            background-color: #fafaf9; /* Ink 50 */
+            border-left: 2px solid #14b8a6; /* Jade 500 */
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 2px;
+        }
+        .comment-meta {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            color: #a8a29e; /* Ink 400 */
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+        }
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1c1917;
+        }
+        .origin-comment {
+            font-size: 13px;
+            color: #78716c; /* Ink 500 */
+            border-top: 1px solid #e7e5e4;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-style: italic;
+        }
+
+        /* 按钮 */
+        .action-area {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #1c1917; /* Ink 900 */
+            color: #ffffff !important;
+            padding: 12px 32px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 2px;
+            letter-spacing: 0.2em;
+        }
+
+        /* 页脚 */
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #a8a29e;
+            line-height: 2;
+        }
+        .footer a {
+            color: #14b8a6;
+            text-decoration: none;
+        }
+
+        /* 移动端适配 */
+        @media screen and (max-width: 600px) {
+            .content { padding: 20px; }
+            .btn { width: 100%; box-sizing: border-box; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="top-bar"></div>
+
+            <div class="header">
+                <div class="vertical-line"></div>
+                {{with index . "theme_extend_info"}}{{with index . "home"}}{{with index . "hero"}}{{with index . "avatarUrl"}}<img src="{{.}}" alt="Logo" class="logo-img">{{end}}{{end}}{{end}}{{end}}
+                <span class="site-name">{{.website_name}}</span>
+            </div>
+
+            <div class="content">
+                <div class="greeting">
+                    亲爱的朋友 <span class="highlight">{{with index . "ParentNickName"}}{{.}}{{else}}朋友{{end}}</span>，<br>
+                    您在 <span class="highlight">{{with index . "ContentType"}}{{.}}{{else}}内容{{end}}</span>{{with index . "ContentTitle"}} <span class="highlight">「{{.}}」</span>{{end}} 下的评论有了新的回响。
+                </div>
+
+                <div class="comment-box">
+                    <div class="comment-meta">
+                        New Reply from <span>{{with index . "ReplyNickName"}}{{.}}{{else}}站点管理员{{end}}</span> · <span>{{.occurredAt}}</span>
+                    </div>
+                    <div class="comment-text">{{with index . "ReplyContent"}}{{.}}{{else}}（回复内容为空）{{end}}</div>
+
+                    <div class="origin-comment">
+                        <div style="margin-bottom: 5px; font-size: 11px; opacity: 0.7;">您的原评论：</div>
+                        <div>{{with index . "ParentContent"}}{{.}}{{else}}（原评论内容不可用）{{end}}</div>
+                    </div>
+                </div>
+
+                <div class="action-area">
+                    <a href="{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}{{end}}" class="btn">前往阅读</a>
+                </div>
+
+                <!-- 装饰点线 -->
+                <div style="text-align: center; margin-top: 20px;">
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                    <span style="display: inline-block; width: 40px; height: 1px; background: #14b8a6; vertical-align: middle; opacity: 0.2;"></span>
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Powered by <a href="https://grtblog.js.org/">grtblog-v2</a></p>
+                <p style="font-family: monospace; letter-spacing: 0.05em;">© 2022-2026 grtsinry43</p>
+                <p>这是一封系统自动发出的邮件，无需回复。<br>愿你在文字的世界里觅得宁静。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+$comment_reply_html$,
+        $comment_reply_text$
+【{{.website_name}}】评论回复通知
+
+内容类型：{{with index . "ContentType"}}{{.}}{{else}}内容{{end}}
+内容标题：{{with index . "ContentTitle"}}{{.}}{{else}}（未提供）{{end}}
+回复人：{{with index . "ReplyNickName"}}{{.}}{{else}}站点管理员{{end}}
+
+回复内容：
+{{with index . "ReplyContent"}}{{.}}{{else}}（回复内容为空）{{end}}
+
+您的原评论：
+{{with index . "ParentContent"}}{{.}}{{else}}（原评论内容不可用）{{end}}
+
+查看链接：{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}{{end}}
+
+事件：{{.eventName}}
+时间：{{.occurredAt}}
+$comment_reply_text$,
         '[]'::jsonb,
         TRUE,
         TRUE),
        ('friendlink.application.approved.notify',
         '友链申请通过通知',
         'friendlink.application.approved',
-        '[友链申请通过] {{.website_name}}',
-        '<!doctype html><html><body><h2>友链申请已通过</h2><p>站点名称：{{.Name}}</p><p>站点地址：<a href="{{.URL}}">{{.URL}}</a></p><p>欢迎访问：<a href="{{.public_url}}">{{.public_url}}</a></p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
-        '友链申请已通过\n\n站点名称：{{.Name}}\n站点地址：{{.URL}}\n欢迎访问：{{.public_url}}\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+        '[{{.website_name}}] 您的友链申请已通过',
+        $friend_approved_html$
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>友链申请通过通知</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fafaf9;
+            font-family: "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", Georgia, "Nimbus Roman No9 L", "Songti SC", "serif";
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #fafaf9;
+            padding-bottom: 60px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e7e5e4;
+        }
+        .top-bar {
+            height: 4px;
+            background-color: #14b8a6;
+        }
+        .vertical-line {
+            width: 1px;
+            height: 30px;
+            background-color: rgba(20, 184, 166, 0.3);
+            margin: 0 auto;
+        }
+        .header {
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+        .logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid #e7e5e4;
+            padding: 2px;
+        }
+        .site-name {
+            display: block;
+            margin-top: 15px;
+            font-family: "Noto Serif SC", serif;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1c1917;
+            letter-spacing: 0.1em;
+        }
+        .content {
+            padding: 20px 40px;
+            color: #44403c;
+        }
+        .greeting {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        .highlight {
+            color: #0f766e;
+            font-weight: 600;
+        }
+        .comment-box {
+            position: relative;
+            background-color: #fafaf9;
+            border-left: 2px solid #14b8a6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 2px;
+        }
+        .comment-meta {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            color: #a8a29e;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+        }
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1c1917;
+        }
+        .origin-comment {
+            font-size: 13px;
+            color: #78716c;
+            border-top: 1px solid #e7e5e4;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-style: italic;
+        }
+        .action-area {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #1c1917;
+            color: #ffffff !important;
+            padding: 12px 32px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 2px;
+            letter-spacing: 0.2em;
+        }
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #a8a29e;
+            line-height: 2;
+        }
+        .footer a {
+            color: #14b8a6;
+            text-decoration: none;
+        }
+        @media screen and (max-width: 600px) {
+            .content { padding: 20px; }
+            .btn { width: 100%; box-sizing: border-box; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="top-bar"></div>
+            <div class="header">
+                <div class="vertical-line"></div>
+                {{with index . "theme_extend_info"}}{{with index . "home"}}{{with index . "hero"}}{{with index . "avatarUrl"}}<img src="{{.}}" alt="Logo" class="logo-img">{{end}}{{end}}{{end}}{{end}}
+                <span class="site-name">{{.website_name}}</span>
+            </div>
+            <div class="content">
+                <div class="greeting">
+                    亲爱的朋友，<br>
+                    您提交到 <span class="highlight">{{.website_name}}</span> 的友链申请已通过审核，
+                    我们已经将您的站点纳入展示队列。
+                </div>
+                <div class="comment-box">
+                    <div class="comment-meta">
+                        Application Approved · <span>{{.occurredAt}}</span>
+                    </div>
+                    <div class="comment-text">
+                        站点名称：{{with index . "Name"}}{{.}}{{else}}（未填写）{{end}}
+                    </div>
+                    <div class="origin-comment">
+                        <div style="margin-bottom: 5px; font-size: 11px; opacity: 0.7;">站点地址：</div>
+                        <div>{{with index . "URL"}}<a href="{{.}}">{{.}}</a>{{else}}（未提供）{{end}}</div>
+                    </div>
+                </div>
+                <div class="action-area">
+                    <a href="{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/friends{{end}}" class="btn">查看友链页</a>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                    <span style="display: inline-block; width: 40px; height: 1px; background: #14b8a6; vertical-align: middle; opacity: 0.2;"></span>
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                </div>
+            </div>
+            <div class="footer">
+                <p>Powered by <a href="https://grtblog.js.org/">grtblog-v2</a></p>
+                <p style="font-family: monospace; letter-spacing: 0.05em;">© 2022-2026 grtsinry43</p>
+                <p>这是一封系统自动发出的邮件，无需回复。<br>愿你在文字的世界里觅得宁静。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+$friend_approved_html$,
+        $friend_approved_text$
+【{{.website_name}}】友链申请通过通知
+
+站点名称：{{with index . "Name"}}{{.}}{{else}}（未填写）{{end}}
+站点地址：{{with index . "URL"}}{{.}}{{else}}（未提供）{{end}}
+友链页：{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/friends{{end}}
+
+事件：{{.eventName}}
+时间：{{.occurredAt}}
+$friend_approved_text$,
         '[]'::jsonb,
         TRUE,
         TRUE),
        ('friendlink.application.rejected.notify',
         '友链申请拒绝通知',
         'friendlink.application.rejected',
-        '[友链申请结果] 很抱歉，本次申请未通过',
-        '<!doctype html><html><body><h2>友链申请未通过</h2><p>站点名称：{{.Name}}</p><p>站点地址：<a href="{{.URL}}">{{.URL}}</a></p><p>如需补充资料，可再次提交申请。</p><p style="color:#666;">事件：{{.eventName}} | 时间：{{.occurredAt}}</p></body></html>',
-        '友链申请未通过\n\n站点名称：{{.Name}}\n站点地址：{{.URL}}\n如需补充资料，可再次提交申请。\n\n事件：{{.eventName}}\n时间：{{.occurredAt}}',
+        '[{{.website_name}}] 您的友链申请暂未通过',
+        $friend_rejected_html$
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>友链申请结果通知</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fafaf9;
+            font-family: "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", Georgia, "Nimbus Roman No9 L", "Songti SC", "serif";
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #fafaf9;
+            padding-bottom: 60px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e7e5e4;
+        }
+        .top-bar {
+            height: 4px;
+            background-color: #14b8a6;
+        }
+        .vertical-line {
+            width: 1px;
+            height: 30px;
+            background-color: rgba(20, 184, 166, 0.3);
+            margin: 0 auto;
+        }
+        .header {
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+        .logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid #e7e5e4;
+            padding: 2px;
+        }
+        .site-name {
+            display: block;
+            margin-top: 15px;
+            font-family: "Noto Serif SC", serif;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1c1917;
+            letter-spacing: 0.1em;
+        }
+        .content {
+            padding: 20px 40px;
+            color: #44403c;
+        }
+        .greeting {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        .highlight {
+            color: #0f766e;
+            font-weight: 600;
+        }
+        .comment-box {
+            position: relative;
+            background-color: #fafaf9;
+            border-left: 2px solid #14b8a6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 2px;
+        }
+        .comment-meta {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            color: #a8a29e;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+        }
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1c1917;
+        }
+        .origin-comment {
+            font-size: 13px;
+            color: #78716c;
+            border-top: 1px solid #e7e5e4;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-style: italic;
+        }
+        .action-area {
+            text-align: center;
+            padding: 30px 0 10px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #1c1917;
+            color: #ffffff !important;
+            padding: 12px 32px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 2px;
+            letter-spacing: 0.2em;
+        }
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #a8a29e;
+            line-height: 2;
+        }
+        .footer a {
+            color: #14b8a6;
+            text-decoration: none;
+        }
+        @media screen and (max-width: 600px) {
+            .content { padding: 20px; }
+            .btn { width: 100%; box-sizing: border-box; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="top-bar"></div>
+            <div class="header">
+                <div class="vertical-line"></div>
+                {{with index . "theme_extend_info"}}{{with index . "home"}}{{with index . "hero"}}{{with index . "avatarUrl"}}<img src="{{.}}" alt="Logo" class="logo-img">{{end}}{{end}}{{end}}{{end}}
+                <span class="site-name">{{.website_name}}</span>
+            </div>
+            <div class="content">
+                <div class="greeting">
+                    亲爱的朋友，<br>
+                    很抱歉，您提交到 <span class="highlight">{{.website_name}}</span> 的友链申请暂未通过审核。
+                    您可以补充信息后再次申请。
+                </div>
+                <div class="comment-box">
+                    <div class="comment-meta">
+                        Application Result · <span>{{.occurredAt}}</span>
+                    </div>
+                    <div class="comment-text">
+                        站点名称：{{with index . "Name"}}{{.}}{{else}}（未填写）{{end}}
+                    </div>
+                    <div class="origin-comment">
+                        <div style="margin-bottom: 5px; font-size: 11px; opacity: 0.7;">站点地址：</div>
+                        <div>{{with index . "URL"}}<a href="{{.}}">{{.}}</a>{{else}}（未提供）{{end}}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; color: #78716c; line-height: 1.8;">
+                    如需补充资料，可再次提交申请。<br>
+                    也欢迎先浏览 <a href="{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/friends{{end}}">{{.website_name}} 的友链页</a> 了解收录偏好。
+                </div>
+                <div class="action-area">
+                    <a href="{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/friends{{end}}" class="btn">查看友链页</a>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                    <span style="display: inline-block; width: 40px; height: 1px; background: #14b8a6; vertical-align: middle; opacity: 0.2;"></span>
+                    <span style="display: inline-block; width: 4px; height: 4px; background: #14b8a6; border-radius: 50%; opacity: 0.3;"></span>
+                </div>
+            </div>
+            <div class="footer">
+                <p>Powered by <a href="https://grtblog.js.org/">grtblog-v2</a></p>
+                <p style="font-family: monospace; letter-spacing: 0.05em;">© 2022-2026 grtsinry43</p>
+                <p>这是一封系统自动发出的邮件，无需回复。<br>愿你在文字的世界里觅得宁静。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+$friend_rejected_html$,
+        $friend_rejected_text$
+【{{.website_name}}】友链申请结果通知
+
+结果：本次申请未通过
+站点名称：{{with index . "Name"}}{{.}}{{else}}（未填写）{{end}}
+站点地址：{{with index . "URL"}}{{.}}{{else}}（未提供）{{end}}
+友链页：{{with index . "viewUrl"}}{{.}}{{else}}{{.public_url}}/friends{{end}}
+
+如需补充资料，可再次提交申请。
+
+事件：{{.eventName}}
+时间：{{.occurredAt}}
+$friend_rejected_text$,
         '[]'::jsonb,
         TRUE,
         TRUE)
 ON CONFLICT (code) DO NOTHING;
+-- +goose StatementEnd
 
 -- +goose Down
 DELETE

@@ -115,7 +115,47 @@ func (s *Service) mergeTemplateVariables(ctx context.Context, eventName string, 
 	}
 	merged["occurredAt"] = time.Now().Format(time.RFC3339)
 	for key, value := range input {
+		if base, ok := merged[key]; ok {
+			merged[key] = mergeTemplateValue(base, value)
+			continue
+		}
 		merged[key] = value
+	}
+	normalizeViewURL(merged)
+	return merged
+}
+
+func mergeTemplateValue(base any, override any) any {
+	if override == nil {
+		return base
+	}
+	baseMap, baseOK := toStringAnyMap(base)
+	overrideMap, overrideOK := toStringAnyMap(override)
+	if !baseOK || !overrideOK {
+		return override
+	}
+	return mergeStringAnyMap(baseMap, overrideMap)
+}
+
+func toStringAnyMap(value any) (map[string]any, bool) {
+	if value == nil {
+		return nil, false
+	}
+	typed, ok := value.(map[string]any)
+	return typed, ok
+}
+
+func mergeStringAnyMap(base map[string]any, override map[string]any) map[string]any {
+	merged := make(map[string]any, len(base)+len(override))
+	for key, value := range base {
+		merged[key] = value
+	}
+	for key, value := range override {
+		if existing, ok := merged[key]; ok {
+			merged[key] = mergeTemplateValue(existing, value)
+		} else {
+			merged[key] = value
+		}
 	}
 	return merged
 }

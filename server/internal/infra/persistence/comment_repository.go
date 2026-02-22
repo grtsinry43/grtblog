@@ -3,6 +3,8 @@ package persistence
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -81,6 +83,168 @@ func (r *CommentRepository) GetAreaByID(ctx context.Context, id int64) (*comment
 		return nil, err
 	}
 	return mapCommentAreaToDomain(*rec), nil
+}
+
+func (r *CommentRepository) GetContentTitleByTypeAndID(ctx context.Context, areaType string, contentID int64) (string, error) {
+	normalizedType := strings.ToLower(strings.TrimSpace(areaType))
+	if normalizedType == "" || contentID <= 0 {
+		return "", nil
+	}
+	switch normalizedType {
+	case "article":
+		var row struct {
+			Title string `gorm:"column:title"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Article{}).
+			Select("title").
+			Where("id = ? AND deleted_at IS NULL", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		return strings.TrimSpace(row.Title), nil
+	case "moment":
+		var row struct {
+			Title string `gorm:"column:title"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Moment{}).
+			Select("title").
+			Where("id = ? AND deleted_at IS NULL", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		return strings.TrimSpace(row.Title), nil
+	case "page":
+		var row struct {
+			Title string `gorm:"column:title"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Page{}).
+			Select("title").
+			Where("id = ? AND deleted_at IS NULL", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		return strings.TrimSpace(row.Title), nil
+	case "thinking":
+		var row struct {
+			Content string `gorm:"column:content"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Thinking{}).
+			Select("content").
+			Where("id = ?", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		return summarizeThinkingContent(row.Content), nil
+	default:
+		return "", nil
+	}
+}
+
+func (r *CommentRepository) GetContentViewPathByTypeAndID(ctx context.Context, areaType string, contentID int64) (string, error) {
+	normalizedType := strings.ToLower(strings.TrimSpace(areaType))
+	if normalizedType == "" || contentID <= 0 {
+		return "", nil
+	}
+	switch normalizedType {
+	case "article":
+		var row struct {
+			ShortURL string `gorm:"column:short_url"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Article{}).
+			Select("short_url").
+			Where("id = ? AND deleted_at IS NULL", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		slug := strings.TrimSpace(row.ShortURL)
+		if slug == "" {
+			return "", nil
+		}
+		return "/posts/" + url.PathEscape(slug), nil
+	case "moment":
+		var row struct {
+			ShortURL  string    `gorm:"column:short_url"`
+			CreatedAt time.Time `gorm:"column:created_at"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Moment{}).
+			Select("short_url", "created_at").
+			Where("id = ? AND deleted_at IS NULL", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		slug := strings.TrimSpace(row.ShortURL)
+		if slug == "" {
+			return "", nil
+		}
+		created := row.CreatedAt.UTC()
+		return fmt.Sprintf(
+			"/moments/%04d/%02d/%02d/%s",
+			created.Year(),
+			int(created.Month()),
+			created.Day(),
+			url.PathEscape(slug),
+		), nil
+	case "page":
+		var row struct {
+			ShortURL string `gorm:"column:short_url"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Page{}).
+			Select("short_url").
+			Where("id = ? AND deleted_at IS NULL", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		slug := strings.TrimSpace(row.ShortURL)
+		if slug == "" {
+			return "", nil
+		}
+		return "/" + url.PathEscape(slug), nil
+	case "thinking":
+		var row struct {
+			ID int64 `gorm:"column:id"`
+		}
+		if err := r.db.WithContext(ctx).
+			Model(&model.Thinking{}).
+			Select("id").
+			Where("id = ?", contentID).
+			Take(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", nil
+			}
+			return "", err
+		}
+		return fmt.Sprintf("/thinkings#thinking-%d", row.ID), nil
+	default:
+		return "", nil
+	}
 }
 
 func (r *CommentRepository) SetAreaClosed(ctx context.Context, areaID int64, isClosed bool) error {
@@ -1173,6 +1337,19 @@ func mapCommentAreaToDomain(rec model.CommentArea) *comment.CommentArea {
 		CreatedAt: rec.CreatedAt,
 		UpdatedAt: rec.UpdatedAt,
 	}
+}
+
+func summarizeThinkingContent(content string) string {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return ""
+	}
+	const maxRunes = 40
+	runes := []rune(trimmed)
+	if len(runes) <= maxRunes {
+		return trimmed
+	}
+	return strings.TrimSpace(string(runes[:maxRunes])) + "..."
 }
 
 func toPtr(value string) *string {

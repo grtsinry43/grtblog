@@ -24,6 +24,8 @@ type AdminVisitorListOptions struct {
 
 type CommentRepository interface {
 	GetAreaByID(ctx context.Context, id int64) (*CommentArea, error)
+	GetContentTitleByTypeAndID(ctx context.Context, areaType string, contentID int64) (string, error)
+	GetContentViewPathByTypeAndID(ctx context.Context, areaType string, contentID int64) (string, error)
 	SetAreaClosed(ctx context.Context, areaID int64, isClosed bool) error
 	FindByID(ctx context.Context, id int64) (*Comment, error)
 	FindByFederatedObjectID(ctx context.Context, objectID string) (*Comment, error)
