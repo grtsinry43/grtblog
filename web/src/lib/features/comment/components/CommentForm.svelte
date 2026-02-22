@@ -4,10 +4,12 @@
 	import { createCommentLogin, createCommentVisitor } from '$lib/features/comment/api';
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
+	import ClientOnly from '$lib/ui/common/ClientOnly.svelte';
 	import Input from '$lib/ui/primitives/input/Input.svelte';
 	import Textarea from '$lib/ui/primitives/textarea/Textarea.svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
+	import CommentEmojiPickerClient from './CommentEmojiPickerClient.svelte';
 
 	interface Props {
 		parentId?: number;
@@ -76,6 +78,10 @@
 
 	const handleCancelReply = () => {
 		updateModelData((prev) => (prev ? { ...prev, replyingTo: null } : prev));
+	};
+
+	const handlePickEmoji = (emoji: string) => {
+		content = `${content}${emoji}`;
 	};
 
 	const updateGuestField = (key: 'guestName' | 'guestEmail' | 'guestSite') => (event: Event) => {
@@ -190,15 +196,20 @@
 		/>
 
 		<!-- Footer Actions -->
-		<div class="flex items-center justify-between mt-6">
-			<div class="text-[10px] text-ink-800/40 dark:text-ink-200/40 font-serif tracking-wider">
-				支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span>
-				换行
-				{#if $requireModerationStore}
-					<span class="ml-2 text-amber-600 dark:text-amber-300">
-						当前开启审核，评论会先进入审核队列
-					</span>
-				{/if}
+		<div class="flex items-end justify-between mt-6 gap-4">
+			<div class="flex flex-col items-start gap-2">
+				<ClientOnly>
+					<CommentEmojiPickerClient onPick={handlePickEmoji} />
+				</ClientOnly>
+				<div class="text-[10px] text-ink-800/40 dark:text-ink-200/40 font-serif tracking-wider">
+					支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span>
+					换行
+					{#if $requireModerationStore}
+						<span class="ml-2 text-amber-600 dark:text-amber-300">
+							当前开启审核，评论会先进入审核队列
+						</span>
+					{/if}
+				</div>
 			</div>
 
 			<button

@@ -4,8 +4,24 @@
 	import { MessageCircle, Eye } from 'lucide-svelte';
 	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
+	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 
 	let { item } = $props<{ item: ThinkingItem }>();
+
+	function openCommentsWindow() {
+		if (!item.commentId) {
+			return;
+		}
+		windowStore.open(
+			'思考评论',
+			{
+				areaId: item.commentId,
+				commentsCount: item.comments ?? 0,
+				thinkingId: item.id
+			},
+			'thinking-comments'
+		);
+	}
 </script>
 
 <div
@@ -52,6 +68,7 @@
 		<!-- Actions -->
 		<div class="flex items-center gap-10 mt-3 -ml-1">
 			<button
+				onclick={openCommentsWindow}
 				class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group p-1.5 rounded-default hover:bg-jade-50 dark:hover:bg-jade-900/20"
 			>
 				<MessageCircle

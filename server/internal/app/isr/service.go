@@ -197,24 +197,23 @@ func (s *Service) Bootstrap(ctx context.Context) (*BootstrapReport, error) {
 }
 
 func (s *Service) DiscoverRoutes(ctx context.Context) ([]string, error) {
-	routes := []string{
-		"/",
-		"/posts",
-		"/posts/page/1",
-		"/moments",
-		"/friends",
-		"/thinkings",
-	}
+	routes := []string{"/"}
 	if s.contentRepo == nil {
 		return normalizeURLs(routes), nil
 	}
+
+	pageRoutes, err := s.discoverPageRoutes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	routes = append(routes, pageRoutes...)
 
 	articleTotalPages, articleRoutes, err := s.discoverArticleRoutes(ctx)
 	if err != nil {
 		return nil, err
 	}
 	routes = append(routes, articleRoutes...)
-	for page := int64(2); page <= articleTotalPages; page++ {
+	for page := int64(1); page <= articleTotalPages; page++ {
 		routes = append(routes, fmt.Sprintf("/posts/page/%d", page))
 	}
 
@@ -223,12 +222,6 @@ func (s *Service) DiscoverRoutes(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	routes = append(routes, momentRoutes...)
-
-	pageRoutes, err := s.discoverPageRoutes(ctx)
-	if err != nil {
-		return nil, err
-	}
-	routes = append(routes, pageRoutes...)
 
 	return normalizeURLs(routes), nil
 }

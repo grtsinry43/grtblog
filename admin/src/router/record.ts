@@ -35,7 +35,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'edit/new',
         name: 'articleCreate',
         label: '新建文章',
-        show: false,
+        icon: 'iconify ph--pencil-simple-line',
         meta: {
           componentName: 'ArticleEdit',
           showTab: true,
@@ -50,6 +50,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'edit/:id',
         name: 'articleEdit',
         label: '编辑文章',
+        icon: 'iconify ph--pencil-simple-line',
         show: false,
         meta: {
           componentName: 'ArticleEdit',
@@ -85,7 +86,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'edit/new',
         name: 'noteCreate',
         label: '新建手记',
-        show: false,
+        icon: 'iconify ph--pencil-simple-line',
         meta: {
           componentName: 'NoteEdit',
           showTab: true,
@@ -100,6 +101,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'edit/:id',
         name: 'noteEdit',
         label: '编辑手记',
+        icon: 'iconify ph--pencil-simple-line',
         show: false,
         meta: {
           componentName: 'NoteEdit',
@@ -135,7 +137,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'create',
         name: 'thinkingCreate',
         label: '新建思考',
-        show: false,
+        icon: 'iconify ph--pencil-simple-line',
         meta: {
           componentName: 'ThinkingEdit',
           showTab: true,
@@ -150,6 +152,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'edit/:id',
         name: 'thinkingEdit',
         label: '编辑思考',
+        icon: 'iconify ph--pencil-simple-line',
         show: false,
         meta: {
           componentName: 'ThinkingEdit',
@@ -185,7 +188,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'create',
         name: 'pageCreate',
         label: '新建页面',
-        show: false,
+        icon: 'iconify ph--pencil-simple-line',
         meta: {
           componentName: 'PageEdit',
           showTab: true,
@@ -200,6 +203,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         path: 'edit/:id',
         name: 'pageEdit',
         label: '编辑页面',
+        icon: 'iconify ph--pencil-simple-line',
         show: false,
         meta: {
           componentName: 'PageEdit',
@@ -213,26 +217,26 @@ export const routeRecordRaw: MenuMixedOptions[] = [
       },
     ],
   },
-  {
-    path: 'albums',
-    name: 'albumManagement',
-    icon: 'iconify ph--image',
-    label: '相册管理',
-    redirect: 'albums/list',
-    children: [
-      {
-        path: 'list',
-        name: 'albumList',
-        label: '相册列表',
-        icon: 'iconify ph--image',
-        meta: {
-          componentName: 'AlbumList',
-          showTab: true,
-        },
-        component: 'albums/index',
-      },
-    ],
-  },
+  // {
+  //   path: 'albums',
+  //   name: 'albumManagement',
+  //   icon: 'iconify ph--image',
+  //   label: '相册管理',
+  //   redirect: 'albums/list',
+  //   children: [
+  //     {
+  //       path: 'list',
+  //       name: 'albumList',
+  //       label: '相册列表',
+  //       icon: 'iconify ph--image',
+  //       meta: {
+  //         componentName: 'AlbumList',
+  //         showTab: true,
+  //       },
+  //       component: 'albums/index',
+  //     },
+  //   ],
+  // },
   {
     path: 'comments',
     name: 'commentManagement',

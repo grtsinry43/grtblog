@@ -32,6 +32,9 @@ importers:
       bits-ui:
         specifier: ^2.15.5
         version: 2.15.5(@internationalized/date@3.10.1)(@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.50.3)(vite@7.3.1(@types/node@25.2.3)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.50.3)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.50.3)
+      emoji-picker-element:
+        specifier: ^1.29.0
+        version: 1.29.0
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -1344,6 +1347,9 @@ packages:
 
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
+
+  emoji-picker-element@1.29.0:
+    resolution: {integrity: sha512-lQm8YayfwIP5j+Xe1O2Fjul7hv2b4spPS16X99O4qKQdzDQaEeiAqqYaRONHncewcpisUf6qGFJkhM2G3riEdA==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -3590,6 +3596,8 @@ snapshots:
   dom-accessibility-api@0.5.16: {}
 
   dom-accessibility-api@0.6.3: {}
+
+  emoji-picker-element@1.29.0: {}
 
   emoji-regex@8.0.0: {}
 

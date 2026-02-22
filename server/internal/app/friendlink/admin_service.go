@@ -218,6 +218,7 @@ func (s *AdminService) CreateFriendLink(ctx context.Context, cmd CreateFriendLin
 	if err := s.linkRepo.Create(ctx, link); err != nil {
 		return nil, err
 	}
+	s.publishFriendLinkChangedEvent(ctx, "created", link)
 	return link, nil
 }
 
@@ -251,11 +252,20 @@ func (s *AdminService) UpdateFriendLink(ctx context.Context, cmd UpdateFriendLin
 	if err := s.linkRepo.Update(ctx, link); err != nil {
 		return nil, err
 	}
+	s.publishFriendLinkChangedEvent(ctx, "updated", link)
 	return link, nil
 }
 
 func (s *AdminService) DeleteFriendLink(ctx context.Context, id int64) error {
-	return s.linkRepo.Delete(ctx, id)
+	link, err := s.linkRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := s.linkRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+	s.publishFriendLinkChangedEvent(ctx, "deleted", link)
+	return nil
 }
 
 func (s *AdminService) BlockFriendLink(ctx context.Context, id int64) (*social.FriendLink, error) {
@@ -307,6 +317,7 @@ func (s *AdminService) BlockFriendLink(ctx context.Context, id int64) (*social.F
 	if link.Kind == social.FriendLinkKindFederation {
 		_ = s.blockFederationInstance(ctx, link.URL)
 	}
+	s.publishFriendLinkChangedEvent(ctx, "blocked", link)
 	return link, nil
 }
 
@@ -376,6 +387,22 @@ func (s *AdminService) publishApplicationStatusEvent(ctx context.Context, name s
 			"Status":         app.Status,
 			"Name":           toValue(app.Name),
 			"recipientEmail": recipientEmail,
+		},
+	})
+}
+
+func (s *AdminService) publishFriendLinkChangedEvent(ctx context.Context, action string, link *social.FriendLink) {
+	if link == nil {
+		return
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "friendlink.link.changed",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"action":   strings.TrimSpace(action),
+			"id":       link.ID,
+			"url":      strings.TrimSpace(link.URL),
+			"isActive": link.IsActive,
 		},
 	})
 }

@@ -29,6 +29,9 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	ownerStatusHandler := handler.NewOwnerStatusHandler(deps.OwnerStatus)
+	adminGroup.Post("/onlineStatus", ownerStatusHandler.UpdateStatus)
+	adminGroup.Post("/admin/owner-status/panel-heartbeat", ownerStatusHandler.PanelHeartbeat)
 
 	websiteInfo := adminGroup.Group("/website-info")
 	websiteInfo.Get("", websiteInfoHandler.List)

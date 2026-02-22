@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { NavMenuItem } from '$lib/features/navigation/types';
+	import OwnerStatusAvatar from '$lib/features/owner-status/components/OwnerStatusAvatar.svelte';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import ThemeIcon from './ThemeIcon.svelte';
 	import { page } from '$app/state';
@@ -42,17 +43,7 @@
 <aside
 	class="fixed left-0 top-0 z-50 flex h-full w-24 flex-col items-center border-r border-ink-200 bg-[#FBF9F5] py-6 text-ink-600 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-400"
 >
-	<div class="relative my-4 flex-none">
-		<div class="nav-author-avatar relative z-10">
-			<a href={resolve('/')}>
-				<img
-					src="https://dogeoss.grtsinry43.com/img/author.jpeg"
-					alt="Author"
-					class="h-10 w-10 rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
-				/>
-			</a>
-		</div>
-	</div>
+	<OwnerStatusAvatar />
 
 	<nav class="flex w-full flex-1 flex-col items-center gap-4 px-2 mt-6">
 		{#each menuTree as item (item.url)}
@@ -157,14 +148,4 @@
 
 <style lang="postcss">
 	@reference "$routes/layout.css";
-
-	.nav-author-avatar::before {
-		content: '';
-		@apply absolute inset-0 -z-10 translate-x-1 translate-y-1 rounded-default border border-ink-300 dark:border-ink-900/30;
-	}
-
-	.nav-author-avatar:hover::before {
-		content: '';
-		@apply absolute inset-0 -z-10 translate-x-0.5 translate-y-0.5 rounded-default border border-ink-300 transition dark:border-ink-900/30;
-	}
 </style>

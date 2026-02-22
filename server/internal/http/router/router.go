@@ -20,6 +20,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	appnav "github.com/grtsinry43/grtblog-v2/server/internal/app/navigation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/observability"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/ownerstatus"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/webhook"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/websiteinfo"
@@ -49,6 +50,7 @@ type Dependencies struct {
 	Observability *observability.Service
 	HTMLSnapshot  *htmlsnapshot.Service
 	ISR           *isr.Service
+	OwnerStatus   *ownerstatus.Service
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -123,7 +125,16 @@ func Register(app *fiber.App, deps Dependencies) {
 	deps.ISR = isrSvc
 	isr.RegisterArticleSubscribers(eventBus, isrSvc)
 	isr.RegisterMomentSubscribers(eventBus, isrSvc)
+	isr.RegisterPageSubscribers(eventBus, isrSvc)
+	isr.RegisterThinkingSubscribers(eventBus, isrSvc)
+	isr.RegisterFriendLinkSubscribers(eventBus, isrSvc)
+	isr.RegisterLayoutSubscribers(eventBus, isrSvc)
 	deps.Observability = observability.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, eventBus, deps.HTTPStats, wsManager, htmlSnapshotSvc, isrSvc)
+	ownerStatusSvc := deps.OwnerStatus
+	if ownerStatusSvc == nil {
+		ownerStatusSvc = ownerstatus.NewService(wsManager)
+	}
+	deps.OwnerStatus = ownerStatusSvc
 
 	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
 	fedCfgSvc := federationconfig.NewService(fedCfgRepo)
@@ -145,7 +156,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	websiteInfoHandler := handler.NewWebsiteInfoHandler(websiteInfoSvc)
 
 	navMenuRepo := persistence.NewNavMenuRepository(deps.DB)
-	navMenuSvc := appnav.NewService(navMenuRepo)
+	navMenuSvc := appnav.NewService(navMenuRepo, eventBus)
 	navMenuHandler := handler.NewNavMenuHandler(navMenuSvc)
 
 	analyticsSvc := deps.Analytics

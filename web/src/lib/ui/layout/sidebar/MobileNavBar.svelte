@@ -13,7 +13,9 @@
 	import { cubicOut } from 'svelte/easing';
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
-	import { authModalStore } from '$lib/shared/stores/authModalStore';	import { User } from 'lucide-svelte';
+	import { authModalStore } from '$lib/shared/stores/authModalStore';
+	import { ownerStatusStore } from '$lib/features/owner-status/store.svelte';
+	import { User } from 'lucide-svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context';
 	import { detailPanelCtx } from '$lib/shared/detail-panel/context';
 
@@ -56,6 +58,14 @@
 		($detailKindStore === 'post' && $relatedMomentsStore.length > 0) ||
 			($detailKindStore === 'moment' && $relatedPostsStore.length > 0)
 	);
+	const ownerStatus = $derived(ownerStatusStore.status);
+	const ownerOnline = $derived(ownerStatus.ok === 1);
+	const adminPanelOnline = $derived(ownerStatus.adminPanelOnline === true);
+
+	function formatOwnerTime(timestamp?: number): string {
+		if (!timestamp || !Number.isFinite(timestamp) || timestamp <= 0) return '未知';
+		return new Date(timestamp * 1000).toLocaleString('zh-CN', { hour12: false });
+	}
 
 	const isActive = (href: string) =>
 		page.url.pathname === href || page.url.pathname.startsWith(href + '/');
@@ -164,23 +174,33 @@
 		<div class="relative z-10 flex h-12 items-center justify-between px-3">
 			<!-- Left: Avatar & Title -->
 			<div class="flex items-center gap-3 overflow-hidden">
-				<button
-					onclick={(e) => {
-						e.stopPropagation();
-						isMobileMenuOpen = !isMobileMenuOpen;
-					}}
-					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
-				>
-					<div
-						class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700"
+					<button
+						onclick={(e) => {
+							e.stopPropagation();
+							isMobileMenuOpen = !isMobileMenuOpen;
+						}}
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
 					>
-						<img
-							src="https://dogeoss.grtsinry43.com/img/author.jpeg"
-							alt="Author"
-							class="h-full w-full object-cover"
-						/>
-					</div>
-				</button>
+						<div class="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700">
+							<img
+								src="https://dogeoss.grtsinry43.com/img/author.jpeg"
+								alt="Author"
+								class="h-full w-full object-cover"
+							/>
+							<span class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
+								<span
+									class="absolute inline-flex h-full w-full rounded-full opacity-75 {ownerOnline
+										? 'bg-jade-400'
+										: 'bg-ink-300 dark:bg-ink-600'}"
+								></span>
+								<span
+									class="relative inline-flex h-2.5 w-2.5 rounded-full border border-white dark:border-ink-900 {ownerOnline
+										? 'bg-jade-500'
+										: 'bg-ink-400 dark:bg-ink-500'}"
+								></span>
+							</span>
+						</div>
+					</button>
 
 				<div
 					class="relative flex flex-col justify-center transition-all duration-300"
@@ -242,14 +262,37 @@
 				class="no-scrollbar relative z-10 flex max-h-[75vh] flex-col overflow-y-auto px-2 pb-6 pt-0"
 			>
 				<!-- Decoration Header -->
-				<div
-					class="mb-3 flex items-center justify-between border-b border-ink-200/50 bg-transparent px-4 pb-4 pt-2 dark:border-ink-700/50"
-				>
-					<span class="text-xs font-bold uppercase tracking-widest text-ink-400">Navigation</span>
-					<span class="font-mono text-[10px] text-ink-300">MENU</span>
-				</div>
+					<div
+						class="mb-3 flex items-center justify-between border-b border-ink-200/50 bg-transparent px-4 pb-4 pt-2 dark:border-ink-700/50"
+					>
+						<span class="text-xs font-bold uppercase tracking-widest text-ink-400">Navigation</span>
+						<span class="font-mono text-[10px] text-ink-300">MENU</span>
+					</div>
 
-				<div class="flex flex-col gap-1">
+					<div class="mb-3 rounded-default border border-ink-200 bg-white/70 px-3 py-2 dark:border-ink-700 dark:bg-ink-900/60">
+						<div class="flex items-center justify-between gap-2">
+							<div class="text-xs font-medium text-ink-700 dark:text-ink-200">
+								{ownerOnline ? '站长在线中' : '站长暂时离线'}
+							</div>
+							<span
+								class="rounded-full px-2 py-0.5 text-[10px] {adminPanelOnline
+									? 'bg-jade-100 text-jade-700 dark:bg-jade-900/40 dark:text-jade-300'
+									: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300'}"
+							>
+								Admin {adminPanelOnline ? '在线' : '离线'}
+							</span>
+						</div>
+						<div class="mt-1 text-[11px] text-ink-500 dark:text-ink-400">
+							{#if ownerOnline}
+								正在使用 {ownerStatus.process || '未知应用'}
+							{:else}
+								暂无实时活动
+							{/if}
+							· {formatOwnerTime(ownerStatus.timestamp)}
+						</div>
+					</div>
+
+					<div class="flex flex-col gap-1">
 					{#if $userStore.isLogin}
 						<button
 							type="button"
