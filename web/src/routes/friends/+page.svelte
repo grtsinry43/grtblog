@@ -6,6 +6,7 @@
 
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { authModalStore } from '$lib/shared/stores/authModalStore';
+	import PageHeader from '$lib/ui/common/PageHeader.svelte';
 
 	let { data } = $props();
 
@@ -19,27 +20,12 @@
 </script>
 
 <div class="friends-page max-w-5xl mx-auto space-y-16">
-	<!-- Hero Section -->
-	<div class="hero flex flex-col items-center text-center space-y-6 pt-10">
-		<FadeIn y={20} duration={1000}>
-			<div
-				class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-jade-500/10 text-jade-600 dark:text-jade-400 border border-jade-500/20"
-			>
-				<Heart size={14} />
-				<span class="text-[10px] font-mono font-bold uppercase tracking-wider">友邻</span>
-			</div>
-		</FadeIn>
-
-		<SlideIn direction="down" duration={1000} delay={200}>
-			<h1 class="text-4xl md:text-5xl font-serif text-ink-900 dark:text-ink-100">友情链接</h1>
-		</SlideIn>
-
-		<FadeIn duration={1000} delay={400}>
-			<p class="max-w-xl text-ink-500 dark:text-ink-400 leading-relaxed font-serif text-lg">
-				青山一道同云雨，明月何曾是两乡。
-			</p>
-		</FadeIn>
-	</div>
+	<PageHeader 
+		title="友情链接" 
+		tag="Friends" 
+		subtitle="青山一道同云雨，明月何曾是两乡" 
+		description="志同道合者的数字家园，感谢在这个广袤网络中的相遇。"
+	/>
 
 	<!-- Friends Grid - 直接渲染，确保服务端渲染 SEO -->
 	<div class="friends-content">

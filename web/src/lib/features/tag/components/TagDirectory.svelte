@@ -19,6 +19,8 @@
 	function toPercent(count: number): number {
 		return Math.max(8, Math.round((count / maxCount) * 100));
 	}
+
+	import PageHeader from '$lib/ui/common/PageHeader.svelte';
 </script>
 
 <section
@@ -32,32 +34,24 @@
 	></div>
 
 	<div class="relative space-y-6">
-		<header class="space-y-3 border-b border-ink-200/60 pb-5 dark:border-ink-800/70">
-			<div class="flex items-center gap-2 text-ink-500">
-				<Hash size={13} />
-				<span class="font-mono text-[10px] tracking-[0.18em] uppercase">Tag Atlas</span>
-			</div>
-			<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-				<div class="space-y-2">
-					<h1 class="font-serif text-3xl tracking-tight text-ink-900 dark:text-ink-50">
-						标签档案馆
-					</h1>
-					<p class="max-w-2xl text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-						按主题整理公开文章。点击任意标签即可打开内容弹窗，快速查看相关文章与手记。
-					</p>
-				</div>
-				<div
-					class="flex items-center gap-2 rounded-default border border-jade-500/20 bg-jade-500/6 px-3 py-2 dark:border-jade-500/25 dark:bg-jade-500/10"
-				>
-					<BookText size={14} class="text-jade-600 dark:text-jade-400" />
-					<span
-						class="font-mono text-[10px] tracking-[0.14em] text-jade-700 uppercase dark:text-jade-300"
-					>
-						{tags.length} Tags · {totalArticles} Articles
-					</span>
-				</div>
-			</div>
-		</header>
+		<PageHeader 
+			title="标签档案馆" 
+			tag="Tags" 
+			subtitle="万物皆有其名" 
+			description="按主题整理公开文章。点击任意标签即可打开内容弹窗，快速查看相关文章与手记。"
+			className="mb-8"
+		/>
+
+		<div
+			class="flex items-center gap-2 rounded-default border border-jade-500/20 bg-jade-500/6 px-3 py-2 dark:border-jade-500/25 dark:bg-jade-500/10 mb-8 w-fit mx-auto"
+		>
+			<BookText size={14} class="text-jade-600 dark:text-jade-400" />
+			<span
+				class="font-mono text-[10px] tracking-[0.14em] text-jade-700 uppercase dark:text-jade-300"
+			>
+				{tags.length} Tags · {totalArticles} Articles
+			</span>
+		</div>
 
 		{#if tags.length === 0}
 			<div

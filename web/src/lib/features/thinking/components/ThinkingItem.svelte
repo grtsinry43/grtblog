@@ -26,67 +26,44 @@
 
 <div
 	id="thinking-{item.id}"
-	class="flex gap-4 py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 hover:bg-ink-50/30 dark:hover:bg-white/5 -mx-4 px-4 sm:mx-0 sm:px-0 transition-colors rounded-default"
+	class="flex gap-6 py-10 border-b border-ink-100 dark:border-ink-800/40 last:border-0 hover:bg-white/50 dark:hover:bg-white/5 transition-colors group px-6 -mx-6 rounded-sm"
 >
-	<!-- Avatar Column -->
-	<div class="flex-shrink-0 pt-1">
-		{#if item.avatar}
-			<img
-				src={item.avatar}
-				alt={item.authorName}
-				class="w-11 h-11 rounded-full object-cover bg-ink-200 dark:bg-ink-800 border border-ink-100 dark:border-ink-800"
-			/>
-		{:else}
-			<div
-				class="w-11 h-11 rounded-full bg-jade-100 dark:bg-jade-900/30 flex items-center justify-center text-jade-700 dark:text-jade-400 font-serif font-medium text-lg border border-jade-200 dark:border-jade-800/50"
-			>
-				{item.authorName?.[0] || 'G'}
-			</div>
-		{/if}
+	<!-- Date Column -->
+	<div class="flex-shrink-0 w-20 pt-1 border-r border-jade-500/20 pr-4 text-right">
+		<div class="text-[10px] font-mono text-ink-400 dark:text-ink-500 uppercase tracking-widest leading-none mb-1">
+			{new Date(item.createdAt).getMonth() + 1}.{new Date(item.createdAt).getDate()}
+		</div>
+		<div class="text-[9px] font-serif text-jade-600/70 dark:text-jade-400/70 italic">
+			{new Date(item.createdAt).getFullYear()}
+		</div>
 	</div>
 
 	<!-- Content Column -->
 	<div class="flex-1 min-w-0">
-		<!-- Header -->
-		<div class="flex items-center justify-between mb-1.5">
-			<div class="flex items-center gap-2">
-				<span class="font-sans font-bold text-base text-ink-900 dark:text-ink-100">
-					{item.authorName || 'Grtsinry43'}
-				</span>
-				<span class="text-xs text-ink-400 dark:text-ink-500">
-					{formatRelativeTime(item.createdAt)}
-				</span>
-			</div>
-		</div>
-
 		<!-- Content -->
 		<div
-			class="max-w-none text-ink-800 dark:text-ink-200 mb-3 font-sans leading-relaxed break-words"
+			class="max-w-none text-ink-800 dark:text-ink-100 mb-6 font-serif leading-relaxed break-words text-[15px] opacity-90 group-hover:opacity-100 transition-opacity"
 		>
 			<MarkdownView content={item.content} />
 		</div>
 
 		<!-- Actions -->
-		<div class="flex items-center gap-10 mt-3 -ml-1">
+		<div class="flex items-center gap-8 mt-4">
 			<button
 				onclick={openCommentsWindow}
-				class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group p-1.5 rounded-default hover:bg-jade-50 dark:hover:bg-jade-900/20"
+				class="flex items-center gap-1.5 text-[11px] text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group/btn"
 			>
-				<MessageCircle
-					size={15}
-					strokeWidth={1.5}
-					class="group-hover:scale-105 transition-transform"
-				/>
+				<MessageCircle size={14} strokeWidth={1.5} class="group-hover/btn:scale-110 transition-transform" />
 				<span>{item.comments || '评论'}</span>
 			</button>
 			<ContentLikeButton
 				contentType="thinking"
 				contentId={item.id}
 				likes={item.likes}
-				className="text-xs text-ink-400 hover:text-red-500 transition-colors p-1.5 rounded-default hover:bg-red-50 dark:hover:bg-red-900/20"
+				className="text-[11px] text-ink-400 hover:text-cinnabar-500 transition-colors"
 			/>
-			<div class="flex items-center gap-1.5 text-xs text-ink-400 ml-auto cursor-default opacity-80">
-				<Eye size={15} strokeWidth={1.5} />
+			<div class="flex items-center gap-1.5 text-[11px] text-ink-300 dark:text-ink-600 ml-auto cursor-default font-mono">
+				<Eye size={14} strokeWidth={1.5} />
 				<span>{item.views}</span>
 			</div>
 		</div>

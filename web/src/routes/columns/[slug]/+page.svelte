@@ -45,7 +45,7 @@
 
 	<!-- Grid -->
 	{#if $moments.length > 0}
-		<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 justify-center">
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
 			{#each $moments as moment, index (moment.id)}
 				<MomentItem {moment} {index} />
 			{/each}

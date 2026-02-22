@@ -327,7 +327,7 @@
 						<div class="flex flex-col">
 							<!-- Main Item -->
 							<div
-								class="relative flex cursor-pointer select-none items-center gap-3 overflow-hidden rounded-xl px-3 py-2 transition-all duration-300
+								class="relative flex select-none items-center gap-3 overflow-hidden rounded-xl px-3 py-2 transition-all duration-300
                                 {active
 									? 'bg-white dark:bg-ink-800'
 									: 'hover:bg-white/50 dark:hover:bg-ink-800/50'}"
@@ -338,10 +338,9 @@
 									></div>
 								{/if}
 
-								<button
-									type="button"
-									onclick={() =>
-										!hasChildren ? handleNavigate() : toggleMobileSubmenu(event!, item.name)}
+								<a
+									href={resolve(item.url)}
+									onclick={handleNavigate}
 									class="flex min-w-0 flex-1 items-center gap-3 text-left"
 								>
 									<!-- Icon -->
@@ -366,13 +365,17 @@
 											{item.name}
 										</div>
 									</div>
-								</button>
+								</a>
 
 								<!-- Expand/Collapse Button -->
 								{#if hasChildren}
 									<button
 										type="button"
-										onclick={(e) => toggleMobileSubmenu(e, item.name)}
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											toggleMobileSubmenu(e, item.name);
+										}}
 										class="-mr-2 rounded-full p-2 text-ink-400 transition-colors active:scale-90 hover:bg-ink-100 dark:hover:bg-white/10"
 									>
 										<ChevronDown
