@@ -866,7 +866,13 @@ func (s *Service) resolveCommentAvatar(ctx context.Context, item *domaincomment.
 	email := strings.TrimSpace(toValue(item.Email))
 	if item.AuthorID != nil && s.userRepo != nil {
 		uid := *item.AuthorID
-		info, ok := cache[uid]
+		var (
+			info commentAuthorSnapshot
+			ok   bool
+		)
+		if cache != nil {
+			info, ok = cache[uid]
+		}
 		if !ok {
 			user, err := s.userRepo.FindByID(ctx, uid)
 			if err == nil && user != nil {
@@ -878,7 +884,9 @@ func (s *Service) resolveCommentAvatar(ctx context.Context, item *domaincomment.
 			} else {
 				info = commentAuthorSnapshot{found: false}
 			}
-			cache[uid] = info
+			if cache != nil {
+				cache[uid] = info
+			}
 		}
 		if info.found {
 			if info.avatar != "" {
