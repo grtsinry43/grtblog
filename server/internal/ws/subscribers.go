@@ -8,6 +8,7 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/moment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/page"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
@@ -122,6 +123,73 @@ func RegisterNotificationSubscriber(bus appEvent.Bus, manager *Manager) {
 			return err
 		}
 		manager.Broadcast(NotificationRoomKey(userID), data)
+		return nil
+	}))
+}
+
+func RegisterGlobalNotificationSubscriber(bus appEvent.Bus, manager *Manager) {
+	if bus == nil || manager == nil {
+		return
+	}
+
+	bus.Subscribe(globalnotification.Created{}.Name(), handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		created, ok := event.(globalnotification.Created)
+		if !ok {
+			return nil
+		}
+		payload := map[string]any{
+			"type":       created.Name(),
+			"id":         created.ID,
+			"content":    created.Content,
+			"publishAt":  created.PublishAt.UTC().Format(time.RFC3339),
+			"expireAt":   created.ExpireAt.UTC().Format(time.RFC3339),
+			"allowClose": created.AllowClose,
+			"at":         created.At.UTC().Format(time.RFC3339),
+		}
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		manager.Broadcast(RealtimeRoomKey(), data)
+		return nil
+	}))
+
+	bus.Subscribe(globalnotification.Updated{}.Name(), handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		updated, ok := event.(globalnotification.Updated)
+		if !ok {
+			return nil
+		}
+		payload := map[string]any{
+			"type":       updated.Name(),
+			"id":         updated.ID,
+			"content":    updated.Content,
+			"publishAt":  updated.PublishAt.UTC().Format(time.RFC3339),
+			"expireAt":   updated.ExpireAt.UTC().Format(time.RFC3339),
+			"allowClose": updated.AllowClose,
+			"at":         updated.At.UTC().Format(time.RFC3339),
+		}
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		manager.Broadcast(RealtimeRoomKey(), data)
+		return nil
+	}))
+
+	bus.Subscribe(globalnotification.Deleted{}.Name(), handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		deleted, ok := event.(globalnotification.Deleted)
+		if !ok {
+			return nil
+		}
+		payload := map[string]any{
+			"type": deleted.Name(),
+			"id":   deleted.ID,
+		}
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		manager.Broadcast(RealtimeRoomKey(), data)
 		return nil
 	}))
 }

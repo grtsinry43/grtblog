@@ -15,4 +15,6 @@ export type ThinkingItem = {
 export type ThinkingListResponse = {
 	items: ThinkingItem[];
 	total: number;
+	page?: number;
+	size?: number;
 };

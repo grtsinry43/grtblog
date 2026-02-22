@@ -383,7 +383,24 @@ func (s *Service) GetArticleTags(ctx context.Context, articleID int64) ([]*conte
 
 // UpdateHotArticles 根据指标更新热门文章状态
 func (s *Service) UpdateHotArticles(ctx context.Context, viewThreshold, likeThreshold, commentThreshold int64) error {
-	return s.repo.SyncHotArticles(ctx, viewThreshold, likeThreshold, commentThreshold)
+	marked, err := s.repo.SyncHotArticles(ctx, viewThreshold, likeThreshold, commentThreshold)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	for _, item := range marked {
+		if !item.IsPublished || strings.TrimSpace(item.ShortURL) == "" {
+			continue
+		}
+		_ = s.events.Publish(ctx, ArticleHotMarked{
+			ID:       item.ID,
+			Title:    item.Title,
+			ShortURL: item.ShortURL,
+			At:       now,
+		})
+	}
+	return nil
 }
 
 // generateShortURL 生成短链接

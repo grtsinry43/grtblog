@@ -86,6 +86,13 @@ type ArticleMetrics struct {
 	UpdatedAt time.Time
 }
 
+type HotArticleMarked struct {
+	ID          int64
+	Title       string
+	ShortURL    string
+	IsPublished bool
+}
+
 type Moment struct {
 	ID          int64
 	Title       string

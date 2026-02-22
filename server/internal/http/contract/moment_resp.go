@@ -13,8 +13,10 @@ type MomentResp struct {
 	ContentHash  string       `json:"contentHash"`
 	AuthorID     int64        `json:"authorId"`
 	Image        []string     `json:"image,omitempty"`
-	ColumnID     *int64       `json:"columnId,omitempty"`
-	CommentID    *int64       `json:"commentAreaId,omitempty"`
+	ColumnID       *int64  `json:"columnId,omitempty"`
+	ColumnName     string  `json:"columnName,omitempty"`
+	ColumnShortURL string  `json:"columnShortUrl,omitempty"`
+	CommentID      *int64  `json:"commentAreaId,omitempty"`
 	ShortURL     string       `json:"shortUrl"`
 	IsPublished  bool         `json:"isPublished"`
 	IsTop        bool         `json:"isTop"`

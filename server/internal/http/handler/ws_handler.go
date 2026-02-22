@@ -130,6 +130,7 @@ type realtimeInboundMessage struct {
 	ContentType string `json:"contentType"`
 	ContentID   int64  `json:"contentId"`
 	URL         string `json:"url"`
+	VisitorID   string `json:"visitorId"`
 }
 
 func (h *WSHandler) HandleRealtime(conn *websocket.Conn) {
@@ -171,10 +172,13 @@ func (h *WSHandler) HandleRealtime(conn *websocket.Conn) {
 		}
 
 		switch msg.Type {
+		case "presence.identify":
+			h.presenceHub.Identify(client, msg.VisitorID)
 		case "presence.report":
 			h.presenceHub.Update(client, ws.PresenceClientPayload{
 				ContentType: msg.ContentType,
 				URL:         msg.URL,
+				VisitorID:   msg.VisitorID,
 			})
 		case "owner.panel.ping":
 			if isAdmin && h.ownerStatus != nil {

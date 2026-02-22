@@ -49,6 +49,8 @@ export type PostDetail = {
 	fediverseObjectUrl?: string | null;
 	cover?: string;
 	categoryId?: number | null;
+	categoryName?: string;
+	categoryShortUrl?: string;
 	commentAreaId?: number | null;
 	extInfo?: ContentExtInfo | null;
 	isPublished: boolean;

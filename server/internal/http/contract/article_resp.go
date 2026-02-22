@@ -14,8 +14,10 @@ type ArticleResp struct {
 	ContentHash        string       `json:"contentHash"`
 	AuthorID           int64        `json:"authorId"`
 	Cover              *string      `json:"cover,omitempty"`
-	CategoryID         *int64       `json:"categoryId,omitempty"`
-	CommentID          *int64       `json:"commentAreaId,omitempty"`
+	CategoryID       *int64 `json:"categoryId,omitempty"`
+	CategoryName     string `json:"categoryName,omitempty"`
+	CategoryShortURL string `json:"categoryShortUrl,omitempty"`
+	CommentID        *int64 `json:"commentAreaId,omitempty"`
 	ShortURL           string       `json:"shortUrl"`
 	FediverseReplyURL  *string      `json:"fediverseReplyUrl,omitempty"`
 	FediverseObjectURL *string      `json:"fediverseObjectUrl,omitempty"`

@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { Calendar, Eye, Heart, ExternalLink, Sparkles } from 'lucide-svelte';
 	import type { PostSummary } from '$lib/features/post/types';
-	import { buildPostPath } from '$lib/shared/utils/content-path';
+	import { buildPostPath, buildCategoryPath } from '$lib/shared/utils/content-path';
 
 	let { post } = $props<{ post: PostSummary }>();
 
@@ -45,11 +45,24 @@
 			<span>{formatDate(post.createdAt)}</span>
 		</div>
 
-		<!-- Tag (Placeholder for now, using a static tag or derived) -->
-		<div class="flex items-center gap-1.5">
-			<Sparkles size={14} strokeWidth={1.5} />
-			<span>{post.categoryName || '技术学习'}</span>
-		</div>
+		<!-- Category -->
+		{#if post.categoryShortUrl}
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<a
+				href={resolve(buildCategoryPath(post.categoryShortUrl))}
+				class="flex items-center gap-1.5 hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<Sparkles size={14} strokeWidth={1.5} />
+				<span>{post.categoryName || '未分类'}</span>
+			</a>
+		{:else}
+			<div class="flex items-center gap-1.5">
+				<Sparkles size={14} strokeWidth={1.5} />
+				<span>{post.categoryName || '未分类'}</span>
+			</div>
+		{/if}
 
 		<!-- Views -->
 		<div class="flex items-center gap-1.5">

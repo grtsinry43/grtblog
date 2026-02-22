@@ -45,6 +45,8 @@ export type MomentDetail = {
 	shortUrl: string;
 	image?: string[];
 	columnId?: number | null;
+	columnName?: string;
+	columnShortUrl?: string;
 	commentAreaId?: number | null;
 	isPublished: boolean;
 	topics?: TopicTag[];

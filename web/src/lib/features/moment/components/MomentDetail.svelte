@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { MomentDetail } from '$lib/features/moment/types';
 	import { ArrowLeft } from 'lucide-svelte';
 	import StickyHeader from '$lib/ui/common/StickyHeader.svelte';
-	import { formatDateCompact, formatDateDotted, getSeason } from '$lib/shared/utils/date';
+	import { formatDateCompact, formatDateDotted } from '$lib/shared/utils/date';
+	import { buildColumnPath } from '$lib/shared/utils/content-path';
 	import MomentDetailPaper from './moment-detail/MomentDetailPaper.svelte';
 	import MomentDetailTocSidebar from './moment-detail/MomentDetailTocSidebar.svelte';
 
@@ -10,8 +12,11 @@
 
 	const dateStr = $derived(formatDateDotted(moment.createdAt));
 	const dateNo = $derived(formatDateCompact(moment.createdAt));
-	const season = $derived(getSeason(moment.createdAt));
-	const column = $derived(moment.topics?.[0]?.name || '手记');
+	const columnLabel = $derived.by(() => {
+		const name = (moment.columnName || '').trim();
+		return name || '未分类手记';
+	});
+	const columnSlug = $derived(moment.columnShortUrl ?? '');
 	const toc = $derived(moment.toc ?? []);
 
 	let contentRoot: HTMLElement | null = $state(null);
@@ -44,11 +49,20 @@
 				class="w-10 md:w-12 h-20 bg-ink-50 dark:bg-ink-800 shadow-lg rounded-b-sm border-x border-b border-ink-200 dark:border-ink-200/20 border-t-4 border-t-ink-800/10 flex flex-col items-center pt-3 pb-2 justify-between"
 			>
 				<div class="w-1.5 h-1.5 rounded-full bg-ink-300 dark:bg-ink-800/50 shadow-inner"></div>
-				<span
-					class="[writing-mode:vertical-rl] text-[11px] font-serif font-bold text-cinnabar-500 tracking-[0.3em] opacity-80"
-				>
-					{season}
-				</span>
+				{#if columnSlug}
+					<a
+						href={resolve(buildColumnPath(columnSlug))}
+						class="[writing-mode:vertical-rl] text-[11px] font-serif font-bold text-cinnabar-500 tracking-[0.3em] opacity-80 hover:opacity-100 transition-opacity"
+					>
+						{columnLabel}
+					</a>
+				{:else}
+					<span
+						class="[writing-mode:vertical-rl] text-[11px] font-serif font-bold text-cinnabar-500 tracking-[0.3em] opacity-80"
+					>
+						{columnLabel}
+					</span>
+				{/if}
 				<div class="w-full h-0.5 bg-cinnabar-500/20"></div>
 			</div>
 		</div>
@@ -69,7 +83,6 @@
 			{moment}
 			{dateStr}
 			{dateNo}
-			{column}
 			onContentRootChange={handleContentRootChange}
 			onActiveAnchorChange={handleActiveAnchorChange}
 		/>

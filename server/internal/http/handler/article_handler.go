@@ -652,6 +652,16 @@ func (h *ArticleHandler) toArticleResp(ctx context.Context, article *content.Art
 	resp.FediverseReplyURL = fediverseReplyURL
 	resp.FediverseObjectURL = fediverseObjectURL
 
+	if article.CategoryID != nil {
+		category, catErr := h.contentRepo.GetCategoryByID(ctx, *article.CategoryID)
+		if catErr == nil && category != nil {
+			resp.CategoryName = category.Name
+			if category.ShortURL != nil {
+				resp.CategoryShortURL = *category.ShortURL
+			}
+		}
+	}
+
 	if len(tags) > 0 {
 		resp.Tags = make([]contract.TagResp, len(tags))
 		for i, tag := range tags {

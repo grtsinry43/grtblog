@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import type { PresenceClientReport, PresenceSnapshotPayload } from '$lib/features/presence/types';
+import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
 
 export type ContentSubscription = {
 	contentType: 'article' | 'moment' | 'page';
@@ -21,6 +22,7 @@ class RealtimeWSCore {
 	private contentSubscription: ContentSubscription | null = null;
 	private sentPresenceKey = '';
 	private sentContentKey = '';
+	private sentVisitorId = '';
 
 	private connectionListeners = new Set<ConnectionListener>();
 	private presenceListeners = new Set<PresenceListener>();
@@ -37,6 +39,7 @@ class RealtimeWSCore {
 		this.reconnectAttempts = 0;
 		this.sentPresenceKey = '';
 		this.sentContentKey = '';
+		this.sentVisitorId = '';
 
 		if (this.reconnectTimer) {
 			clearTimeout(this.reconnectTimer);
@@ -98,7 +101,9 @@ class RealtimeWSCore {
 			this.reconnectAttempts = 0;
 			this.sentPresenceKey = '';
 			this.sentContentKey = '';
+			this.sentVisitorId = '';
 			this.setConnected(true);
+			this.flushPresenceIdentify();
 			this.flushPresenceReport();
 			this.flushContentSubscription();
 		};
@@ -166,18 +171,40 @@ class RealtimeWSCore {
 	private flushPresenceReport() {
 		if (!this.presenceReport) return;
 		if (!this.isSocketOpen()) return;
+		this.flushPresenceIdentify();
 
 		const key = `${this.presenceReport.contentType}|${this.presenceReport.url}`;
 		if (key === this.sentPresenceKey) return;
+		const visitorId = this.getVisitorId();
 
 		this.socket?.send(
 			JSON.stringify({
 				type: 'presence.report',
 				contentType: this.presenceReport.contentType,
-				url: this.presenceReport.url
+				url: this.presenceReport.url,
+				visitorId: visitorId || undefined
 			})
 		);
 		this.sentPresenceKey = key;
+	}
+
+	private flushPresenceIdentify() {
+		if (!this.isSocketOpen()) return;
+
+		const visitorId = this.getVisitorId();
+		if (!visitorId || visitorId === this.sentVisitorId) return;
+
+		this.socket?.send(
+			JSON.stringify({
+				type: 'presence.identify',
+				visitorId
+			})
+		);
+		this.sentVisitorId = visitorId;
+	}
+
+	private getVisitorId(): string {
+		return getOrCreateVisitorId().trim().slice(0, 255);
 	}
 
 	private flushContentSubscription() {

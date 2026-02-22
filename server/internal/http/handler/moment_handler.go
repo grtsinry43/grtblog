@@ -679,6 +679,16 @@ func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Mo
 		UpdatedAt:    momentItem.UpdatedAt,
 	}
 
+	if momentItem.ColumnID != nil {
+		column, colErr := h.contentRepo.GetColumnByID(ctx, *momentItem.ColumnID)
+		if colErr == nil && column != nil {
+			resp.ColumnName = column.Name
+			if column.ShortURL != nil {
+				resp.ColumnShortURL = *column.ShortURL
+			}
+		}
+	}
+
 	if len(topics) > 0 {
 		resp.Topics = make([]contract.TagResp, len(topics))
 		for i, topic := range topics {

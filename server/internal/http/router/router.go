@@ -83,6 +83,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	ws.RegisterMomentUpdateSubscriber(eventBus, wsManager)
 	ws.RegisterPageUpdateSubscriber(eventBus, wsManager)
 	ws.RegisterNotificationSubscriber(eventBus, wsManager)
+	ws.RegisterGlobalNotificationSubscriber(eventBus, wsManager)
 
 	webhookSettings, err := sysCfgSvc.WebhookSettings(context.Background())
 	if err != nil {
@@ -113,6 +114,13 @@ func Register(app *fiber.App, deps Dependencies) {
 	email.RegisterSubscribers(eventBus, emailDispatcher)
 
 	contentRepo := persistence.NewContentRepository(deps.DB)
+	ws.RegisterSiteActivitySubscriber(
+		eventBus,
+		wsManager,
+		contentRepo,
+		persistence.NewThinkingRepository(deps.DB),
+		persistence.NewCommentRepository(deps.DB),
+	)
 	htmlSnapshotSvc := deps.HTMLSnapshot
 	if htmlSnapshotSvc == nil {
 		htmlSnapshotSvc = htmlsnapshot.NewService(contentRepo, deps.Config.App.HTMLSnapshotBaseURL, deps.Redis, deps.Config.Redis.Prefix)

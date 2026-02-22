@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -22,6 +23,7 @@ type PresenceResolvedView struct {
 type PresenceClientPayload struct {
 	ContentType string `json:"contentType"`
 	URL         string `json:"url"`
+	VisitorID   string `json:"visitorId"`
 }
 
 type PresencePageItem struct {
@@ -41,6 +43,7 @@ type presenceSession struct {
 	ContentType string
 	Title       string
 	URL         string
+	VisitorID   string
 	UpdatedAt   time.Time
 }
 
@@ -93,12 +96,7 @@ func (h *PresenceHub) Unregister(client *Client) {
 }
 
 func (h *PresenceHub) Update(client *Client, payload PresenceClientPayload) {
-	if h == nil || client == nil || h.resolver == nil {
-		return
-	}
-
-	resolved, ok := h.resolver.Resolve(payload.ContentType, payload.URL)
-	if !ok {
+	if h == nil || client == nil {
 		return
 	}
 
@@ -108,17 +106,60 @@ func (h *PresenceHub) Update(client *Client, payload PresenceClientPayload) {
 		h.mu.Unlock()
 		return
 	}
-	if session.ContentType == resolved.ContentType && session.URL == resolved.URL && session.Title == resolved.Title {
+	updated := false
+	visitorID := normalizePresenceVisitorID(payload.VisitorID)
+	if visitorID != "" && session.VisitorID != visitorID {
+		session.VisitorID = visitorID
+		updated = true
+	}
+
+	if h.resolver != nil {
+		resolved, ok := h.resolver.Resolve(payload.ContentType, payload.URL)
+		if ok && (session.ContentType != resolved.ContentType || session.URL != resolved.URL || session.Title != resolved.Title) {
+			session.ContentType = resolved.ContentType
+			session.Title = resolved.Title
+			session.URL = resolved.URL
+			updated = true
+		}
+	}
+
+	if !updated {
 		h.mu.Unlock()
 		return
 	}
 
-	h.sessions[client] = presenceSession{
-		ContentType: resolved.ContentType,
-		Title:       resolved.Title,
-		URL:         resolved.URL,
-		UpdatedAt:   time.Now(),
+	session.UpdatedAt = time.Now()
+	h.sessions[client] = session
+	snapshot := h.snapshotLocked()
+	h.mu.Unlock()
+
+	h.broadcast(snapshot)
+}
+
+func (h *PresenceHub) Identify(client *Client, visitorID string) {
+	if h == nil || client == nil {
+		return
 	}
+
+	normalized := normalizePresenceVisitorID(visitorID)
+	if normalized == "" {
+		return
+	}
+
+	h.mu.Lock()
+	session, exists := h.sessions[client]
+	if !exists {
+		h.mu.Unlock()
+		return
+	}
+	if session.VisitorID == normalized {
+		h.mu.Unlock()
+		return
+	}
+
+	session.VisitorID = normalized
+	session.UpdatedAt = time.Now()
+	h.sessions[client] = session
 	snapshot := h.snapshotLocked()
 	h.mu.Unlock()
 
@@ -131,11 +172,22 @@ func (h *PresenceHub) snapshotLocked() PresenceSnapshotPayload {
 		Title       string
 		URL         string
 		Connections int
+		VisitorIDs  map[string]struct{}
 		LastSeen    time.Time
 	}
 
 	groups := make(map[string]*aggregate)
+	online := 0
+	onlineVisitors := make(map[string]struct{})
 	for _, session := range h.sessions {
+		visitorID := normalizePresenceVisitorID(session.VisitorID)
+		if visitorID == "" {
+			online++
+		} else if _, exists := onlineVisitors[visitorID]; !exists {
+			onlineVisitors[visitorID] = struct{}{}
+			online++
+		}
+
 		if session.URL == "" || session.ContentType == "" {
 			continue
 		}
@@ -147,10 +199,16 @@ func (h *PresenceHub) snapshotLocked() PresenceSnapshotPayload {
 				ContentType: session.ContentType,
 				Title:       session.Title,
 				URL:         session.URL,
+				VisitorIDs:  make(map[string]struct{}),
 			}
 			groups[key] = current
 		}
-		current.Connections++
+		if visitorID == "" {
+			current.Connections++
+		} else if _, exists := current.VisitorIDs[visitorID]; !exists {
+			current.VisitorIDs[visitorID] = struct{}{}
+			current.Connections++
+		}
 		if session.UpdatedAt.After(current.LastSeen) {
 			current.LastSeen = session.UpdatedAt
 			if session.Title != "" {
@@ -181,9 +239,20 @@ func (h *PresenceHub) snapshotLocked() PresenceSnapshotPayload {
 
 	return PresenceSnapshotPayload{
 		Type:   "presence.snapshot",
-		Online: len(h.sessions),
+		Online: online,
 		Pages:  pages,
 	}
+}
+
+func normalizePresenceVisitorID(raw string) string {
+	id := strings.TrimSpace(raw)
+	if id == "" {
+		return ""
+	}
+	if len(id) > 255 {
+		return id[:255]
+	}
+	return id
 }
 
 func (h *PresenceHub) broadcast(snapshot PresenceSnapshotPayload) {

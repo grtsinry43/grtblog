@@ -1,6 +1,9 @@
 <script lang="ts">
 	import ThinkingItem from '$lib/features/thinking/components/ThinkingItem.svelte';
+	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { thinkingListCtx } from '$lib/features/thinking/context';
+	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
@@ -10,6 +13,20 @@
 
 	// Select items from the context
 	const items = thinkingListCtx.selectModelData((d) => d?.items || []);
+	const total = thinkingListCtx.selectModelData((d) => d?.total ?? 0);
+	const page = thinkingListCtx.selectModelData((d) => d?.page ?? 1);
+	const size = thinkingListCtx.selectModelData((d) => d?.size ?? 20);
+
+	const totalPages = $derived($size > 0 ? Math.max(1, Math.ceil($total / $size)) : 1);
+
+	const onPageChange = (p: number) => {
+		const safePage = Number.isFinite(p) && p > 1 ? p : 1;
+		if (safePage === 1) {
+			goto(resolve('/thinkings/'));
+		} else {
+			goto(resolve(`/thinkings/page/${safePage}/`));
+		}
+	};
 </script>
 
 <div class="pt-12 pb-20">
@@ -34,7 +51,15 @@
 		{/if}
 	</div>
 
-	<div class="mt-12 text-center text-xs text-ink-300 dark:text-ink-600 font-mono">没有更多了</div>
+	{#if totalPages > 1}
+		<div class="flex justify-center pt-8 pb-4">
+			<Pagination current={$page} total={totalPages} {onPageChange} />
+		</div>
+	{:else}
+		<div class="mt-12 text-center text-xs text-ink-300 dark:text-ink-600 font-mono">
+			没有更多了
+		</div>
+	{/if}
 </div>
 
 <style lang="postcss">

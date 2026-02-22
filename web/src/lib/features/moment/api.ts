@@ -24,6 +24,22 @@ export const getMomentList = async (
 	return result ?? { items: [], total: 0, page, size: pageSize };
 };
 
+export const getMomentListByColumn = async (
+	fetcher?: typeof fetch,
+	columnSlug: string = '',
+	{ page = 1, pageSize = 20 }: MomentListOptions = {}
+): Promise<MomentListResponse> => {
+	const api = getApi(fetcher);
+	const query = new URLSearchParams({
+		page: String(page),
+		pageSize: String(pageSize)
+	});
+	const result = await api<MomentListResponse>(
+		`/columns/short/${encodeURIComponent(columnSlug)}/moments?${query.toString()}`
+	);
+	return result ?? { items: [], total: 0, page, size: pageSize };
+};
+
 export const getMomentDetail = async (
 	fetcher: typeof fetch | undefined,
 	shortUrl: string

@@ -52,6 +52,22 @@ export const getRecentPosts = async (fetcher?: typeof fetch): Promise<PostListRe
 	return result ?? { items: [], total: 0, page: 1, size: 5 };
 };
 
+export const getPostListByCategory = async (
+	fetcher?: typeof fetch,
+	categorySlug: string = '',
+	{ page = 1, pageSize = 10 }: PostListOptions = {}
+): Promise<PostListResponse> => {
+	const api = getApi(fetcher);
+	const query = new URLSearchParams({
+		page: String(page),
+		pageSize: String(pageSize)
+	});
+	const result = await api<PostListResponse>(
+		`/categories/short/${encodeURIComponent(categorySlug)}/articles?${query.toString()}`
+	);
+	return result ?? { items: [], total: 0, page, size: pageSize };
+};
+
 type PostRelatedMomentsResponse = {
 	items: PostRelatedMoment[];
 };
