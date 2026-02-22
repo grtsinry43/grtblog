@@ -2,6 +2,7 @@
 	import ThinkingItem from '$lib/features/thinking/components/ThinkingItem.svelte';
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { thinkingListCtx } from '$lib/features/thinking/context';
+	import PageHeader from '$lib/ui/common/PageHeader.svelte';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
@@ -29,24 +30,29 @@
 	};
 </script>
 
-<div class="pt-12 pb-20">
-	<header class="mb-10 pl-4 border-l-4 border-jade-500">
-		<h1 class="font-serif text-3xl font-bold text-ink-900 dark:text-ink-100 mb-2">想法</h1>
-		<p class="text-ink-500 dark:text-ink-400 text-sm font-serif">捕捉转瞬即逝的灵感与碎碎念。</p>
-	</header>
+<div class="pt-16 pb-20 max-w-4xl mx-auto">
+	<PageHeader 
+		title="思考" 
+		tag="Thoughts" 
+		subtitle="在喧嚣中寻觅一丝宁静" 
+		description="记录深思熟虑后的感悟，或是对世界的细微观察。"
+	/>
 
-	<div class="min-h-[500px]">
+	<div class="min-h-[500px] px-4 sm:px-0">
 		{#if $items.length > 0}
-			<div>
+			<div class="space-y-2">
 				{#each $items as item (item.id)}
 					<ThinkingItem {item} />
 				{/each}
 			</div>
 		{:else}
 			<div
-				class="flex flex-col items-center justify-center py-20 text-ink-400 dark:text-ink-500 font-serif"
+				class="flex flex-col items-center justify-center py-32 text-ink-400 dark:text-ink-500 font-serif"
 			>
-				<p>暂无想法...</p>
+				<div class="w-12 h-12 mb-4 border-2 border-dashed border-ink-200 dark:border-ink-800 rounded-full flex items-center justify-center opacity-50">
+					<div class="w-2 h-2 rounded-full bg-ink-200 dark:bg-ink-800"></div>
+				</div>
+				<p>暂无手记...</p>
 			</div>
 		{/if}
 	</div>

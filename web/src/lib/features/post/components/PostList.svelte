@@ -81,26 +81,7 @@
 	};
 </script>
 
-<div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12">
-	<!-- Header Section -->
-	<header
-		class="space-y-4 text-center sm:text-left border-b border-ink-100 dark:border-ink-800 pb-6 sm:pb-8"
-	>
-		<div class="flex items-center justify-center sm:justify-start gap-3">
-			<h1
-				class="font-serif text-2xl sm:text-4xl font-medium tracking-tight text-ink-950 dark:text-ink-50"
-			>
-				{title}
-			</h1>
-			<span class="hidden sm:inline-block h-px w-12 bg-jade-500/50"></span>
-		</div>
-		<p
-			class="max-w-2xl text-sm sm:text-base leading-relaxed text-ink-500 dark:text-ink-400 font-normal"
-		>
-			{description}
-		</p>
-	</header>
-
+<div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-12">
 	<!-- Content List -->
 	{#if $posts && $posts.length > 0}
 		<div
