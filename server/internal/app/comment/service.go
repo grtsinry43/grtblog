@@ -408,20 +408,11 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 	if shouldSkipReplyNotification(parent, adminUser) {
 		return reply, nil
 	}
+	payload := s.buildCommentReplyPayload(ctx, parent, reply)
 	_ = s.events.Publish(ctx, appEvent.Generic{
 		EventName: "comment.reply",
 		At:        time.Now(),
-		Payload: map[string]any{
-			"ID":             reply.ID,
-			"ParentID":       parent.ID,
-			"AreaID":         reply.AreaID,
-			"ParentContent":  parent.Content,
-			"ReplyContent":   reply.Content,
-			"ParentNickName": toValue(parent.NickName),
-			"ReplyNickName":  toValue(reply.NickName),
-			"recipientEmail": toValue(parent.Email),
-			"Status":         string(reply.Status),
-		},
+		Payload:   payload,
 	})
 	return reply, nil
 }
@@ -430,21 +421,106 @@ func shouldSkipReplyNotification(parent *domaincomment.Comment, replier *identit
 	if parent == nil || replier == nil {
 		return false
 	}
-	if parent.IsOwner {
+	replierAuthorID := &replier.ID
+	replierEmail := toPtr(strings.TrimSpace(replier.Email))
+	return shouldSkipReplyNotificationByIdentity(parent, replierAuthorID, replierEmail)
+}
+
+func shouldSkipReplyNotificationByIdentity(parent *domaincomment.Comment, replierAuthorID *int64, replierEmail *string) bool {
+	if parent == nil {
+		return false
+	}
+	if parent.AuthorID != nil && replierAuthorID != nil && *parent.AuthorID == *replierAuthorID {
 		return true
 	}
-	if parent.AuthorID != nil && *parent.AuthorID == replier.ID {
-		return true
-	}
-	parentEmail := ""
-	if parent.Email != nil {
-		parentEmail = strings.TrimSpace(*parent.Email)
-	}
-	replierEmail := strings.TrimSpace(replier.Email)
-	if parentEmail != "" && replierEmail != "" && strings.EqualFold(parentEmail, replierEmail) {
+	parentEmail := strings.TrimSpace(toValue(parent.Email))
+	replyEmail := strings.TrimSpace(toValue(replierEmail))
+	if parentEmail != "" && replyEmail != "" && strings.EqualFold(parentEmail, replyEmail) {
 		return true
 	}
 	return false
+}
+
+func (s *Service) buildCommentReplyPayload(ctx context.Context, parent *domaincomment.Comment, reply *domaincomment.Comment) map[string]any {
+	contentType, contentTitle, viewURL := s.loadReplyContentMeta(ctx, reply.AreaID)
+	parentID := int64(0)
+	if parent != nil {
+		parentID = parent.ID
+	}
+	return map[string]any{
+		"ID":             reply.ID,
+		"ParentID":       parentID,
+		"AreaID":         reply.AreaID,
+		"ContentType":    contentType,
+		"ContentTitle":   contentTitle,
+		"viewUrl":        viewURL,
+		"ParentContent":  toCommentContent(parent),
+		"ReplyContent":   strings.TrimSpace(reply.Content),
+		"ParentNickName": toCommentNickName(parent),
+		"ReplyNickName":  toValue(reply.NickName),
+		"recipientEmail": toCommentEmail(parent),
+		"Status":         strings.TrimSpace(reply.Status),
+	}
+}
+
+func (s *Service) loadReplyContentMeta(ctx context.Context, areaID int64) (string, string, string) {
+	if areaID <= 0 {
+		return "", "", ""
+	}
+	area, err := s.repo.GetAreaByID(ctx, areaID)
+	if err != nil || area == nil {
+		return "", "", ""
+	}
+
+	rawContentType := strings.TrimSpace(area.Type)
+	contentType := commentAreaTypeLabel(rawContentType)
+	contentTitle := ""
+	viewURL := ""
+	if area.ContentID != nil && *area.ContentID > 0 && rawContentType != "" {
+		if title, titleErr := s.repo.GetContentTitleByTypeAndID(ctx, rawContentType, *area.ContentID); titleErr == nil {
+			contentTitle = title
+		}
+		if path, pathErr := s.repo.GetContentViewPathByTypeAndID(ctx, rawContentType, *area.ContentID); pathErr == nil {
+			viewURL = path
+		}
+	}
+	return contentType, contentTitle, viewURL
+}
+
+func toCommentContent(item *domaincomment.Comment) string {
+	if item == nil {
+		return ""
+	}
+	return strings.TrimSpace(item.Content)
+}
+
+func toCommentNickName(item *domaincomment.Comment) string {
+	if item == nil {
+		return ""
+	}
+	return toValue(item.NickName)
+}
+
+func toCommentEmail(item *domaincomment.Comment) string {
+	if item == nil {
+		return ""
+	}
+	return toValue(item.Email)
+}
+
+func commentAreaTypeLabel(areaType string) string {
+	switch strings.ToLower(strings.TrimSpace(areaType)) {
+	case "article":
+		return "文章"
+	case "moment":
+		return "手记"
+	case "page":
+		return "页面"
+	case "thinking":
+		return "思考"
+	default:
+		return strings.TrimSpace(areaType)
+	}
 }
 
 func (s *Service) UpdateCommentStatus(ctx context.Context, cmd UpdateCommentStatusCmd) error {
@@ -472,6 +548,19 @@ func (s *Service) UpdateCommentStatus(ctx context.Context, cmd UpdateCommentStat
 			"Status": status,
 		},
 	})
+	if status == domaincomment.CommentStatusApproved &&
+		commentEntity.Status != domaincomment.CommentStatusApproved &&
+		commentEntity.ParentID != nil {
+		if parent, parentErr := s.repo.FindByID(ctx, *commentEntity.ParentID); parentErr == nil &&
+			!shouldSkipReplyNotificationByIdentity(parent, commentEntity.AuthorID, commentEntity.Email) {
+			payload := s.buildCommentReplyPayload(ctx, parent, commentEntity)
+			_ = s.events.Publish(ctx, appEvent.Generic{
+				EventName: "comment.reply",
+				At:        time.Now(),
+				Payload:   payload,
+			})
+		}
+	}
 	return nil
 }
 

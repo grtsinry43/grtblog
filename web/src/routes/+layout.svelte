@@ -47,6 +47,7 @@
 	import '@fontsource/noto-serif-sc';
 	import '@fontsource-variable/victor-mono';
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
+	import { resolveSeoMeta } from '$lib/shared/seo/metadata';
 	import {
 		createEmptyDetailPanelModel,
 		detailPanelCtx,
@@ -122,27 +123,18 @@
 		};
 	});
 
-	const websiteName = websiteInfoCtx.selectModelData((data) => data?.website_name || 'grtBlog');
-	const keywords = websiteInfoCtx.selectModelData(
-		(data) =>
-			data?.keywords ||
-			'blog, programming, technology, software development, web development, coding'
+	const websiteInfoStore = websiteInfoCtx.selectModelData((model) => model ?? null);
+	const siteFavicon = $derived.by(() => $websiteInfoStore?.favicon || favicon);
+	const seoMeta = $derived.by(() =>
+		resolveSeoMeta({
+			pathname: page.url.pathname,
+			search: page.url.search,
+			routeData: page.data,
+			websiteInfo: $websiteInfoStore,
+			origin: page.url.origin,
+			fallbackSiteIcon: siteFavicon
+		})
 	);
-	const description = websiteInfoCtx.selectModelData(
-		(data) =>
-			data?.description ||
-			'grtBlog - A personal blog about programming, technology, and software development.'
-	);
-	const siteFavicon = websiteInfoCtx.selectModelData((data) => data?.favicon || favicon);
-	const ogTitle = websiteInfoCtx.selectModelData((data) => data?.og_title || 'grtBlog');
-	const ogType = websiteInfoCtx.selectModelData((data) => data?.og_type || 'website');
-	const ogDescription = websiteInfoCtx.selectModelData(
-		(data) =>
-			data?.og_description ||
-			'grtBlog - A personal blog about programming, technology, and software development.'
-	);
-	const ogImage = websiteInfoCtx.selectModelData((data) => data?.og_image || '');
-	const ogUrl = websiteInfoCtx.selectModelData((data) => data?.og_url || '');
 
 	// Initialize theme on mount
 	const theme = themeManager;
@@ -196,21 +188,24 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={$siteFavicon} />
-	<title>{$websiteName}</title>
+	<link rel="icon" href={siteFavicon} />
+	<title>{seoMeta.title}</title>
+	<link rel="canonical" href={seoMeta.canonicalUrl} />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta name="description" content={$description} />
-	<meta name="keywords" content={$keywords} />
+	<meta name="description" content={seoMeta.description} />
+	<meta name="keywords" content={seoMeta.keywords} />
+	<meta name="robots" content={seoMeta.robots} />
 	<meta name="author" content="grtinry43" />
-	<meta property="og:title" content={$ogTitle} />
-	<meta property="og:description" content={$ogDescription} />
-	<meta property="og:type" content={$ogType} />
-	<meta property="og:url" content={$ogUrl} />
-	<meta property="og:image" content={$ogImage} />
-	<meta name="twitter:card" content={$ogImage ? 'summary_large_image' : 'summary'} />
-	<meta name="twitter:title" content={$ogTitle} />
-	<meta name="twitter:description" content={$ogDescription} />
-	<meta name="twitter:image" content={$ogImage} />
+	<meta property="og:title" content={seoMeta.ogTitle} />
+	<meta property="og:description" content={seoMeta.ogDescription} />
+	<meta property="og:type" content={seoMeta.ogType} />
+	<meta property="og:url" content={seoMeta.ogUrl} />
+	<meta property="og:site_name" content={seoMeta.ogSiteName} />
+	<meta property="og:image" content={seoMeta.ogImage} />
+	<meta name="twitter:card" content={seoMeta.twitterCard} />
+	<meta name="twitter:title" content={seoMeta.ogTitle} />
+	<meta name="twitter:description" content={seoMeta.ogDescription} />
+	<meta name="twitter:image" content={seoMeta.ogImage} />
 	<script>
 		// Inline script to prevent theme flash (fallback before Svelte hydrates)
 		(function () {

@@ -62,6 +62,7 @@ func (d *Dispatcher) Handle(ctx context.Context, event appEvent.Event) error {
 	for key, value := range mapFromEvent(event) {
 		variables[key] = value
 	}
+	normalizeViewURL(variables)
 	subscribers, err := d.repo.ListActiveSubscriberEmailsByEvent(ctx, event.Name())
 	if err != nil {
 		return err
@@ -151,6 +152,20 @@ func mapFromEvent(event appEvent.Event) map[string]any {
 		"eventName":  event.Name(),
 		"occurredAt": event.OccurredAt().Format(time.RFC3339),
 	}
+	switch typed := event.(type) {
+	case appEvent.Generic:
+		for key, value := range typed.Payload {
+			result[key] = value
+		}
+		return result
+	case *appEvent.Generic:
+		if typed != nil {
+			for key, value := range typed.Payload {
+				result[key] = value
+			}
+		}
+		return result
+	}
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return result
@@ -159,7 +174,17 @@ func mapFromEvent(event appEvent.Event) map[string]any {
 	if err := json.Unmarshal(payload, &object); err != nil {
 		return result
 	}
+	if rawPayload, ok := object["Payload"]; ok {
+		if payloadMap, ok := rawPayload.(map[string]any); ok {
+			for key, value := range payloadMap {
+				result[key] = value
+			}
+		}
+	}
 	for key, value := range object {
+		if key == "Payload" {
+			continue
+		}
 		result[key] = value
 	}
 	return result
@@ -197,4 +222,42 @@ func recipientsFromVariables(variables map[string]any) []string {
 		}
 	}
 	return normalizeRecipients(result)
+}
+
+func normalizeViewURL(variables map[string]any) {
+	if len(variables) == 0 {
+		return
+	}
+	rawViewURL, ok := variables["viewUrl"]
+	if !ok {
+		return
+	}
+	viewURL, ok := rawViewURL.(string)
+	if !ok {
+		return
+	}
+	viewURL = strings.TrimSpace(viewURL)
+	if viewURL == "" {
+		return
+	}
+	lower := strings.ToLower(viewURL)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+		return
+	}
+	rawPublicURL, ok := variables["public_url"]
+	if !ok {
+		return
+	}
+	publicURL, ok := rawPublicURL.(string)
+	if !ok {
+		return
+	}
+	publicURL = strings.TrimSpace(publicURL)
+	if publicURL == "" {
+		return
+	}
+	if !strings.HasPrefix(viewURL, "/") {
+		viewURL = "/" + viewURL
+	}
+	variables["viewUrl"] = strings.TrimRight(publicURL, "/") + viewURL
 }
