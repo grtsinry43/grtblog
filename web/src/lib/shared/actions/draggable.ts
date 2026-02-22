@@ -11,6 +11,8 @@ export function draggable(node: HTMLElement, initialOptions: DraggableOptions) {
 	let pointerX = 0;
 	let pointerY = 0;
 	let dragging = false;
+	let dragDistance = 0;
+	let suppressClickUntil = 0;
 	let handleEl: HTMLElement = node;
 
 	const getHandleElement = () => {
@@ -29,14 +31,25 @@ export function draggable(node: HTMLElement, initialOptions: DraggableOptions) {
 		if (!dragging) return;
 		const dx = event.clientX - pointerX;
 		const dy = event.clientY - pointerY;
+		dragDistance += Math.abs(dx) + Math.abs(dy);
 		pointerX = event.clientX;
 		pointerY = event.clientY;
 		options.onMove(dx, dy);
 	}
 
+	function suppressDragEndClick(event: MouseEvent) {
+		if (Date.now() > suppressClickUntil) return;
+		event.preventDefault();
+		event.stopPropagation();
+		event.stopImmediatePropagation();
+	}
+
 	function stopDragging() {
 		if (!dragging) return;
 		dragging = false;
+		if (dragDistance > 3) {
+			suppressClickUntil = Date.now() + 120;
+		}
 		handleEl.style.cursor = 'grab';
 		cleanupDragListeners();
 	}
@@ -50,6 +63,7 @@ export function draggable(node: HTMLElement, initialOptions: DraggableOptions) {
 		}
 
 		dragging = true;
+		dragDistance = 0;
 		pointerX = event.clientX;
 		pointerY = event.clientY;
 		handleEl.style.cursor = 'grabbing';
@@ -65,10 +79,12 @@ export function draggable(node: HTMLElement, initialOptions: DraggableOptions) {
 		handleEl.style.cursor = 'grab';
 		handleEl.style.touchAction = 'none';
 		handleEl.addEventListener('pointerdown', handlePointerDown);
+		window.addEventListener('click', suppressDragEndClick, true);
 	};
 
 	const unbindHandle = () => {
 		handleEl.removeEventListener('pointerdown', handlePointerDown);
+		window.removeEventListener('click', suppressDragEndClick, true);
 		handleEl.style.cursor = '';
 		handleEl.style.touchAction = '';
 	};

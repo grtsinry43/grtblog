@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import { isEmpty } from 'lodash-es'
-import { computed, defineAsyncComponent, h, watch } from 'vue'
+import { computed, defineAsyncComponent, h, onUnmounted, watch } from 'vue'
 
 import texturePng from '@/assets/texture.png'
 import { CollapseTransition, EmptyPlaceholder } from '@/components'
 import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey, layoutInjectionKey } from '@/injection'
-import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore } from '@/stores'
+import { adminRealtimeWSCore } from '@/services/realtime-ws'
+import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore } from '@/stores'
+
+import type { OwnerStatusPayload } from '@/services/owner-status'
 
 import FooterLayout from './footer/index.vue'
 import HeaderLayout from './header/index.vue'
@@ -25,6 +29,9 @@ const {
   tabs: tabsOptions,
   backgroundImage,
 } = toRefsPreferencesStore()
+const { token, user } = toRefsUserStore()
+const realtimeStore = useRealtimeStore()
+const queryClient = useQueryClient()
 
 const AsyncMobileHeader = defineAsyncComponent(() => import('./mobile/MobileHeader.vue'))
 const AsyncMobileLeftAside = defineAsyncComponent(() => import('./mobile/MobileLeftAside.vue'))
@@ -81,12 +88,74 @@ const bgImageStyle = computed(() => {
   }
 })
 
+const stopRealtimeConnectionListener = adminRealtimeWSCore.onConnection((connected) => {
+  realtimeStore.setRealtimeWsConnected(connected)
+})
+
+const stopRealtimeMessageListener = adminRealtimeWSCore.onMessage((payload) => {
+  const ownerStatus = normalizeOwnerStatusPayload(payload)
+  if (!ownerStatus) return
+  queryClient.setQueryData(['owner-status', 'user-dropdown'], ownerStatus)
+})
+
 watch(isMaxSm, (isMaxSm) => {
   if (isMaxSm) {
     preferences.value.sidebarMenu.collapsed = false
     setLayoutSlideDirection(null)
   }
 })
+
+watch(
+  [token, () => user.value.isAdmin],
+  ([nextToken, isAdmin]) => {
+    const jwt = nextToken?.trim() || null
+    if (!jwt) {
+      adminRealtimeWSCore.stop()
+      realtimeStore.setRealtimeWsConnected(false)
+      return
+    }
+
+    adminRealtimeWSCore.updateToken(jwt)
+    adminRealtimeWSCore.setPanelHeartbeat(isAdmin === true)
+    adminRealtimeWSCore.start()
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  stopRealtimeConnectionListener()
+  stopRealtimeMessageListener()
+  adminRealtimeWSCore.stop()
+  realtimeStore.setRealtimeWsConnected(false)
+})
+
+function normalizeOwnerStatusPayload(payload: unknown): OwnerStatusPayload | null {
+  if (!payload || typeof payload !== 'object') return null
+  const raw = payload as Record<string, unknown>
+  if (raw.type !== 'owner.status') return null
+
+  const mediaRaw = raw.media
+  const media =
+    mediaRaw && typeof mediaRaw === 'object'
+      ? {
+          title: typeof (mediaRaw as Record<string, unknown>).title === 'string' ? (mediaRaw as Record<string, unknown>).title as string : undefined,
+          artist: typeof (mediaRaw as Record<string, unknown>).artist === 'string' ? (mediaRaw as Record<string, unknown>).artist as string : undefined,
+          thumbnail:
+            typeof (mediaRaw as Record<string, unknown>).thumbnail === 'string'
+              ? (mediaRaw as Record<string, unknown>).thumbnail as string
+              : undefined,
+        }
+      : null
+
+  return {
+    ok: raw.ok === 1 ? 1 : 0,
+    process: typeof raw.process === 'string' ? raw.process : undefined,
+    extend: typeof raw.extend === 'string' ? raw.extend : undefined,
+    media,
+    timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : undefined,
+    adminPanelOnline: raw.adminPanelOnline === true,
+  }
+}
 </script>
 <template>
   <div

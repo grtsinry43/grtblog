@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { NBadge, NButton, NEmpty, NList, NListItem, NPopover, NText, NThing, useMessage, useNotification } from 'naive-ui'
+import { NBadge, NButton, NEmpty, NList, NListItem, NPopover, NText, NThing, useNotification } from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -10,7 +10,6 @@ import { toRefsUserStore } from '@/stores'
 
 const router = useRouter()
 const queryClient = useQueryClient()
-const message = useMessage()
 const notification = useNotification()
 const { token } = toRefsUserStore()
 
@@ -76,6 +75,9 @@ const connectWs = async () => {
   ws.value.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
+      if (!data || typeof data !== 'object' || (!data.title && !data.content)) {
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['admin-notifications'] })
       notification.create({
         title: data.title || '收到新通知',

@@ -1,10 +1,23 @@
 #!/bin/bash
+set -euo pipefail
 
 # 颜色定义
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+BOOTSTRAP_API="${PREVIEW_ISR_BOOTSTRAP_API:-http://localhost:8080/api/v2/public/html/posts/refresh}"
+SSR_PID=""
+
+stop_ssr_server() {
+    if [[ -n "${SSR_PID}" ]] && kill -0 "${SSR_PID}" 2>/dev/null; then
+        echo "   Stopping SSR Server..."
+        kill "${SSR_PID}" >/dev/null 2>&1 || true
+    fi
+    SSR_PID=""
+}
+
+trap stop_ssr_server EXIT
 
 echo -e "${BLUE}🔍 [0/6] Checking Backend Status...${NC}"
 if ! nc -z localhost 8080; then
@@ -24,12 +37,8 @@ echo -e "${BLUE}📦 [2/6] Building Web Frontend...${NC}"
 # 2. 构建前端
 cd web
 pnpm build
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Build failed!${NC}"
-    exit 1
-fi
 
-echo -e "${BLUE}Cc [3/6] Copying assets to storage...${NC}"
+echo -e "${BLUE}📁 [3/6] Copying assets to storage...${NC}"
 # 3. 复制构建产物 (client 目录下的所有静态资源)
 # SvelteKit 构建输出在 build/client
 cp -r build/client/* ../server/storage/html/
@@ -51,22 +60,19 @@ done
 echo -e "${GREEN}   SSR Server is ready!${NC}"
 cd ..
 
-echo -e "${BLUE}🔄 [5/6] Triggering Backend Cache Refresh...${NC}"
-# 5. 调用 API 更新缓存 (Go 后端爬取 localhost:3000 -> storage/html)
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8080/api/v2/public/html/posts/refresh)
+echo -e "${BLUE}🔄 [5/6] Triggering Backend ISR Bootstrap...${NC}"
+# 5. 调用后端 API 执行一次 ISR Bootstrap
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BOOTSTRAP_API}")
 
 if [ "$HTTP_STATUS" -eq 200 ]; then
-    echo -e "${GREEN}   Cache refreshed successfully!${NC}"
+    echo -e "${GREEN}   ISR bootstrap completed successfully!${NC}"
 else
-    echo -e "${RED}   Failed to refresh cache. Status: $HTTP_STATUS${NC}"
-    # 出错也要杀掉 SSR 进程
-    kill $SSR_PID
+    echo -e "${RED}   Failed to run ISR bootstrap. Status: $HTTP_STATUS${NC}"
     exit 1
 fi
 
 # 任务完成，关闭 SSR 服务器
-echo "   Stopping SSR Server..."
-kill $SSR_PID
+stop_ssr_server
 
 echo -e "${BLUE}🌍 [6/6] Starting Static Server & Opening Browser...${NC}"
 # 6. 启动静态服务器并打开浏览器

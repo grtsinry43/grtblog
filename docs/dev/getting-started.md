@@ -59,7 +59,7 @@ make preview-isr
 这个命令会自动：
 1. 编译 Web 前端
 2. 后台启动 SSR 服务 (:3000)
-3. 调用后端 API 抓取页面生成静态 HTML
+3. 调用后端 API 执行一次 ISR bootstrap
 4. 启动静态文件服务器 (:5555) 并打开浏览器
 
 ::: warning 关键判断标准

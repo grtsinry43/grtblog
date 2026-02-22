@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/ownerstatus"
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
 
@@ -15,10 +16,11 @@ type WSHandler struct {
 	manager      *ws.Manager
 	analyticsSvc *analytics.Service
 	presenceHub  *ws.PresenceHub
+	ownerStatus  *ownerstatus.Service
 }
 
-func NewWSHandler(manager *ws.Manager, analyticsSvc *analytics.Service, presenceHub *ws.PresenceHub) *WSHandler {
-	return &WSHandler{manager: manager, analyticsSvc: analyticsSvc, presenceHub: presenceHub}
+func NewWSHandler(manager *ws.Manager, analyticsSvc *analytics.Service, presenceHub *ws.PresenceHub, ownerStatus *ownerstatus.Service) *WSHandler {
+	return &WSHandler{manager: manager, analyticsSvc: analyticsSvc, presenceHub: presenceHub, ownerStatus: ownerStatus}
 }
 
 func (h *WSHandler) Handle(conn *websocket.Conn) {
@@ -134,6 +136,7 @@ func (h *WSHandler) HandleRealtime(conn *websocket.Conn) {
 	if h.manager == nil || h.presenceHub == nil {
 		return
 	}
+	isAdmin := localUserIsAdmin(conn)
 
 	rootRoom := ws.RealtimeRoomKey()
 	client, cachedRoot := h.manager.Join(rootRoom, conn)
@@ -150,6 +153,9 @@ func (h *WSHandler) HandleRealtime(conn *websocket.Conn) {
 	}
 	for _, payload := range cachedPresence {
 		_ = client.Write(payload)
+	}
+	if isAdmin && h.ownerStatus != nil {
+		h.ownerStatus.TouchAdminPanel()
 	}
 
 	currentContentRoom := ""
@@ -170,6 +176,10 @@ func (h *WSHandler) HandleRealtime(conn *websocket.Conn) {
 				ContentType: msg.ContentType,
 				URL:         msg.URL,
 			})
+		case "owner.panel.ping":
+			if isAdmin && h.ownerStatus != nil {
+				h.ownerStatus.TouchAdminPanel()
+			}
 		case "content.subscribe":
 			roomKey, ok := ws.ContentRoomKey(msg.ContentType, msg.ContentID)
 			if !ok {
@@ -215,6 +225,15 @@ func localUserID(conn *websocket.Conn) int64 {
 		return int64(v)
 	default:
 		return 0
+	}
+}
+
+func localUserIsAdmin(conn *websocket.Conn) bool {
+	switch v := conn.Locals("wsUserIsAdmin").(type) {
+	case bool:
+		return v
+	default:
+		return false
 	}
 }
 

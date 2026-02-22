@@ -5,5 +5,6 @@ const pinia = createPinia()
 export { pinia }
 
 export * from './preferences'
+export * from './realtime'
 export * from './tabs'
 export * from './user'

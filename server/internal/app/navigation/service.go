@@ -3,16 +3,25 @@ package navigation
 import (
 	"context"
 	"strings"
+	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	domain "github.com/grtsinry43/grtblog-v2/server/internal/domain/navigation"
 )
 
 type Service struct {
-	repo domain.Repository
+	repo   domain.Repository
+	events appEvent.Bus
 }
 
-func NewService(repo domain.Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo domain.Repository, events appEvent.Bus) *Service {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
+	return &Service{
+		repo:   repo,
+		events: events,
+	}
 }
 
 func (s *Service) List(ctx context.Context) ([]*domain.NavMenu, error) {
@@ -47,6 +56,7 @@ func (s *Service) Create(ctx context.Context, cmd CreateNavMenuCmd) (*domain.Nav
 	if err := s.repo.Create(ctx, menu); err != nil {
 		return nil, err
 	}
+	s.publishMenuUpdated(ctx, "create", menu.ID)
 
 	return menu, nil
 }
@@ -91,12 +101,17 @@ func (s *Service) Update(ctx context.Context, cmd UpdateNavMenuCmd) (*domain.Nav
 	if err := s.repo.Update(ctx, menu); err != nil {
 		return nil, err
 	}
+	s.publishMenuUpdated(ctx, "update", menu.ID)
 
 	return menu, nil
 }
 
 func (s *Service) Delete(ctx context.Context, id int64) error {
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	s.publishMenuUpdated(ctx, "delete", id)
+	return nil
 }
 
 func (s *Service) UpdateOrder(ctx context.Context, items []NavMenuOrderItem) error {
@@ -108,7 +123,22 @@ func (s *Service) UpdateOrder(ctx context.Context, items []NavMenuOrderItem) err
 			Sort:     item.Sort,
 		})
 	}
-	return s.repo.UpdateOrder(ctx, updates)
+	if err := s.repo.UpdateOrder(ctx, updates); err != nil {
+		return err
+	}
+	s.publishMenuUpdated(ctx, "reorder", 0)
+	return nil
+}
+
+func (s *Service) publishMenuUpdated(ctx context.Context, action string, id int64) {
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "navmenu.updated",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"action": strings.TrimSpace(action),
+			"id":     id,
+		},
+	})
 }
 
 func normalizeIcon(icon *string) (*string, error) {

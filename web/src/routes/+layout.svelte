@@ -19,8 +19,10 @@
 	import { uiState } from '$lib/shared/stores/ui.svelte';
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { presenceStore } from '$lib/features/presence/store.svelte';
+	import { ownerStatusStore } from '$lib/features/owner-status/store.svelte';
 	import { resolvePresenceView } from '$lib/features/presence/resolve-view';
 	import PresencePagesWindow from '$lib/features/presence/components/PresencePagesWindow.svelte';
+	import ThinkingCommentsWindow from '$lib/features/thinking/components/ThinkingCommentsWindow.svelte';
 
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
@@ -153,8 +155,10 @@
 		initTheme(theme);
 		consoleLogInfo();
 		presenceStore.start();
+		ownerStatusStore.start();
 		return () => {
 			presenceStore.stop();
+			ownerStatusStore.stop();
 		};
 	});
 
@@ -268,6 +272,11 @@
 		/>
 	{:else if windowStore.kind === 'presence-pages'}
 		<PresencePagesWindow />
+	{:else if windowStore.kind === 'thinking-comments'}
+		<ThinkingCommentsWindow
+			areaId={windowStore.data?.areaId}
+			commentsCount={windowStore.data?.commentsCount ?? 0}
+		/>
 	{:else if windowStore.kind === 'user-center'}
 		<QueryRoot
 			loader={() => import('$lib/features/user-center/components/UserCenterWindow.svelte')}

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { draggable } from '$lib/shared/actions/draggable';
-	import { X, Minus } from 'lucide-svelte';
-	import { scale } from 'svelte/transition';
-	import { backOut, cubicIn } from 'svelte/easing';
-	import type { Snippet } from 'svelte';
+	import { X, Minus, Maximize2, Minimize2 } from 'lucide-svelte';
+	import { scale, fly, fade } from 'svelte/transition';
+	import { backOut, cubicIn, expoOut } from 'svelte/easing';
+	import { tick, type Snippet } from 'svelte';
 
 	let { children } = $props<{ children?: Snippet }>();
 	let windowEl = $state<HTMLElement>();
@@ -12,19 +12,47 @@
 	let outsidePulse = $state(false);
 	let outsidePulseTimer: ReturnType<typeof setTimeout> | undefined;
 
+	let isMobile = $state(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+	const windowStyle = $derived.by(() => {
+		if (isMobile) return '';
+		const styles = [`left: ${windowStore.position.x}px`, `top: ${windowStore.position.y}px`];
+		if (
+			typeof window !== 'undefined' &&
+			!windowStore.isExpanded &&
+			windowStore.size.width &&
+			windowStore.size.height
+		) {
+			styles.push(`width: ${windowStore.size.width}px`, `height: ${windowStore.size.height}px`);
+		}
+		return styles.join('; ');
+	});
+
 	function handleMove(dx: number, dy: number) {
-		if (!windowEl) return;
+		if (!windowEl || isMobile) return;
 		windowStore.updatePosition(dx, dy, windowEl.clientWidth, windowEl.clientHeight);
 	}
 
 	function syncToViewport() {
-		if (!windowEl) return;
+		if (!windowEl || isMobile) return;
 		windowStore.syncToViewport(windowEl.clientWidth, windowEl.clientHeight);
 	}
 
 	function centerInViewport() {
-		if (!windowEl) return;
+		if (!windowEl || isMobile) return;
 		windowStore.centerInViewport(windowEl.clientWidth, windowEl.clientHeight);
+	}
+
+	function snapshotWindowSize() {
+		if (!windowEl || typeof window === 'undefined' || isMobile) return;
+		if (windowStore.isExpanded) return;
+		windowStore.setSize(windowEl.clientWidth, windowEl.clientHeight);
+	}
+
+	async function handleToggleExpand() {
+		windowStore.toggleExpanded();
+		await tick();
+		syncToViewport();
 	}
 
 	function triggerOutsidePulse() {
@@ -45,25 +73,60 @@
 		const target = event.target;
 		if (!(target instanceof Node)) return;
 		if (!windowEl.contains(target)) {
-			triggerOutsidePulse();
+			if (isMobile) {
+				windowStore.close();
+			} else {
+				triggerOutsidePulse();
+			}
 		}
+	}
+
+	function updateMobileState() {
+		if (typeof window !== 'undefined') {
+			isMobile = window.innerWidth < 768;
+		}
+	}
+
+	// Custom responsive transition
+	function responsiveIn(node: HTMLElement) {
+		if (isMobile) {
+			return fly(node, { y: 600, duration: 500, easing: expoOut });
+		}
+		return scale(node, { duration: 260, start: 0.92, easing: backOut });
+	}
+
+	function responsiveOut(node: HTMLElement) {
+		if (isMobile) {
+			return fly(node, { y: 600, duration: 400, easing: cubicIn });
+		}
+		return scale(node, { duration: 140, easing: cubicIn });
 	}
 
 	$effect(() => {
 		if (!windowStore.isOpen || windowStore.isMinimized || !windowEl) return;
 		if (typeof window === 'undefined') return;
 
-		if (windowStore.openVersion !== centeredOpenVersion) {
+		if (windowStore.openVersion !== centeredOpenVersion && !isMobile) {
 			centerInViewport();
 			centeredOpenVersion = windowStore.openVersion;
 		}
 
-		syncToViewport();
-		window.addEventListener('resize', syncToViewport);
+		if (!isMobile) {
+			syncToViewport();
+		}
+
+		const handleResize = () => {
+			updateMobileState();
+			syncToViewport();
+		};
+
+		window.addEventListener('pointerup', snapshotWindowSize, true);
+		window.addEventListener('resize', handleResize);
 		window.addEventListener('pointerdown', handleOutsidePointerDown, true);
 
 		return () => {
-			window.removeEventListener('resize', syncToViewport);
+			window.removeEventListener('pointerup', snapshotWindowSize, true);
+			window.removeEventListener('resize', handleResize);
 			window.removeEventListener('pointerdown', handleOutsidePointerDown, true);
 			if (outsidePulseTimer) {
 				clearTimeout(outsidePulseTimer);
@@ -75,22 +138,42 @@
 </script>
 
 {#if windowStore.isOpen && !windowStore.isMinimized}
+	<!-- Backdrop for mobile -->
+	{#if isMobile}
+		<div
+			class="fixed inset-0 z-[998]"
+			onclick={() => windowStore.close()}
+			aria-hidden="true"
+		></div>
+	{/if}
+
 	<div
 		bind:this={windowEl}
-		class="fixed z-[999] w-[90vw] md:w-[450px] rounded-default border border-ink-200/50 bg-white/65 dark:border-ink-700/50 dark:bg-ink-900/60 backdrop-blur-xl shadow-float dark:shadow-glass overflow-hidden noise-surface"
-		class:window-outside-pulse={outsidePulse}
-		style="left: {windowStore.position.x}px; top: {windowStore.position.y}px;"
+		class="floating-window fixed z-[999] bg-white/65 dark:bg-ink-900/60 backdrop-blur-xl noise-surface overflow-hidden
+        {isMobile
+			? 'inset-x-0 bottom-0 w-full rounded-t-default border-t border-ink-200/50 dark:border-ink-700/50 shadow-2xl noise-strong'
+			: 'w-[90vw] rounded-default border border-ink-200/50 shadow-float dark:shadow-glass md:min-w-[450px] md:max-w-[92vw] md:resize'}"
+		class:window-expanded={windowStore.isExpanded && !isMobile}
+		class:window-outside-pulse={outsidePulse && !isMobile}
+		style={windowStyle}
 		use:draggable={{ handle: '.window-header', onMove: handleMove }}
-		in:scale={{ duration: 260, start: 0.92, easing: backOut }}
-		out:scale={{ duration: 140, easing: cubicIn }}
+		in:responsiveIn
+		out:responsiveOut
 	>
-		<!-- Window Header - Narrower -->
+		<!-- Paper-like Handle for mobile drawer -->
+		{#if isMobile}
+			<div class="w-full flex justify-center pt-3 pb-1" onclick={() => windowStore.close()}>
+				<div class="w-12 h-1.5 rounded-full bg-ink-300/50 dark:bg-ink-700/50"></div>
+			</div>
+		{/if}
+
+		<!-- Window Header -->
 		<div
-			class="window-header pl-4 pr-2 py-1.5 flex items-center justify-between border-b border-ink-100/45 dark:border-ink-800/45 select-none bg-ink-50/35 dark:bg-ink-950/35"
+			class="window-header pl-6 pr-4 py-3 md:pl-4 md:pr-2 md:py-1.5 flex items-center justify-between border-b border-ink-100/45 dark:border-ink-800/45 select-none bg-ink-50/35 dark:bg-ink-950/35"
 		>
 			<div class="flex items-center gap-2">
 				<span
-					class="text-[10px] font-mono font-extrabold text-ink-500 dark:text-ink-400 uppercase tracking-[0.15em]"
+					class="text-xs md:text-[10px] font-mono font-extrabold text-ink-500 dark:text-ink-400 uppercase tracking-[0.15em]"
 				>
 					{windowStore.title}
 				</span>
@@ -98,23 +181,38 @@
 
 			<div class="flex items-center gap-0.5">
 				<button
+					onclick={handleToggleExpand}
+					class="hidden md:inline-flex p-1 rounded-full hover:bg-ink-200/50 dark:hover:bg-ink-800/50 text-ink-400 transition-colors"
+					title={windowStore.isExpanded ? '还原窗口' : '放大窗口'}
+				>
+					{#if windowStore.isExpanded}
+						<Minimize2 size={12} />
+					{:else}
+						<Maximize2 size={12} />
+					{/if}
+				</button>
+				<button
 					onclick={() => windowStore.minimize()}
 					class="p-1 rounded-full hover:bg-ink-200/50 dark:hover:bg-ink-800/50 text-ink-400 transition-colors"
 				>
-					<Minus size={12} />
+					<Minus size={isMobile ? 16 : 12} />
 				</button>
 				<button
 					onclick={() => windowStore.close()}
 					class="p-1 rounded-full hover:bg-cinnabar-500 hover:text-white text-ink-400 transition-all"
 				>
-					<X size={12} />
+					<X size={isMobile ? 16 : 12} />
 				</button>
 			</div>
 		</div>
 
 		<!-- Window Content -->
 		<div
-			class="p-6 text-sm text-ink-600 dark:text-ink-300 leading-relaxed max-h-[60vh] overflow-y-auto"
+			class="floating-window__content p-6 text-sm text-ink-600 dark:text-ink-300 leading-relaxed overflow-y-auto {isMobile
+				? 'max-h-[80vh] pb-12'
+				: 'max-h-[60vh]'} {windowStore.isExpanded && !isMobile
+				? 'md:max-h-none md:flex-1 md:min-h-0'
+				: ''}"
 		>
 			{#if children}
 				{@render children()}
@@ -137,8 +235,86 @@
 <style lang="postcss">
 	@reference "$routes/layout.css";
 
+	.noise-strong::after {
+		opacity: 0.35 !important;
+		mix-blend-mode: soft-light !important;
+	}
+
+	:global(.dark) .noise-strong::after {
+		opacity: 0.28 !important;
+		mix-blend-mode: soft-light !important;
+	}
+
 	.window-outside-pulse {
 		animation: window-outside-pulse 280ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
+	}
+
+	@media (min-width: 768px) {
+		.floating-window {
+			width: 450px;
+			min-height: 300px;
+			max-width: min(92vw, 1100px);
+			max-height: 82vh;
+		}
+
+		.floating-window.window-expanded {
+			width: min(92vw, 1100px);
+			height: 82vh;
+			display: flex;
+			flex-direction: column;
+			resize: none;
+		}
+	}
+
+	.floating-window__content {
+		scrollbar-gutter: stable;
+		scrollbar-width: thin;
+		scrollbar-color: rgb(148 163 184 / 0.32) transparent;
+	}
+
+	:global(.dark .floating-window__content) {
+		scrollbar-color: rgb(71 85 105 / 0.38) transparent;
+	}
+
+	.floating-window__content:hover {
+		scrollbar-color: rgb(148 163 184 / 0.42) transparent;
+	}
+
+	:global(.dark .floating-window__content:hover) {
+		scrollbar-color: rgb(71 85 105 / 0.48) transparent;
+	}
+
+	.floating-window__content::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+
+	.floating-window__content::-webkit-scrollbar-track {
+		background: transparent;
+		border-radius: 9999px;
+	}
+
+	:global(.dark .floating-window__content::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+
+	.floating-window__content::-webkit-scrollbar-thumb {
+		background: linear-gradient(180deg, rgb(148 163 184 / 0.34), rgb(148 163 184 / 0.38));
+		border-radius: 9999px;
+		border: 2px solid transparent;
+		background-clip: padding-box;
+	}
+
+	:global(.dark .floating-window__content::-webkit-scrollbar-thumb) {
+		background: linear-gradient(180deg, rgb(71 85 105 / 0.42), rgb(51 65 85 / 0.46));
+	}
+
+	.floating-window__content::-webkit-scrollbar-thumb:hover {
+		background: linear-gradient(180deg, rgb(148 163 184 / 0.44), rgb(148 163 184 / 0.48));
+	}
+
+	:global(.dark .floating-window__content::-webkit-scrollbar-thumb:hover) {
+		background: linear-gradient(180deg, rgb(71 85 105 / 0.52), rgb(51 65 85 / 0.56));
 	}
 
 	@keyframes window-outside-pulse {

@@ -18,12 +18,25 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 	thinkingRepo := persistence.NewThinkingRepository(deps.DB)
 	presenceResolver := ws.NewPresenceTitleResolver(contentRepo, thinkingRepo)
 	presenceHub := ws.NewPresenceHub(manager, presenceResolver)
-	wsHandler := handler.NewWSHandler(manager, deps.Analytics, presenceHub)
+	wsHandler := handler.NewWSHandler(manager, deps.Analytics, presenceHub, deps.OwnerStatus)
 
 	v2.Use("/ws/realtime", func(c *fiber.Ctx) error {
 		if !websocket.IsWebSocketUpgrade(c) {
 			return fiber.ErrUpgradeRequired
 		}
+		token := extractWSJWTToken(c)
+		if token == "" {
+			return c.Next()
+		}
+		if deps.JWTManager == nil {
+			return fiber.NewError(fiber.StatusUnauthorized, "ws auth unavailable")
+		}
+		claims, err := deps.JWTManager.Parse(token)
+		if err != nil || claims == nil || claims.UserID <= 0 {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")
+		}
+		c.Locals("wsUserID", claims.UserID)
+		c.Locals("wsUserIsAdmin", claims.IsAdmin)
 		return c.Next()
 	})
 	v2.Get("/ws/realtime", websocket.New(wsHandler.HandleRealtime))
@@ -67,6 +80,7 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 			claims, err := deps.JWTManager.Parse(token)
 			if err == nil && claims != nil && claims.UserID > 0 {
 				c.Locals("wsUserID", claims.UserID)
+				c.Locals("wsUserIsAdmin", claims.IsAdmin)
 				return c.Next()
 			}
 			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")

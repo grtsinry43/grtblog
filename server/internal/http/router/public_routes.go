@@ -21,11 +21,15 @@ import (
 
 func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, htmlSnapshotSvc *htmlsnapshot.Service, navMenuHandler *handler.NavMenuHandler) {
 	public := v2.Group("/public")
+	ownerStatusHandler := handler.NewOwnerStatusHandler(deps.OwnerStatus)
+	public.Get("/owner-status", ownerStatusHandler.GetStatus)
+	v2.Get("/onlineStatus", ownerStatusHandler.GetStatus)
+
 	public.Get("/website-info", websiteInfoHandler.PublicList)
 	public.Get("/nav-menus", navMenuHandler.ListPublic)
 	public.Get("/tags", newTaxonomyHandler(deps).ListPublicTags)
 
-	htmlSnapshotHandler := handler.NewHTMLSnapshotHandler(htmlSnapshotSvc)
+	htmlSnapshotHandler := handler.NewHTMLSnapshotHandler(htmlSnapshotSvc, deps.ISR)
 	public.Post("/html/posts/refresh", htmlSnapshotHandler.RefreshPostsHTML)
 
 	articleHandler := newArticleHandler(deps)
