@@ -2,7 +2,7 @@
 	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import type { CommentNode } from '$lib/features/comment/types';
 	import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
-	import { MessageSquare, Monitor, Pin } from 'lucide-svelte';
+	import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
 	import CommentItem from './CommentItem.svelte';
 	import CommentForm from './CommentForm.svelte';
 	import CommentVerifiedIcon from './CommentVerifiedIcon.svelte';
@@ -111,13 +111,6 @@
 			<span class="text-[10px] text-ink-400 font-mono ml-auto">
 				{relativeTime}
 			</span>
-			{#if comment.location}
-				<span
-					class="text-[10px] text-ink-400 dark:text-ink-500 bg-ink-100/50 dark:bg-ink-800/50 px-1.5 py-0.5 rounded-sm"
-				>
-					{comment.location}
-				</span>
-			{/if}
 		</div>
 
 		<div class="relative">
@@ -152,13 +145,13 @@
 			{#if !$isClosedStore && !comment.isDeleted && comment.canReply}
 				<button
 					onclick={handleReply}
-					class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-jade-600 transition-colors font-medium"
+					class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-jade-600 transition-[opacity,color] font-medium opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
 				>
 					<MessageSquare size={14} />
 					<span>回复</span>
 				</button>
 			{/if}
-			{#if comment.browser || comment.platform}
+			{#if comment.browser || comment.platform || comment.location}
 				<div
 					class="flex items-center gap-3 text-[10px] text-ink-400 dark:text-ink-500 opacity-0 group-hover:opacity-100 transition-opacity"
 				>
@@ -167,6 +160,9 @@
 					{/if}
 					{#if comment.browser}
 						<span class="flex items-center gap-1">{comment.browser}</span>
+					{/if}
+					{#if comment.location}
+						<span class="flex items-center gap-1"><MapPin size={12} /> {comment.location}</span>
 					{/if}
 				</div>
 			{/if}

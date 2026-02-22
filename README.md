@@ -36,3 +36,8 @@ v2 本质上是：
 
 This project includes third-party open-source software.
 See `THIRD_PARTY_NOTICES.md` for details.
+
+## 数据迁移（v1 -> v2）
+
+已提供 API 迁移脚本：`scripts/migrate-v1-to-v2.mjs`  
+使用说明见：`scripts/migrate-v1-to-v2.md`

@@ -1,5 +1,7 @@
 package contract
 
+import "time"
+
 type CreateCommentLoginReq struct {
 	Content   string `json:"content" validate:"required"`
 	ParentID  *int64 `json:"parentId"`
@@ -50,4 +52,34 @@ type SetCommentAreaCloseReq struct {
 type MarkCommentsViewedReq struct {
 	IDs      []int64 `json:"ids"`
 	IsViewed *bool   `json:"isViewed,omitempty"`
+}
+
+type ImportCommentReq struct {
+	ID                *int64     `json:"id,omitempty"`
+	AreaID            int64      `json:"areaId" validate:"required"`
+	Content           string     `json:"content" validate:"required"`
+	AuthorID          *int64     `json:"authorId,omitempty"`
+	VisitorID         *string    `json:"visitorId,omitempty"`
+	NickName          *string    `json:"nickName,omitempty"`
+	IP                *string    `json:"ip,omitempty"`
+	Location          *string    `json:"location,omitempty"`
+	Platform          *string    `json:"platform,omitempty"`
+	Browser           *string    `json:"browser,omitempty"`
+	Email             *string    `json:"email,omitempty"`
+	Website           *string    `json:"website,omitempty"`
+	IsOwner           *bool      `json:"isOwner,omitempty"`
+	IsFriend          *bool      `json:"isFriend,omitempty"`
+	IsAuthor          *bool      `json:"isAuthor,omitempty"`
+	IsViewed          *bool      `json:"isViewed,omitempty"`
+	IsTop             *bool      `json:"isTop,omitempty"`
+	IsFederated       *bool      `json:"isFederated,omitempty"`
+	FederatedProtocol *string    `json:"federatedProtocol,omitempty"`
+	FederatedActor    *string    `json:"federatedActor,omitempty"`
+	FederatedObjectID *string    `json:"federatedObjectId,omitempty"`
+	CanReply          *bool      `json:"canReply,omitempty"`
+	Status            *string    `json:"status,omitempty"`
+	ParentID          *int64     `json:"parentId,omitempty"`
+	CreatedAt         *time.Time `json:"createdAt,omitempty"`
+	UpdatedAt         *time.Time `json:"updatedAt,omitempty"`
+	DeletedAt         *time.Time `json:"deletedAt,omitempty"`
 }
