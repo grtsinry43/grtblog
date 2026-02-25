@@ -67,6 +67,7 @@
 		"@iconify/icons-simple-icons": "^1.2.74",
 		"@iconify/svelte": "^5.2.1",
 		"@iconify/utils": "^3.1.0",
+		"@resvg/resvg-js": "^2.6.2",
 		"@tanstack/svelte-query": "^6.0.18",
 		"bits-ui": "^2.15.5",
 		"emoji-picker-element": "^1.29.0",

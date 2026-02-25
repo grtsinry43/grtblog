@@ -14,6 +14,9 @@ export type ResolvedSeoMeta = {
 	ogType: string;
 	ogUrl: string;
 	ogImage: string;
+	ogImageType: string | null;
+	ogImageWidth: number | null;
+	ogImageHeight: number | null;
 	twitterCard: 'summary' | 'summary_large_image';
 	robots: string;
 };
@@ -39,6 +42,8 @@ const DEFAULT_DESCRIPTION =
 	'grtBlog - A personal blog about programming, technology, and software development.';
 const DEFAULT_KEYWORDS =
 	'blog, programming, technology, software development, web development, coding';
+const GENERATED_OG_IMAGE_WIDTH = 1200;
+const GENERATED_OG_IMAGE_HEIGHT = 630;
 
 const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
@@ -324,6 +329,7 @@ export const resolveSeoMeta = (input: ResolveSeoMetaInput): ResolvedSeoMeta => {
 	}
 	const generatedOgImage = toAbsoluteUrl(`/og-image/?${ogImageParams.toString()}`, baseUrl);
 	const ogImage = contentImage || generatedOgImage;
+	const usesGeneratedOgImage = !contentImage;
 
 	const noIndex =
 		pathname.startsWith('/auth/providers/') ||
@@ -341,6 +347,9 @@ export const resolveSeoMeta = (input: ResolveSeoMetaInput): ResolvedSeoMeta => {
 		ogType,
 		ogUrl,
 		ogImage,
+		ogImageType: usesGeneratedOgImage ? 'image/png' : null,
+		ogImageWidth: usesGeneratedOgImage ? GENERATED_OG_IMAGE_WIDTH : null,
+		ogImageHeight: usesGeneratedOgImage ? GENERATED_OG_IMAGE_HEIGHT : null,
 		twitterCard: ogImage ? 'summary_large_image' : 'summary',
 		robots: noIndex ? 'noindex,nofollow' : 'index,follow'
 	};

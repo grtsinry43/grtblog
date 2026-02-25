@@ -23,6 +23,10 @@ type AppConfig struct {
 	Port                string
 	Env                 string
 	HTMLSnapshotBaseURL string
+	ProxyHeader         string
+	TrustedProxies      []string
+	TrustedProxyCheck   bool
+	IPValidation        bool
 }
 
 // DatabaseConfig captures everything required to boot GORM.
@@ -72,6 +76,17 @@ func Load() Config {
 			Port:                getEnv("APP_PORT", "8080"),
 			Env:                 strings.ToLower(getEnv("APP_ENV", "development")),
 			HTMLSnapshotBaseURL: strings.TrimRight(getEnv("HTMLSNAPSHOT_BASE_URL", "http://localhost:3000"), "/"),
+			ProxyHeader:         getEnv("APP_PROXY_HEADER", "X-Forwarded-For"),
+			TrustedProxies: getEnvAsSlice("APP_TRUSTED_PROXIES", []string{
+				"127.0.0.1",
+				"::1",
+				"10.0.0.0/8",
+				"172.16.0.0/12",
+				"192.168.0.0/16",
+				"fc00::/7",
+			}),
+			TrustedProxyCheck: getEnvAsBool("APP_TRUSTED_PROXY_CHECK", true),
+			IPValidation:      getEnvAsBool("APP_IP_VALIDATION", true),
 		},
 		Database: DatabaseConfig{
 			Driver:      strings.ToLower(getEnv("DB_DRIVER", "postgres")),

@@ -1,9 +1,12 @@
 import type { RequestHandler } from './$types';
+import { Resvg } from '@resvg/resvg-js';
 
 const MAX_TITLE_LENGTH = 60;
 const MAX_SUBTITLE_LENGTH = 120;
 const MAX_SITE_LENGTH = 48;
 const MAX_TAG_LENGTH = 24;
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
 
 const normalizeText = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
@@ -150,7 +153,7 @@ const buildSvg = (
 		: '';
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${escapeXml(title)}">
+<svg width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" viewBox="0 0 ${OG_IMAGE_WIDTH} ${OG_IMAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${escapeXml(title)}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="${color.bgStart}"/>
@@ -176,10 +179,10 @@ ${iconClipDef}
       <rect x="124" y="154" width="760" height="360"/>
     </clipPath>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#jadeGlow)"/>
-  <rect width="1200" height="630" fill="url(#amberGlow)"/>
-  <rect width="1200" height="630" filter="url(#noise)"/>
+  <rect width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" fill="url(#bg)"/>
+  <rect width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" fill="url(#jadeGlow)"/>
+  <rect width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" fill="url(#amberGlow)"/>
+  <rect width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" filter="url(#noise)"/>
   <rect x="72" y="68" width="1056" height="494" rx="4" fill="${color.panel}" stroke="${color.border}" stroke-width="1.5"/>
   <line x1="124" y1="94" x2="124" y2="146" stroke="${color.brand}" stroke-opacity="0.55" />
   <text x="144" y="118" font-size="18" fill="${color.brand}" fill-opacity="0.85" letter-spacing="2" font-family="'Google Sans',system-ui,sans-serif">${escapeXml(tag)}</text>
@@ -191,8 +194,21 @@ ${iconClipDef}
     ${subtitleBlocks}
   </g>
   <text x="124" y="542" font-size="22" font-weight="600" fill="${color.brand}" font-family="'Google Sans',system-ui,sans-serif">${escapeXml(site)}</text>
-</svg>`;
+	</svg>`;
 };
+
+const renderPng = (svg: string): Uint8Array => {
+	const resvg = new Resvg(svg, {
+		fitTo: {
+			mode: 'width',
+			value: OG_IMAGE_WIDTH
+		}
+	});
+	return resvg.render().asPng();
+};
+
+const toArrayBuffer = (value: Uint8Array): ArrayBuffer =>
+	value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
 
 export const GET: RequestHandler = async ({ url }) => {
 	const title = clipText(
@@ -209,10 +225,12 @@ export const GET: RequestHandler = async ({ url }) => {
 	const iconUrl = normalizeText(url.searchParams.get('icon') || '');
 
 	const svg = buildSvg(title, subtitle, site, tag, theme, iconUrl);
+	const png = renderPng(svg);
 
-	return new Response(svg, {
+	return new Response(toArrayBuffer(png), {
 		headers: {
-			'content-type': 'image/svg+xml; charset=utf-8',
+			'content-type': 'image/png',
+			'content-length': String(png.byteLength),
 			'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
 		}
 	});
