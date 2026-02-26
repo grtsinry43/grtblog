@@ -28,6 +28,9 @@ services:
     environment:
       APP_ENV: production
       APP_PORT: "8080"
+      APP_PROXY_HEADER: "X-Forwarded-For"
+      APP_TRUSTED_PROXY_CHECK: "true"
+      APP_IP_VALIDATION: "true"
       DB_DRIVER: postgres
       DB_DSN: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-grtblog}?sslmode=disable"
       REDIS_ADDR: redis:6379
