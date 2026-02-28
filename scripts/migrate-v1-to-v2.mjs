@@ -1231,6 +1231,7 @@ async function syncWebsiteInfo(ctx, state) {
 
   const directMapping = {
     website_name: ['website_name', 'WEBSITE_NAME'],
+    home_title: ['home_title', 'HOME_TITLE', 'og_title', 'WEBSITE_NAME'],
     public_url: ['public_url', 'website_url', 'WEBSITE_URL'],
     description: ['description', 'website_description', 'WEBSITE_DESCRIPTION'],
     keywords: ['keywords', 'website_keywords', 'WEBSITE_KEYWORDS'],
