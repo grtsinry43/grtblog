@@ -11,9 +11,11 @@ import {
   useThemeVars,
   useMessage,
 } from 'naive-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import EditorAIToolbar from '@/components/markdown-editor/EditorAIToolbar.vue'
 import EditorFloatingMenu from '@/components/markdown-editor/EditorFloatingMenu.vue'
+import { useAIToolbar } from '@/composables/markdown-editor/use-ai-toolbar'
 import { useCodeMirror } from '@/composables/markdown-editor/use-codemirror'
 import { useComponentInserter } from '@/composables/markdown-editor/use-component-inserter.ts'
 import { useFloatingMenu } from '@/composables/markdown-editor/use-floating-menu'
@@ -100,10 +102,36 @@ const { isVisible, menuPos, activeFormats, executeCommand } = useFloatingMenu({
   onViewUpdate,
 })
 
-// 4. 光标与选择更新事件
+// 4. AI 改写工具栏
+const aiToolbar = useAIToolbar(() => view.value)
+
+function onAIRewriteTrigger() {
+  aiToolbar.open()
+}
+
+async function handleAIExecute() {
+  try {
+    await aiToolbar.execute()
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : 'AI 改写失败')
+  }
+}
+
+onMounted(() => {
+  editorRef.value?.addEventListener('ai-rewrite-trigger', onAIRewriteTrigger)
+})
+onUnmounted(() => {
+  editorRef.value?.removeEventListener('ai-rewrite-trigger', onAIRewriteTrigger)
+})
+
+// 5. 光标与选择更新事件
 onViewUpdate((update) => {
   const pos = update.state.selection.main.head
   const selection = update.state.selection.main
+
+  // 让 AI 工具栏持续追踪选区
+  aiToolbar.trackSelection(selection.from, selection.to)
+
   const selectionText =
     selection.from === selection.to
       ? ''
@@ -193,6 +221,20 @@ watch(
       :pos="menuPos"
       :active-formats="activeFormats"
       @command="executeCommand"
+    />
+
+    <EditorAIToolbar
+      :visible="aiToolbar.visible.value"
+      :instruction="aiToolbar.instruction.value"
+      :loading="aiToolbar.loading.value"
+      :result-content="aiToolbar.resultContent.value"
+      :show-result="aiToolbar.showResult.value"
+      :original-content="aiToolbar.originalContent.value"
+      @update:instruction="(v) => (aiToolbar.instruction.value = v)"
+      @execute="handleAIExecute"
+      @accept="aiToolbar.accept()"
+      @reject="aiToolbar.reject()"
+      @close="aiToolbar.close()"
     />
   </div>
 </template>

@@ -2,7 +2,7 @@ import { $fetch, FetchError } from 'ofetch'
 
 import type { FetchOptions, FetchResponse } from 'ofetch'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v2').replace(/\/$/, '')
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v2').replace(/\/$/, '')
 
 type ResponseInterceptor<T> = (ctx: { data: T; envelope: ApiEnvelope<T> }) => void | Promise<void>
 type ErrorInterceptor = (error: ApiError) => void | Promise<void>
@@ -43,6 +43,10 @@ const errorInterceptors: ErrorInterceptor[] = []
 
 export function setAuthTokenProvider(provider: () => string | null) {
   tokenProvider = provider
+}
+
+export function getAuthToken(): string | null {
+  return tokenProvider ? tokenProvider() : null
 }
 
 export function addResponseInterceptor<T>(interceptor: ResponseInterceptor<T>) {

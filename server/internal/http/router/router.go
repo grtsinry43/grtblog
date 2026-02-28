@@ -11,7 +11,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
+	appai "github.com/grtsinry43/grtblog-v2/server/internal/app/ai"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
+	appcomment "github.com/grtsinry43/grtblog-v2/server/internal/app/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
@@ -155,6 +157,17 @@ func Register(app *fiber.App, deps Dependencies) {
 	adminNotifSvc := adminnotification.NewService(adminNotifRepo, eventBus)
 	adminnotification.RegisterSubscribers(eventBus, adminNotifSvc, contentRepo, persistence.NewIdentityRepository(deps.DB))
 
+	// AI event-driven moderation
+	aiRepo := persistence.NewAIRepository(deps.DB)
+	aiSvc := appai.NewService(aiRepo, sysCfgSvc)
+	commentSvcForAI := appcomment.NewService(
+		persistence.NewCommentRepository(deps.DB),
+		persistence.NewIdentityRepository(deps.DB),
+		persistence.NewFriendLinkRepository(deps.DB),
+		sysCfgSvc, nil, nil, eventBus,
+	)
+	appai.RegisterSubscribers(eventBus, aiSvc, commentSvcForAI)
+
 	websiteInfoHandler := handler.NewWebsiteInfoHandler(sysCfgSvc)
 
 	navMenuRepo := persistence.NewNavMenuRepository(deps.DB)
@@ -184,7 +197,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	registerThinkingAuthRoutes(v2, deps)
 	registerPageAuthRoutes(v2, deps)
 	registerCommentAuthRoutes(v2, deps)
-	registerAdminRoutes(v2, deps, websiteInfoHandler, navMenuHandler, sysCfgSvc, wsManager)
+	registerAdminRoutes(v2, deps, websiteInfoHandler, navMenuHandler, sysCfgSvc, wsManager, aiSvc)
 	registerTaxonomyAdminRoutes(v2, deps)
 	registerWebhookAdminRoutes(v2, deps, webhookSvc)
 
