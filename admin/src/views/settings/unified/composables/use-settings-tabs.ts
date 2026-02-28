@@ -8,6 +8,7 @@ import ContentTab from '../components/tabs/ContentTab.vue'
 import EmailTab from '../components/tabs/EmailTab.vue'
 import WebhookTab from '../components/tabs/WebhookTab.vue'
 import FederationTab from '../components/tabs/FederationTab.vue'
+import AiTab from '../components/tabs/AiTab.vue'
 import ApiTokensTab from '../components/tabs/ApiTokensTab.vue'
 import AdvancedTab from '../components/tabs/AdvancedTab.vue'
 
@@ -28,6 +29,7 @@ export const settingsTabs: SettingsTab[] = [
   { key: 'email', label: '邮件', icon: 'iconify ph--envelope', component: EmailTab },
   { key: 'webhook', label: 'Webhook', icon: 'iconify ph--webhooks-logo', component: WebhookTab },
   { key: 'federation', label: '联合', icon: 'iconify ph--circles-three', component: FederationTab },
+  { key: 'ai', label: 'AI', icon: 'iconify ph--robot', component: AiTab },
   { key: 'api-tokens', label: 'API Tokens', icon: 'iconify ph--key', component: ApiTokensTab },
   { key: 'advanced', label: '高级', icon: 'iconify ph--gear', component: AdvancedTab },
 ]

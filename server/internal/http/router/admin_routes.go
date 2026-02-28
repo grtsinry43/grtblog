@@ -10,6 +10,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminstats"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminuser"
+	appai "github.com/grtsinry43/grtblog-v2/server/internal/app/ai"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
@@ -23,7 +24,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
 
-func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, navMenuHandler *handler.NavMenuHandler, sysCfgSvc *sysconfig.Service, wsManager *ws.Manager) {
+func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, navMenuHandler *handler.NavMenuHandler, sysCfgSvc *sysconfig.Service, wsManager *ws.Manager, aiSvc *appai.Service) {
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
@@ -203,4 +204,19 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	adminLogs.Get("/observability/pages", observabilityHandler.GetPageState)
 	adminLogs.Post("/observability/pages/bootstrap", observabilityHandler.BootstrapPages)
 	adminLogs.Post("/observability/pages/invalidate", observabilityHandler.InvalidatePages)
+
+	// AI 功能
+	aiHandler := handler.NewAIHandler(aiSvc)
+	admin.Get("/ai/providers", aiHandler.ListProviders)
+	admin.Post("/ai/providers", aiHandler.CreateProvider)
+	admin.Put("/ai/providers/:id", aiHandler.UpdateProvider)
+	admin.Delete("/ai/providers/:id", aiHandler.DeleteProvider)
+	admin.Get("/ai/models", aiHandler.ListModels)
+	admin.Post("/ai/models", aiHandler.CreateModel)
+	admin.Put("/ai/models/:id", aiHandler.UpdateModel)
+	admin.Delete("/ai/models/:id", aiHandler.DeleteModel)
+	admin.Post("/ai/moderate-comment", aiHandler.ModerateComment)
+	admin.Post("/ai/generate-title", aiHandler.GenerateTitle)
+	admin.Post("/ai/rewrite-content", aiHandler.RewriteContent)
+	admin.Post("/ai/rewrite-content/stream", aiHandler.RewriteContentStream)
 }

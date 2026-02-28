@@ -25,6 +25,7 @@ import { computed, onMounted, onUnmounted, ref, toRaw, toRef, watch } from 'vue'
 // 组件
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
+import { generateTitle } from '@/services/ai'
 import { listWebsiteInfo } from '@/services/website-info'
 import type { ArticleDetail } from '@/services/articles'
 
@@ -75,7 +76,27 @@ const yearSummaryReady = ref(false)
 const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
 const PREVIEW_POST_TYPE = 'grtblog-preview:post'
 
-// 5. 计算属性
+// 5. AI 生成
+const aiGenerating = ref(false)
+async function handleAIGenerate() {
+  if (!form.content?.trim()) {
+    message.warning('请先输入内容')
+    return
+  }
+  aiGenerating.value = true
+  try {
+    const result = await generateTitle(form.content)
+    form.title = result.title
+    form.shortUrl = result.shortUrl
+    message.success('AI 生成成功')
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : 'AI 生成失败')
+  } finally {
+    aiGenerating.value = false
+  }
+}
+
+// 6. 计算属性
 const stats = computed(() => getStats(form.content))
 const actionLabel = computed(() => {
   if (!form.isPublished) return '保存'
@@ -303,6 +324,17 @@ watch([isYearSummary, yearSummaryYear], () => {
             class="w-24 border-b border-current/30 p-0 pb-0.5 text-[11px] leading-none focus:border-primary focus:outline-none sm:w-32"
           />
         </div>
+
+        <NButton
+          quaternary
+          size="small"
+          :loading="aiGenerating"
+          :disabled="!form.content?.trim()"
+          @click="handleAIGenerate"
+        >
+          <template #icon><div class="iconify ph--robot" /></template>
+          AI
+        </NButton>
 
         <NButtonGroup>
           <NButton

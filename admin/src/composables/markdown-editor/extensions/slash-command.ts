@@ -1,24 +1,34 @@
-import { CompletionContext, type CompletionResult } from '@codemirror/autocomplete'
+import { CompletionContext, type Completion, type CompletionResult } from '@codemirror/autocomplete'
 import { syntaxTree } from '@codemirror/language'
+import type { EditorView } from '@codemirror/view'
 
 import { markdownComponents } from '@/composables/markdown/shared/components'
 
 // ... options 定义保持不变 ...
-const baseOptions = [
+const baseOptions: Completion[] = [
   { label: 'Heading 1', type: 'keyword', apply: '# ', detail: '一级标题' },
   { label: 'Heading 2', type: 'keyword', apply: '## ', detail: '二级标题' },
   { label: 'Code Block', type: 'keyword', apply: '```\n\n```', detail: '代码块' },
   { label: 'Quote', type: 'keyword', apply: '> ', detail: '引用' },
+  {
+    label: 'AI 改写',
+    type: 'function',
+    detail: 'AI 改写/扩写内容',
+    apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
+      view.dispatch({ changes: { from, to, insert: '' } })
+      view.dom.dispatchEvent(new CustomEvent('ai-rewrite-trigger', { bubbles: true }))
+    },
+  },
 ]
 
-const componentOptions = markdownComponents.map((component) => ({
+const componentOptions: Completion[] = markdownComponents.map((component) => ({
   label: component.label,
-  type: 'variable',
+  type: 'variable' as const,
   apply: component.insertTemplate,
   detail: component.description || component.name,
 }))
 
-const options = [...baseOptions, ...componentOptions]
+const options: Completion[] = [...baseOptions, ...componentOptions]
 
 export const slashCommandSource = (context: CompletionContext): CompletionResult | null => {
   const { state, pos } = context
@@ -51,7 +61,7 @@ export const slashCommandSource = (context: CompletionContext): CompletionResult
     const searchStr = query.toLowerCase()
     return (
       option.label.toLowerCase().includes(searchStr) ||
-      option.detail.toLowerCase().includes(searchStr)
+      (option.detail ?? '').toLowerCase().includes(searchStr)
     )
   })
 

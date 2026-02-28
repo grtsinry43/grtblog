@@ -1054,3 +1054,13 @@ func validateEnumValue(values []string, value string) error {
 	}
 	return fmt.Errorf("invalid enum value")
 }
+
+// GetConfigValue 返回指定 key 的 sys_config 值（字符串）。
+// 如果 key 不存在返回 domainconfig.ErrSysConfigNotFound。
+func (s *Service) GetConfigValue(ctx context.Context, key string) (string, error) {
+	cfg, err := s.repo.GetByKey(ctx, key)
+	if err != nil {
+		return "", err
+	}
+	return cfg.Value, nil
+}
