@@ -16,3 +16,6 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Prevent committing built server binary
+/server/api
