@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -26,7 +28,11 @@ const (
 	discoveryPageSize    = 200
 	defaultTrackedPages  = 3
 	defaultMomentPerPage = 20
+
+	bootstrapVersionFile = "storage/html/.bootstrap-version"
 )
+
+var errStopWalk = errors.New("stop-walk")
 
 type RenderRecord struct {
 	URLPath       string   `json:"urlPath"`
@@ -277,6 +283,67 @@ func (s *Service) NeedsBootstrap(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	return urlCount == 0, nil
+}
+
+func (s *Service) NeedsBootstrapForVersion(ctx context.Context, version string) (bool, string, error) {
+	if s.renderer == nil {
+		return false, "renderer_not_configured", nil
+	}
+	normalizedVersion := normalizeVersion(version)
+
+	if s.redis != nil {
+		_, urlCount, _, err := s.stats(ctx)
+		if err != nil {
+			return false, "", err
+		}
+		if urlCount == 0 {
+			return true, "empty_isr_index", nil
+		}
+		currentVersion, err := s.redis.Get(ctx, s.bootstrapVersionKey()).Result()
+		if err != nil && !errors.Is(err, redis.Nil) {
+			return false, "", err
+		}
+		currentVersion = normalizeVersion(currentVersion)
+		if currentVersion != normalizedVersion {
+			return true, fmt.Sprintf("version_changed:%s->%s", currentVersion, normalizedVersion), nil
+		}
+		return false, "version_unchanged", nil
+	}
+
+	hasHTML, err := hasRenderedHTML("storage/html")
+	if err != nil {
+		return false, "", err
+	}
+	if !hasHTML {
+		return true, "missing_html_snapshot", nil
+	}
+	currentVersion, err := s.readBootstrapVersionFile()
+	if err != nil {
+		return false, "", err
+	}
+	currentVersion = normalizeVersion(currentVersion)
+	if currentVersion != normalizedVersion {
+		return true, fmt.Sprintf("version_changed:%s->%s", currentVersion, normalizedVersion), nil
+	}
+	return false, "version_unchanged", nil
+}
+
+func (s *Service) MarkBootstrapVersion(ctx context.Context, version string) error {
+	normalizedVersion := normalizeVersion(version)
+	var errs []error
+
+	if s.redis != nil {
+		if err := s.redis.Set(ctx, s.bootstrapVersionKey(), normalizedVersion, 0).Err(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if err := s.writeBootstrapVersionFile(normalizedVersion); err != nil {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }
 
 func (s *Service) ProcessDue(ctx context.Context, maxJobs int) error {
@@ -719,6 +786,28 @@ func (s *Service) urlPrefix() string {
 	return fmt.Sprintf("%sisr:url:", s.redisPrefix)
 }
 
+func (s *Service) bootstrapVersionKey() string {
+	return fmt.Sprintf("%sisr:bootstrap:version", s.redisPrefix)
+}
+
+func (s *Service) readBootstrapVersionFile() (string, error) {
+	content, err := os.ReadFile(bootstrapVersionFile)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", err
+	}
+	return strings.TrimSpace(string(content)), nil
+}
+
+func (s *Service) writeBootstrapVersionFile(version string) error {
+	if err := os.MkdirAll(filepath.Dir(bootstrapVersionFile), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(bootstrapVersionFile, []byte(version+"\n"), 0o644)
+}
+
 func normalizeDeps(deps []string) []string {
 	set := make(map[string]struct{}, len(deps))
 	out := make([]string, 0, len(deps))
@@ -753,4 +842,39 @@ func normalizeURLs(urls []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func normalizeVersion(version string) string {
+	normalized := strings.TrimSpace(version)
+	if normalized == "" {
+		return "dev"
+	}
+	return normalized
+}
+
+func hasRenderedHTML(root string) (bool, error) {
+	if _, err := os.Stat(root); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	found := false
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(strings.ToLower(d.Name()), ".html") {
+			found = true
+			return errStopWalk
+		}
+		return nil
+	})
+	if err != nil && !errors.Is(err, errStopWalk) {
+		return false, err
+	}
+	return found, nil
 }

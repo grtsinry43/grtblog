@@ -10,6 +10,8 @@ Thumbs.db
 # Env files
 .env
 .env.*
+!admin/.env.example
+!deploy/.env.example
 
 # Logs
 logs/

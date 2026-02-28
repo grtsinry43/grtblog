@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -16,10 +15,13 @@ import (
 	"gorm.io/gorm"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
+	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
 type SystemHandler struct {
+	appCfg      config.AppConfig
 	db          *gorm.DB
 	redisClient *redis.Client
 	events      appEvent.Bus
@@ -29,30 +31,37 @@ type SystemHandler struct {
 	storageSize       uint64
 	lastStorageUpdate time.Time
 	mu                sync.RWMutex
+
+	updateMu        sync.RWMutex
+	lastUpdateCheck time.Time
+	updateCache     SystemUpdateInfo
 }
 
-func NewSystemHandler(db *gorm.DB, redisClient *redis.Client, events appEvent.Bus) *SystemHandler {
+func NewSystemHandler(appCfg config.AppConfig, db *gorm.DB, redisClient *redis.Client, events appEvent.Bus) *SystemHandler {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
 	h := &SystemHandler{
+		appCfg:      appCfg,
 		db:          db,
 		redisClient: redisClient,
-		version:     initBuildVersion(),
+		version:     buildinfo.Version(),
 		events:      events,
 	}
 	return h
 }
 
 type SystemStatus struct {
-	App      AppInfo        `json:"app"`
-	CPU      CPUInfo        `json:"cpu"`
-	Memory   MemoryInfo     `json:"memory"`
-	Disk     DiskInfo       `json:"disk"`
-	Storage  StorageInfo    `json:"storage"`
-	Database DatabaseStatus `json:"database"`
-	Redis    RedisStatus    `json:"redis"`
-	Platform PlatformInfo   `json:"platform"`
+	App        AppInfo           `json:"app"`
+	CPU        CPUInfo           `json:"cpu"`
+	Memory     MemoryInfo        `json:"memory"`
+	Disk       DiskInfo          `json:"disk"`
+	Storage    StorageInfo       `json:"storage"`
+	Database   DatabaseStatus    `json:"database"`
+	Redis      RedisStatus       `json:"redis"`
+	Platform   PlatformInfo      `json:"platform"`
+	Components []ComponentHealth `json:"components"`
+	Update     SystemUpdateInfo  `json:"update"`
 }
 
 type AppInfo struct {
@@ -99,12 +108,22 @@ type DBPoolStats struct {
 type DatabaseStatus struct {
 	Status    string      `json:"status"`
 	Driver    string      `json:"driver"`
+	Version   string      `json:"version,omitempty"`
 	PoolStats DBPoolStats `json:"poolStats"`
 }
 
 type RedisStatus struct {
 	Status     string `json:"status"`
 	UsedMemory string `json:"usedMemory,omitempty"`
+	Version    string `json:"version,omitempty"`
+}
+
+type ComponentHealth struct {
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	Healthy   bool   `json:"healthy"`
+	Version   string `json:"version,omitempty"`
+	CheckedAt string `json:"checkedAt"`
 }
 
 type PlatformInfo struct {
@@ -159,7 +178,10 @@ func (h *SystemHandler) GetStatus(c *fiber.Ctx) error {
 			Arch: runtime.GOARCH,
 		},
 	}
-	if status.Database.Status != "connected" || (status.Redis.Status != "ok" && status.Redis.Status != "not_configured") {
+	status.Components = h.buildComponents(status)
+	status.Update = h.peekCachedUpdateCheck()
+
+	if status.Database.Status != "connected" || (status.Redis.Status != "connected" && status.Redis.Status != "not_configured") {
 		_ = h.events.Publish(c.UserContext(), appEvent.Generic{
 			EventName: "system.monitor.alert",
 			At:        time.Now(),
@@ -173,20 +195,9 @@ func (h *SystemHandler) GetStatus(c *fiber.Ctx) error {
 	return response.Success(c, status)
 }
 
-func initBuildVersion() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok || info == nil {
-		return "dev"
-	}
-	if info.Main.Version != "" {
-		return info.Main.Version
-	}
-	for _, setting := range info.Settings {
-		if setting.Key == "vcs.revision" {
-			return setting.Value
-		}
-	}
-	return "dev"
+func (h *SystemHandler) GetUpdateCheck(c *fiber.Ctx) error {
+	force := c.QueryBool("force", false)
+	return response.Success(c, h.getCachedUpdateCheck(c.UserContext(), force))
 }
 
 func getDiskInfo(path string) DiskInfo {
@@ -252,6 +263,13 @@ func (h *SystemHandler) getCachedStorageInfo(path string) StorageInfo {
 }
 
 func (h *SystemHandler) getDatabaseStatus(ctx context.Context) DatabaseStatus {
+	if h.db == nil {
+		return DatabaseStatus{
+			Status: "not_configured",
+			Driver: "unknown",
+		}
+	}
+
 	sqlDB, err := h.db.DB()
 	if err != nil {
 		return DatabaseStatus{Status: "error"}
@@ -267,10 +285,18 @@ func (h *SystemHandler) getDatabaseStatus(ctx context.Context) DatabaseStatus {
 		status = "disconnected"
 	}
 
+	var dbVersion string
+	queryCtx, queryCancel := context.WithTimeout(ctx, 2*time.Second)
+	defer queryCancel()
+	if err := h.db.WithContext(queryCtx).Raw("SELECT version()").Scan(&dbVersion).Error; err != nil {
+		dbVersion = ""
+	}
+
 	s := sqlDB.Stats()
 	return DatabaseStatus{
-		Status: status,
-		Driver: h.db.Dialector.Name(),
+		Status:  status,
+		Driver:  h.db.Dialector.Name(),
+		Version: strings.TrimSpace(dbVersion),
 		PoolStats: DBPoolStats{
 			MaxOpenConnections: s.MaxOpenConnections,
 			OpenConnections:    s.OpenConnections,
@@ -297,14 +323,47 @@ func (h *SystemHandler) getRedisStatus(ctx context.Context) RedisStatus {
 	}
 
 	res := RedisStatus{Status: "connected"}
-	info, err := h.redisClient.Info(ctx, "memory").Result()
+	infoCtx, infoCancel := context.WithTimeout(ctx, 2*time.Second)
+	defer infoCancel()
+	info, err := h.redisClient.Info(infoCtx, "memory", "server").Result()
 	if err == nil {
 		for _, line := range strings.Split(info, "\r\n") {
-			if strings.HasPrefix(line, "used_memory_human:") {
+			switch {
+			case strings.HasPrefix(line, "used_memory_human:"):
 				res.UsedMemory = strings.TrimPrefix(line, "used_memory_human:")
-				break
+			case strings.HasPrefix(line, "redis_version:"):
+				res.Version = strings.TrimSpace(strings.TrimPrefix(line, "redis_version:"))
 			}
 		}
 	}
 	return res
+}
+
+func (h *SystemHandler) buildComponents(status SystemStatus) []ComponentHealth {
+	checkedAt := time.Now().UTC().Format(time.RFC3339)
+	redisHealthy := status.Redis.Status == "connected" || status.Redis.Status == "not_configured"
+
+	return []ComponentHealth{
+		{
+			Name:      "api",
+			Status:    "running",
+			Healthy:   true,
+			Version:   h.version,
+			CheckedAt: checkedAt,
+		},
+		{
+			Name:      "database",
+			Status:    status.Database.Status,
+			Healthy:   status.Database.Status == "connected",
+			Version:   status.Database.Version,
+			CheckedAt: checkedAt,
+		},
+		{
+			Name:      "redis",
+			Status:    status.Redis.Status,
+			Healthy:   redisHealthy,
+			Version:   status.Redis.Version,
+			CheckedAt: checkedAt,
+		},
+	}
 }

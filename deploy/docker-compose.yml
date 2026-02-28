@@ -1,29 +1,12 @@
 name: grtblog
 services:
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: grtblog-nginx
-    depends_on:
-      server:
-        condition: service_started
-      renderer:
-        condition: service_started
-      admin:
-        condition: service_started
-    ports:
-      - "${NGINX_PORT:-80}:80"
-    volumes:
-      - html_data:/usr/share/nginx/html:ro
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    networks:
-      - grtblog-internal
-    restart: unless-stopped
-
   server:
-    image: grtblog-server:local
+    image: "${IMAGE_REPO_PREFIX:-}grtblog-server:${APP_VERSION:-local}"
     build:
       context: ..
       dockerfile: deploy/docker/server.Dockerfile
+      args:
+        APP_VERSION: "${APP_VERSION:-local}"
     container_name: grtblog-server
     environment:
       APP_ENV: production
@@ -48,15 +31,15 @@ services:
       renderer:
         condition: service_started
     volumes:
-      - html_data:/app/storage/html
-      - uploads_data:/app/storage/uploads
-      - geoip_data:/app/storage/geoip
+      - ./storage/html:/app/storage/html
+      - ./storage/uploads:/app/storage/uploads
+      - ./storage/geoip:/app/storage/geoip
     networks:
       - grtblog-internal
     restart: unless-stopped
 
   migrate:
-    image: grtblog-server:local
+    image: "${IMAGE_REPO_PREFIX:-}grtblog-server:${APP_VERSION:-local}"
     container_name: grtblog-migrate
     environment:
       DB_DSN: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-grtblog}?sslmode=disable"
@@ -79,7 +62,7 @@ services:
     restart: "no"
 
   renderer:
-    image: grtblog-renderer:local
+    image: "${IMAGE_REPO_PREFIX:-}grtblog-renderer:${APP_VERSION:-local}"
     build:
       context: ..
       dockerfile: deploy/docker/web.Dockerfile
@@ -94,7 +77,7 @@ services:
     restart: unless-stopped
 
   admin:
-    image: grtblog-admin:local
+    image: "${IMAGE_REPO_PREFIX:-}grtblog-admin:${APP_VERSION:-local}"
     build:
       context: ..
       dockerfile: deploy/docker/admin.Dockerfile
@@ -138,10 +121,9 @@ services:
 
 volumes:
   postgres_data:
+    name: grtblog_postgres_data
   redis_data:
-  html_data:
-  uploads_data:
-  geoip_data:
+    name: grtblog_redis_data
 
 networks:
   grtblog-internal:

@@ -5,6 +5,7 @@ WORKDIR /src/server
 RUN apk add --no-cache ca-certificates git
 
 ARG GOOSE_VERSION=v3.26.0
+ARG APP_VERSION=dev
 
 COPY server/go.mod server/go.sum ./
 RUN go mod download
@@ -14,7 +15,7 @@ COPY server/. .
 RUN GOBIN=/out go install github.com/pressly/goose/v3/cmd/goose@${GOOSE_VERSION}
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-  go build -trimpath -ldflags="-s -w" -o /out/grtblog-server ./cmd/api
+  go build -trimpath -ldflags="-s -w -X github.com/grtsinry43/grtblog-v2/server/internal/buildinfo.BuildVersion=${APP_VERSION}" -o /out/grtblog-server ./cmd/api
 
 FROM alpine:3.21 AS runtime
 

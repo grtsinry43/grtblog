@@ -55,7 +55,7 @@ type Dependencies struct {
 
 // Register wires up all HTTP endpoints with middlewares.
 func Register(app *fiber.App, deps Dependencies) {
-	healthHandler := handler.NewHealthHandler(deps.Config.App)
+	healthHandler := handler.NewHealthHandler(deps.Config.App, deps.DB, deps.Redis)
 
 	app.Get("/health/liveness", healthHandler.Liveness)
 	app.Get("/health/readiness", healthHandler.Readiness)

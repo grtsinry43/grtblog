@@ -228,6 +228,7 @@ const getStatusType = (usage: number) => {
                   </div>
                   <NDescriptions :column="2" size="small" label-placement="left">
                      <NDescriptionsItem label="驱动">{{ status.database.driver }}</NDescriptionsItem>
+                     <NDescriptionsItem label="版本">{{ status.database.version || '-' }}</NDescriptionsItem>
                      <NDescriptionsItem label="打开连接">{{ status.database.poolStats.openConnections }}</NDescriptionsItem>
                      <NDescriptionsItem label="使用中">{{ status.database.poolStats.inUse }}</NDescriptionsItem>
                      <NDescriptionsItem label="空闲连接">{{ status.database.poolStats.idle }}</NDescriptionsItem>
@@ -245,6 +246,7 @@ const getStatusType = (usage: number) => {
                         </NTag>
                       </div>
                       <NDescriptions :column="1" size="small" label-placement="left">
+                        <NDescriptionsItem label="版本">{{ status.redis.version || '-' }}</NDescriptionsItem>
                         <NDescriptionsItem label="内存使用">{{ status.redis.usedMemory }}</NDescriptionsItem>
                         <NDescriptionsItem label="状态">
                            {{ status.redis.status === 'connected' ? '连接正常，准备就绪' : '连接失败' }}
@@ -253,6 +255,29 @@ const getStatusType = (usage: number) => {
                   </div>
                 </NGi>
               </NGrid>
+            </NCard>
+          </NGi>
+        </NGrid>
+
+        <NGrid :x-gap="16" :y-gap="16" cols="1" responsive="screen">
+          <NGi>
+            <NCard title="组件健康状态位" :bordered="false" size="small">
+              <NEmpty
+                v-if="!status.components?.length"
+                description="暂无组件状态"
+              />
+              <NSpace v-else>
+                <NTag
+                  v-for="item in status.components"
+                  :key="item.name"
+                  :type="item.healthy ? 'success' : item.status === 'not_configured' ? 'warning' : 'error'"
+                  size="small"
+                  round
+                  bordered
+                >
+                  {{ item.name }} · {{ item.status }} · v{{ item.version || 'n/a' }}
+                </NTag>
+              </NSpace>
             </NCard>
           </NGi>
         </NGrid>

@@ -27,6 +27,8 @@ type AppConfig struct {
 	TrustedProxies      []string
 	TrustedProxyCheck   bool
 	IPValidation        bool
+	UpdateCheckEnabled  bool
+	UpdateCheckRepo     string
 }
 
 // DatabaseConfig captures everything required to boot GORM.
@@ -85,8 +87,10 @@ func Load() Config {
 				"192.168.0.0/16",
 				"fc00::/7",
 			}),
-			TrustedProxyCheck: getEnvAsBool("APP_TRUSTED_PROXY_CHECK", true),
-			IPValidation:      getEnvAsBool("APP_IP_VALIDATION", true),
+			TrustedProxyCheck:  getEnvAsBool("APP_TRUSTED_PROXY_CHECK", true),
+			IPValidation:       getEnvAsBool("APP_IP_VALIDATION", true),
+			UpdateCheckEnabled: getEnvAsBool("APP_UPDATE_CHECK_ENABLED", true),
+			UpdateCheckRepo:    strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog-v2")),
 		},
 		Database: DatabaseConfig{
 			Driver:      strings.ToLower(getEnv("DB_DRIVER", "postgres")),

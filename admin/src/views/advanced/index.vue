@@ -34,6 +34,7 @@ import {
   getObservabilityStorage,
   getObservabilityTimeline,
 } from '@/services/observability'
+import { getSystemStatus, getSystemUpdateCheck } from '@/services/system'
 import { toRefsPreferencesStore } from '@/stores'
 import twc from '@/utils/tailwindColor'
 
@@ -87,6 +88,17 @@ const { data: storageData, isPending: storagePending } = useQuery({
   queryFn: getObservabilityStorage,
   refetchInterval: 20000,
 })
+const { data: systemData, isPending: systemPending } = useQuery({
+  queryKey: ['system-status-advanced'],
+  queryFn: getSystemStatus,
+  refetchInterval: 15000,
+})
+const { data: updateData, isPending: updatePending } = useQuery({
+  queryKey: ['system-update-check'],
+  queryFn: () => getSystemUpdateCheck(false),
+  staleTime: 30 * 60 * 1000,
+  refetchOnWindowFocus: false,
+})
 const { data: alertsData } = useQuery({
   queryKey: ['obs-alerts'],
   queryFn: () => getObservabilityAlerts(12),
@@ -109,8 +121,28 @@ const loading = computed(
     controlPending.value ||
     realtimePending.value ||
     federationPending.value ||
-    storagePending.value,
+    storagePending.value ||
+    systemPending.value ||
+    updatePending.value,
 )
+
+const componentHealths = computed(() => systemData.value?.components ?? [])
+const updateInfo = computed(() => updateData.value)
+
+function componentTagType(item: { healthy: boolean; status: string }) {
+  if (item.healthy) return 'success'
+  if (item.status === 'not_configured') return 'warning'
+  return 'error'
+}
+
+function updateTagType() {
+  const info = updateInfo.value
+  if (!info) return 'default'
+  if (info.status === 'error') return 'error'
+  if (info.status === 'disabled') return 'warning'
+  if (info.hasUpdate) return 'info'
+  return 'success'
+}
 
 function formatBytes(bytes?: number) {
   if (!bytes || bytes <= 0) return '0 B'
@@ -180,6 +212,7 @@ function refreshAll() {
   queryClient.invalidateQueries({ queryKey: ['obs-realtime'] })
   queryClient.invalidateQueries({ queryKey: ['obs-federation'] })
   queryClient.invalidateQueries({ queryKey: ['obs-storage'] })
+  queryClient.invalidateQueries({ queryKey: ['system-status-advanced'] })
   queryClient.invalidateQueries({ queryKey: ['obs-alerts'] })
   queryClient.invalidateQueries({ queryKey: ['obs-timeline'] })
 }
@@ -578,6 +611,99 @@ onUnmounted(() => {
             />
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Component Health -->
+    <div
+      class="rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]"
+    >
+      <div class="mb-4 text-base font-medium text-neutral-600 dark:text-neutral-300">组件健康状态</div>
+      <NEmpty
+        v-if="!componentHealths.length"
+        description="暂无组件健康数据"
+      />
+      <div
+        v-else
+        class="space-y-3"
+      >
+        <div class="flex flex-wrap gap-2">
+          <NTag
+            v-for="item in componentHealths"
+            :key="item.name"
+            :type="componentTagType(item)"
+            size="small"
+            round
+          >
+            {{ item.name }} · {{ item.status }} · v{{ item.version || 'n/a' }}
+          </NTag>
+        </div>
+        <div class="text-xs text-neutral-500">
+          检查时间：{{ componentHealths[0]?.checkedAt ? new Date(componentHealths[0].checkedAt).toLocaleString() : '-' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Update Check -->
+    <div
+      class="rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]"
+    >
+      <div class="mb-4 flex items-center justify-between">
+        <div class="text-base font-medium text-neutral-600 dark:text-neutral-300">更新检查</div>
+        <NTag
+          size="small"
+          :type="updateTagType()"
+          round
+        >
+          {{
+            updateInfo?.status === 'error'
+              ? '检查失败'
+              : updateInfo?.status === 'disabled'
+                ? '已关闭'
+                : updateInfo?.hasUpdate
+                  ? '可更新'
+                  : '已最新'
+          }}
+        </NTag>
+      </div>
+      <NEmpty
+        v-if="!updateInfo"
+        description="暂无更新信息"
+      />
+      <NDescriptions
+        v-else
+        :column="2"
+        size="small"
+      >
+        <NDescriptionsItem label="当前版本">{{ updateInfo.currentVersion }}</NDescriptionsItem>
+        <NDescriptionsItem label="更新通道">{{ updateInfo.channel }}</NDescriptionsItem>
+        <NDescriptionsItem label="目标版本">
+          {{ updateInfo.targetRelease?.tag || '-' }}
+          <NTag
+            v-if="updateInfo.targetRelease?.prerelease"
+            class="ml-2"
+            size="tiny"
+            type="warning"
+            round
+            >测试版</NTag
+          >
+        </NDescriptionsItem>
+        <NDescriptionsItem label="检查时间">{{
+          updateInfo.checkedAt ? new Date(updateInfo.checkedAt).toLocaleString() : '-'
+        }}</NDescriptionsItem>
+      </NDescriptions>
+      <div class="mt-3 flex items-center justify-between gap-2">
+        <span class="text-xs text-neutral-500">{{ updateInfo?.message || '版本来源：GitHub Releases' }}</span>
+        <NButton
+          v-if="updateInfo?.upgradeUrl"
+          size="small"
+          secondary
+          tag="a"
+          :href="updateInfo.upgradeUrl"
+          target="_blank"
+        >
+          查看 Release
+        </NButton>
       </div>
     </div>
 

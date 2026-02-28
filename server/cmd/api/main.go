@@ -4,12 +4,12 @@ import (
 	"context"
 	"log"
 	"os/signal"
-	"runtime/debug"
 	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/database"
 	appserver "github.com/grtsinry43/grtblog-v2/server/internal/server"
@@ -62,7 +62,7 @@ func main() {
 
 func startupBanner(cfg config.Config) string {
 	const apiBasePath = "/api/v2"
-	version := buildVersion()
+	version := buildinfo.Version()
 	return "\n" +
 		"================================================================\n" +
 		"> " + cfg.App.Name + " " + version + "\n" +
@@ -75,20 +75,4 @@ func startupBanner(cfg config.Config) string {
 		"- 监听端口: :" + cfg.App.Port + "\n" +
 		"- 运行环境: " + cfg.App.Env + "\n" +
 		"================================================================"
-}
-
-func buildVersion() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok || info == nil {
-		return "dev"
-	}
-	if info.Main.Version != "" {
-		return info.Main.Version
-	}
-	for _, setting := range info.Settings {
-		if setting.Key == "vcs.revision" {
-			return setting.Value
-		}
-	}
-	return "dev"
 }

@@ -1,5 +1,30 @@
 import { request } from './http'
 
+export interface SystemUpdateReleaseInfo {
+  name: string
+  prerelease: boolean
+  publishedAt: string
+  tag: string
+  url: string
+}
+
+export interface SystemUpdateInfo {
+  channel: string
+  checkedAt: string
+  comparison: 'older' | 'equal' | 'newer' | 'unknown' | string
+  currentPrerelease: boolean
+  currentVersion: string
+  enabled: boolean
+  hasUpdate: boolean
+  latestRelease?: SystemUpdateReleaseInfo
+  latestStableRelease?: SystemUpdateReleaseInfo
+  message?: string
+  repo: string
+  status: 'ok' | 'disabled' | 'error' | string
+  targetRelease?: SystemUpdateReleaseInfo
+  upgradeUrl?: string
+}
+
 export interface SystemStatus {
   app: {
     goVersion: string
@@ -7,6 +32,13 @@ export interface SystemStatus {
     uptime: string
     version: string
   }
+  components: Array<{
+    checkedAt: string
+    healthy: boolean
+    name: string
+    status: string
+    version?: string
+  }>
   cpu: {
     cores: number
   }
@@ -23,6 +55,7 @@ export interface SystemStatus {
       waitCount: number
     }
     status: string
+    version?: string
   }
   disk: {
     all: number
@@ -42,12 +75,14 @@ export interface SystemStatus {
   }
   redis: {
     status: string
-    usedMemory: string
+    usedMemory?: string
+    version?: string
   }
   storage: {
     path: string
     size: number
   }
+  update: SystemUpdateInfo
 }
 
 export function getSystemStatus() {
@@ -58,4 +93,11 @@ export type SystemLogs = string[]
 
 export function getSystemLogs() {
   return request<SystemLogs>('/admin/logs')
+}
+
+export function getSystemUpdateCheck(force = false) {
+  return request<SystemUpdateInfo>('/admin/system/update-check', {
+    method: 'GET',
+    query: { force },
+  })
 }
