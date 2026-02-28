@@ -287,14 +287,21 @@ export const resolveSeoMeta = (input: ResolveSeoMetaInput): ResolvedSeoMeta => {
 	const search = input.search ?? '';
 	const routeData = asRecord(input.routeData) ?? {};
 	const websiteInfo = input.websiteInfo ?? null;
+	const isHomePage = pathname === '/';
 
 	const siteName = readString(websiteInfo?.website_name) || DEFAULT_SITE_NAME;
+	const homeTitle = readString(websiteInfo?.home_title);
 	const defaultDescription = readString(websiteInfo?.description) || DEFAULT_DESCRIPTION;
 	const keywords = readString(websiteInfo?.keywords) || DEFAULT_KEYWORDS;
 	const pageMeta = resolvePageMeta(pathname, search, routeData);
 
 	const pageTitle = readString(pageMeta.pageTitle);
-	const title = pageTitle && pageTitle !== siteName ? `${pageTitle} | ${siteName}` : siteName;
+	const resolvedHomeTitle = homeTitle || siteName;
+	const title = isHomePage
+		? resolvedHomeTitle
+		: pageTitle && pageTitle !== siteName
+			? `${pageTitle} | ${siteName}`
+			: siteName;
 	const description = normalizeDescription(pageMeta.description || defaultDescription);
 
 	const baseUrl = resolveBaseUrl(websiteInfo, input.origin);
@@ -313,7 +320,11 @@ export const resolveSeoMeta = (input: ResolveSeoMetaInput): ResolvedSeoMeta => {
 	);
 	const ogType = readString(pageMeta.ogType) || readString(websiteInfo?.og_type) || 'website';
 	const ogSiteName = readString(websiteInfo?.og_site_name) || siteName;
-	const ogTitle = pageTitle || readString(websiteInfo?.og_title) || siteName;
+	const ogTitle =
+		pageTitle ||
+		(isHomePage ? resolvedHomeTitle : '') ||
+		readString(websiteInfo?.og_title) ||
+		siteName;
 	const ogDescription = pageMeta.description
 		? description
 		: normalizeDescription(readString(websiteInfo?.og_description) || description);

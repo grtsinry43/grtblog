@@ -5,6 +5,7 @@ export interface WebsiteInfoMap {
 	description?: string;
 	keywords?: string;
 	favicon?: string;
+	home_title?: string;
 	og_description?: string;
 	og_image?: string;
 	og_site_name?: string;
