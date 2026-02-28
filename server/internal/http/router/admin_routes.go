@@ -99,6 +99,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		admin.Post("/email/templates/:code/test", emailHandler.TestEmailTemplate)
 		admin.Get("/email/subscriptions", emailHandler.ListEmailSubscriptions)
 		admin.Put("/email/subscriptions/status", emailHandler.BatchUpdateEmailSubscriptionStatus)
+		admin.Get("/email/outbox", emailHandler.ListEmailOutbox)
+		admin.Get("/email/outbox/:id", emailHandler.GetEmailOutbox)
 	}
 
 	fedCfgHandler := handler.NewFederationConfigHandler(sysCfgSvc)

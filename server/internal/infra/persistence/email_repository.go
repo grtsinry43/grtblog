@@ -228,6 +228,65 @@ func (r *EmailRepository) MarkOutboxFailed(ctx context.Context, id int64, retryC
 		}).Error
 }
 
+func (r *EmailRepository) ListOutbox(ctx context.Context, options domainemail.OutboxListOptions) ([]*domainemail.Outbox, int64, error) {
+	page := options.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := options.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	query := r.db.WithContext(ctx).Model(&model.EmailOutbox{})
+	if options.Status != nil && strings.TrimSpace(*options.Status) != "" {
+		query = query.Where("status = ?", strings.TrimSpace(*options.Status))
+	}
+	if options.EventName != nil && strings.TrimSpace(*options.EventName) != "" {
+		query = query.Where("event_name = ?", strings.TrimSpace(*options.EventName))
+	}
+	if options.Search != nil && strings.TrimSpace(*options.Search) != "" {
+		kw := "%" + strings.TrimSpace(*options.Search) + "%"
+		query = query.Where("subject ILIKE ? OR template_code ILIKE ?", kw, kw)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var records []model.EmailOutbox
+	if err := query.Order("created_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&records).Error; err != nil {
+		return nil, 0, err
+	}
+	items := make([]*domainemail.Outbox, len(records))
+	for i, rec := range records {
+		item, err := mapOutboxToDomain(rec)
+		if err != nil {
+			return nil, 0, err
+		}
+		items[i] = item
+	}
+	return items, total, nil
+}
+
+func (r *EmailRepository) GetOutboxByID(ctx context.Context, id int64) (*domainemail.Outbox, error) {
+	var rec model.EmailOutbox
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&rec).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainemail.ErrEmailOutboxNotFound
+		}
+		return nil, err
+	}
+	return mapOutboxToDomain(rec)
+}
+
 func (r *EmailRepository) CreateOrUpdateSubscription(ctx context.Context, sub *domainemail.Subscription) error {
 	rec := mapSubscriptionToModel(sub)
 	now := time.Now()

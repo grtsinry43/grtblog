@@ -34,9 +34,9 @@ const { data, isPending } = useQuery({
 
 const columns: DataTableColumns<FederationInstanceResp> = [
   { title: 'ID', key: 'id', width: 80 },
-  { title: '域名', key: 'base_url', render: (row) => h('a', { href: row.base_url, target: '_blank', class: 'text-primary hover:underline' }, row.base_url) },
-  { title: '名称', key: 'name', render: (row) => row.name || '-' },
-  { title: '软件版本', key: 'protocol_version', render: (row) => row.protocol_version || '-' },
+  { title: '域名', key: 'base_url', minWidth: 200, ellipsis: { tooltip: true }, render: (row) => h('a', { href: row.base_url, target: '_blank', class: 'text-primary hover:underline' }, row.base_url) },
+  { title: '名称', key: 'name', minWidth: 120, render: (row) => row.name || '-' },
+  { title: '软件版本', key: 'protocol_version', width: 120, render: (row) => row.protocol_version || '-' },
   { title: '状态', key: 'status', width: 100, render(row) {
     const typeMap: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
         active: 'success',
@@ -165,6 +165,7 @@ function submitCreate() {
         :loading="isPending"
         :bordered="false"
         :row-key="(row: FederationInstanceResp) => row.id"
+        :scroll-x="1000"
       />
        <div class="p-4 flex justify-end">
         <NPagination

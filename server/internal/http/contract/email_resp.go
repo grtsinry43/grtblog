@@ -77,3 +77,27 @@ type EmailSubscriptionListResp struct {
 type EmailSubscribeBatchResp struct {
 	Items []EmailPublicSubscriptionResp `json:"items"`
 }
+
+type EmailOutboxResp struct {
+	ID           int64      `json:"id"`
+	TemplateCode string     `json:"templateCode"`
+	EventName    string     `json:"eventName"`
+	ToEmails     []string   `json:"toEmails"`
+	Subject      string     `json:"subject"`
+	HTMLBody     string     `json:"htmlBody,omitempty"`
+	TextBody     string     `json:"textBody,omitempty"`
+	Status       string     `json:"status"`
+	RetryCount   int        `json:"retryCount"`
+	NextRetryAt  time.Time  `json:"nextRetryAt"`
+	LastError    string     `json:"lastError,omitempty"`
+	SentAt       *time.Time `json:"sentAt,omitempty"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	UpdatedAt    time.Time  `json:"updatedAt"`
+}
+
+type EmailOutboxListResp struct {
+	Items []EmailOutboxResp `json:"items"`
+	Total int64             `json:"total"`
+	Page  int               `json:"page"`
+	Size  int               `json:"size"`
+}

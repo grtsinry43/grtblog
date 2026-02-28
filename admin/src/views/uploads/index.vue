@@ -154,6 +154,7 @@ const columns = computed<DataTableColumns<UploadFileResponse>>(() => [
   {
     title: '文件名',
     key: 'name',
+    minWidth: 200,
     ellipsis: {
       tooltip: true,
     },
@@ -467,6 +468,7 @@ function handleTreeSelect(keys: Array<string | number>) {
             :loading="loading"
             :bordered="false"
             :single-line="false"
+            :scroll-x="900"
           />
 
           <div class="pagination-container">

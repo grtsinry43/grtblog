@@ -250,6 +250,14 @@ func (s *Service) Unsubscribe(ctx context.Context, token string, email string, e
 	return s.repo.UnsubscribeByEmailEvent(ctx, email, eventName)
 }
 
+func (s *Service) ListOutbox(ctx context.Context, options domainemail.OutboxListOptions) ([]*domainemail.Outbox, int64, error) {
+	return s.repo.ListOutbox(ctx, options)
+}
+
+func (s *Service) GetOutboxByID(ctx context.Context, id int64) (*domainemail.Outbox, error) {
+	return s.repo.GetOutboxByID(ctx, id)
+}
+
 func (s *Service) ListSubscriptions(ctx context.Context, options domainemail.SubscriptionListOptions) ([]*domainemail.Subscription, int64, error) {
 	if options.Status != nil {
 		status := strings.TrimSpace(*options.Status)

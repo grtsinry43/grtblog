@@ -169,6 +169,7 @@ function handleReset() {
         :loading="isLoading"
         :pagination="pagination"
         :row-key="(row: EmailSubscription) => row.id"
+        :scroll-x="1000"
       />
     </NCard>
   </ScrollContainer>

@@ -49,6 +49,8 @@ const columns = computed<DataTableColumns<GlobalNotificationItem>>(() => [
   {
     title: '内容',
     key: 'content',
+    minWidth: 200,
+    ellipsis: { tooltip: true },
     render: (row) => h('div', { class: 'truncate max-w-md' }, row.content),
   },
   {
@@ -214,6 +216,7 @@ function formatDate(iso: string) {
         :data="tableData"
         :pagination="pagination"
         class="mt-4"
+        :scroll-x="900"
       />
     </NCard>
 

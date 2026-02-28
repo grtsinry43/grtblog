@@ -359,6 +359,7 @@ onUnmounted(() => {
         :columns="columns"
         :data="tableData"
         :pagination="pagination"
+        :scroll-x="1400"
       />
     </NCard>
 

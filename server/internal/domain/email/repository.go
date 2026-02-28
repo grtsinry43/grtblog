@@ -17,6 +17,8 @@ type Repository interface {
 	ClaimDueOutbox(ctx context.Context, limit int, dueAt time.Time, maxRetries int) ([]*Outbox, error)
 	MarkOutboxSent(ctx context.Context, id int64, sentAt time.Time) error
 	MarkOutboxFailed(ctx context.Context, id int64, retryCount int, nextRetryAt time.Time, lastError string) error
+	ListOutbox(ctx context.Context, options OutboxListOptions) ([]*Outbox, int64, error)
+	GetOutboxByID(ctx context.Context, id int64) (*Outbox, error)
 
 	CreateOrUpdateSubscription(ctx context.Context, sub *Subscription) error
 	GetSubscriptionByEmailEvent(ctx context.Context, email string, eventName string) (*Subscription, error)

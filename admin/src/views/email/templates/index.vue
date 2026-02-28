@@ -133,6 +133,7 @@ onMounted(() => {
         :data="items"
         :loading="loading"
         :row-key="(row: EmailTemplate) => row.id"
+        :scroll-x="960"
       />
     </NCard>
   </ScrollContainer>
