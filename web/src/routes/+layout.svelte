@@ -124,7 +124,19 @@
 	});
 
 	const websiteInfoStore = websiteInfoCtx.selectModelData((model) => model ?? null);
-	const siteFavicon = $derived.by(() => $websiteInfoStore?.favicon || favicon);
+	const normalizeIconUrl = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+	const inferIconMimeType = (iconUrl: string): string | null => {
+		const lower = iconUrl.toLowerCase();
+		const cleaned = lower.split('#')[0]?.split('?')[0] || lower;
+		if (cleaned.endsWith('.svg')) return 'image/svg+xml';
+		if (cleaned.endsWith('.png')) return 'image/png';
+		if (cleaned.endsWith('.jpg') || cleaned.endsWith('.jpeg')) return 'image/jpeg';
+		if (cleaned.endsWith('.webp')) return 'image/webp';
+		if (cleaned.endsWith('.ico')) return 'image/x-icon';
+		return null;
+	};
+	const siteFavicon = $derived.by(() => normalizeIconUrl($websiteInfoStore?.favicon) || favicon);
+	const siteFaviconType = $derived.by(() => inferIconMimeType(siteFavicon));
 	const seoMeta = $derived.by(() =>
 		resolveSeoMeta({
 			pathname: page.url.pathname,
@@ -188,7 +200,9 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={siteFavicon} />
+	<link rel="icon" href={siteFavicon} type={siteFaviconType || undefined} />
+	<link rel="shortcut icon" href={siteFavicon} />
+	<link rel="apple-touch-icon" href={siteFavicon} />
 	<title>{seoMeta.title}</title>
 	<link rel="canonical" href={seoMeta.canonicalUrl} />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />

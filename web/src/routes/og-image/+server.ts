@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
 import { Resvg } from '@resvg/resvg-js';
+import { createRequire } from 'node:module';
 
 const MAX_TITLE_LENGTH = 60;
 const MAX_SUBTITLE_LENGTH = 120;
@@ -7,6 +8,42 @@ const MAX_SITE_LENGTH = 48;
 const MAX_TAG_LENGTH = 24;
 const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
+const MAX_ICON_BYTES = 2 * 1024 * 1024;
+const ICON_FETCH_TIMEOUT_MS = 3000;
+
+const require = createRequire(import.meta.url);
+
+const OG_FONT_MODULE_IDS = [
+	'@fontsource/noto-serif-sc/files/noto-serif-sc-chinese-simplified-400-normal.woff2',
+	'@fontsource/noto-serif-sc/files/noto-serif-sc-chinese-simplified-700-normal.woff2',
+	'@fontsource/google-sans/files/google-sans-latin-400-normal.woff2',
+	'@fontsource/google-sans/files/google-sans-latin-600-normal.woff2'
+] as const;
+
+const OG_FONT_FILES = OG_FONT_MODULE_IDS.map((id) => {
+	try {
+		return require.resolve(id);
+	} catch {
+		return '';
+	}
+}).filter(Boolean);
+
+const SUPPORTED_ICON_MIME_TYPES = new Set([
+	'image/png',
+	'image/jpeg',
+	'image/webp',
+	'image/gif',
+	'image/svg+xml',
+	'image/avif'
+]);
+
+const ICON_FRAME_X = 916;
+const ICON_FRAME_Y = 154;
+const ICON_FRAME_SIZE = 180;
+const ICON_SIZE = 132;
+const ICON_INSET = (ICON_FRAME_SIZE - ICON_SIZE) / 2;
+const ICON_X = ICON_FRAME_X + ICON_INSET;
+const ICON_Y = ICON_FRAME_Y + ICON_INSET;
 
 const normalizeText = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
@@ -117,7 +154,7 @@ const buildSvg = (
 	site: string,
 	tag: string,
 	theme: ThemeMode,
-	iconUrl: string
+	iconDataUrl: string
 ): string => {
 	const titleLines = wrapText(title, 22, 2);
 	const subtitleLines = wrapText(subtitle, 46, 2);
@@ -137,18 +174,18 @@ const buildSvg = (
 		)
 		.join('');
 
-	const iconClipDef = iconUrl
+	const iconClipDef = iconDataUrl
 		? `
     <clipPath id="iconClip">
-      <rect x="928" y="166" width="156" height="156" rx="4"/>
+      <rect x="${ICON_X}" y="${ICON_Y}" width="${ICON_SIZE}" height="${ICON_SIZE}" rx="4"/>
     </clipPath>
 `
 		: '';
 
-	const iconBlock = iconUrl
+	const iconBlock = iconDataUrl
 		? `
-  <rect x="916" y="154" width="180" height="180" rx="4" fill="${color.panel}" stroke="${color.border}" stroke-width="1.5"/>
-  <image href="${escapeXml(iconUrl)}" x="928" y="166" width="156" height="156" preserveAspectRatio="xMidYMid slice" clip-path="url(#iconClip)"/>
+  <rect x="${ICON_FRAME_X}" y="${ICON_FRAME_Y}" width="${ICON_FRAME_SIZE}" height="${ICON_FRAME_SIZE}" rx="4" fill="${color.panel}" stroke="${color.border}" stroke-width="1.5"/>
+  <image href="${escapeXml(iconDataUrl)}" x="${ICON_X}" y="${ICON_Y}" width="${ICON_SIZE}" height="${ICON_SIZE}" preserveAspectRatio="xMidYMid meet" clip-path="url(#iconClip)"/>
 `
 		: '';
 
@@ -202,6 +239,11 @@ const renderPng = (svg: string): Uint8Array => {
 		fitTo: {
 			mode: 'width',
 			value: OG_IMAGE_WIDTH
+		},
+		font: {
+			loadSystemFonts: true,
+			defaultFontFamily: 'Noto Serif SC',
+			fontFiles: OG_FONT_FILES
 		}
 	});
 	return resvg.render().asPng();
@@ -210,7 +252,78 @@ const renderPng = (svg: string): Uint8Array => {
 const toArrayBuffer = (value: Uint8Array): ArrayBuffer =>
 	value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
 
-export const GET: RequestHandler = async ({ url }) => {
+const inferImageType = (source: string): string => {
+	const lowered = source.toLowerCase();
+	if (lowered.endsWith('.svg')) return 'image/svg+xml';
+	if (lowered.endsWith('.jpg') || lowered.endsWith('.jpeg')) return 'image/jpeg';
+	if (lowered.endsWith('.webp')) return 'image/webp';
+	if (lowered.endsWith('.gif')) return 'image/gif';
+	if (lowered.endsWith('.avif')) return 'image/avif';
+	return 'image/png';
+};
+
+const normalizeContentType = (value: string | null, fallbackType: string): string => {
+	const baseType = (value || '').split(';')[0]?.trim()?.toLowerCase() || fallbackType;
+	return SUPPORTED_ICON_MIME_TYPES.has(baseType) ? baseType : '';
+};
+
+const resolveImageFetchTarget = (source: string, requestUrl: URL): string | null => {
+	if (!source) return null;
+	if (source.startsWith('data:image/')) return source;
+	try {
+		const target = new URL(source, requestUrl.origin);
+		if (!['http:', 'https:'].includes(target.protocol)) return null;
+		if (target.origin === requestUrl.origin) {
+			return `${target.pathname}${target.search}`;
+		}
+		return target.toString();
+	} catch {
+		return null;
+	}
+};
+
+const fetchImageAsDataUrl = async (
+	fetcher: typeof fetch,
+	source: string,
+	requestUrl: URL
+): Promise<string> => {
+	const normalized = normalizeText(source);
+	if (!normalized) return '';
+	if (normalized.startsWith('data:image/')) return normalized;
+
+	const target = resolveImageFetchTarget(normalized, requestUrl);
+	if (!target) return '';
+
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), ICON_FETCH_TIMEOUT_MS);
+	try {
+		const response = await fetcher(target, {
+			method: 'GET',
+			headers: {
+				accept: 'image/*'
+			},
+			signal: controller.signal
+		});
+		if (!response.ok) return '';
+
+		const contentType = normalizeContentType(
+			response.headers.get('content-type'),
+			inferImageType(normalized)
+		);
+		if (!contentType) return '';
+
+		const imageBytes = new Uint8Array(await response.arrayBuffer());
+		if (imageBytes.byteLength === 0 || imageBytes.byteLength > MAX_ICON_BYTES) return '';
+
+		return `data:${contentType};base64,${Buffer.from(imageBytes).toString('base64')}`;
+	} catch {
+		return '';
+	} finally {
+		clearTimeout(timeout);
+	}
+};
+
+export const GET: RequestHandler = async ({ url, fetch, request }) => {
 	const title = clipText(
 		normalizeText(url.searchParams.get('title') || 'grtBlog'),
 		MAX_TITLE_LENGTH
@@ -223,8 +336,15 @@ export const GET: RequestHandler = async ({ url }) => {
 	const tag = clipText(normalizeText(url.searchParams.get('tag') || 'PREVIEW'), MAX_TAG_LENGTH);
 	const theme: ThemeMode = url.searchParams.get('theme') === 'dark' ? 'dark' : 'light';
 	const iconUrl = normalizeText(url.searchParams.get('icon') || '');
+	const fallbackIconUrl = normalizeText(url.searchParams.get('icon_fallback') || '');
+	const requestUrl = new URL(request.url);
 
-	const svg = buildSvg(title, subtitle, site, tag, theme, iconUrl);
+	let iconDataUrl = await fetchImageAsDataUrl(fetch, iconUrl, requestUrl);
+	if (!iconDataUrl && fallbackIconUrl) {
+		iconDataUrl = await fetchImageAsDataUrl(fetch, fallbackIconUrl, requestUrl);
+	}
+
+	const svg = buildSvg(title, subtitle, site, tag, theme, iconDataUrl);
 	const png = renderPng(svg);
 
 	return new Response(toArrayBuffer(png), {
