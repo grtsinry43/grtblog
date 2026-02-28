@@ -28,6 +28,7 @@ type AnalyticsVisitorView struct {
 	VisitorID   string    `gorm:"column:visitor_id;size:255;primaryKey"`
 	ContentType string    `gorm:"column:content_type;size:20;primaryKey"`
 	ContentID   int64     `gorm:"column:content_id;primaryKey"`
+	LastIP      string    `gorm:"column:last_ip;size:64"`
 	Platform    string    `gorm:"column:platform;size:45"`
 	Browser     string    `gorm:"column:browser;size:45"`
 	Location    string    `gorm:"column:location;size:255"`
