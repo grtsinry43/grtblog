@@ -301,12 +301,22 @@ func (s *Service) recordVisitorView(ctx context.Context, event ViewTrackEvent) e
 		return nil
 	}
 	nowAt := event.At.UTC()
+	ip := strings.TrimSpace(event.IP)
 	info := s.uaParser.Resolve(event.UserAgent)
 	platform := strings.TrimSpace(info.Platform)
+	if platform == "" {
+		platform = "Unknown"
+	}
 	browser := strings.TrimSpace(info.Browser)
+	if browser == "" {
+		browser = "Unknown"
+	}
 	location := ""
 	if s.geo != nil {
 		location = strings.TrimSpace(s.geo.Resolve(event.IP))
+	}
+	if location == "" {
+		location = "Unknown"
 	}
 	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns: []clause.Column{
@@ -317,6 +327,7 @@ func (s *Service) recordVisitorView(ctx context.Context, event ViewTrackEvent) e
 		DoUpdates: clause.Assignments(map[string]any{
 			"last_view_at": gorm.Expr("EXCLUDED.last_view_at"),
 			"view_count":   gorm.Expr("analytics_visitor_view.view_count + 1"),
+			"last_ip":      gorm.Expr("CASE WHEN EXCLUDED.last_ip <> '' THEN EXCLUDED.last_ip ELSE analytics_visitor_view.last_ip END"),
 			"platform":     gorm.Expr("EXCLUDED.platform"),
 			"browser":      gorm.Expr("EXCLUDED.browser"),
 			"location":     gorm.Expr("EXCLUDED.location"),
@@ -326,6 +337,7 @@ func (s *Service) recordVisitorView(ctx context.Context, event ViewTrackEvent) e
 		VisitorID:   event.VisitorID,
 		ContentType: event.ContentType,
 		ContentID:   event.ContentID,
+		LastIP:      ip,
 		Platform:    platform,
 		Browser:     browser,
 		Location:    location,

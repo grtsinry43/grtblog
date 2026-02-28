@@ -36,15 +36,16 @@ type visitorProfileAggRow struct {
 }
 
 type visitorLatestRow struct {
-	VisitorID string `gorm:"column:visitor_id"`
-	NickName  string `gorm:"column:nick_name"`
-	Email     string `gorm:"column:email"`
-	Website   string `gorm:"column:website"`
-	IP        string `gorm:"column:ip"`
-	Location  string `gorm:"column:location"`
-	Platform  string `gorm:"column:platform"`
-	Browser   string `gorm:"column:browser"`
-	RN        int64  `gorm:"column:rn"`
+	VisitorID  string    `gorm:"column:visitor_id"`
+	NickName   string    `gorm:"column:nick_name"`
+	Email      string    `gorm:"column:email"`
+	Website    string    `gorm:"column:website"`
+	IP         string    `gorm:"column:ip"`
+	Location   string    `gorm:"column:location"`
+	Platform   string    `gorm:"column:platform"`
+	Browser    string    `gorm:"column:browser"`
+	ObservedAt time.Time `gorm:"column:observed_at"`
+	RN         int64     `gorm:"column:rn"`
 }
 
 type visitorPoolRow struct {
@@ -710,6 +711,12 @@ visitor_pool AS (
         FROM comment c
         WHERE c.visitor_id = visitor_pool.visitor_id
           AND (c.nick_name LIKE ? OR c.email LIKE ? OR c.ip LIKE ? OR c.location LIKE ? OR c.platform LIKE ? OR c.browser LIKE ?)
+    )
+    OR EXISTS (
+        SELECT 1
+        FROM analytics_visitor_view v
+        WHERE v.visitor_id = visitor_pool.visitor_id
+          AND (v.last_ip LIKE ? OR v.location LIKE ? OR v.platform LIKE ? OR v.browser LIKE ?)
     )`
 		countSQL += `
  WHERE visitor_id LIKE ?
@@ -718,8 +725,14 @@ visitor_pool AS (
         FROM comment c
         WHERE c.visitor_id = visitor_pool.visitor_id
           AND (c.nick_name LIKE ? OR c.email LIKE ? OR c.ip LIKE ? OR c.location LIKE ? OR c.platform LIKE ? OR c.browser LIKE ?)
+    )
+    OR EXISTS (
+        SELECT 1
+        FROM analytics_visitor_view v
+        WHERE v.visitor_id = visitor_pool.visitor_id
+          AND (v.last_ip LIKE ? OR v.location LIKE ? OR v.platform LIKE ? OR v.browser LIKE ?)
     )`
-		args = append(args, like, like, like, like, like, like, like)
+		args = append(args, like, like, like, like, like, like, like, like, like, like, like)
 	}
 
 	var total int64
@@ -1220,6 +1233,52 @@ func (r *CommentRepository) loadLatestVisitorRows(ctx context.Context, visitorID
 		return map[string]visitorLatestRow{}, nil
 	}
 
+	commentLatest, err := r.loadLatestCommentVisitorRows(ctx, visitorIDs)
+	if err != nil {
+		return nil, err
+	}
+	viewLatest, err := r.loadLatestViewVisitorRows(ctx, visitorIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]visitorLatestRow, len(visitorIDs))
+	for _, visitorID := range visitorIDs {
+		commentRow, hasComment := commentLatest[visitorID]
+		viewRow, hasView := viewLatest[visitorID]
+		switch {
+		case hasComment && hasView:
+			primary := commentRow
+			secondary := viewRow
+			if viewRow.ObservedAt.After(commentRow.ObservedAt) {
+				primary = viewRow
+				secondary = commentRow
+			}
+			merged := primary
+			merged.NickName = preferNonEmpty(merged.NickName, secondary.NickName)
+			merged.Email = preferNonEmpty(merged.Email, secondary.Email)
+			merged.Website = preferNonEmpty(merged.Website, secondary.Website)
+			merged.IP = preferNonEmpty(merged.IP, secondary.IP)
+			merged.Location = preferNonEmpty(merged.Location, secondary.Location)
+			merged.Platform = preferNonEmpty(merged.Platform, secondary.Platform)
+			merged.Browser = preferNonEmpty(merged.Browser, secondary.Browser)
+			if merged.ObservedAt.IsZero() {
+				merged.ObservedAt = secondary.ObservedAt
+			}
+			result[visitorID] = merged
+		case hasComment:
+			result[visitorID] = commentRow
+		case hasView:
+			result[visitorID] = viewRow
+		}
+	}
+	return result, nil
+}
+
+func (r *CommentRepository) loadLatestCommentVisitorRows(ctx context.Context, visitorIDs []string) (map[string]visitorLatestRow, error) {
+	if len(visitorIDs) == 0 {
+		return map[string]visitorLatestRow{}, nil
+	}
 	sub := r.db.WithContext(ctx).Unscoped().Table("comment").
 		Select(
 			"visitor_id",
@@ -1230,6 +1289,7 @@ func (r *CommentRepository) loadLatestVisitorRows(ctx context.Context, visitorID
 			"location",
 			"platform",
 			"browser",
+			"created_at AS observed_at",
 			"ROW_NUMBER() OVER (PARTITION BY visitor_id ORDER BY created_at DESC, id DESC) AS rn",
 		).
 		Where("visitor_id IN ?", visitorIDs)
@@ -1238,12 +1298,48 @@ func (r *CommentRepository) loadLatestVisitorRows(ctx context.Context, visitorID
 	if err := r.db.WithContext(ctx).Table("(?) AS visitor_latest", sub).Where("rn = 1").Scan(&rows).Error; err != nil {
 		return nil, err
 	}
-
 	result := make(map[string]visitorLatestRow, len(rows))
 	for _, row := range rows {
 		result[row.VisitorID] = row
 	}
 	return result, nil
+}
+
+func (r *CommentRepository) loadLatestViewVisitorRows(ctx context.Context, visitorIDs []string) (map[string]visitorLatestRow, error) {
+	if len(visitorIDs) == 0 {
+		return map[string]visitorLatestRow{}, nil
+	}
+	sub := r.db.WithContext(ctx).Table("analytics_visitor_view").
+		Select(
+			"visitor_id",
+			"'' AS nick_name",
+			"'' AS email",
+			"'' AS website",
+			"last_ip AS ip",
+			"location",
+			"platform",
+			"browser",
+			"last_view_at AS observed_at",
+			"ROW_NUMBER() OVER (PARTITION BY visitor_id ORDER BY last_view_at DESC, updated_at DESC) AS rn",
+		).
+		Where("visitor_id IN ?", visitorIDs)
+
+	var rows []visitorLatestRow
+	if err := r.db.WithContext(ctx).Table("(?) AS visitor_latest", sub).Where("rn = 1").Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	result := make(map[string]visitorLatestRow, len(rows))
+	for _, row := range rows {
+		result[row.VisitorID] = row
+	}
+	return result, nil
+}
+
+func preferNonEmpty(primary, fallback string) string {
+	if strings.TrimSpace(primary) != "" {
+		return primary
+	}
+	return fallback
 }
 
 func mapCommentToDomain(rec model.Comment) comment.Comment {
