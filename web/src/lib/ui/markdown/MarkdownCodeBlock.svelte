@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { highlightCode } from '$lib/shared/markdown/highlight';
+	import { toast } from 'svelte-sonner';
+	import { Copy, Check } from 'lucide-svelte';
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 
@@ -60,11 +63,51 @@
 		expanded = !expanded;
 		displayHeight.set(expanded ? expandedHeight : collapsedHeight);
 	};
+
+	let copied = $state(false);
+
+	const fallbackCopy = (value: string) => {
+		const textarea = document.createElement('textarea');
+		textarea.value = value;
+		textarea.setAttribute('readonly', 'true');
+		textarea.style.position = 'fixed';
+		textarea.style.left = '-9999px';
+		document.body.appendChild(textarea);
+		textarea.select();
+		const ok = document.execCommand('copy');
+		document.body.removeChild(textarea);
+		return ok;
+	};
+
+	const copyCode = async () => {
+		if (!browser) return;
+		const value = text ?? '';
+		if (!value) {
+			toast.info('没有可复制的代码');
+			return;
+		}
+
+		try {
+			if (navigator.clipboard?.writeText) {
+				await navigator.clipboard.writeText(value);
+			} else if (!fallbackCopy(value)) {
+				throw new Error('copy-failed');
+			}
+
+			copied = true;
+			toast.success('代码已复制到剪贴板');
+			setTimeout(() => {
+				copied = false;
+			}, 1200);
+		} catch {
+			toast.error('复制失败，请手动复制');
+		}
+	};
 </script>
 
 {#if inline}
 	<code
-		class={`rounded-sm bg-jade-500/5 px-1.5 py-0.5 font-mono text-[0.9em] text-jade-800 dark:bg-jade-500/5 dark:text-jade-100 ${className}`.trim()}
+		class={`max-w-full break-words [overflow-wrap:anywhere] whitespace-pre-wrap rounded-sm bg-jade-500/5 px-1.5 py-0.5 font-mono text-[0.9em] text-jade-800 dark:bg-jade-500/5 dark:text-jade-100 ${className}`.trim()}
 		{...attrs}
 	>
 		{text}
@@ -78,7 +121,20 @@
 			class="md-codeblock__header flex items-center justify-between border-b border-ink-900/15 px-3 py-0.5 text-[11px] uppercase tracking-[0.08em] opacity-75 dark:border-white/15"
 		>
 			<span class="md-codeblock__lang">{dataLang || 'text'}</span>
-		</div>
+				<button
+					type="button"
+					class="inline-flex items-center justify-center rounded-sm p-1 text-ink-500 transition-colors hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-100"
+					onclick={copyCode}
+					aria-label={copied ? '已复制' : '复制代码'}
+					title={copied ? '已复制' : '复制代码'}
+				>
+					{#if copied}
+						<Check size={14} />
+					{:else}
+						<Copy size={14} />
+					{/if}
+				</button>
+			</div>
 		<div class="md-codeblock__body">
 			<div
 				class={`code-wrap ${measured ? 'is-measured' : ''}`}

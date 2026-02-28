@@ -137,14 +137,15 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 		Email:     emailPtr,
 		Website:   nil,
 		IsOwner:   user.IsAdmin,
-		IsAuthor:  user.IsAdmin,
-		IsFriend:  isFriend,
-		IsViewed:  isViewed,
-		IsTop:     false,
-		IsMy:      true,
-		CanReply:  true,
-		Status:    status,
-		ParentID:  cmd.ParentID,
+		// "本文作者" 只允许人工标记，避免将站长/登录用户自动等同为内容作者。
+		IsAuthor: false,
+		IsFriend: isFriend,
+		IsViewed: isViewed,
+		IsTop:    false,
+		IsMy:     true,
+		CanReply: true,
+		Status:   status,
+		ParentID: cmd.ParentID,
 	}
 	s.applyRequestMeta(commentEntity, meta)
 	commentEntity.Avatar = s.resolveCommentAvatar(ctx, commentEntity, nil)
@@ -464,7 +465,8 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 		Email:    toPtr(strings.TrimSpace(adminUser.Email)),
 		IsOwner:  true,
 		IsFriend: false,
-		IsAuthor: true,
+		// "本文作者" 只允许人工标记，管理员回复默认不自动标记为本文作者。
+		IsAuthor: false,
 		IsViewed: true,
 		IsTop:    false,
 		IsMy:     true,

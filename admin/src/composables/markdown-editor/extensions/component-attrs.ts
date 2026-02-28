@@ -17,24 +17,28 @@ export const componentAttributeSource = (context: CompletionContext): Completion
   const headerMatch = COMPONENT_HEADER_RE.exec(textBefore)
   if (!headerMatch) return null
 
-  const openIndex = textBefore.indexOf('{')
-  if (openIndex === -1) return null
-
-  const closeIndex = textBefore.indexOf('}', openIndex)
-  if (closeIndex !== -1) return null
-
   const { name } = parseComponentInfo(headerMatch[1] ?? '')
   const component = getMarkdownComponent(name)
   if (!component || component.attrs.length === 0) return null
 
-  const attrTextBefore = textBefore.slice(openIndex + 1)
-  const tokenStart = Math.max(attrTextBefore.lastIndexOf(' '), attrTextBefore.lastIndexOf('{')) + 1
+  const headerInfo = headerMatch[1] ?? ''
+  const parsed = parseComponentInfo(headerInfo)
+  if (!parsed.rawAttrs && !/\s$/.test(headerInfo)) return null
+
+  const attrTextBefore = parsed.rawAttrs
+  if (attrTextBefore.includes('{') || attrTextBefore.includes('}')) return null
+
+  const tokenStart = Math.max(attrTextBefore.lastIndexOf(' ') + 1, 0)
   const currentToken = attrTextBefore.slice(tokenStart)
   if (currentToken.includes('=')) return null
 
-  const existingKeys = new Set(Object.keys(parseComponentAttributes(attrTextBefore)))
+  const existingPart = attrTextBefore.slice(0, tokenStart)
+  const existingKeys = new Set(Object.keys(parseComponentAttributes(existingPart)))
   const query = currentToken
-  const insertPrefix = tokenStart > 0 && !/\s$/.test(attrTextBefore.slice(0, tokenStart)) ? ' ' : ''
+  const replacementFrom = pos - query.length
+  const beforeFrom =
+    replacementFrom > 0 ? state.sliceDoc(replacementFrom - 1, replacementFrom) : ''
+  const insertPrefix = replacementFrom > line.from && beforeFrom && !/\s/.test(beforeFrom) ? ' ' : ''
 
   const queryLower = query.toLowerCase()
   const options = component.attrs
@@ -50,7 +54,7 @@ export const componentAttributeSource = (context: CompletionContext): Completion
   if (!options.length) return null
 
   return {
-    from: pos - query.length,
+    from: replacementFrom,
     to: pos,
     options,
     filter: false,

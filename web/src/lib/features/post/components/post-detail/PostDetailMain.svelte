@@ -6,6 +6,7 @@
 	import PostDetailFooter from './PostDetailFooter.svelte';
 	import PostDetailMarkdown from './PostDetailMarkdown.svelte';
 	import PostDetailTocSidebar from './PostDetailTocSidebar.svelte';
+	import PostDetailLeadIn from './PostDetailLeadIn.svelte';
 
 	const aiSummaryStore = postDetailCtx.selectModelData((data) => data?.aiSummary ?? '');
 	const contentStore = postDetailCtx.selectModelData((data) => data?.content ?? '');
@@ -28,6 +29,8 @@
 		{#if $aiSummaryStore}
 			<PostDetailAiSummary summary={$aiSummaryStore} />
 		{/if}
+
+		<PostDetailLeadIn />
 
 		<PostDetailMarkdown
 			content={$contentStore}

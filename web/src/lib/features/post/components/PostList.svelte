@@ -20,7 +20,11 @@
 		description?: string;
 	}
 
-	let { basePath = '/posts', title = '文章归档', description = '按时间顺序排布的思考、笔记与技术沉淀。在这里，你可以找到所有历史文章的快照。' }: Props = $props();
+	let {
+		basePath = '/posts',
+		title = '文章归档',
+		description = '按时间顺序排布的思考、笔记与技术沉淀。在这里，你可以找到所有历史文章的快照。'
+	}: Props = $props();
 
 	const postsStore = postListCtx.selectModelData((state) => state?.posts ?? []);
 	const totalStore = postListCtx.selectModelData((state) => state?.pagination?.total ?? 0);
@@ -81,7 +85,11 @@
 	};
 </script>
 
-<div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-12">
+<div class="w-full max-w-5xl mx-auto py-4 space-y-12">
+	{#if description}
+		<p class="sr-only">{description}</p>
+	{/if}
+
 	<!-- Content List -->
 	{#if $posts && $posts.length > 0}
 		<div
@@ -89,7 +97,7 @@
 			bind:this={listContainer}
 			onmouseleave={handleMouseLeave}
 			role="list"
-			aria-label="文章列表"
+			aria-label={title || '文章列表'}
 		>
 			<!-- Fluid Background -->
 			<div

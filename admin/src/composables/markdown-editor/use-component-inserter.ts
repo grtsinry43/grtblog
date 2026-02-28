@@ -1,26 +1,23 @@
 import { reactive, computed, type Ref } from 'vue'
 
-import { getMarkdownComponent } from '@/composables/markdown/shared/components'
+import {
+  getMarkdownComponent,
+  serializeComponentAttributes,
+} from '@/composables/markdown/shared/components'
+import type { ComponentEditPayload } from '@/composables/markdown-editor/extensions/component-editor'
 
 import type { EditorView } from 'codemirror'
-
-// 与 extension 定义保持一致
-export interface ComponentEditPayload {
-  name: string
-  lineFrom: number
-  lineTo: number
-  isComponentSyntax: boolean
-  attrs: Record<string, string>
-}
 
 export function useComponentInserter(view: Ref<EditorView | undefined>) {
   const state = reactive({
     show: false,
     name: '',
-    lineFrom: 0,
-    lineTo: 0,
+    blockFrom: 0,
+    blockTo: 0,
     isComponentSyntax: false,
+    hasClosingFence: false,
     attrs: {} as Record<string, string>,
+    body: '',
   })
 
   const touchedKeys = new Set<string>()
@@ -28,10 +25,12 @@ export function useComponentInserter(view: Ref<EditorView | undefined>) {
 
   const open = (payload: ComponentEditPayload) => {
     state.name = payload.name
-    state.lineFrom = payload.lineFrom
-    state.lineTo = payload.lineTo
+    state.blockFrom = payload.blockFrom
+    state.blockTo = payload.blockTo
     state.isComponentSyntax = payload.isComponentSyntax
+    state.hasClosingFence = payload.hasClosingFence
     state.attrs = { ...payload.attrs }
+    state.body = payload.body
     touchedKeys.clear()
     state.show = true
   }
@@ -45,21 +44,34 @@ export function useComponentInserter(view: Ref<EditorView | undefined>) {
       (key) => key in state.attrs || touchedKeys.has(key),
     )
 
-    const attrsString = keys.map((key) => `${key}="${state.attrs[key] ?? ''}"`).join(' ')
+    const attrsByKey = Object.fromEntries(keys.map((key) => [key, state.attrs[key] ?? '']))
+    const attrsString = serializeComponentAttributes(attrsByKey, keys)
 
     const prefix = state.isComponentSyntax ? `::: component ${state.name}` : `::: ${state.name}`
 
-    return attrsString ? `${prefix}{${attrsString}}` : prefix
+    return attrsString ? `${prefix} ${attrsString}` : prefix
+  }
+
+  const formatBlock = () => {
+    const header = formatLine()
+    const normalizedBody = state.body.replace(/\r\n?/g, '\n')
+    if (normalizedBody) {
+      return `${header}\n${normalizedBody}\n:::`
+    }
+    if (componentMeta.value?.body || state.hasClosingFence) {
+      return `${header}\n\n:::`
+    }
+    return header
   }
 
   const apply = () => {
     if (!view.value || !state.show) return
-    const newLine = formatLine()
+    const newLine = formatBlock()
     view.value.dispatch({
-      changes: { from: state.lineFrom, to: state.lineTo, insert: newLine },
+      changes: { from: state.blockFrom, to: state.blockTo, insert: newLine },
     })
     // 更新选中范围，防止连续编辑位置错乱
-    state.lineTo = state.lineFrom + newLine.length
+    state.blockTo = state.blockFrom + newLine.length
   }
 
   const updateAttr = (key: string, value: string | boolean) => {
@@ -68,11 +80,17 @@ export function useComponentInserter(view: Ref<EditorView | undefined>) {
     apply()
   }
 
+  const updateBody = (value: string) => {
+    state.body = value
+    apply()
+  }
+
   return {
     state,
     componentMeta,
     open,
     updateAttr,
+    updateBody,
     close: () => (state.show = false),
   }
 }

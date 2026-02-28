@@ -23,6 +23,15 @@ export interface TagItem {
   updatedAt: string
 }
 
+export interface TaxonomyNamePayload {
+  name: string
+}
+
+export interface TaxonomySlugPayload {
+  name: string
+  shortUrl: string
+}
+
 export function listCategories() {
   return request<CategoryItem[]>('/categories', {
     method: 'GET',
@@ -48,6 +57,19 @@ export function createCategory(payload: { name: string; shortUrl: string }) {
   })
 }
 
+export function updateCategory(id: number, payload: TaxonomySlugPayload) {
+  return request<CategoryItem>(`/admin/categories/${id}`, {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function deleteCategory(id: number) {
+  return request<void>(`/admin/categories/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 export function createColumn(payload: { name: string; shortUrl: string }) {
   return request<ColumnItem>('/admin/columns', {
     method: 'POST',
@@ -55,9 +77,35 @@ export function createColumn(payload: { name: string; shortUrl: string }) {
   })
 }
 
+export function updateColumn(id: number, payload: TaxonomySlugPayload) {
+  return request<ColumnItem>(`/admin/columns/${id}`, {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function deleteColumn(id: number) {
+  return request<void>(`/admin/columns/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 export function createTag(name: string) {
   return request<TagItem>('/admin/tags', {
     method: 'POST',
     body: { name },
+  })
+}
+
+export function updateTag(id: number, payload: TaxonomyNamePayload) {
+  return request<TagItem>(`/admin/tags/${id}`, {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
+export function deleteTag(id: number) {
+  return request<void>(`/admin/tags/${id}`, {
+    method: 'DELETE',
   })
 }

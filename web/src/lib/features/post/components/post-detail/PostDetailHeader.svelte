@@ -14,7 +14,6 @@
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
 	const createdAtStore = postDetailCtx.selectModelData((data) => data?.createdAt ?? '');
-	const leadInStore = postDetailCtx.selectModelData((data) => data?.leadIn ?? null);
 	const isHotStore = postDetailCtx.selectModelData((data) => data?.isHot ?? false);
 	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
 		equals: sameMetrics
@@ -109,12 +108,4 @@
 			<TagList tags={$tagsStore} />
 		</div>
 	</div>
-
-	{#if $leadInStore}
-		<p
-			class="border-l-[1px] border-jade-500/20 py-0.5 pl-5 font-serif text-base leading-relaxed font-normal text-ink-600 italic opacity-90 md:text-lg dark:text-ink-400"
-		>
-			{$leadInStore}
-		</p>
-	{/if}
 </header>

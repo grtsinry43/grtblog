@@ -249,6 +249,48 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     component: 'comments/index',
   },
   {
+    path: 'taxonomy',
+    name: 'taxonomyManagement',
+    icon: 'iconify ph--tree-structure',
+    label: '内容分类',
+    redirect: 'taxonomy/categories',
+    children: [
+      {
+        path: 'categories',
+        name: 'articleCategoryManagement',
+        icon: 'iconify ph--folders',
+        label: '文章分类',
+        meta: {
+          componentName: 'ArticleCategoryManagement',
+          showTab: true,
+        },
+        component: 'taxonomy/categories/index',
+      },
+      {
+        path: 'columns',
+        name: 'noteColumnManagement',
+        icon: 'iconify ph--rows',
+        label: '手记专栏',
+        meta: {
+          componentName: 'MomentColumnManagement',
+          showTab: true,
+        },
+        component: 'taxonomy/columns/index',
+      },
+      {
+        path: 'tags',
+        name: 'tagManagement',
+        icon: 'iconify ph--tag',
+        label: '标签管理',
+        meta: {
+          componentName: 'TagManagement',
+          showTab: true,
+        },
+        component: 'taxonomy/tags/index',
+      },
+    ],
+  },
+  {
     path: 'audience',
     name: 'audienceManagement',
     icon: 'iconify ph--users-three',

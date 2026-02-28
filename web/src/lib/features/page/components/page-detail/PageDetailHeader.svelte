@@ -45,12 +45,4 @@
 			<span class="flex items-center gap-1.5">评论 {page.metrics?.comments ?? 0}</span>
 		</div>
 	</div>
-
-	{#if page.description}
-		<p
-			class="border-l-[1px] border-jade-500/20 py-0.5 pl-5 font-serif text-base leading-relaxed font-normal text-ink-600 italic opacity-90 md:text-lg dark:text-ink-400"
-		>
-			{page.description}
-		</p>
-	{/if}
 </header>

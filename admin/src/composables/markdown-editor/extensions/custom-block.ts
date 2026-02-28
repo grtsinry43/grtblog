@@ -25,7 +25,7 @@ function buildDecorations(view: EditorView): DecorationSet {
 
     // 检查是否是开始标记 ::: name 或 ::: component name
     if (text.startsWith(':::')) {
-      // 提取组件名，处理 ":::gallery" / "::: gallery" / "::: component gallery{...}"
+      // 提取组件名，处理 ":::gallery" / "::: gallery" / "::: component gallery key=\"value\""
       const content = line.text.trim().slice(3).trim()
       const { name: componentName } = parseComponentInfo(content)
 

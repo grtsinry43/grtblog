@@ -10,6 +10,8 @@ import type { MarkdownExtension } from '../types'
  * 作用: 不渲染内容，只输出一个带有 data-component="name" 的占位符 div
  */
 export const componentBlockExtension: MarkdownExtension = (md) => {
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
   const registerContainer = (
     containerName: string,
     resolveComponentInfo: (tokenInfo: string) => ReturnType<typeof parseComponentInfo>,
@@ -35,17 +37,23 @@ export const componentBlockExtension: MarkdownExtension = (md) => {
     'component',
     (info) => parseComponentInfo(info),
     (params) => {
-      return /^component\s+/.test(params.trim())
+      const trimmed = params.trim()
+      return /^component\s+/.test(trimmed) && !trimmed.includes('{') && !trimmed.includes('}')
     },
   )
 
-  // ::: <component-name>{...}
+  // ::: <component-name> key="value"
   markdownComponents.forEach((component) => {
     const prefix = component.name
+    const escaped = escapeRegExp(prefix)
+    const prefixRe = new RegExp(`^(?:${escaped}|\\[${escaped}\\])(?:\\s|$)`)
     registerContainer(
       component.name,
       (info) => parseComponentInfo(info),
-      (params) => params.trim().startsWith(prefix),
+      (params) => {
+        const trimmed = params.trim()
+        return prefixRe.test(trimmed) && !trimmed.includes('{') && !trimmed.includes('}')
+      },
     )
   })
 }

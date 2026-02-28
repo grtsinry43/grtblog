@@ -4,6 +4,7 @@
 	import DetailCommentSection from '$lib/ui/detail/DetailCommentSection.svelte';
 	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
 	import PageDetailTocSidebar from './PageDetailTocSidebar.svelte';
+	import LeadIn from '$lib/ui/detail/LeadIn.svelte';
 
 	interface Props {
 		page: PageDetail;
@@ -28,6 +29,8 @@
 		{#if page.aiSummary}
 			<DetailAiSummary summary={page.aiSummary} />
 		{/if}
+
+		<LeadIn content={page.description || ''} label="引入" />
 
 		<DetailMarkdownContent
 			content={page.content}
