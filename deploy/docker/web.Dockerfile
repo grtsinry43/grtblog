@@ -8,6 +8,7 @@ COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod=false
 
 COPY web/. .
+COPY shared /shared
 RUN pnpm build
 
 FROM node:22-alpine AS runtime
