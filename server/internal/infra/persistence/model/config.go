@@ -25,15 +25,3 @@ type SysConfig struct {
 }
 
 func (SysConfig) TableName() string { return "sys_config" }
-
-type WebsiteInfo struct {
-	ID        int64          `gorm:"column:id;primaryKey"`
-	InfoKey   string         `gorm:"column:info_key;size:45;not null"`
-	Name      *string        `gorm:"column:name;size:100"`
-	Value     *string        `gorm:"column:value;type:text"`
-	InfoJSON  datatypes.JSON `gorm:"column:info_json;type:jsonb"`
-	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time      `gorm:"column:updated_at;autoUpdateTime"`
-}
-
-func (WebsiteInfo) TableName() string { return "website_info" }

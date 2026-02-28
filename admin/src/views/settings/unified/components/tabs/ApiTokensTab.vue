@@ -21,10 +21,6 @@ import { createAdminToken, deleteAdminToken, listAdminTokens } from '@/services/
 import type { DataTableColumns } from 'naive-ui'
 import type { AdminTokenItem } from '@/services/admin-tokens'
 
-defineOptions({
-  name: 'AdminTokens',
-})
-
 const message = useMessage()
 const {
   loading,
@@ -139,53 +135,49 @@ function formatDate(iso: string) {
 </script>
 
 <template>
-  <div class="p-4">
-    <NCard title="管理员 API Token">
-      <template #header-extra>
-        <NButton type="primary" @click="openCreate">新建 Token</NButton>
-      </template>
+  <NCard title="管理员 API Token">
+    <template #header-extra>
+      <NButton type="primary" @click="openCreate">新建 Token</NButton>
+    </template>
 
-      <NDataTable
-        remote
-        :loading="loading"
-        :columns="columns"
-        :data="tableData"
-        :pagination="pagination"
-        class="mt-4"
-      />
-    </NCard>
+    <NDataTable
+      remote
+      :loading="loading"
+      :columns="columns"
+      :data="tableData"
+      :pagination="pagination"
+      class="mt-4"
+    />
+  </NCard>
 
-    <NModal v-model:show="createVisible" preset="card" title="新建管理员 Token" style="width: 520px">
-      <NForm label-placement="left" label-width="96">
-        <NFormItem label="描述">
-          <NInput
-            v-model:value="formParams.description"
-            maxlength="200"
-            placeholder="可选，用于区分用途（例如：CI 调用）"
-          />
-        </NFormItem>
-        <NFormItem label="过期时间" required>
-          <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
-        </NFormItem>
-      </NForm>
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="createVisible = false">取消</NButton>
-          <NButton type="primary" :loading="saving" @click="handleCreate">创建</NButton>
-        </NSpace>
-      </template>
-    </NModal>
+  <NModal v-model:show="createVisible" preset="card" title="新建管理员 Token" style="width: 520px">
+    <NForm label-placement="left" label-width="96">
+      <NFormItem label="描述">
+        <NInput
+          v-model:value="formParams.description"
+          maxlength="200"
+          placeholder="可选，用于区分用途（例如：CI 调用）"
+        />
+      </NFormItem>
+      <NFormItem label="过期时间" required>
+        <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
+      </NFormItem>
+    </NForm>
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="createVisible = false">取消</NButton>
+        <NButton type="primary" :loading="saving" @click="handleCreate">创建</NButton>
+      </NSpace>
+    </template>
+  </NModal>
 
-    <NModal v-model:show="revealVisible" preset="card" title="Token 已生成" style="width: 560px">
-      <div class="mb-3 text-sm text-[var(--text-color-2)]">
-        仅展示一次，请立即复制保存。
-      </div>
-      <NInput :value="createdToken" type="textarea" :rows="3" readonly />
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="revealVisible = false">我已保存</NButton>
-        </NSpace>
-      </template>
-    </NModal>
-  </div>
+  <NModal v-model:show="revealVisible" preset="card" title="Token 已生成" style="width: 560px">
+    <div class="mb-3 text-sm text-[var(--text-color-2)]">仅展示一次，请立即复制保存。</div>
+    <NInput :value="createdToken" type="textarea" :rows="3" readonly />
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="revealVisible = false">我已保存</NButton>
+      </NSpace>
+    </template>
+  </NModal>
 </template>

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
-	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainwebhook "github.com/grtsinry43/grtblog-v2/server/internal/domain/webhook"
 )
 
@@ -23,18 +23,18 @@ const (
 )
 
 type Sender struct {
-	repo        domainwebhook.Repository
-	client      *http.Client
-	timeout     time.Duration
-	websiteInfo domainconfig.WebsiteInfoRepository
+	repo    domainwebhook.Repository
+	client  *http.Client
+	timeout time.Duration
+	sysCfg  *sysconfig.Service
 }
 
-func NewSender(repo domainwebhook.Repository, timeout time.Duration, websiteInfo domainconfig.WebsiteInfoRepository) *Sender {
+func NewSender(repo domainwebhook.Repository, timeout time.Duration, sysCfg *sysconfig.Service) *Sender {
 	return &Sender{
-		repo:        repo,
-		client:      &http.Client{Timeout: timeout},
-		timeout:     timeout,
-		websiteInfo: websiteInfo,
+		repo:    repo,
+		client:  &http.Client{Timeout: timeout},
+		timeout: timeout,
+		sysCfg:  sysCfg,
 	}
 }
 
@@ -209,7 +209,7 @@ func (s *Sender) buildTemplateData(ctx context.Context, eventName string, event 
 		"eventName":  eventName,
 		"occurredAt": event.OccurredAt().Format(time.RFC3339),
 	}
-	global := appEvent.BuildGlobalTemplateVariables(ctx, s.websiteInfo)
+	global := appEvent.BuildGlobalTemplateVariables(ctx, s.sysCfg)
 	for key, value := range global {
 		data[key] = value
 	}

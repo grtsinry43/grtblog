@@ -9,7 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
@@ -21,10 +21,10 @@ type FederationPostHandler struct {
 	contentRepo   content.Repository
 	userRepo      identity.Repository
 	postCacheRepo federation.FederatedPostCacheRepository
-	cfgSvc        *federationconfig.Service
+	cfgSvc        *sysconfig.Service
 }
 
-func NewFederationPostHandler(contentRepo content.Repository, userRepo identity.Repository, postCacheRepo federation.FederatedPostCacheRepository, cfgSvc *federationconfig.Service) *FederationPostHandler {
+func NewFederationPostHandler(contentRepo content.Repository, userRepo identity.Repository, postCacheRepo federation.FederatedPostCacheRepository, cfgSvc *sysconfig.Service) *FederationPostHandler {
 	return &FederationPostHandler{
 		contentRepo:   contentRepo,
 		userRepo:      userRepo,
@@ -43,7 +43,7 @@ func NewFederationPostHandler(contentRepo content.Repository, userRepo identity.
 // @Router /api/federation/posts/{id} [get]
 func (h *FederationPostHandler) GetPostDetail(c *fiber.Ctx) error {
 	if h.cfgSvc != nil {
-		if settings, err := h.cfgSvc.Settings(c.Context()); err == nil {
+		if settings, err := h.cfgSvc.FederationSettings(c.Context()); err == nil {
 			if !settings.Enabled {
 				return response.NewBizError(response.NotFound)
 			}

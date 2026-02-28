@@ -20,7 +20,6 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
@@ -133,9 +132,8 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, cfg.App.HTMLSnapshotBaseURL, redisClient, cfg.Redis.Prefix)
 	isrSvc := isr.NewService(redisClient, cfg.Redis.Prefix, htmlSnapshotSvc, contentRepo)
 	httpStats := metrics.NewHTTPStats(6 * time.Hour)
-	fedCfgSvc := federationconfig.NewService(persistence.NewFederationConfigRepository(db))
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
-	fedOutbound := appfed.NewOutboundService(fedCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))
+	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))
 	fedDeliver := appfed.NewDeliveryService(persistence.NewOutboundDeliveryRepository(db), fedOutbound, eventBus)
 	fedSync := appfed.NewSyncWorker(
 		persistence.NewFederationInstanceRepository(db),

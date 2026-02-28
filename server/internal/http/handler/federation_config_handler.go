@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -16,10 +15,10 @@ import (
 
 // FederationConfigHandler provides settings-center style APIs for federation_config.
 type FederationConfigHandler struct {
-	svc *federationconfig.Service
+	svc *sysconfig.Service
 }
 
-func NewFederationConfigHandler(svc *federationconfig.Service) *FederationConfigHandler {
+func NewFederationConfigHandler(svc *sysconfig.Service) *FederationConfigHandler {
 	return &FederationConfigHandler{svc: svc}
 }
 

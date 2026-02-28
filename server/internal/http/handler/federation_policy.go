@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 )
 
 type federationPolicy struct {
@@ -13,7 +13,7 @@ type federationPolicy struct {
 	AutoApproveFriendlinkCitation *bool `json:"auto_approve_friendlink_citation"`
 }
 
-func parseFederationPolicy(settings federationconfig.Settings) federationPolicy {
+func parseFederationPolicy(settings sysconfig.FederationSettings) federationPolicy {
 	if len(settings.DefaultPolicies) == 0 {
 		return federationPolicy{}
 	}

@@ -63,3 +63,33 @@ export function updateSysConfigs(items: SysConfigUpdateItem[]) {
     body: { items },
   })
 }
+
+export function listFederationConfigs(keys?: string[]) {
+  const query = keys && keys.length > 0 ? { keys: keys.join(',') } : undefined
+  return request<SysConfigTreeResponse>('/admin/federation/config', {
+    method: 'GET',
+    query,
+  })
+}
+
+export function updateFederationConfigs(items: SysConfigUpdateItem[]) {
+  return request<SysConfigTreeResponse>('/admin/federation/config', {
+    method: 'PUT',
+    body: { items },
+  })
+}
+
+export function listActivityPubConfigs(keys?: string[]) {
+  const query = keys && keys.length > 0 ? { keys: keys.join(',') } : undefined
+  return request<SysConfigTreeResponse>('/admin/activitypub/config', {
+    method: 'GET',
+    query,
+  })
+}
+
+export function updateActivityPubConfigs(items: SysConfigUpdateItem[]) {
+  return request<SysConfigTreeResponse>('/admin/activitypub/config', {
+    method: 'PUT',
+    body: { items },
+  })
+}

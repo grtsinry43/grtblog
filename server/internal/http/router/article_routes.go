@@ -3,7 +3,6 @@ package router
 import (
 	"github.com/gofiber/fiber/v2"
 
-	appapcfg "github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
@@ -50,7 +49,6 @@ func newArticleHandler(deps Dependencies) *handler.ArticleHandler {
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	commentRepo := persistence.NewCommentRepository(deps.DB)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	apCfgSvc := appapcfg.NewService(persistence.NewFederationConfigRepository(deps.DB))
 	articleSvc := article.NewService(contentRepo, commentRepo, deps.EventBus)
-	return handler.NewArticleHandler(articleSvc, contentRepo, commentRepo, identityRepo, apCfgSvc)
+	return handler.NewArticleHandler(articleSvc, contentRepo, commentRepo, identityRepo, deps.SysConfig)
 }

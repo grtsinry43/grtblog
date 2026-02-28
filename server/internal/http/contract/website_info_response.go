@@ -1,36 +1,16 @@
 package contract
 
 import (
-	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	"encoding/json"
+
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
 type WebsiteInfoResp struct {
-	Key       string  `json:"key"`
-	Name      *string `json:"name"`
-	Value     *string `json:"value"`
-	InfoJSON  JSONRaw `json:"infoJson,omitempty" swaggertype:"object"`
-	CreatedAt string  `json:"createdAt"`
-	UpdatedAt string  `json:"updatedAt"`
-}
-
-func ToWebsiteInfoResp(info config.WebsiteInfo) WebsiteInfoResp {
-	return WebsiteInfoResp{
-		Key:       info.Key,
-		Name:      info.Name,
-		Value:     info.Value,
-		InfoJSON:  JSONRaw(info.InfoJSON),
-		CreatedAt: info.CreatedAt.Format(response.TimeLayout),
-		UpdatedAt: info.UpdatedAt.Format(response.TimeLayout),
-	}
-}
-
-func ToWebsiteInfoListResp(items []config.WebsiteInfo) []WebsiteInfoResp {
-	result := make([]WebsiteInfoResp, 0, len(items))
-	for _, item := range items {
-		result = append(result, ToWebsiteInfoResp(item))
-	}
-	return result
+	Key      string           `json:"key"`
+	Name     *string          `json:"name,omitempty"`
+	Value    *string          `json:"value,omitempty"`
+	InfoJSON *json.RawMessage `json:"infoJson,omitempty" swaggertype:"object"`
 }
 
 // 用于 swagger 展示。

@@ -17,13 +17,12 @@ import (
 func registerAuthRoutes(v2 fiber.Router, deps Dependencies, sysCfgSvc *sysconfig.Service) {
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	oauthRepo := persistence.NewOAuthProviderRepository(deps.DB)
-	websiteInfoRepo := persistence.NewWebsiteInfoRepository(deps.DB)
 	var stateStore auth.StateStore
 	if deps.Redis != nil {
 		stateStore = auth.NewRedisStateStore(deps.Redis, deps.Config.Redis.Prefix)
 	}
 	authSvc := auth.NewService(identityRepo, oauthRepo, deps.JWTManager, stateStore, deps.Config.Auth)
-	setupStateSvc := setupstate.NewService(identityRepo, websiteInfoRepo)
+	setupStateSvc := setupstate.NewService(identityRepo, sysCfgSvc)
 	authHandler := handler.NewAuthHandler(authSvc, setupStateSvc, sysCfgSvc, deps.Turnstile)
 	oauthHandler := handler.NewOAuthHandler(authSvc, deps.Config.Auth.OAuthStateTTL)
 

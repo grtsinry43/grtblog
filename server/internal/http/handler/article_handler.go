@@ -10,7 +10,7 @@ import (
 	"github.com/jinzhu/copier"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
@@ -26,10 +26,10 @@ type ArticleHandler struct {
 	contentRepo content.Repository
 	commentRepo domaincomment.CommentRepository
 	userRepo    identity.Repository
-	apCfgSvc    *activitypubconfig.Service
+	apCfgSvc    *sysconfig.Service
 }
 
-func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository, apCfgSvc *activitypubconfig.Service) *ArticleHandler {
+func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository, apCfgSvc *sysconfig.Service) *ArticleHandler {
 	return &ArticleHandler{
 		svc:         svc,
 		contentRepo: contentRepo,
@@ -771,7 +771,7 @@ func (h *ArticleHandler) buildFediverseReplyLinks(ctx context.Context, article *
 	if h.apCfgSvc == nil || article == nil {
 		return nil, nil
 	}
-	settings, err := h.apCfgSvc.Settings(ctx)
+	settings, err := h.apCfgSvc.ActivityPubSettings(ctx)
 	if err != nil || !settings.Enabled {
 		return nil, nil
 	}

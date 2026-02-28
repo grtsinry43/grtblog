@@ -179,8 +179,18 @@ func RegisterLayoutSubscribers(bus appEvent.Bus, service *Service) {
 		return
 	}
 
-	bus.Subscribe("websiteinfo.updated", handlerFunc(func(ctx context.Context, _ appEvent.Event) error {
-		return service.Invalidate(ctx, []string{"layout:website-info"}, nil)
+	bus.Subscribe("sysconfig.updated", handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		generic, ok := event.(appEvent.Generic)
+		if !ok {
+			return nil
+		}
+		keys, _ := generic.Payload["Keys"].([]string)
+		for _, k := range keys {
+			if len(k) > 5 && k[:5] == "site." {
+				return service.Invalidate(ctx, []string{"layout:website-info"}, nil)
+			}
+		}
+		return nil
 	}))
 	bus.Subscribe("navmenu.updated", handlerFunc(func(ctx context.Context, _ appEvent.Event) error {
 		return service.Invalidate(ctx, []string{"layout:nav"}, nil)

@@ -5,7 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/config"
+	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	domainthinking "github.com/grtsinry43/grtblog-v2/server/internal/domain/thinking"
@@ -37,12 +40,60 @@ func (f *fakeThinkingRepo) List(_ context.Context, _ int, _ int) ([]*domainthink
 	return f.items, int64(len(f.items)), nil
 }
 
-type fakeWebsiteRepo struct {
-	items []config.WebsiteInfo
+// fakeSysConfigRepo implements domainconfig.SysConfigRepository for testing.
+type fakeSysConfigRepo struct {
+	items map[string]domainconfig.SysConfig
 }
 
-func (f *fakeWebsiteRepo) List(_ context.Context) ([]config.WebsiteInfo, error) {
-	return f.items, nil
+func (f *fakeSysConfigRepo) GetByKey(_ context.Context, key string) (*domainconfig.SysConfig, error) {
+	if f == nil || f.items == nil {
+		return nil, domainconfig.ErrSysConfigNotFound
+	}
+	if cfg, ok := f.items[key]; ok {
+		return &cfg, nil
+	}
+	return nil, domainconfig.ErrSysConfigNotFound
+}
+
+func (f *fakeSysConfigRepo) List(_ context.Context, keys []string) ([]domainconfig.SysConfig, error) {
+	if f == nil || f.items == nil {
+		return nil, nil
+	}
+	if keys == nil {
+		result := make([]domainconfig.SysConfig, 0, len(f.items))
+		for _, cfg := range f.items {
+			result = append(result, cfg)
+		}
+		return result, nil
+	}
+	result := make([]domainconfig.SysConfig, 0, len(keys))
+	for _, key := range keys {
+		if cfg, ok := f.items[key]; ok {
+			result = append(result, cfg)
+		}
+	}
+	return result, nil
+}
+
+func (f *fakeSysConfigRepo) Upsert(_ context.Context, configs []domainconfig.SysConfig) error {
+	if f.items == nil {
+		f.items = make(map[string]domainconfig.SysConfig)
+	}
+	for _, cfg := range configs {
+		f.items[cfg.Key] = cfg
+	}
+	return nil
+}
+
+// newTestSysCfg creates a *sysconfig.Service backed by in-memory site.* config entries.
+// Pass bare keys (e.g., "website_name") — the site. prefix is added automatically.
+func newTestSysCfg(entries map[string]string) *sysconfig.Service {
+	items := make(map[string]domainconfig.SysConfig, len(entries))
+	for k, v := range entries {
+		fullKey := "site." + k
+		items[fullKey] = domainconfig.SysConfig{Key: fullKey, Value: v}
+	}
+	return sysconfig.NewService(&fakeSysConfigRepo{items: items}, config.TurnstileConfig{}, appEvent.NopBus{})
 }
 
 type fakeIdentityRepo struct {
@@ -84,11 +135,11 @@ func TestBuildAggregatesAndSortsItems(t *testing.T) {
 		&fakeThinkingRepo{
 			items: []*domainthinking.Thinking{{ID: 4, AuthorID: 103, Content: "thinking **content**", CreatedAt: now}},
 		},
-		&fakeWebsiteRepo{items: []config.WebsiteInfo{
-			{Key: "website_name", Value: ptr("My Site")},
-			{Key: "public_url", Value: ptr("https://example.com")},
-			{Key: "description", Value: ptr("Site Desc")},
-		}},
+		newTestSysCfg(map[string]string{
+			"website_name": "My Site",
+			"public_url":   "https://example.com",
+			"description":  "Site Desc",
+		}),
 		&fakeIdentityRepo{
 			users: map[int64]*identity.User{
 				101: {ID: 101, Username: "a1", Nickname: "Author A", Email: "a@example.com"},
@@ -166,12 +217,12 @@ func TestBuildUsesOGDescriptionFallback(t *testing.T) {
 			articles: []*content.Article{{ID: 1, Title: "A", Content: "A", ShortURL: "a", CreatedAt: now}},
 		},
 		nil,
-		&fakeWebsiteRepo{items: []config.WebsiteInfo{
-			{Key: "website_name", Value: ptr("My Site")},
-			{Key: "description", Value: ptr("")},
-			{Key: "og_description", Value: ptr("OG Desc")},
-			{Key: "public_url", Value: ptr("https://example.com")},
-		}},
+		newTestSysCfg(map[string]string{
+			"website_name":   "My Site",
+			"description":    "",
+			"og_description": "OG Desc",
+			"public_url":     "https://example.com",
+		}),
 		nil,
 	)
 
@@ -184,6 +235,3 @@ func TestBuildUsesOGDescriptionFallback(t *testing.T) {
 	}
 }
 
-func ptr(s string) *string {
-	return &s
-}

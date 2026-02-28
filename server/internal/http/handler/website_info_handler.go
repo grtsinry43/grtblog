@@ -2,55 +2,37 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/websiteinfo"
-	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
 type WebsiteInfoHandler struct {
-	svc *websiteinfo.Service
+	sysCfg *sysconfig.Service
 }
 
 const themeExtendInfoKey = "theme_extend_info"
 
-func NewWebsiteInfoHandler(svc *websiteinfo.Service) *WebsiteInfoHandler {
-	return &WebsiteInfoHandler{svc: svc}
-}
-
-func (h *WebsiteInfoHandler) listAll(c *fiber.Ctx) error {
-	items, err := h.svc.List(c.Context())
-	if err != nil {
-		return err
-	}
-	return response.Success(c, contract.ToWebsiteInfoListResp(items))
+func NewWebsiteInfoHandler(sysCfg *sysconfig.Service) *WebsiteInfoHandler {
+	return &WebsiteInfoHandler{sysCfg: sysCfg}
 }
 
 func (h *WebsiteInfoHandler) listPublic(c *fiber.Ctx) error {
-	items, err := h.svc.List(c.Context())
+	info, err := h.sysCfg.WebsiteInfo(c.Context())
 	if err != nil {
 		return err
 	}
-	payload := make(map[string]any, len(items))
-	for _, item := range items {
-		key := strings.TrimSpace(item.Key)
-		if key == "" {
-			continue
-		}
+	payload := make(map[string]any, len(info))
+	for key, value := range info {
 		if key == themeExtendInfoKey {
-			payload[key] = parseJSONOrEmpty(item.InfoJSON)
+			payload[key] = parseJSONStringOrEmpty(value)
 			continue
 		}
-		if item.Value == nil {
-			payload[key] = ""
-			continue
-		}
-		payload[key] = *item.Value
+		payload[key] = value
 	}
 	return response.Success(c, payload)
 }
@@ -73,7 +55,24 @@ func (h *WebsiteInfoHandler) PublicList(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /website-info [get]
 func (h *WebsiteInfoHandler) List(c *fiber.Ctx) error {
-	return h.listAll(c)
+	info, err := h.sysCfg.WebsiteInfo(c.Context())
+	if err != nil {
+		return err
+	}
+	items := make([]contract.WebsiteInfoResp, 0, len(info))
+	for key, value := range info {
+		item := contract.WebsiteInfoResp{
+			Key:   key,
+			Value: &value,
+		}
+		if key == themeExtendInfoKey {
+			raw := json.RawMessage(value)
+			item.InfoJSON = &raw
+			item.Value = nil
+		}
+		items = append(items, item)
+	}
+	return response.Success(c, items)
 }
 
 // Update godoc
@@ -98,21 +97,24 @@ func (h *WebsiteInfoHandler) Update(c *fiber.Ctx) error {
 	if err := validateWebsiteInfoReq(key, req); err != nil {
 		return err
 	}
-	cmd := websiteinfo.UpdateCmd{
-		Key:      key,
-		Name:     req.Name,
-		Value:    req.Value,
-		InfoJSON: contract.RawMessagePtr(req.InfoJSON),
-	}
-	info, err := h.svc.Update(c.Context(), cmd)
-	if err != nil {
-		if errors.Is(err, config.ErrWebsiteInfoNotFound) {
-			return response.NewBizError(response.NotFound)
+
+	if strings.TrimSpace(key) == themeExtendInfoKey {
+		if err := h.sysCfg.UpdateWebsiteInfoJSON(c.Context(), key, json.RawMessage(*req.InfoJSON)); err != nil {
+			return err
 		}
-		return err
+	} else {
+		if err := h.sysCfg.UpdateWebsiteInfoByKey(c.Context(), key, *req.Value); err != nil {
+			return err
+		}
 	}
-	Audit(c, "website_info.update", map[string]any{"key": info.Key})
-	return response.SuccessWithMessage(c, contract.ToWebsiteInfoResp(*info), "updated")
+
+	Audit(c, "website_info.update", map[string]any{"key": key})
+	resp := contract.WebsiteInfoResp{Key: key, Value: req.Value}
+	if req.InfoJSON != nil {
+		raw := json.RawMessage(*req.InfoJSON)
+		resp.InfoJSON = &raw
+	}
+	return response.SuccessWithMessage(c, resp, "updated")
 }
 
 func validateWebsiteInfoReq(key string, req contract.WebsiteInfoReq) error {
@@ -141,12 +143,13 @@ func validateWebsiteInfoReq(key string, req contract.WebsiteInfoReq) error {
 	return nil
 }
 
-func parseJSONOrEmpty(value json.RawMessage) any {
-	if len(value) == 0 {
+func parseJSONStringOrEmpty(value string) any {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
 		return map[string]any{}
 	}
 	var result any
-	if err := json.Unmarshal(value, &result); err != nil {
+	if err := json.Unmarshal([]byte(trimmed), &result); err != nil {
 		return map[string]any{}
 	}
 	return result

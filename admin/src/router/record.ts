@@ -404,29 +404,20 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         },
         component: 'federation/debug/OutboundRequest',
       },
-      {
-        path: 'settings',
-        name: 'unionSettings',
-        label: '联合设置',
-        icon: 'iconify ph--circles-three',
-        meta: {
-          componentName: 'FederationSettings',
-          showTab: true,
-        },
-        component: 'federation/settings',
-      },
-      {
-        path: 'activitypub-settings',
-        name: 'activityPubSettings',
-        label: 'ActivityPub设置',
-        icon: 'iconify ph--globe-hemisphere-west',
-        meta: {
-          componentName: 'ActivityPubSettings',
-          showTab: true,
-        },
-        component: 'activitypub/settings',
-      },
     ],
+  },
+  // Legacy redirects for federation settings routes
+  {
+    path: 'federation/settings',
+    name: 'unionSettingsLegacy',
+    show: false,
+    redirect: '/settings?tab=federation',
+  },
+  {
+    path: 'federation/activitypub-settings',
+    name: 'activityPubSettingsLegacy',
+    show: false,
+    redirect: '/settings?tab=federation',
   },
   {
     path: 'notifications',
@@ -589,53 +580,36 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     name: 'settings',
     icon: 'iconify ph--gear-six',
     label: '设置',
-    redirect: 'settings/site-info',
-    children: [
-      {
-        path: 'site-info',
-        name: 'siteInfo',
-        label: '站点信息',
-        icon: 'iconify ph--globe-hemisphere-west',
-        meta: {
-          componentName: 'SiteInfo',
-          showTab: true,
-        },
-        component: 'settings/site-info/index',
-      },
-      {
-        path: 'login-methods',
-        name: 'loginMethods',
-        label: '登录方式',
-        icon: 'iconify ph--shield-check',
-        meta: {
-          componentName: 'LoginMethods',
-          showTab: true,
-        },
-        component: 'settings/login-methods/index',
-      },
-      {
-        path: 'api-tokens',
-        name: 'adminTokens',
-        label: 'API Tokens',
-        icon: 'iconify ph--key',
-        meta: {
-          componentName: 'AdminTokens',
-          showTab: true,
-        },
-        component: 'settings/admin-tokens/index',
-      },
-      {
-        path: 'system',
-        name: 'systemSettings',
-        label: '系统设置',
-        icon: 'iconify ph--gear',
-        meta: {
-          componentName: 'SystemSettings',
-          showTab: true,
-        },
-        component: 'sysconfig/index',
-      },
-    ],
+    meta: {
+      componentName: 'UnifiedSettings',
+      showTab: true,
+    },
+    component: 'settings/unified/index',
+  },
+  // Legacy redirects for old settings routes
+  {
+    path: 'settings/site-info',
+    name: 'siteInfoLegacy',
+    show: false,
+    redirect: '/settings?tab=site-info',
+  },
+  {
+    path: 'settings/login-methods',
+    name: 'loginMethodsLegacy',
+    show: false,
+    redirect: '/settings?tab=security',
+  },
+  {
+    path: 'settings/api-tokens',
+    name: 'adminTokensLegacy',
+    show: false,
+    redirect: '/settings?tab=api-tokens',
+  },
+  {
+    path: 'settings/system',
+    name: 'systemSettingsLegacy',
+    show: false,
+    redirect: '/settings?tab=advanced',
   },
   {
     path: 'advanced',

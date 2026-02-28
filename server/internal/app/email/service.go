@@ -11,18 +11,18 @@ import (
 	"time"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
-	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainemail "github.com/grtsinry43/grtblog-v2/server/internal/domain/email"
 )
 
 type Service struct {
-	repo        domainemail.Repository
-	sender      *Sender
-	websiteInfo domainconfig.WebsiteInfoRepository
+	repo   domainemail.Repository
+	sender *Sender
+	sysCfg *sysconfig.Service
 }
 
-func NewService(repo domainemail.Repository, sender *Sender, websiteInfo domainconfig.WebsiteInfoRepository) *Service {
-	return &Service{repo: repo, sender: sender, websiteInfo: websiteInfo}
+func NewService(repo domainemail.Repository, sender *Sender, sysCfg *sysconfig.Service) *Service {
+	return &Service{repo: repo, sender: sender, sysCfg: sysCfg}
 }
 
 func (s *Service) ListEvents() []string {
@@ -109,7 +109,7 @@ func (s *Service) TestSend(ctx context.Context, code string, to []string, variab
 }
 
 func (s *Service) mergeTemplateVariables(ctx context.Context, eventName string, input map[string]any) map[string]any {
-	merged := appEvent.BuildGlobalTemplateVariables(ctx, s.websiteInfo)
+	merged := appEvent.BuildGlobalTemplateVariables(ctx, s.sysCfg)
 	if strings.TrimSpace(eventName) != "" {
 		merged["eventName"] = eventName
 	}

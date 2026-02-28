@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
+	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 )
 
@@ -28,14 +29,14 @@ type State struct {
 }
 
 type Service struct {
-	users identity.Repository
-	site  config.WebsiteInfoRepository
+	users  identity.Repository
+	sysCfg *sysconfig.Service
 }
 
-func NewService(users identity.Repository, site config.WebsiteInfoRepository) *Service {
+func NewService(users identity.Repository, sysCfg *sysconfig.Service) *Service {
 	return &Service{
-		users: users,
-		site:  site,
+		users:  users,
+		sysCfg: sysCfg,
 	}
 }
 
@@ -48,22 +49,18 @@ func (s *Service) Evaluate(ctx context.Context) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
-	items, err := s.site.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	values := make(map[string]string, len(items))
-	for _, item := range items {
-		if item.Value == nil {
-			continue
-		}
-		values[item.Key] = strings.TrimSpace(*item.Value)
-	}
 
 	missingKeys := make([]string, 0, len(requiredWebsiteInfoKeys))
 	for _, key := range requiredWebsiteInfoKeys {
-		if strings.TrimSpace(values[key]) == "" {
+		val, err := s.sysCfg.GetWebsiteInfoValue(ctx, key)
+		if err != nil {
+			if errors.Is(err, domainconfig.ErrSysConfigNotFound) {
+				missingKeys = append(missingKeys, key)
+				continue
+			}
+			return nil, err
+		}
+		if strings.TrimSpace(val) == "" {
 			missingKeys = append(missingKeys, key)
 		}
 	}

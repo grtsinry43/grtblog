@@ -20,8 +20,7 @@ func registerEmailPublicRoutes(v2 fiber.Router, deps Dependencies, sysCfgSvc *sy
 	}
 	emailRepo := persistence.NewEmailRepository(deps.DB)
 	emailSender := email.NewSender(sysCfgSvc)
-	websiteInfoRepo := persistence.NewWebsiteInfoRepository(deps.DB)
-	emailSvc := email.NewService(emailRepo, emailSender, websiteInfoRepo)
+	emailSvc := email.NewService(emailRepo, emailSender, sysCfgSvc)
 	emailHandler := handler.NewEmailTemplateHandler(emailSvc)
 
 	public := v2.Group("/public/email")

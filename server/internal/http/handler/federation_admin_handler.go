@@ -11,7 +11,7 @@ import (
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	domainfed "github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -20,7 +20,7 @@ import (
 )
 
 type FederationAdminHandler struct {
-	cfgSvc       *federationconfig.Service
+	cfgSvc       *sysconfig.Service
 	contentRepo  content.Repository
 	deliverySvc  *appfed.DeliveryService
 	instanceRepo domainfed.FederationInstanceRepository
@@ -28,7 +28,7 @@ type FederationAdminHandler struct {
 	events       appEvent.Bus
 }
 
-func NewFederationAdminHandler(cfgSvc *federationconfig.Service, contentRepo content.Repository, deliverySvc *appfed.DeliveryService, instanceRepo domainfed.FederationInstanceRepository, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
+func NewFederationAdminHandler(cfgSvc *sysconfig.Service, contentRepo content.Repository, deliverySvc *appfed.DeliveryService, instanceRepo domainfed.FederationInstanceRepository, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}

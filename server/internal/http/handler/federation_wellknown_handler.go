@@ -8,23 +8,23 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 )
 
 type FederationWellKnownHandler struct {
-	cfgSvc *federationconfig.Service
+	cfgSvc *sysconfig.Service
 	appCfg config.AppConfig
 }
 
-func NewFederationWellKnownHandler(cfgSvc *federationconfig.Service, appCfg config.AppConfig) *FederationWellKnownHandler {
+func NewFederationWellKnownHandler(cfgSvc *sysconfig.Service, appCfg config.AppConfig) *FederationWellKnownHandler {
 	return &FederationWellKnownHandler{cfgSvc: cfgSvc, appCfg: appCfg}
 }
 
 func (h *FederationWellKnownHandler) Manifest(c *fiber.Ctx) error {
-	settings, err := h.cfgSvc.Settings(c.Context())
+	settings, err := h.cfgSvc.FederationSettings(c.Context())
 	if err != nil || !settings.Enabled {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
@@ -65,7 +65,7 @@ func (h *FederationWellKnownHandler) Manifest(c *fiber.Ctx) error {
 }
 
 func (h *FederationWellKnownHandler) PublicKey(c *fiber.Ctx) error {
-	settings, err := h.cfgSvc.Settings(c.Context())
+	settings, err := h.cfgSvc.FederationSettings(c.Context())
 	if err != nil || !settings.Enabled || strings.TrimSpace(settings.PublicKey) == "" {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
@@ -80,7 +80,7 @@ func (h *FederationWellKnownHandler) PublicKey(c *fiber.Ctx) error {
 }
 
 func (h *FederationWellKnownHandler) Endpoints(c *fiber.Ctx) error {
-	settings, err := h.cfgSvc.Settings(c.Context())
+	settings, err := h.cfgSvc.FederationSettings(c.Context())
 	if err != nil || !settings.Enabled {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
@@ -99,7 +99,7 @@ func (h *FederationWellKnownHandler) Endpoints(c *fiber.Ctx) error {
 	return c.JSON(doc)
 }
 
-func (h *FederationWellKnownHandler) resolveInstanceName(settings federationconfig.Settings) string {
+func (h *FederationWellKnownHandler) resolveInstanceName(settings sysconfig.FederationSettings) string {
 	if strings.TrimSpace(settings.InstanceName) != "" {
 		return strings.TrimSpace(settings.InstanceName)
 	}
@@ -109,7 +109,7 @@ func (h *FederationWellKnownHandler) resolveInstanceName(settings federationconf
 	return "federation-instance"
 }
 
-func (h *FederationWellKnownHandler) resolveInstanceURL(c *fiber.Ctx, settings federationconfig.Settings) string {
+func (h *FederationWellKnownHandler) resolveInstanceURL(c *fiber.Ctx, settings sysconfig.FederationSettings) string {
 	scheme := "https"
 	if c.Protocol() != "" {
 		scheme = c.Protocol()
@@ -125,7 +125,7 @@ func (h *FederationWellKnownHandler) resolveInstanceURL(c *fiber.Ctx, settings f
 	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
-func (h *FederationWellKnownHandler) publicKeyID(c *fiber.Ctx, settings federationconfig.Settings) string {
+func (h *FederationWellKnownHandler) publicKeyID(c *fiber.Ctx, settings sysconfig.FederationSettings) string {
 	baseURL := h.resolveInstanceURL(c, settings)
 	parsed, err := url.Parse(baseURL)
 	if err != nil {

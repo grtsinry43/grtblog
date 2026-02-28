@@ -8,19 +8,19 @@ import (
 	"time"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
-	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainemail "github.com/grtsinry43/grtblog-v2/server/internal/domain/email"
 )
 
 type Dispatcher struct {
-	repo        domainemail.Repository
-	sender      *Sender
-	websiteInfo domainconfig.WebsiteInfoRepository
-	queue       chan *domainemail.Outbox
-	maxRetries  int
+	repo       domainemail.Repository
+	sender     *Sender
+	sysCfg     *sysconfig.Service
+	queue      chan *domainemail.Outbox
+	maxRetries int
 }
 
-func NewDispatcher(repo domainemail.Repository, sender *Sender, websiteInfo domainconfig.WebsiteInfoRepository, workers int, queueSize int, maxRetries int, pollInterval time.Duration) *Dispatcher {
+func NewDispatcher(repo domainemail.Repository, sender *Sender, sysCfg *sysconfig.Service, workers int, queueSize int, maxRetries int, pollInterval time.Duration) *Dispatcher {
 	if workers <= 0 {
 		workers = 1
 	}
@@ -34,11 +34,11 @@ func NewDispatcher(repo domainemail.Repository, sender *Sender, websiteInfo doma
 		pollInterval = 2 * time.Second
 	}
 	d := &Dispatcher{
-		repo:        repo,
-		sender:      sender,
-		websiteInfo: websiteInfo,
-		queue:       make(chan *domainemail.Outbox, queueSize),
-		maxRetries:  maxRetries,
+		repo:       repo,
+		sender:     sender,
+		sysCfg:     sysCfg,
+		queue:      make(chan *domainemail.Outbox, queueSize),
+		maxRetries: maxRetries,
 	}
 	for i := 0; i < workers; i++ {
 		go d.worker()
@@ -58,7 +58,7 @@ func (d *Dispatcher) Handle(ctx context.Context, event appEvent.Event) error {
 	if len(templates) == 0 {
 		return nil
 	}
-	variables := appEvent.BuildGlobalTemplateVariables(ctx, d.websiteInfo)
+	variables := appEvent.BuildGlobalTemplateVariables(ctx, d.sysCfg)
 	for key, value := range mapFromEvent(event) {
 		variables[key] = value
 	}

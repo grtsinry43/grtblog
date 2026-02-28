@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -15,10 +14,10 @@ import (
 )
 
 type ActivityPubConfigHandler struct {
-	svc *activitypubconfig.Service
+	svc *sysconfig.Service
 }
 
-func NewActivityPubConfigHandler(svc *activitypubconfig.Service) *ActivityPubConfigHandler {
+func NewActivityPubConfigHandler(svc *sysconfig.Service) *ActivityPubConfigHandler {
 	return &ActivityPubConfigHandler{svc: svc}
 }
 

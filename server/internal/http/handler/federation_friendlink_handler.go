@@ -11,7 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -20,7 +20,7 @@ import (
 )
 
 type FederationFriendLinkHandler struct {
-	cfgSvc          *federationconfig.Service
+	cfgSvc          *sysconfig.Service
 	instanceRepo    federation.FederationInstanceRepository
 	linkRepo        social.FriendLinkRepository
 	applicationRepo social.FriendLinkApplicationRepository
@@ -31,7 +31,7 @@ type FederationFriendLinkHandler struct {
 }
 
 func NewFederationFriendLinkHandler(
-	cfgSvc *federationconfig.Service,
+	cfgSvc *sysconfig.Service,
 	instanceRepo federation.FederationInstanceRepository,
 	linkRepo social.FriendLinkRepository,
 	applicationRepo social.FriendLinkApplicationRepository,
@@ -93,7 +93,7 @@ func (h *FederationFriendLinkHandler) RequestFriendLink(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "签名来源与请求不一致")
 	}
 
-	settings, err := h.cfgSvc.Settings(c.Context())
+	settings, err := h.cfgSvc.FederationSettings(c.Context())
 	if err != nil || !settings.Enabled {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "联合未启用")
 	}
@@ -239,7 +239,7 @@ func safeString(val *string, fallback string) string {
 	return *val
 }
 
-func autoApproveFriendlink(settings federationconfig.Settings) bool {
+func autoApproveFriendlink(settings sysconfig.FederationSettings) bool {
 	policy := parseFederationPolicy(settings)
 	return policyBool(policy.AutoApproveFriendlink, false)
 }
