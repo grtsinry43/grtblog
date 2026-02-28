@@ -59,6 +59,14 @@ type Subscription struct {
 	UpdatedAt      time.Time
 }
 
+type OutboxListOptions struct {
+	Page      int
+	PageSize  int
+	Status    *string
+	EventName *string
+	Search    *string
+}
+
 type SubscriptionListOptions struct {
 	Page      int
 	PageSize  int

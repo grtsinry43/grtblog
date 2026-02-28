@@ -83,6 +83,39 @@ export interface BatchUpdateEmailSubscriptionStatusReq {
     status: string
 }
 
+// 邮件出站队列相关类型
+export interface EmailOutbox {
+    id: number
+    templateCode: string
+    eventName: string
+    toEmails: string[]
+    subject: string
+    htmlBody?: string
+    textBody?: string
+    status: string
+    retryCount: number
+    nextRetryAt: string
+    lastError?: string
+    sentAt?: string
+    createdAt: string
+    updatedAt: string
+}
+
+export interface EmailOutboxListResp {
+    items: EmailOutbox[]
+    total: number
+    page: number
+    size: number
+}
+
+export interface EmailOutboxListParams {
+    page?: number
+    pageSize?: number
+    status?: string
+    eventName?: string
+    search?: string
+}
+
 function stripEmpty<T extends Record<string, any>>(value: T) {
     return Object.fromEntries(
         Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null && entry !== ''),
@@ -150,5 +183,19 @@ export function batchUpdateEmailSubscriptionStatus(data: BatchUpdateEmailSubscri
     return request<void>('/admin/email/subscriptions/status', {
         method: 'PUT',
         body: data,
+    })
+}
+
+// 邮件出站队列相关 API
+export function listEmailOutbox(params: EmailOutboxListParams) {
+    return request<EmailOutboxListResp>('/admin/email/outbox', {
+        method: 'GET',
+        query: stripEmpty(params),
+    })
+}
+
+export function getEmailOutboxDetail(id: number) {
+    return request<EmailOutbox>(`/admin/email/outbox/${id}`, {
+        method: 'GET',
     })
 }

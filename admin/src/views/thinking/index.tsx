@@ -64,7 +64,8 @@ export default defineComponent({
       {
         title: '内容',
         key: 'content',
-        width: 400,
+        minWidth: 300,
+        ellipsis: { tooltip: true },
         render: (row) => (
           <div class='font-medium text-gray-700 dark:text-gray-200'>{row.content}</div>
         ),
@@ -168,6 +169,7 @@ export default defineComponent({
             checkedRowKeys={checkedRowKeys.value}
             onUpdateCheckedRowKeys={handleCheck}
             bordered={false}
+            scrollX={1100}
           />
 
           <div class='flex justify-end p-4'>

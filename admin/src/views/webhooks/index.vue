@@ -248,11 +248,14 @@ const columns = computed<DataTableColumns<WebhookItem>>(() => [
   {
     title: '地址',
     key: 'url',
+    minWidth: 200,
+    ellipsis: { tooltip: true },
     render: (row) => h('div', { class: 'text-xs text-[var(--text-color-3)]' }, row.url),
   },
   {
     title: '事件',
     key: 'events',
+    minWidth: 200,
     render: (row) => {
       if (!row.events || row.events.length === 0) {
         return '-'
@@ -784,6 +787,7 @@ onMounted(async () => {
             :loading="loading"
             :row-key="(row) => row.id"
             striped
+            :scroll-x="1000"
           />
         </NCard>
       </NTabPane>
@@ -882,6 +886,7 @@ onMounted(async () => {
             :loading="historyLoading"
             :row-key="(row) => row.id"
             striped
+            :scroll-x="960"
           />
           <div class="flex justify-end pt-4">
             <NPagination

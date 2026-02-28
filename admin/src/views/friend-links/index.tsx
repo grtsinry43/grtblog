@@ -390,6 +390,7 @@ export default defineComponent({
                                         data={links.value}
                                         loading={linksLoading.value}
                                         row-key={(row: FriendLink) => row.id}
+                                        scrollX={800}
                                     />
                                     <div class="mt-4 flex justify-end">
                                         <NPagination
@@ -432,6 +433,7 @@ export default defineComponent({
                                         data={apps.value}
                                         loading={appsLoading.value}
                                         row-key={(row: FriendLinkApplication) => row.id}
+                                        scrollX={800}
                                     />
                                     <div class="mt-4 flex justify-end">
                                         <NPagination

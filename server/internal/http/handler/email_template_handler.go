@@ -424,6 +424,108 @@ func (h *EmailTemplateHandler) BatchUpdateEmailSubscriptionStatus(c *fiber.Ctx) 
 	return response.SuccessWithMessage[any](c, nil, "批量更新订阅状态成功")
 }
 
+// ListEmailOutbox godoc
+// @Summary 获取邮件出站队列
+// @Tags Email
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(20)
+// @Param status query string false "状态"
+// @Param eventName query string false "事件名"
+// @Param search query string false "主题关键字"
+// @Success 200 {object} contract.EmailOutboxListResp
+// @Security BearerAuth
+// @Router /admin/email/outbox [get]
+// @Security JWTAuth
+func (h *EmailTemplateHandler) ListEmailOutbox(c *fiber.Ctx) error {
+	page := parseIntQuery(c, "page", 1)
+	pageSize := parseIntQuery(c, "pageSize", 20)
+	status := strings.TrimSpace(c.Query("status"))
+	eventName := strings.TrimSpace(c.Query("eventName"))
+	search := strings.TrimSpace(c.Query("search"))
+
+	var statusPtr, eventNamePtr, searchPtr *string
+	if status != "" {
+		statusPtr = &status
+	}
+	if eventName != "" {
+		eventNamePtr = &eventName
+	}
+	if search != "" {
+		searchPtr = &search
+	}
+	items, total, err := h.svc.ListOutbox(c.Context(), domainemail.OutboxListOptions{
+		Page:      page,
+		PageSize:  pageSize,
+		Status:    statusPtr,
+		EventName: eventNamePtr,
+		Search:    searchPtr,
+	})
+	if err != nil {
+		return err
+	}
+	respItems := make([]contract.EmailOutboxResp, len(items))
+	for i, item := range items {
+		respItems[i] = mapEmailOutboxResp(item, false)
+	}
+	return response.Success(c, contract.EmailOutboxListResp{
+		Items: respItems,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
+	})
+}
+
+// GetEmailOutbox godoc
+// @Summary 获取邮件出站详情
+// @Tags Email
+// @Produce json
+// @Param id path int true "出站记录 ID"
+// @Success 200 {object} contract.EmailOutboxResp
+// @Security BearerAuth
+// @Router /admin/email/outbox/{id} [get]
+// @Security JWTAuth
+func (h *EmailTemplateHandler) GetEmailOutbox(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil || id <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的出站记录 ID")
+	}
+	item, err := h.svc.GetOutboxByID(c.Context(), int64(id))
+	if err != nil {
+		if mapped := mapEmailDomainError(err); mapped != nil {
+			return mapped
+		}
+		return err
+	}
+	return response.Success(c, mapEmailOutboxResp(item, true))
+}
+
+func mapEmailOutboxResp(item *domainemail.Outbox, withBody bool) contract.EmailOutboxResp {
+	toEmails := item.ToEmails
+	if toEmails == nil {
+		toEmails = []string{}
+	}
+	resp := contract.EmailOutboxResp{
+		ID:           item.ID,
+		TemplateCode: item.TemplateCode,
+		EventName:    item.EventName,
+		ToEmails:     toEmails,
+		Subject:      item.Subject,
+		Status:       item.Status,
+		RetryCount:   item.RetryCount,
+		NextRetryAt:  item.NextRetryAt,
+		LastError:    item.LastError,
+		SentAt:       item.SentAt,
+		CreatedAt:    item.CreatedAt,
+		UpdatedAt:    item.UpdatedAt,
+	}
+	if withBody {
+		resp.HTMLBody = item.HTMLBody
+		resp.TextBody = item.TextBody
+	}
+	return resp
+}
+
 func mapEmailTemplateResp(item *domainemail.Template) contract.EmailTemplateResp {
 	toEmails := item.ToEmails
 	if toEmails == nil {
@@ -524,6 +626,8 @@ func mapEmailDomainError(err error) error {
 		return response.NewBizErrorWithMsg(response.NotFound, "订阅记录不存在")
 	case errors.Is(err, domainemail.ErrEmailSubscriptionStatusInvalid):
 		return response.NewBizErrorWithMsg(response.ParamsError, "订阅状态无效")
+	case errors.Is(err, domainemail.ErrEmailOutboxNotFound):
+		return response.NewBizErrorWithMsg(response.NotFound, "邮件出站记录不存在")
 	default:
 		return nil
 	}

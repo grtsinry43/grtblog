@@ -232,6 +232,7 @@ export default defineComponent({
             checkedRowKeys={checkedRowKeys.value}
             onUpdateCheckedRowKeys={handleCheck}
             bordered={false}
+            scrollX={1100}
           />
 
           <div class='flex justify-end p-4'>

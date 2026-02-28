@@ -229,6 +229,7 @@ async function saveEdit() {
         :columns="columns"
         :data="tableData"
         :pagination="pagination"
+        :scroll-x="1100"
       />
     </NCard>
 

@@ -32,7 +32,7 @@ const columns: DataTableColumns<FederationOutboundDeliveryResp> = [
   { title: '类型', key: 'type', width: 120, render(row) {
     return h(NTag, { type: 'info', bordered: false }, { default: () => row.type })
   }},
-  { title: '目标实例', key: 'target_instance_url', ellipsis: { tooltip: true } },
+  { title: '目标实例', key: 'target_instance_url', minWidth: 200, ellipsis: { tooltip: true } },
   { title: '状态', key: 'status', width: 100, render(row) {
     return h(NTag, { type: row.status === 'success' ? 'success' : row.status === 'failed' ? 'error' : 'warning' }, { default: () => row.status })
   }},
@@ -114,6 +114,7 @@ const statusOptions = [
         :loading="isPending"
         :bordered="false"
         :row-key="(row: FederationOutboundDeliveryResp) => row.id"
+        :scroll-x="900"
       />
       <div class="p-4 flex justify-end">
         <NPagination

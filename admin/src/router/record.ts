@@ -552,6 +552,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         component: 'email/subscriptions/index',
       },
       {
+        path: 'outbox',
+        name: 'emailOutbox',
+        label: '出站队列',
+        icon: 'iconify ph--paper-plane-right',
+        meta: {
+          componentName: 'EmailOutbox',
+          showTab: true,
+        },
+        component: 'email/outbox/index',
+      },
+      {
         path: 'test',
         name: 'emailTest',
         label: '邮件测试',

@@ -142,7 +142,7 @@ export default defineComponent({
       {
         title: '标题',
         key: 'title',
-        width: 400,
+        minWidth: 280,
         render: (row) => (
           <div class='font-medium text-gray-700 dark:text-gray-200'>
               <span>{row.title}</span>
@@ -194,6 +194,7 @@ export default defineComponent({
       {
         title: '标签',
         key: 'tags',
+        minWidth: 160,
         render: (row) => {
           if (!row.tags || row.tags.length === 0) return '-'
           return (
@@ -395,6 +396,7 @@ export default defineComponent({
             checkedRowKeys={checkedRowKeys.value}
             onUpdateCheckedRowKeys={handleCheck}
             bordered={false}
+            scrollX={1400}
           />
 
           {/* 分页栏 */}
