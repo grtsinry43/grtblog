@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -17,10 +17,10 @@ import (
 type FederationTimelineHandler struct {
 	contentRepo content.Repository
 	userRepo    identity.Repository
-	cfgSvc      *federationconfig.Service
+	cfgSvc      *sysconfig.Service
 }
 
-func NewFederationTimelineHandler(contentRepo content.Repository, userRepo identity.Repository, cfgSvc *federationconfig.Service) *FederationTimelineHandler {
+func NewFederationTimelineHandler(contentRepo content.Repository, userRepo identity.Repository, cfgSvc *sysconfig.Service) *FederationTimelineHandler {
 	return &FederationTimelineHandler{contentRepo: contentRepo, userRepo: userRepo, cfgSvc: cfgSvc}
 }
 
@@ -37,7 +37,7 @@ func NewFederationTimelineHandler(contentRepo content.Repository, userRepo ident
 // @Router /api/federation/timeline/posts [get]
 func (h *FederationTimelineHandler) ListTimelinePosts(c *fiber.Ctx) error {
 	if h.cfgSvc != nil {
-		if settings, err := h.cfgSvc.Settings(c.Context()); err == nil {
+		if settings, err := h.cfgSvc.FederationSettings(c.Context()); err == nil {
 			if !settings.Enabled {
 				return response.NewBizError(response.NotFound)
 			}
@@ -129,9 +129,9 @@ func parseTimeQuery(c *fiber.Ctx, key string) *time.Time {
 	return &parsed
 }
 
-func resolveFederationBaseURL(c *fiber.Ctx, svc *federationconfig.Service) string {
+func resolveFederationBaseURL(c *fiber.Ctx, svc *sysconfig.Service) string {
 	if svc != nil {
-		if settings, err := svc.Settings(c.Context()); err == nil && strings.TrimSpace(settings.InstanceURL) != "" {
+		if settings, err := svc.FederationSettings(c.Context()); err == nil && strings.TrimSpace(settings.InstanceURL) != "" {
 			return strings.TrimRight(settings.InstanceURL, "/")
 		}
 	}

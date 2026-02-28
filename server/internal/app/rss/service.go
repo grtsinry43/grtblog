@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	domainthinking "github.com/grtsinry43/grtblog-v2/server/internal/domain/thinking"
@@ -32,10 +32,6 @@ type ThinkingRepository interface {
 	List(ctx context.Context, limit, offset int) ([]*domainthinking.Thinking, int64, error)
 }
 
-type WebsiteInfoRepository interface {
-	List(ctx context.Context) ([]config.WebsiteInfo, error)
-}
-
 type IdentityRepository interface {
 	FindByID(ctx context.Context, id int64) (*identity.User, error)
 	ListAdmins(ctx context.Context) ([]identity.User, error)
@@ -44,7 +40,7 @@ type IdentityRepository interface {
 type Service struct {
 	contentRepo  ContentRepository
 	thinkingRepo ThinkingRepository
-	websiteRepo  WebsiteInfoRepository
+	sysCfg       *sysconfig.Service
 	identityRepo IdentityRepository
 }
 
@@ -78,11 +74,11 @@ var markdownRenderer = goldmark.New(
 	),
 )
 
-func NewService(contentRepo ContentRepository, thinkingRepo ThinkingRepository, websiteRepo WebsiteInfoRepository, identityRepo IdentityRepository) *Service {
+func NewService(contentRepo ContentRepository, thinkingRepo ThinkingRepository, sysCfg *sysconfig.Service, identityRepo IdentityRepository) *Service {
 	return &Service{
 		contentRepo:  contentRepo,
 		thinkingRepo: thinkingRepo,
-		websiteRepo:  websiteRepo,
+		sysCfg:       sysCfg,
 		identityRepo: identityRepo,
 	}
 }
@@ -243,60 +239,47 @@ type siteMetadata struct {
 
 func (s *Service) loadSiteMetadata(ctx context.Context) siteMetadata {
 	meta := siteMetadata{}
-	if s.websiteRepo == nil {
+	if s.sysCfg == nil {
 		return meta
 	}
-	items, err := s.websiteRepo.List(ctx)
+	info, err := s.sysCfg.WebsiteInfo(ctx)
 	if err != nil {
 		return meta
 	}
-	for _, item := range items {
-		key := strings.TrimSpace(item.Key)
-		if item.Value == nil {
+	for key, value := range info {
+		value = strings.TrimSpace(value)
+		if value == "" {
 			continue
 		}
-		value := strings.TrimSpace(*item.Value)
 		switch key {
 		case "website_name":
-			if value != "" {
-				meta.title = value
-			}
+			meta.title = value
 		case "og_site_name", "og_title":
-			if meta.title == "" && value != "" {
+			if meta.title == "" {
 				meta.title = value
 			}
 		case "description":
-			if value != "" {
-				meta.description = value
-			}
+			meta.description = value
 		case "og_description":
-			if meta.description == "" && value != "" {
+			if meta.description == "" {
 				meta.description = value
 			}
 		case "public_url":
-			if value != "" {
-				meta.publicURL = value
-			}
+			meta.publicURL = value
 		case "rss_image_url":
-			if value != "" {
-				meta.imageURL = value
-			}
+			meta.imageURL = value
 		case "favicon":
-			if meta.imageURL == "" && value != "" {
+			if meta.imageURL == "" {
 				meta.imageURL = value
 			}
 		case "og_image":
-			if meta.imageURL == "" && value != "" {
+			if meta.imageURL == "" {
 				meta.imageURL = value
 			}
 		case "rss_follow_feed_id":
-			if value != "" {
-				meta.followFeedID = value
-			}
+			meta.followFeedID = value
 		case "rss_follow_user_id":
-			if value != "" {
-				meta.followUserID = value
-			}
+			meta.followUserID = value
 		}
 	}
 	return meta

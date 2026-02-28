@@ -145,7 +145,7 @@ function goToSignIn() {
   router.replace({
     name: 'signIn',
     query: {
-      r: '/settings/site-info',
+      r: '/settings?tab=site-info',
     },
   })
 }

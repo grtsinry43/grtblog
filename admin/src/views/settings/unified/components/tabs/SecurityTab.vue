@@ -16,7 +16,6 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, reactive, ref } from 'vue'
 
-import { ScrollContainer } from '@/components'
 import TemplateEditor from '@/components/template-editor/TemplateEditor.vue'
 import {
   createOAuthProvider,
@@ -24,18 +23,26 @@ import {
   listOAuthProviders,
   updateOAuthProvider,
 } from '@/services/oauth-providers'
+import { listSysConfigs, updateSysConfigs } from '@/services/sysconfig'
+
+import ConfigPanel from '../ConfigPanel'
 
 import type { DataTableColumns } from 'naive-ui'
 import type { AdminOAuthProvider, OAuthProviderPayload } from '@/services/oauth-providers'
 
-defineOptions({
-  name: 'LoginMethods',
-})
+const emit = defineEmits<{ 'dirty-change': [dirty: boolean] }>()
 
 const message = useMessage()
-const loading = ref(false)
-const saving = ref(false)
+const oauthLoading = ref(false)
+const oauthSaving = ref(false)
 const providers = ref<AdminOAuthProvider[]>([])
+
+const configDirty = ref(false)
+
+function handleConfigDirty(dirty: boolean) {
+  configDirty.value = dirty
+  emit('dirty-change', dirty)
+}
 
 const formVisible = ref(false)
 const editing = ref<AdminOAuthProvider | null>(null)
@@ -123,12 +130,8 @@ const columns = computed<DataTableColumns<AdminOAuthProvider>>(() => [
   {
     title: 'Auth URL',
     key: 'authorizationEndpoint',
-    render: (row) => h('div', { class: 'text-xs text-[var(--text-color-3)]' }, row.authorizationEndpoint),
-  },
-  {
-    title: 'Token URL',
-    key: 'tokenEndpoint',
-    render: (row) => h('div', { class: 'text-xs text-[var(--text-color-3)]' }, row.tokenEndpoint),
+    render: (row) =>
+      h('div', { class: 'text-xs text-[var(--text-color-3)]' }, row.authorizationEndpoint),
   },
   {
     title: '操作',
@@ -142,18 +145,12 @@ const columns = computed<DataTableColumns<AdminOAuthProvider>>(() => [
           default: () => [
             h(
               NButton,
-              {
-                size: 'tiny',
-                tertiary: true,
-                onClick: () => openEdit(row),
-              },
+              { size: 'tiny', tertiary: true, onClick: () => openEdit(row) },
               { default: () => '编辑' },
             ),
             h(
               NPopconfirm,
-              {
-                onPositiveClick: () => handleDelete(row),
-              },
+              { onPositiveClick: () => handleDelete(row) },
               {
                 default: () => '确认删除该 Provider？',
                 trigger: () =>
@@ -171,13 +168,13 @@ const columns = computed<DataTableColumns<AdminOAuthProvider>>(() => [
 ])
 
 async function fetchProviders() {
-  loading.value = true
+  oauthLoading.value = true
   try {
     providers.value = (await listOAuthProviders()) || []
   } catch (err) {
     message.error(err instanceof Error ? err.message : '加载 OAuth Providers 失败')
   } finally {
-    loading.value = false
+    oauthLoading.value = false
   }
 }
 
@@ -274,7 +271,7 @@ function buildPayload(): OAuthProviderPayload {
 }
 
 async function handleSave() {
-  if (saving.value) return
+  if (oauthSaving.value) return
   const required = ['key', 'authorizationEndpoint', 'tokenEndpoint', 'redirectUriTemplate']
   const emptyKey = required.find((field) => !(form as any)[field]?.trim())
   if (emptyKey) {
@@ -282,7 +279,7 @@ async function handleSave() {
     return
   }
 
-  saving.value = true
+  oauthSaving.value = true
   try {
     const payload = buildPayload()
     if (editing.value) {
@@ -297,7 +294,7 @@ async function handleSave() {
   } catch (err) {
     message.error(err instanceof Error ? err.message : '保存失败')
   } finally {
-    saving.value = false
+    oauthSaving.value = false
   }
 }
 
@@ -315,16 +312,29 @@ onMounted(fetchProviders)
 </script>
 
 <template>
-  <ScrollContainer wrapper-class="p-4">
+  <div class="space-y-6">
+    <!-- Turnstile config -->
+    <ConfigPanel
+      :list-fn="listSysConfigs"
+      :update-fn="updateSysConfigs"
+      title="Turnstile 人机验证"
+      description="Cloudflare Turnstile 验证配置"
+      :filter-groups="['security/turnstile']"
+      :on-dirty-change="handleConfigDirty"
+    />
+
+    <!-- OAuth Providers -->
     <NCard>
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div class="text-base font-semibold">登录方式</div>
+            <div class="text-base font-semibold">OAuth 登录方式</div>
             <div class="text-xs text-neutral-500">管理 OAuth 登录提供方</div>
           </div>
           <div class="flex items-center gap-2">
-            <NButton size="small" secondary :loading="loading" @click="fetchProviders">刷新</NButton>
+            <NButton size="small" secondary :loading="oauthLoading" @click="fetchProviders">
+              刷新
+            </NButton>
             <NButton size="small" type="primary" @click="openCreate">新增 Provider</NButton>
             <NButton
               v-for="preset in presets"
@@ -339,14 +349,9 @@ onMounted(fetchProviders)
         </div>
       </template>
 
-      <NDataTable
-        :columns="columns"
-        :data="providers"
-        :loading="loading"
-        :bordered="false"
-      />
+      <NDataTable :columns="columns" :data="providers" :loading="oauthLoading" :bordered="false" />
     </NCard>
-  </ScrollContainer>
+  </div>
 
   <NDrawer v-model:show="formVisible" placement="right" :width="520">
     <NDrawerContent :title="formTitle" closable>
@@ -364,7 +369,10 @@ onMounted(fetchProviders)
           <NInput v-model:value="form.clientSecret" type="password" placeholder="" />
         </NFormItem>
         <NFormItem label="Authorization Endpoint" required>
-          <NInput v-model:value="form.authorizationEndpoint" placeholder="https://.../authorize" />
+          <NInput
+            v-model:value="form.authorizationEndpoint"
+            placeholder="https://.../authorize"
+          />
         </NFormItem>
         <NFormItem label="Token Endpoint" required>
           <NInput v-model:value="form.tokenEndpoint" placeholder="https://.../token" />
@@ -373,7 +381,10 @@ onMounted(fetchProviders)
           <NInput v-model:value="form.userinfoEndpoint" placeholder="https://.../userinfo" />
         </NFormItem>
         <NFormItem label="Redirect URI Template" required>
-          <NInput v-model:value="form.redirectUriTemplate" placeholder="https://.../auth/providers/{provider}/callback" />
+          <NInput
+            v-model:value="form.redirectUriTemplate"
+            placeholder="https://.../auth/providers/{provider}/callback"
+          />
         </NFormItem>
         <NFormItem label="Scopes">
           <NInput v-model:value="form.scopes" placeholder="openid profile email" />
@@ -390,12 +401,18 @@ onMounted(fetchProviders)
         <NFormItem label="启用">
           <NSwitch v-model:value="form.enabled" />
         </NFormItem>
-        <NFormItem label="Extra Params" :feedback="extraJsonError || ''" :validation-status="extraJsonError ? 'error' : undefined">
+        <NFormItem
+          label="Extra Params"
+          :feedback="extraJsonError || ''"
+          :validation-status="extraJsonError ? 'error' : undefined"
+        >
           <TemplateEditor v-model="form.extraParams" />
         </NFormItem>
         <div class="flex justify-end gap-2 pt-4">
           <NButton secondary @click="formVisible = false">取消</NButton>
-          <NButton type="primary" :loading="saving" @click="handleSave">{{ formActionLabel }}</NButton>
+          <NButton type="primary" :loading="oauthSaving" @click="handleSave">
+            {{ formActionLabel }}
+          </NButton>
         </div>
       </NForm>
     </NDrawerContent>

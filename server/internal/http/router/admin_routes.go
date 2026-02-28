@@ -7,13 +7,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	appap "github.com/grtsinry43/grtblog-v2/server/internal/app/activitypub"
-	appapcfg "github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminstats"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminuser"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/hitokoto"
@@ -90,8 +88,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 		emailRepo := persistence.NewEmailRepository(deps.DB)
 		emailSender := email.NewSender(sysCfgSvc)
-		websiteInfoRepo := persistence.NewWebsiteInfoRepository(deps.DB)
-		emailSvc := email.NewService(emailRepo, emailSender, websiteInfoRepo)
+		emailSvc := email.NewService(emailRepo, emailSender, sysCfgSvc)
 		emailHandler := handler.NewEmailTemplateHandler(emailSvc)
 		admin.Get("/email/templates", emailHandler.ListEmailTemplates)
 		admin.Post("/email/templates", emailHandler.CreateEmailTemplate)
@@ -103,11 +100,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		admin.Put("/email/subscriptions/status", emailHandler.BatchUpdateEmailSubscriptionStatus)
 	}
 
-	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
-	fedCfgSvc := federationconfig.NewService(fedCfgRepo)
-	apCfgSvc := appapcfg.NewService(fedCfgRepo)
-	fedCfgHandler := handler.NewFederationConfigHandler(fedCfgSvc)
-	activityPubCfgHandler := handler.NewActivityPubConfigHandler(apCfgSvc)
+	fedCfgHandler := handler.NewFederationConfigHandler(sysCfgSvc)
+	activityPubCfgHandler := handler.NewActivityPubConfigHandler(sysCfgSvc)
 	admin.Get("/federation/config", fedCfgHandler.ListFederationConfig)
 	admin.Put("/federation/config", fedCfgHandler.UpdateFederationConfig)
 	admin.Get("/activitypub/config", activityPubCfgHandler.ListActivityPubConfig)
@@ -120,10 +114,10 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		cache = fedinfra.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 	}
 	resolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
-	outbound := appfed.NewOutboundService(fedCfgSvc, resolver, instanceRepo)
+	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
 	outboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
 	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, deps.EventBus)
-	federationAdminHandler := handler.NewFederationAdminHandler(fedCfgSvc, contentRepo, deliverySvc, instanceRepo, resolver, deps.EventBus)
+	federationAdminHandler := handler.NewFederationAdminHandler(sysCfgSvc, contentRepo, deliverySvc, instanceRepo, resolver, deps.EventBus)
 	federationReviewHandler := handler.NewFederationReviewHandler(
 		persistence.NewFederatedCitationRepository(deps.DB),
 		persistence.NewFederatedMentionRepository(deps.DB),
@@ -131,7 +125,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		outbound,
 	)
 	activityPubSvc := appap.NewService(
-		apCfgSvc,
+		sysCfgSvc,
 		persistence.NewActivityPubFollowerRepository(deps.DB),
 		persistence.NewActivityPubOutboxRepository(deps.DB),
 		contentRepo,

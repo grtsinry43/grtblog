@@ -65,7 +65,7 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	rssSvc := apprss.NewService(
 		persistence.NewContentRepository(deps.DB),
 		persistence.NewThinkingRepository(deps.DB),
-		persistence.NewWebsiteInfoRepository(deps.DB),
+		deps.SysConfig,
 		persistence.NewIdentityRepository(deps.DB),
 	)
 	rssAccessSvc := newRSSAccessAnalyticsService(deps)

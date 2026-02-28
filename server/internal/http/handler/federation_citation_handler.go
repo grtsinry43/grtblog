@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
@@ -22,7 +22,7 @@ import (
 )
 
 type FederationCitationHandler struct {
-	cfgSvc       *federationconfig.Service
+	cfgSvc       *sysconfig.Service
 	contentRepo  content.Repository
 	instanceRepo federation.FederationInstanceRepository
 	citationRepo federation.FederatedCitationRepository
@@ -34,7 +34,7 @@ type FederationCitationHandler struct {
 }
 
 func NewFederationCitationHandler(
-	cfgSvc *federationconfig.Service,
+	cfgSvc *sysconfig.Service,
 	contentRepo content.Repository,
 	instanceRepo federation.FederationInstanceRepository,
 	citationRepo federation.FederatedCitationRepository,
@@ -103,7 +103,7 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "签名来源与请求不一致")
 	}
 
-	settings, err := h.cfgSvc.Settings(c.Context())
+	settings, err := h.cfgSvc.FederationSettings(c.Context())
 	if err != nil || !settings.Enabled {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "联合未启用")
 	}

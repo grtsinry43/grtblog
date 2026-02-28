@@ -18,20 +18,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainfed "github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 )
 
 type OutboundService struct {
-	cfgSvc       *federationconfig.Service
+	cfgSvc       *sysconfig.Service
 	resolver     *fedinfra.Resolver
 	instanceRepo domainfed.FederationInstanceRepository
 	client       *http.Client
 }
 
-func NewOutboundService(cfgSvc *federationconfig.Service, resolver *fedinfra.Resolver, instanceRepo domainfed.FederationInstanceRepository) *OutboundService {
+func NewOutboundService(cfgSvc *sysconfig.Service, resolver *fedinfra.Resolver, instanceRepo domainfed.FederationInstanceRepository) *OutboundService {
 	return &OutboundService{
 		cfgSvc:       cfgSvc,
 		resolver:     resolver,
@@ -227,7 +227,7 @@ func (s *OutboundService) signingContext(ctx context.Context) (signingSettings, 
 	if s.cfgSvc == nil {
 		return signingSettings{}, "", nil, errors.New("config service not configured")
 	}
-	settings, err := s.cfgSvc.Settings(ctx)
+	settings, err := s.cfgSvc.FederationSettings(ctx)
 	if err != nil {
 		return signingSettings{}, "", nil, err
 	}

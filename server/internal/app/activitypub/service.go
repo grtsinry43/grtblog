@@ -27,7 +27,7 @@ import (
 	"code.superseriousbusiness.org/httpsig"
 	"github.com/google/uuid"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/activitypubconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
 	domainap "github.com/grtsinry43/grtblog-v2/server/internal/domain/activitypub"
 	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
@@ -44,7 +44,7 @@ const (
 )
 
 type Service struct {
-	cfgSvc       *activitypubconfig.Service
+	cfgSvc       *sysconfig.Service
 	followers    domainap.FollowerRepository
 	outbox       domainap.OutboxRepository
 	contentRepo  content.Repository
@@ -196,7 +196,7 @@ type remoteActor struct {
 }
 
 func NewService(
-	cfgSvc *activitypubconfig.Service,
+	cfgSvc *sysconfig.Service,
 	followers domainap.FollowerRepository,
 	outbox domainap.OutboxRepository,
 	contentRepo content.Repository,
@@ -218,13 +218,13 @@ func NewService(
 	}
 }
 
-func (s *Service) ResolveBaseURL(ctx context.Context, fallbackBaseURL string) (string, activitypubconfig.Settings, error) {
+func (s *Service) ResolveBaseURL(ctx context.Context, fallbackBaseURL string) (string, sysconfig.ActivityPubSettings, error) {
 	if s.cfgSvc == nil {
-		return "", activitypubconfig.Settings{}, errors.New("activitypub config service not configured")
+		return "", sysconfig.ActivityPubSettings{}, errors.New("activitypub config service not configured")
 	}
-	settings, err := s.cfgSvc.Settings(ctx)
+	settings, err := s.cfgSvc.ActivityPubSettings(ctx)
 	if err != nil {
-		return "", activitypubconfig.Settings{}, err
+		return "", sysconfig.ActivityPubSettings{}, err
 	}
 	if !settings.Enabled {
 		return "", settings, errors.New("activitypub disabled")
@@ -546,7 +546,7 @@ func (s *Service) HandleInbox(ctx context.Context, baseURL string, req *http.Req
 	}
 }
 
-func (s *Service) handleFollow(ctx context.Context, baseURL string, settings activitypubconfig.Settings, activity activityEnvelope, raw []byte) error {
+func (s *Service) handleFollow(ctx context.Context, baseURL string, settings sysconfig.ActivityPubSettings, activity activityEnvelope, raw []byte) error {
 	if s.followers == nil {
 		return errors.New("follower repository not configured")
 	}
@@ -600,7 +600,7 @@ func (s *Service) handleFollow(ctx context.Context, baseURL string, settings act
 	return s.sendActivity(ctx, settings, baseURL, follower.InboxURL, payload)
 }
 
-func (s *Service) handleCreate(ctx context.Context, baseURL string, settings activitypubconfig.Settings, activity activityEnvelope) error {
+func (s *Service) handleCreate(ctx context.Context, baseURL string, settings sysconfig.ActivityPubSettings, activity activityEnvelope) error {
 	actorID := parseActorID(activity.Actor)
 	if actorID == "" {
 		return errors.New("create actor is empty")
@@ -900,7 +900,7 @@ func (s *Service) fetchRemoteActor(ctx context.Context, actorID string) (*remote
 	return &actor, nil
 }
 
-func (s *Service) sendActivity(ctx context.Context, settings activitypubconfig.Settings, baseURL string, targetURL string, payload []byte) error {
+func (s *Service) sendActivity(ctx context.Context, settings sysconfig.ActivityPubSettings, baseURL string, targetURL string, payload []byte) error {
 	if err := validateRemoteURL(ctx, targetURL); err != nil {
 		return err
 	}
@@ -1243,7 +1243,7 @@ func valueAsString(raw any) string {
 	}
 }
 
-func preferredUsername(settings activitypubconfig.Settings) string {
+func preferredUsername(settings sysconfig.ActivityPubSettings) string {
 	username := strings.TrimSpace(settings.ActorUsername)
 	if username == "" {
 		return "blog"

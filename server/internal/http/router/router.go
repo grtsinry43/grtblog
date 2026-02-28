@@ -15,7 +15,6 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	appnav "github.com/grtsinry43/grtblog-v2/server/internal/app/navigation"
@@ -23,7 +22,6 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/ownerstatus"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/webhook"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/websiteinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	infraevent "github.com/grtsinry43/grtblog-v2/server/internal/infra/event"
@@ -89,9 +87,8 @@ func Register(app *fiber.App, deps Dependencies) {
 	if err != nil {
 		log.Printf("webhook settings error: %v", err)
 	}
-	websiteInfoRepo := persistence.NewWebsiteInfoRepository(deps.DB)
 	webhookRepo := persistence.NewWebhookRepository(deps.DB)
-	webhookSender := webhook.NewSender(webhookRepo, webhookSettings.Timeout, websiteInfoRepo)
+	webhookSender := webhook.NewSender(webhookRepo, webhookSettings.Timeout, sysCfgSvc)
 	webhookDispatcher := webhook.NewDispatcher(webhookRepo, webhookSender, webhookSettings.Workers, webhookSettings.QueueSize)
 	webhookSvc := webhook.NewService(webhookRepo, webhookSender)
 	webhook.RegisterSubscribers(eventBus, webhookDispatcher)
@@ -105,7 +102,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	emailDispatcher := email.NewDispatcher(
 		emailRepo,
 		emailSender,
-		websiteInfoRepo,
+		sysCfgSvc,
 		emailSettings.Workers,
 		emailSettings.QueueSize,
 		emailSettings.MaxRetries,
@@ -144,8 +141,6 @@ func Register(app *fiber.App, deps Dependencies) {
 	}
 	deps.OwnerStatus = ownerStatusSvc
 
-	fedCfgRepo := persistence.NewFederationConfigRepository(deps.DB)
-	fedCfgSvc := federationconfig.NewService(fedCfgRepo)
 	fedInstanceRepo := persistence.NewFederationInstanceRepository(deps.DB)
 	fedOutboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
 	var fedCache fedinfra.Cache
@@ -153,15 +148,14 @@ func Register(app *fiber.App, deps Dependencies) {
 		fedCache = fedinfra.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 	}
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedCache)
-	fedOutbound := appfed.NewOutboundService(fedCfgSvc, fedResolver, fedInstanceRepo)
+	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, fedInstanceRepo)
 	fedDelivery := appfed.NewDeliveryService(fedOutboundRepo, fedOutbound, eventBus)
 	appfed.RegisterSubscribers(eventBus, fedDelivery)
 	adminNotifRepo := persistence.NewAdminNotificationRepository(deps.DB)
 	adminNotifSvc := adminnotification.NewService(adminNotifRepo, eventBus)
 	adminnotification.RegisterSubscribers(eventBus, adminNotifSvc, contentRepo, persistence.NewIdentityRepository(deps.DB))
 
-	websiteInfoSvc := websiteinfo.NewService(websiteInfoRepo, eventBus)
-	websiteInfoHandler := handler.NewWebsiteInfoHandler(websiteInfoSvc)
+	websiteInfoHandler := handler.NewWebsiteInfoHandler(sysCfgSvc)
 
 	navMenuRepo := persistence.NewNavMenuRepository(deps.DB)
 	navMenuSvc := appnav.NewService(navMenuRepo, eventBus)

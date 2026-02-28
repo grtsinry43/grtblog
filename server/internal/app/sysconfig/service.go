@@ -813,18 +813,20 @@ func (s *Service) UpdateConfigs(ctx context.Context, items []UpdateItem) ([]doma
 		return nil, err
 	}
 	if len(toUpsert) > 0 {
-		keys := make([]string, 0, len(toUpsert))
+		updatedKeys := make([]string, 0, len(toUpsert))
 		for _, item := range toUpsert {
-			keys = append(keys, item.Key)
+			updatedKeys = append(updatedKeys, item.Key)
 		}
 		_ = s.events.Publish(ctx, appEvent.Generic{
 			EventName: "sysconfig.updated",
 			At:        time.Now(),
 			Payload: map[string]any{
-				"Keys":  keys,
-				"Count": len(keys),
+				"Keys":  updatedKeys,
+				"Count": len(updatedKeys),
 			},
 		})
+		// Auto-generate keypairs when federation/activitypub is enabled
+		s.ensureKeyPairs(ctx, updatedKeys)
 	}
 	return s.repo.List(ctx, nil)
 }

@@ -22,13 +22,3 @@ type SysConfig struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
-
-type WebsiteInfo struct {
-	ID        int64
-	Key       string
-	Name      *string
-	Value     *string
-	InfoJSON  json.RawMessage
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}

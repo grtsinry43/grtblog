@@ -4,9 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
-
-	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 )
+
+// WebsiteInfoProvider abstracts the subset of sysconfig.Service used for
+// building global template variables. Defining this interface here avoids
+// an import cycle between event and sysconfig.
+type WebsiteInfoProvider interface {
+	WebsiteInfo(ctx context.Context) (map[string]string, error)
+}
 
 var globalTemplateFields = []EventField{
 	{Name: "api_url", Type: "string", Required: false, Description: "站点 API 地址"},
@@ -22,7 +27,7 @@ func GlobalTemplateFields() []EventField {
 	return append([]EventField(nil), globalTemplateFields...)
 }
 
-func BuildGlobalTemplateVariables(ctx context.Context, repo domainconfig.WebsiteInfoRepository) map[string]any {
+func BuildGlobalTemplateVariables(ctx context.Context, provider WebsiteInfoProvider) map[string]any {
 	vars := map[string]any{
 		"api_url":           "",
 		"description":       "",
@@ -32,45 +37,33 @@ func BuildGlobalTemplateVariables(ctx context.Context, repo domainconfig.Website
 		"website_name":      "",
 		"public_url":        "",
 	}
-	if repo == nil {
+	if provider == nil {
 		return vars
 	}
-	items, err := repo.List(ctx)
+	info, err := provider.WebsiteInfo(ctx)
 	if err != nil {
 		return vars
 	}
-	for _, item := range items {
-		key := strings.TrimSpace(item.Key)
-		if key == "" {
-			continue
-		}
+	for key, value := range info {
 		switch key {
 		case "api_url", "description", "keywords", "favicon", "website_name", "public_url":
-			if item.Value != nil {
-				vars[key] = *item.Value
-			}
+			vars[key] = value
 		case "theme_extend_info":
-			parsed := parseThemeExtendInfo(item)
+			parsed := parseThemeExtendInfoString(value)
 			vars[key] = parsed
 		}
 	}
 	return vars
 }
 
-func parseThemeExtendInfo(item domainconfig.WebsiteInfo) map[string]any {
+func parseThemeExtendInfoString(val string) map[string]any {
 	result := map[string]any{}
-	if len(item.InfoJSON) > 0 {
-		if err := json.Unmarshal(item.InfoJSON, &result); err == nil {
-			return result
-		}
+	trimmed := strings.TrimSpace(val)
+	if trimmed == "" {
+		return result
 	}
-	if item.Value != nil {
-		trimmed := strings.TrimSpace(*item.Value)
-		if trimmed != "" {
-			if err := json.Unmarshal([]byte(trimmed), &result); err == nil {
-				return result
-			}
-		}
+	if err := json.Unmarshal([]byte(trimmed), &result); err == nil {
+		return result
 	}
 	return result
 }
