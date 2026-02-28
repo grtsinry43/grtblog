@@ -305,7 +305,7 @@ func (r *CommentRepository) ListPublicByAreaID(ctx context.Context, options comm
 
 	if err := query.
 		Where("("+approvedCond+")", args...).
-		Order("is_top DESC, created_at ASC").
+		Order("is_top DESC, created_at DESC, id DESC").
 		Find(&recs).Error; err != nil {
 		return nil, err
 	}

@@ -141,11 +141,11 @@
 			</div>
 		</div>
 
-		<div class="flex items-center gap-4 mt-2.5 mb-4">
+		<div class="mt-2.5 mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
 			{#if !$isClosedStore && !comment.isDeleted && comment.canReply}
 				<button
 					onclick={handleReply}
-					class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-jade-600 transition-[opacity,color] font-medium opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+					class="flex items-center gap-1.5 text-xs text-ink-400 hover:text-jade-600 transition-colors font-medium"
 				>
 					<MessageSquare size={14} />
 					<span>回复</span>
@@ -153,16 +153,20 @@
 			{/if}
 			{#if comment.browser || comment.platform || comment.location}
 				<div
-					class="flex items-center gap-3 text-[10px] text-ink-400 dark:text-ink-500 opacity-0 group-hover:opacity-100 transition-opacity"
+					class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-ink-400 dark:text-ink-500 opacity-70"
 				>
 					{#if comment.platform}
-						<span class="flex items-center gap-1"><Monitor size={12} /> {comment.platform}</span>
+						<span class="flex min-w-0 items-center gap-1 break-all"
+							><Monitor size={12} /> {comment.platform}</span
+						>
 					{/if}
 					{#if comment.browser}
-						<span class="flex items-center gap-1">{comment.browser}</span>
+						<span class="flex min-w-0 items-center gap-1 break-all">{comment.browser}</span>
 					{/if}
 					{#if comment.location}
-						<span class="flex items-center gap-1"><MapPin size={12} /> {comment.location}</span>
+						<span class="flex min-w-0 items-center gap-1 break-all"
+							><MapPin size={12} /> {comment.location}</span
+						>
 					{/if}
 				</div>
 			{/if}
@@ -176,7 +180,7 @@
 
 		<!-- Recursive Children -->
 		{#if comment.children && comment.children.length > 0}
-			<div class="mt-4 space-y-6 pl-6">
+			<div class="mt-4 space-y-6">
 				{#each comment.children as child (child.id)}
 					<CommentItem comment={child} />
 				{/each}

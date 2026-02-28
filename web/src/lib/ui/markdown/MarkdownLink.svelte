@@ -102,16 +102,16 @@
 	</a>
 {:else}
 	<a
-		class={`md-link inline-flex items-center gap-[0.35em] underline decoration-1 underline-offset-2 ${className}`.trim()}
+		class={`md-link inline-flex max-w-full flex-wrap items-center gap-x-[0.35em] gap-y-[0.15em] break-words [overflow-wrap:anywhere] underline decoration-1 underline-offset-2 ${className}`.trim()}
 		data-site={site || undefined}
 		href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolve(href) : href}
 		{title}
 		{rel}
 		{target}
 	>
-		<span>{@render children?.()}</span>
+		<span class="min-w-0 break-words [overflow-wrap:anywhere]">{@render children?.()}</span>
 		<span
-			class={`md-link__icon inline-block rounded opacity-75 bg-center bg-no-repeat bg-cover ${site ? 'h-[0.9em] w-[0.9em]' : 'h-0 w-0'}`.trim()}
+			class={`md-link__icon inline-block shrink-0 rounded opacity-75 bg-center bg-no-repeat bg-cover ${site ? 'h-[0.9em] w-[0.9em]' : 'h-0 w-0'}`.trim()}
 			aria-hidden="true"
 			style={iconStyle}
 		></span>

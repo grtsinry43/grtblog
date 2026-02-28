@@ -169,6 +169,18 @@ watch(
               @update:value="(val) => inserter.updateAttr(attr.key, val)"
             />
           </NFormItem>
+          <NFormItem
+            v-if="inserter.componentMeta.value?.body"
+            :label="inserter.componentMeta.value?.body?.label || '内容'"
+          >
+            <NInput
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 12 }"
+              :value="inserter.state.body"
+              :placeholder="inserter.componentMeta.value?.body?.placeholder"
+              @update:value="(val) => inserter.updateBody(val)"
+            />
+          </NFormItem>
         </NForm>
         <NSpace justify="end">
           <NButton @click="inserter.close">关闭</NButton>

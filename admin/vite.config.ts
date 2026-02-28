@@ -24,6 +24,9 @@ export default defineConfig((env) => {
     server: {
       port: 5799,
       host: true,
+      fs: {
+        allow: [fileURLToPath(new URL('..', import.meta.url))],
+      },
       proxy: {
         '/api': {
           target: apiProxyTarget,

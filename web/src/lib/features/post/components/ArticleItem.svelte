@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { Calendar, Eye, Heart, ExternalLink, Sparkles } from 'lucide-svelte';
 	import type { PostSummary } from '$lib/features/post/types';
 	import { buildPostPath, buildCategoryPath } from '$lib/shared/utils/content-path';
@@ -8,14 +9,18 @@
 
 	const formatDate = (dateStr: string) => {
 		const date = new Date(dateStr);
-		const now = new Date();
-		const diff = now.getTime() - date.getTime();
-		const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+		if (Number.isNaN(date.getTime())) return dateStr;
+		const year = date.getUTCFullYear();
+		const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+		const day = String(date.getUTCDate()).padStart(2, '0');
+		return `${year}/${month}/${day}`;
+	};
 
-		if (days < 1) return '今天';
-		if (days < 30) return `大约 ${days} 天前`;
-		if (days < 365) return `大约 ${Math.floor(days / 30)} 个月前`;
-		return `${date.getFullYear()}年`;
+	const handleCategoryClick = (e: MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		if (!post.categoryShortUrl) return;
+		goto(resolve(buildCategoryPath(post.categoryShortUrl)));
 	};
 </script>
 
@@ -37,7 +42,7 @@
 
 	<!-- Meta Row -->
 	<div
-		class="flex items-center gap-3 sm:gap-6 text-[11px] sm:text-xs text-ink-400 dark:text-ink-500 mt-2 font-mono"
+		class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] sm:text-xs text-ink-400 dark:text-ink-500 font-mono sm:gap-x-6"
 	>
 		<!-- Date -->
 		<div class="flex items-center gap-1.5">
@@ -47,16 +52,14 @@
 
 		<!-- Category -->
 		{#if post.categoryShortUrl}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<a
-				href={resolve(buildCategoryPath(post.categoryShortUrl))}
-				class="flex items-center gap-1.5 hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
-				onclick={(e) => e.stopPropagation()}
+			<button
+				type="button"
+				class="flex items-center gap-1.5 bg-transparent border-0 p-0 text-left cursor-pointer hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
+				onclick={handleCategoryClick}
 			>
 				<Sparkles size={14} strokeWidth={1.5} />
 				<span>{post.categoryName || '未分类'}</span>
-			</a>
+			</button>
 		{:else}
 			<div class="flex items-center gap-1.5">
 				<Sparkles size={14} strokeWidth={1.5} />
@@ -77,14 +80,14 @@
 		</div>
 
 		<!-- Right-aligned Link -->
-		<div class="ml-auto">
+		<div class="w-full sm:w-auto sm:ml-auto">
 			<div
 				class="flex items-center gap-1.5 text-ink-300 hover:text-jade-600 dark:text-ink-600 dark:hover:text-jade-400 transition-colors group/link"
 			>
 				<ExternalLink
 					size={12}
 					strokeWidth={1.5}
-					class="group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 transition-transform"
+					class="opacity-0 group-hover:opacity-100 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 transition-all"
 				/>
 				<span class="opacity-0 group-hover:opacity-100 transition-opacity text-[10px]"
 					>查看原文</span

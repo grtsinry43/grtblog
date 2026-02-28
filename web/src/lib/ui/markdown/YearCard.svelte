@@ -8,14 +8,12 @@
 		url = '',
 		title = '',
 		type = 'page',
-		cover = '',
-		blur = '7px'
+		cover = ''
 	} = $props<{
 		url?: string;
 		title?: string;
 		type?: string;
 		cover?: string;
-		blur?: string;
 		children?: Snippet;
 	}>();
 
@@ -23,64 +21,48 @@
 	const rel = $derived(target === '_blank' ? 'noreferrer' : undefined);
 </script>
 
-<article
-	class="group relative my-4 overflow-hidden rounded-3xl border border-ink-200/70 bg-white/80 shadow-float"
+<a
+	href={url && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(url) ? resolve(url) : url || '#'}
+	{target}
+	{rel}
+	class="group not-prose relative my-6 flex h-[100px] items-stretch overflow-hidden rounded-default border border-ink-200/70 bg-ink-50/20 transition-all duration-300 hover:border-jade-400/40 hover:bg-white hover:shadow-subtle dark:border-ink-800/60 dark:bg-ink-900/40 dark:hover:border-jade-800/80 dark:hover:bg-ink-900/60"
 >
+	<!-- 封面背景 (自适应) -->
 	{#if cover}
-		<div class="absolute inset-0">
-			<img class="h-full w-full object-cover" src={cover} alt="" loading="lazy" />
-			<div class="absolute inset-0 bg-white/70" style={`backdrop-filter: blur(${blur});`}></div>
+		<div class="absolute inset-0 z-0">
+			<img src={cover} alt="" class="h-full w-full object-cover opacity-[0.08] transition-all duration-700 group-hover:scale-105 group-hover:opacity-[0.12] dark:opacity-[0.12]" />
+			<div class="absolute inset-0 bg-gradient-to-r from-ink-50 via-ink-50/80 to-transparent dark:from-ink-900 dark:via-ink-900/80"></div>
 		</div>
-	{:else}
-		<div
-			class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.15),_transparent_55%)]"
-		></div>
 	{/if}
-	<div
-		class="relative z-10 flex flex-col gap-6 px-8 py-8 md:flex-row md:items-center md:justify-between"
-	>
-		<div class="space-y-3">
-			<p class="text-xs font-semibold uppercase tracking-[0.28em] text-ink-400">Annual Summary</p>
-			<h3 class="text-3xl font-semibold text-ink-900 md:text-4xl">{title}</h3>
-			<div class="text-base leading-relaxed text-ink-700">
-				{#if children}
-					{@render children()}
-				{:else}
-					年度回顾与总结
-				{/if}
-			</div>
+
+	<!-- 装饰线 -->
+	<div class="z-10 w-[3px] bg-jade-500 opacity-60 transition-all duration-300 group-hover:opacity-100"></div>
+
+	<!-- 内容区 -->
+	<div class="relative z-10 flex flex-1 flex-col justify-center px-6 py-2">
+		<div class="mb-1 flex items-center gap-3">
+			<span class="text-[9px] font-bold tracking-[0.25em] text-jade-600 uppercase dark:text-jade-400">year summary</span>
+			<div class="h-[1px] w-4 bg-ink-200 dark:bg-ink-700 transition-all duration-300 group-hover:w-8"></div>
 		</div>
-		<div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-			<a
-				href={url && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(url) ? resolve(url) : url || '#'}
-				{target}
-				{rel}
-				class="inline-flex items-center justify-center rounded-2xl border border-ink-300/70 bg-white/70 px-5 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-ink-700 shadow-subtle transition hover:-translate-y-0.5 hover:shadow-float"
-			>
-				Preview
-			</a>
-			<a
-				href={url && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(url) ? resolve(url) : url || '#'}
-				{target}
-				{rel}
-				class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink-300/70 bg-white/70 text-ink-700 shadow-subtle transition hover:-translate-y-0.5 hover:shadow-float"
-				aria-label="Open link"
-			>
-				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
-					<path
-						d="M9 7h8m0 0v8m0-8L7 17"
-						stroke="currentColor"
-						stroke-width="1.8"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-			</a>
-			<span
-				class="rounded-full border border-ink-200/80 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500"
-			>
-				{type}
-			</span>
+
+		<h3 class="font-serif text-[18px] font-bold tracking-tight text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-50 dark:group-hover:text-jade-400">
+			{title}
+		</h3>
+
+		<div class="truncate text-[11px] leading-relaxed text-ink-500 dark:text-ink-400">
+			{#if children}
+				{@render children()}
+			{:else}
+				A retrospective journey of moments.
+			{/if}
 		</div>
 	</div>
-</article>
+
+	<!-- 右侧装饰图标 -->
+	<div class="flex w-16 items-center justify-center border-l border-ink-100/30 text-ink-300 transition-all duration-300 group-hover:bg-jade-50/30 group-hover:text-jade-500 dark:border-ink-800/30 dark:group-hover:bg-jade-950/20">
+		<svg class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<path d="M5 12h14M12 5l7 7-7 7" />
+		</svg>
+	</div>
+</a>
+

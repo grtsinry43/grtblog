@@ -103,6 +103,16 @@ const topMutation = useMutation({
   },
 })
 
+const authorMutation = useMutation({
+  mutationFn: ({ id, isAuthor }: { id: number; isAuthor: boolean }) =>
+    setCommentAuthor(id, { isAuthor }),
+  onSuccess: () => {
+    message.success('作者标记已更新')
+    queryClient.invalidateQueries({ queryKey: ['comments'] })
+  },
+  onError: () => message.error('作者标记更新失败'),
+})
+
 const replyMutation = useMutation({
   mutationFn: ({ id, content }: { id: number; content: string }) => replyComment(id, { content }),
   onSuccess: () => {
@@ -143,6 +153,10 @@ const handleDelete = (comment: Comment) => {
 
 const handleTop = (comment: Comment) => {
   topMutation.mutate({ id: comment.id, isTop: !comment.isTop })
+}
+
+const handleAuthor = (comment: Comment) => {
+  authorMutation.mutate({ id: comment.id, isAuthor: !comment.isAuthor })
 }
 
 // Reply Logic
@@ -259,6 +273,7 @@ const handleMouseLeave = () => {
                                         置顶
                                     </n-tag>
                                     <n-tag v-if="comment.isOwner" type="primary" size="small" class="mr-1">站长</n-tag>
+                                    <n-tag v-if="comment.isAuthor" type="info" size="small" class="mr-1">本文作者</n-tag>
                                     <n-tag v-if="comment.isFriend" type="success" size="small">友链</n-tag>
                                 </template>
                                 <template #header-extra>
@@ -328,6 +343,11 @@ const handleMouseLeave = () => {
                                         <n-button text :type="comment.isTop ? 'primary' : 'default'" size="tiny" @click="handleTop(comment)">
                                              <template #icon><n-icon :component="PinOutline" /></template>
                                              {{ comment.isTop ? '取消置顶' : '置顶' }}
+                                        </n-button>
+
+                                        <n-button text :type="comment.isAuthor ? 'info' : 'default'" size="tiny" @click="handleAuthor(comment)">
+                                            <template #icon><n-icon :component="PersonOutline" /></template>
+                                            {{ comment.isAuthor ? '取消作者标记' : '标记本文作者' }}
                                         </n-button>
 
                                         <n-popconfirm @positive-click="handleDelete(comment)">

@@ -18,11 +18,15 @@ import MarkdownTh from '$lib/ui/markdown/MarkdownTh.svelte';
 import MarkdownTd from '$lib/ui/markdown/MarkdownTd.svelte';
 import YearCard from '$lib/ui/markdown/YearCard.svelte';
 import LinkCard from '$lib/ui/markdown/LinkCard.svelte';
-import FootnoteLinkCard from '$lib/ui/markdown/FootnoteLinkCard.svelte';
+import Callout from '$lib/ui/markdown/Callout.svelte';
+import Gallery from '$lib/ui/markdown/Gallery.svelte';
+import Timeline from '$lib/ui/markdown/Timeline.svelte';
+import ChatHistory from '$lib/ui/markdown/ChatHistory.svelte';
 
+// 显式确保这些块被解析
 const componentBlocks = Object.fromEntries(
-	componentDefinitions.map((component) => [component.name, true])
-) satisfies SvmdParseOptions['componentBlocks'];
+	componentDefinitions.map((component) => [component.name, true] as const)
+) as SvmdParseOptions['componentBlocks'];
 
 export const markdownComponents: SvmdComponentMap = {
 	h1: MarkdownHeading,
@@ -46,12 +50,12 @@ export const markdownComponents: SvmdComponentMap = {
 	a: MarkdownLink,
 	img: MarkdownImage,
 	code: MarkdownCodeBlock,
-	gallery: MarkdownFallback,
-	callout: MarkdownFallback,
-	timeline: MarkdownFallback,
+	gallery: Gallery,
+	callout: Callout,
+	timeline: Timeline,
+	'chat-history': ChatHistory,
 	'year-card': YearCard,
-	'link-card': LinkCard,
-	'footnote-link-card': FootnoteLinkCard
+	'link-card': LinkCard
 };
 
 export const markdownParseOptions: SvmdParseOptions = {
