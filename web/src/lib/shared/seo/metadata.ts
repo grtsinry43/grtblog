@@ -338,6 +338,9 @@ export const resolveSeoMeta = (input: ResolveSeoMetaInput): ResolvedSeoMeta => {
 	if (fallbackIcon) {
 		ogImageParams.set('icon', fallbackIcon);
 	}
+	if (ownerAvatar && ownerAvatar !== fallbackIcon) {
+		ogImageParams.set('icon_fallback', ownerAvatar);
+	}
 	const generatedOgImage = toAbsoluteUrl(`/og-image/?${ogImageParams.toString()}`, baseUrl);
 	const ogImage = contentImage || generatedOgImage;
 	const usesGeneratedOgImage = !contentImage;
