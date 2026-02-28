@@ -3,6 +3,7 @@ import { isEmpty } from 'lodash-es'
 import { useEventBus } from '@/event-bus'
 import { getSetupState } from '@/services/auth'
 import { useUserStore, toRefsUserStore } from '@/stores'
+import { applyDocumentTitle, ensureBackendSiteName, getCachedSiteName } from '@/utils/document-title'
 
 import type { Router } from 'vue-router'
 
@@ -136,7 +137,14 @@ export function setupRouterGuard(router: Router) {
     next()
   })
 
-  router.afterEach(() => {
+  router.afterEach((to) => {
     routerEventBus.emit('afterEach')
+    applyDocumentTitle(to, getCachedSiteName())
+
+    const routePath = to.fullPath
+    void ensureBackendSiteName().then((siteName) => {
+      if (router.currentRoute.value.fullPath !== routePath) return
+      applyDocumentTitle(to, siteName)
+    })
   })
 }

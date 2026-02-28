@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
 import { isEmpty } from 'lodash-es'
-import { computed, defineAsyncComponent, h, onUnmounted, watch } from 'vue'
+import { computed, defineAsyncComponent, h, onMounted, onUnmounted, watch } from 'vue'
 
 import texturePng from '@/assets/texture.png'
 import { CollapseTransition, EmptyPlaceholder } from '@/components'
 import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey, layoutInjectionKey } from '@/injection'
 import { adminRealtimeWSCore } from '@/services/realtime-ws'
+import { getSystemUpdateCheck } from '@/services/system'
 import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore } from '@/stores'
 
 import type { OwnerStatusPayload } from '@/services/owner-status'
@@ -127,6 +128,14 @@ onUnmounted(() => {
   stopRealtimeMessageListener()
   adminRealtimeWSCore.stop()
   realtimeStore.setRealtimeWsConnected(false)
+})
+
+onMounted(() => {
+  void queryClient.prefetchQuery({
+    queryKey: ['system-update-check'],
+    queryFn: () => getSystemUpdateCheck(false),
+    staleTime: 30 * 60 * 1000,
+  })
 })
 
 function normalizeOwnerStatusPayload(payload: unknown): OwnerStatusPayload | null {

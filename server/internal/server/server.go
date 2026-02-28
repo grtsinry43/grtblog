@@ -24,6 +24,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/router"
@@ -49,6 +50,7 @@ type Server struct {
 	isrSvc     *isr.Service
 	fedSync    *appfed.SyncWorker
 	fedDeliver *appfed.DeliveryService
+	version    string
 }
 
 // New builds a Fiber server with registered routes and middlewares.
@@ -188,6 +190,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		isrSvc:     isrSvc,
 		fedSync:    fedSync,
 		fedDeliver: fedDeliver,
+		version:    buildinfo.Version(),
 	}
 }
 
@@ -231,7 +234,7 @@ func (s *Server) runISRBootstrapIfNeeded() {
 	defer cancel()
 
 	log.Printf("[isr] bootstrap check start")
-	need, err := s.isrSvc.NeedsBootstrap(ctx)
+	need, reason, err := s.isrSvc.NeedsBootstrapForVersion(ctx, s.version)
 	if err != nil {
 		log.Printf("[isr] bootstrap check failed: %v", err)
 		return
@@ -239,18 +242,21 @@ func (s *Server) runISRBootstrapIfNeeded() {
 	if !need {
 		snapshot, snapErr := s.isrSvc.Snapshot(ctx, 5, 5)
 		if snapErr != nil {
-			log.Printf("[isr] bootstrap skipped (not needed)")
+			log.Printf("[isr] bootstrap skipped reason=%s", reason)
 			return
 		}
-		log.Printf("[isr] bootstrap skipped urlKeys=%d depKeys=%d queueDepth=%d", snapshot.URLKeyCount, snapshot.DepKeyCount, snapshot.QueueDepth)
+		log.Printf("[isr] bootstrap skipped reason=%s urlKeys=%d depKeys=%d queueDepth=%d", reason, snapshot.URLKeyCount, snapshot.DepKeyCount, snapshot.QueueDepth)
 		return
 	}
 
-	log.Printf("[isr] bootstrap start")
+	log.Printf("[isr] bootstrap start reason=%s version=%s", reason, s.version)
 	report, err := s.isrSvc.Bootstrap(ctx)
 	if err != nil {
 		log.Printf("[isr] bootstrap failed: %v", err)
 		return
+	}
+	if err := s.isrSvc.MarkBootstrapVersion(ctx, s.version); err != nil {
+		log.Printf("[isr] bootstrap version mark failed: %v", err)
 	}
 	log.Printf("[isr] bootstrap done routes=%d rendered=%d failed=%d durationMs=%d", report.TotalRoutes, report.RenderedCount, len(report.Failed), report.DurationMS)
 }

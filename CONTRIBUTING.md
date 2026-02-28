@@ -133,4 +133,42 @@ SvelteKit 里配置了 `trailingSlash: 'always'`。
 
 ---
 
+## 🚀 版本发布 (Release)
+
+项目采用**统一版本号**（单仓统一）：
+
+* 版本格式：`vMAJOR.MINOR.PATCH`（例如 `v2.1.0`）
+* `MAJOR`：不兼容变更（API 或 DB 迁移破坏兼容）
+* `MINOR`：向后兼容的新功能
+* `PATCH`：向后兼容的修复和小优化
+
+非 Tag 的中间构建版本建议使用 commit hash（例如 `8f3c1a2b9d4e`），方便回溯。
+预发布版本建议使用 SemVer 预发布标记（例如 `v2.1.0-beta.1`、`v2.1.0-rc.1`）。
+
+发布命令：
+
+```bash
+# 在仓库根目录
+./scripts/release.sh v2.1.0
+
+# 需要推送 tag 时
+./scripts/release.sh v2.1.0 --push
+```
+
+该脚本会自动执行：
+
+* 校验版本号格式
+* 生成 `docs/releases/<version>.md` 发布说明草稿
+* 创建注释 tag（`release: <version>`）
+
+镜像标签必须与版本号保持一致，例如：
+
+* `grtblog-server:v2.1.0`
+* `grtblog-renderer:v2.1.0`
+* `grtblog-admin:v2.1.0`
+
+部署时通过 `deploy/.env` 中的 `APP_VERSION` 统一控制镜像版本。
+
+---
+
 💡 **有问题随时叫我！Happy Coding!** 🚀

@@ -52,8 +52,24 @@ pnpm dev        # 开发服务器 :5799
 
 ### 环境变量
 
+先复制模板：
+
+```bash
+cp admin/.env.example admin/.env.development
+cp admin/.env.example admin/.env.production
+```
+
 - `.env.development` - 开发环境配置
-- `.env.production` - 生产环境配置
+- `.env.production` - 生产环境配置（建议将 `VITE_APP_BASE` 改为 `/admin/`）
+
+当前默认项如下：
+
+- `VITE_APP_BASE` - 管理后台部署基础路径（开发默认 `/`，生产默认 `/admin/`）
+- `VITE_APP_NAME` - 站点名称（用于页脚、Logo、页面标题）
+- `VITE_APP_TITLE` - 初始 HTML 标题
+- `VITE_WATERMARK_CONTENT` - 水印文本
+- `VITE_API_BASE_URL` - API 基础路径（默认 `/api/v2`）
+- `VITE_API_PROXY_TARGET` - 开发代理目标（默认 `http://localhost:8080`）
 
 生产构建时 `VITE_APP_BASE=/admin/`，确保部署在 `/admin/` 路径下。
 

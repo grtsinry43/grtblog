@@ -3,13 +3,13 @@ package handler
 import (
 	"fmt"
 	"net/url"
-	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/federationconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 )
@@ -46,7 +46,7 @@ func (h *FederationWellKnownHandler) Manifest(c *fiber.Ctx) error {
 		},
 		Software: fedinfra.ManifestSoftware{
 			Name:    h.appCfg.Name,
-			Version: buildVersion(),
+			Version: buildinfo.Version(),
 		},
 		Features: features,
 		Policies: fedinfra.ManifestPolicy{
@@ -133,20 +133,4 @@ func (h *FederationWellKnownHandler) publicKeyID(c *fiber.Ctx, settings federati
 	}
 	parsed.Path = "/.well-known/blog-federation/public-key.json"
 	return parsed.String()
-}
-
-func buildVersion() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok || info == nil {
-		return "dev"
-	}
-	if info.Main.Version != "" {
-		return info.Main.Version
-	}
-	for _, setting := range info.Settings {
-		if setting.Key == "vcs.revision" {
-			return setting.Value
-		}
-	}
-	return "dev"
 }
