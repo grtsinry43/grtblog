@@ -7,6 +7,8 @@
 	import { buildColumnPath } from '$lib/shared/utils/content-path';
 	import MomentDetailPaper from './moment-detail/MomentDetailPaper.svelte';
 	import MomentDetailTocSidebar from './moment-detail/MomentDetailTocSidebar.svelte';
+	import { detailHeroBgSrc } from '$lib/shared/stores/detailHeroBg';
+	import { onDestroy } from 'svelte';
 
 	let { moment }: { moment: MomentDetail } = $props();
 
@@ -18,6 +20,11 @@
 	});
 	const columnSlug = $derived(moment.columnShortUrl ?? '');
 	const toc = $derived(moment.toc ?? []);
+
+	$effect(() => {
+		detailHeroBgSrc.set(moment.image?.[0] ?? '');
+	});
+	onDestroy(() => detailHeroBgSrc.set(''));
 
 	let contentRoot: HTMLElement | null = $state(null);
 	let activeAnchor: string | null = $state(null);
@@ -40,7 +47,7 @@
 <div
 	class="relative z-10 grid gap-10 lg:grid-cols-[1fr_220px] lg:gap-16 max-w-[1200px] mx-auto animate-sheet-enter origin-right pb-24"
 >
-	<article class="flex-1 w-full relative">
+	<article class="flex-1 w-full relative min-w-0">
 		<div
 			class="absolute -top-4 right-6 md:right-12 z-20 flex flex-col items-center animate-settle"
 			style="animation-delay: 0.3s"

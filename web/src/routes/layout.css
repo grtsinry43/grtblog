@@ -291,6 +291,48 @@ body {
 	filter: invert(1) sepia(10%) hue-rotate(10deg);
 }
 
+/* Markdown content: prevent any child from stretching the page */
+.markdown-preview {
+	overflow-x: clip;
+}
+
+/* Fallback: raw <pre> not routed through MarkdownCodeBlock */
+.markdown-preview pre {
+	overflow-x: auto;
+	max-width: 100%;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+:root[class~='dark'] .markdown-preview pre {
+	scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.markdown-preview pre::-webkit-scrollbar {
+	height: 6px;
+}
+
+.markdown-preview pre::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.markdown-preview pre::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.12);
+	border-radius: 3px;
+}
+
+.markdown-preview pre::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.25);
+}
+
+:root[class~='dark'] .markdown-preview pre::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.12);
+}
+
+:root[class~='dark'] .markdown-preview pre::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.25);
+}
+
 /* Global resets for polish */
 button {
 	cursor: pointer;

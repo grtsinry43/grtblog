@@ -4,13 +4,21 @@
 	import { buildImageExtInfoState, imageExtInfoCtx } from '$lib/shared/markdown/image-ext-info';
 	import PostDetailHeader from './post-detail/PostDetailHeader.svelte';
 	import PostDetailMain from './post-detail/PostDetailMain.svelte';
+	import { detailHeroBgSrc } from '$lib/shared/stores/detailHeroBg';
+	import { onDestroy } from 'svelte';
 
 	const hasPostStore = postDetailCtx.selectModelData((data) => Boolean(data));
 	const postTitleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
+	const postCoverStore = postDetailCtx.selectModelData((data) => data?.cover ?? '');
 	const postExtInfoStore = postDetailCtx.selectModelData((data) => data?.extInfo ?? null, {
 		equals: (a, b) => a === b
 	});
 	imageExtInfoCtx.mountModelData(() => buildImageExtInfoState($postExtInfoStore));
+
+	$effect(() => {
+		detailHeroBgSrc.set($postCoverStore);
+	});
+	onDestroy(() => detailHeroBgSrc.set(''));
 </script>
 
 {#if $hasPostStore}

@@ -83,8 +83,8 @@
 				class="w-24 h-24 border-2 border-dashed border-ink-800 dark:border-ink-200 rounded-full flex items-center justify-center rotate-12"
 			>
 				<div class="text-center text-ink-800 dark:text-ink-200">
-					<div class="text-[9px] uppercase tracking-widest mb-1">审阅</div>
-					<div class="font-serif font-bold text-lg">阅</div>
+					<div class="text-[9px] uppercase tracking-widest mb-1">手记</div>
+					<div class="font-serif font-bold text-lg">记</div>
 					<div class="text-[9px] mt-1">{dateStr}</div>
 				</div>
 			</div>

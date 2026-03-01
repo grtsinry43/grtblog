@@ -164,6 +164,38 @@
 
 	:global(.md-codeblock__body pre) {
 		@apply m-0 overflow-x-auto bg-transparent px-4 py-3 text-[13px];
+		scrollbar-width: thin;
+		scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+	}
+
+	:global(.dark .md-codeblock__body pre) {
+		scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+	}
+
+	/* Webkit scrollbar */
+	:global(.md-codeblock__body pre)::-webkit-scrollbar {
+		height: 6px;
+	}
+
+	:global(.md-codeblock__body pre)::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	:global(.md-codeblock__body pre)::-webkit-scrollbar-thumb {
+		background: rgba(0, 0, 0, 0.12);
+		border-radius: 3px;
+	}
+
+	:global(.md-codeblock__body pre)::-webkit-scrollbar-thumb:hover {
+		background: rgba(0, 0, 0, 0.25);
+	}
+
+	:global(.dark .md-codeblock__body pre)::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.12);
+	}
+
+	:global(.dark .md-codeblock__body pre)::-webkit-scrollbar-thumb:hover {
+		background: rgba(255, 255, 255, 0.25);
 	}
 
 	:global(.md-codeblock__body .code-wrap.is-measured) {

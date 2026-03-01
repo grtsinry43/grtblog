@@ -20,6 +20,8 @@
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { presenceStore } from '$lib/features/presence/store.svelte';
 	import { ownerStatusStore } from '$lib/features/owner-status/store.svelte';
+	import { detailHeroBgSrc } from '$lib/shared/stores/detailHeroBg';
+	import DetailHeroBg from '$lib/ui/detail/DetailHeroBg.svelte';
 	import { siteHealthStore } from '$lib/features/site-health/store.svelte';
 	import SiteHealthBanner from '$lib/features/site-health/components/SiteHealthBanner.svelte';
 	import { resolvePresenceView } from '$lib/features/presence/resolve-view';
@@ -261,7 +263,10 @@
 <!-- noise background -->
 <div class="bg-noise" aria-hidden="true"></div>
 
-<div class="md:pl-24 transition-[padding] duration-300">
+<div class="md:pl-24 transition-[padding] duration-300 relative overflow-x-clip">
+	{#if $detailHeroBgSrc}
+		<DetailHeroBg src={$detailHeroBgSrc} />
+	{/if}
 	<SiteHealthBanner />
 	<main
 		class="page-wrapper mx-auto {page.url.pathname.startsWith('/timeline')
