@@ -27,7 +27,7 @@ import (
 func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler, navMenuHandler *handler.NavMenuHandler, sysCfgSvc *sysconfig.Service, wsManager *ws.Manager, aiSvc *appai.Service) {
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 	ownerStatusHandler := handler.NewOwnerStatusHandler(deps.OwnerStatus)
 	adminGroup.Post("/onlineStatus", ownerStatusHandler.UpdateStatus)
 	adminGroup.Post("/admin/owner-status/panel-heartbeat", ownerStatusHandler.PanelHeartbeat)
@@ -47,6 +47,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	adminOAuth := handler.NewAdminOAuthHandler(oauthRepo)
 	adminTokenHandler := handler.NewAdminTokenHandler(adminTokenRepo, identityRepo)
 	admin := adminGroup.Group("/admin")
+	htmlSnapshotHandler := handler.NewHTMLSnapshotHandler(deps.HTMLSnapshot, deps.ISR)
+	admin.Post("/html/posts/refresh", htmlSnapshotHandler.RefreshPostsHTML)
 	eventHandler := handler.NewEventHandler()
 	admin.Get("/events", eventHandler.ListEvents)
 	admin.Get("/events/catalog", eventHandler.ListEventCatalog)

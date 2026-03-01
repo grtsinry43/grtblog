@@ -23,14 +23,14 @@ import (
 )
 
 type ArticleHandler struct {
-	svc            *article.Service
-	contentRepo    content.Repository
-	commentRepo    domaincomment.CommentRepository
-	userRepo       identity.Repository
-	apCfgSvc       *sysconfig.Service
-	deliveryRepo   domainfed.OutboundDeliveryRepository
-	postCacheRepo  domainfed.FederatedPostCacheRepository
-	instanceRepo   domainfed.FederationInstanceRepository
+	svc           *article.Service
+	contentRepo   content.Repository
+	commentRepo   domaincomment.CommentRepository
+	userRepo      identity.Repository
+	apCfgSvc      *sysconfig.Service
+	deliveryRepo  domainfed.OutboundDeliveryRepository
+	postCacheRepo domainfed.FederatedPostCacheRepository
+	instanceRepo  domainfed.FederationInstanceRepository
 }
 
 func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository, apCfgSvc *sysconfig.Service, opts ...ArticleHandlerOption) *ArticleHandler {
@@ -280,12 +280,40 @@ func (h *ArticleHandler) GetArticle(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if !article.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
+	}
 
 	articleResponse, err := h.toArticleResp(c.Context(), article)
 	if err != nil {
 		return err
 	}
 
+	return response.Success(c, articleResponse)
+}
+
+// GetArticleAdmin godoc
+// @Summary 获取文章详情（管理员）
+// @Tags Article
+// @Produce json
+// @Param id path int true "文章ID"
+// @Security BearerAuth
+// @Success 200 {object} contract.ArticleResp
+// @Router /admin/articles/{id} [get]
+// @Security JWTAuth
+func (h *ArticleHandler) GetArticleAdmin(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的文章ID")
+	}
+	article, err := h.svc.GetArticleByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+	articleResponse, err := h.toArticleResp(c.Context(), article)
+	if err != nil {
+		return err
+	}
 	return response.Success(c, articleResponse)
 }
 
@@ -305,6 +333,9 @@ func (h *ArticleHandler) ListSamePeriodMoments(c *fiber.Ctx) error {
 	articleItem, err := h.svc.GetArticleByID(c.Context(), id)
 	if err != nil {
 		return err
+	}
+	if !articleItem.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
 	}
 
 	const windowDays = 14
@@ -353,6 +384,9 @@ func (h *ArticleHandler) GetArticleByShortURL(c *fiber.Ctx) error {
 	art, err := h.svc.GetArticleByShortURL(c.Context(), shortURL)
 	if err != nil {
 		return err
+	}
+	if !art.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
 	}
 
 	articleResponse, err := h.toArticleResp(c.Context(), art)
@@ -559,6 +593,9 @@ func (h *ArticleHandler) CheckArticleLatest(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
 	} else if err != nil {
 		return err
+	}
+	if !article.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
 	}
 
 	if req.Hash == article.ContentHash {

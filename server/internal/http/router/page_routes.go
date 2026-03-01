@@ -21,15 +21,16 @@ func registerPagePublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 func registerPageAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	pageHandler := newPageHandler(deps)
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 
-	authGroup := v2.Group("/pages", middleware.RequireAuth(deps.JWTManager, adminTokenRepo))
+	authGroup := v2.Group("/pages", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 	authGroup.Post("/", pageHandler.CreatePage)      // POST /api/v2/pages
 	authGroup.Put("/:id", pageHandler.UpdatePage)    // PUT /api/v2/pages/123
 	authGroup.Delete("/:id", pageHandler.DeletePage) // DELETE /api/v2/pages/123
 
-	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup.Get("/admin/pages/:id", pageHandler.GetPageAdmin)
 	adminGroup.Put("/admin/pages/enabled", pageHandler.BatchSetPageEnabled)    // PUT /api/v2/admin/pages/enabled
 	adminGroup.Post("/admin/pages/batch-delete", pageHandler.BatchDeletePages) // POST /api/v2/admin/pages/batch-delete
 }

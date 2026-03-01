@@ -206,12 +206,40 @@ func (h *PageHandler) GetPage(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if !pageItem.IsEnabled {
+		return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
+	}
 
 	pageResponse, err := h.toPageResp(c.Context(), pageItem)
 	if err != nil {
 		return err
 	}
 
+	return response.Success(c, pageResponse)
+}
+
+// GetPageAdmin godoc
+// @Summary 获取页面详情（管理员）
+// @Tags Page
+// @Produce json
+// @Param id path int true "页面ID"
+// @Security BearerAuth
+// @Success 200 {object} contract.PageResp
+// @Router /admin/pages/{id} [get]
+// @Security JWTAuth
+func (h *PageHandler) GetPageAdmin(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的页面ID")
+	}
+	pageItem, err := h.svc.GetPageByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+	pageResponse, err := h.toPageResp(c.Context(), pageItem)
+	if err != nil {
+		return err
+	}
 	return response.Success(c, pageResponse)
 }
 
@@ -231,6 +259,9 @@ func (h *PageHandler) GetPageByShortURL(c *fiber.Ctx) error {
 	pageItem, err := h.svc.GetPageByShortURL(c.Context(), shortURL)
 	if err != nil {
 		return err
+	}
+	if !pageItem.IsEnabled {
+		return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
 	}
 
 	pageResponse, err := h.toPageResp(c.Context(), pageItem)
@@ -333,6 +364,9 @@ func (h *PageHandler) CheckPageLatest(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
 	} else if err != nil {
 		return err
+	}
+	if !pageItem.IsEnabled {
+		return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
 	}
 
 	if req.Hash == pageItem.ContentHash {

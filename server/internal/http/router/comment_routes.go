@@ -24,9 +24,10 @@ func registerCommentPublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 func registerCommentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	commentHandler := newCommentHandler(deps)
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 
-	authGroup := v2.Group("/comments", middleware.RequireAuth(deps.JWTManager, adminTokenRepo))
+	authGroup := v2.Group("/comments", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo))
 	authGroup.Post("/areas/:areaId", commentHandler.CreateCommentLogin)
 }
 

@@ -20,6 +20,7 @@ var (
 	ErrProviderNotConfigured = errors.New("oauth provider not configured")
 	ErrRegisterClosed        = errors.New("register is only allowed for initial admin setup")
 	ErrLastOAuthBinding      = errors.New("cannot unbind last oauth binding for non-admin user")
+	ErrUserDisabled          = errors.New("user disabled")
 )
 
 // ExternalProvider 用于未来扩展 OAuth/OIDC, 当前仅定义接口。
@@ -138,6 +139,9 @@ func (s *Service) Login(ctx context.Context, cmd LoginCmd) (*LoginResult, error)
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(cmd.Password)) != nil {
 		return nil, identity.ErrInvalidCredentials
 	}
+	if !user.IsActive {
+		return nil, ErrUserDisabled
+	}
 	if !user.IsAdmin {
 		return nil, identity.ErrInvalidCredentials
 	}
@@ -228,6 +232,9 @@ func (s *Service) LoginWithProvider(ctx context.Context, cmd OAuthLoginCmd) (*Lo
 		} else {
 			return nil, err
 		}
+	}
+	if !user.IsActive {
+		return nil, ErrUserDisabled
 	}
 
 	jwtToken, claims, err := s.manager.Generate(user.ID, user.IsAdmin)

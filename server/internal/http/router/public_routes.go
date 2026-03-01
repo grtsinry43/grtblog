@@ -29,9 +29,6 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	public.Get("/nav-menus", navMenuHandler.ListPublic)
 	public.Get("/tags", newTaxonomyHandler(deps).ListPublicTags)
 
-	htmlSnapshotHandler := handler.NewHTMLSnapshotHandler(htmlSnapshotSvc, deps.ISR)
-	public.Post("/html/posts/refresh", htmlSnapshotHandler.RefreshPostsHTML)
-
 	articleHandler := newArticleHandler(deps)
 	public.Get("/articles/recent", articleHandler.ListRecentPublicArticles)
 

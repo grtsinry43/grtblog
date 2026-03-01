@@ -92,7 +92,7 @@ export function listPages(params: ListPagesParams) {
 }
 
 export function getPage(id: number) {
-  return request<PageDetail>(`/pages/${id}`, {
+  return request<PageDetail>(`/admin/pages/${id}`, {
     method: 'GET',
   })
 }

@@ -275,12 +275,40 @@ func (h *MomentHandler) GetMoment(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if !momentItem.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
+	}
 
 	momentResponse, err := h.toMomentResp(c.Context(), momentItem)
 	if err != nil {
 		return err
 	}
 
+	return response.Success(c, momentResponse)
+}
+
+// GetMomentAdmin godoc
+// @Summary 获取手记详情（管理员）
+// @Tags Moment
+// @Produce json
+// @Param id path int true "手记ID"
+// @Security BearerAuth
+// @Success 200 {object} contract.MomentResp
+// @Router /admin/moments/{id} [get]
+// @Security JWTAuth
+func (h *MomentHandler) GetMomentAdmin(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的手记ID")
+	}
+	momentItem, err := h.svc.GetMomentByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
+	momentResponse, err := h.toMomentResp(c.Context(), momentItem)
+	if err != nil {
+		return err
+	}
 	return response.Success(c, momentResponse)
 }
 
@@ -300,6 +328,9 @@ func (h *MomentHandler) ListSamePeriodArticles(c *fiber.Ctx) error {
 	momentItem, err := h.svc.GetMomentByID(c.Context(), id)
 	if err != nil {
 		return err
+	}
+	if !momentItem.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
 	}
 
 	const windowDays = 14
@@ -348,6 +379,9 @@ func (h *MomentHandler) GetMomentByShortURL(c *fiber.Ctx) error {
 	momentItem, err := h.svc.GetMomentByShortURL(c.Context(), shortURL)
 	if err != nil {
 		return err
+	}
+	if !momentItem.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
 	}
 
 	momentResponse, err := h.toMomentResp(c.Context(), momentItem)
@@ -549,6 +583,9 @@ func (h *MomentHandler) CheckMomentLatest(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
 	} else if err != nil {
 		return err
+	}
+	if !momentItem.IsPublished {
+		return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
 	}
 
 	if req.Hash == momentItem.ContentHash {

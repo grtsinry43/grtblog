@@ -24,9 +24,10 @@ func registerArticlePublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 func registerArticleAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	articleHandler := newArticleHandler(deps)
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 
-	authGroup := v2.Group("/articles", middleware.RequireAuth(deps.JWTManager, adminTokenRepo))
+	authGroup := v2.Group("/articles", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 	authGroup.Post("/", articleHandler.CreateArticle)      // POST /api/v2/articles
 	authGroup.Put("/:id", articleHandler.UpdateArticle)    // PUT /api/v2/articles/123
 	authGroup.Delete("/:id", articleHandler.DeleteArticle) // DELETE /api/v2/articles/123
@@ -37,8 +38,8 @@ func registerArticleAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	)
 	authGroup.Get("/:id/federation/interactions", federationInteractionHandler.GetArticleInteractions)
 
-	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup.Get("/admin/articles/:id", articleHandler.GetArticleAdmin)
 	adminGroup.Get("/admin/articles", articleHandler.ListArticlesAdmin)                  // GET /api/v2/admin/articles
 	adminGroup.Put("/admin/articles/published", articleHandler.BatchSetArticlePublished) // PUT /api/v2/admin/articles/published
 	adminGroup.Put("/admin/articles/top", articleHandler.BatchSetArticleTop)             // PUT /api/v2/admin/articles/top

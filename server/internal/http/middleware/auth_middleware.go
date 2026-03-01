@@ -19,7 +19,7 @@ type AdminTokenResolver interface {
 }
 
 // RequireAuth 校验 Authorization header 并解析 JWT。
-func RequireAuth(manager *jwt.Manager, adminTokenResolver ...AdminTokenResolver) fiber.Handler {
+func RequireAuth(manager *jwt.Manager, userRepo identity.Repository, adminTokenResolver ...AdminTokenResolver) fiber.Handler {
 	var tokenResolver AdminTokenResolver
 	if len(adminTokenResolver) > 0 {
 		tokenResolver = adminTokenResolver[0]
@@ -41,10 +41,20 @@ func RequireAuth(manager *jwt.Manager, adminTokenResolver ...AdminTokenResolver)
 				}
 				return response.ErrorWithMsg[any](c, response.NotLogin, "token 无效")
 			}
+			user, err := userRepo.FindByID(c.Context(), adminToken.UserID)
+			if err != nil {
+				if errors.Is(err, identity.ErrUserNotFound) {
+					return response.ErrorWithMsg[any](c, response.NotLogin, "token 无效")
+				}
+				return err
+			}
+			if !user.IsActive {
+				return response.ErrorWithMsg[any](c, response.NotLogin, "账号已被禁用")
+			}
 			c.Locals(authContextKey, &jwt.Claims{
 				Subject:   "admin_token",
 				UserID:    adminToken.UserID,
-				IsAdmin:   true,
+				IsAdmin:   user.IsAdmin,
 				Issuer:    "admin_token",
 				IssuedAt:  adminToken.CreatedAt.Unix(),
 				ExpiresAt: adminToken.ExpireAt.Unix(),
@@ -59,6 +69,17 @@ func RequireAuth(manager *jwt.Manager, adminTokenResolver ...AdminTokenResolver)
 			}
 			return response.ErrorWithMsg[any](c, response.NotLogin, "token 无效")
 		}
+		user, err := userRepo.FindByID(c.Context(), claims.UserID)
+		if err != nil {
+			if errors.Is(err, identity.ErrUserNotFound) {
+				return response.ErrorWithMsg[any](c, response.NotLogin, "token 无效")
+			}
+			return err
+		}
+		if !user.IsActive {
+			return response.ErrorWithMsg[any](c, response.NotLogin, "账号已被禁用")
+		}
+		claims.IsAdmin = user.IsAdmin
 
 		c.Locals(authContextKey, claims)
 		return c.Next()

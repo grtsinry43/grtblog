@@ -117,7 +117,7 @@ export function listMoments(params: ListMomentsParams) {
 }
 
 export function getMoment(id: number) {
-  return request<MomentDetail>(`/moments/${id}`, {
+  return request<MomentDetail>(`/admin/moments/${id}`, {
     method: 'GET',
   })
 }

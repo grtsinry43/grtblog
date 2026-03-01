@@ -24,15 +24,16 @@ func registerMomentPublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 func registerMomentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	momentHandler := newMomentHandler(deps)
+	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 
-	authGroup := v2.Group("/moments", middleware.RequireAuth(deps.JWTManager, adminTokenRepo))
+	authGroup := v2.Group("/moments", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 	authGroup.Post("/", momentHandler.CreateMoment)      // POST /api/v2/moments
 	authGroup.Put("/:id", momentHandler.UpdateMoment)    // PUT /api/v2/moments/123
 	authGroup.Delete("/:id", momentHandler.DeleteMoment) // DELETE /api/v2/moments/123
 
-	identityRepo := persistence.NewIdentityRepository(deps.DB)
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup.Get("/admin/moments/:id", momentHandler.GetMomentAdmin)
 	adminGroup.Get("/admin/moments", momentHandler.ListMomentsAdmin)                  // GET /api/v2/admin/moments
 	adminGroup.Put("/admin/moments/published", momentHandler.BatchSetMomentPublished) // PUT /api/v2/admin/moments/published
 	adminGroup.Put("/admin/moments/top", momentHandler.BatchSetMomentTop)             // PUT /api/v2/admin/moments/top

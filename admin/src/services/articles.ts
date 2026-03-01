@@ -120,7 +120,7 @@ export function listArticles(params: ListArticlesParams) {
 }
 
 export function getArticle(id: number) {
-  return request<ArticleDetail>(`/articles/${id}`, {
+  return request<ArticleDetail>(`/admin/articles/${id}`, {
     method: 'GET',
   })
 }

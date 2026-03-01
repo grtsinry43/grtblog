@@ -21,11 +21,11 @@ func registerThinkingAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	thinkingHandler := newThinkingHandler(deps)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
-	authGroup := v2.Group("/thinkings", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	authGroup := v2.Group("/thinkings", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 	authGroup.Post("/", thinkingHandler.CreateThinking)
 	authGroup.Put("/:id", thinkingHandler.UpdateThinking)
 	authGroup.Delete("/:id", thinkingHandler.DeleteThinking)
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 	adminGroup.Post("/admin/thinkings/batch-delete", thinkingHandler.BatchDeleteThinkings)
 }
 

@@ -94,6 +94,9 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 	result, err := h.svc.Login(c.Context(), cmd)
 	if err != nil {
+		if errors.Is(err, auth.ErrUserDisabled) {
+			return response.NewBizErrorWithMsg(response.Unauthorized, "账号已被禁用")
+		}
 		if errors.Is(err, identity.ErrInvalidCredentials) {
 			return response.NewBizError(response.InvalidCredential)
 		}

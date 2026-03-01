@@ -89,6 +89,9 @@ func (h *OAuthHandler) Callback(c *fiber.Ctx) error {
 		State:    req.State,
 	})
 	if err != nil {
+		if err == auth.ErrUserDisabled {
+			return response.NewBizErrorWithMsg(response.Unauthorized, "账号已被禁用")
+		}
 		return err
 	}
 	return response.Success(c, contract.LoginResp{

@@ -13,10 +13,10 @@ import (
 )
 
 func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *handler.WebsiteInfoHandler) {
-	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
-	authenticated := v2.Group("", middleware.RequireAuth(deps.JWTManager, adminTokenRepo))
-
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
+	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
+	authenticated := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo))
+
 	oauthRepo := persistence.NewOAuthProviderRepository(deps.DB)
 	var stateStore auth.StateStore
 	if deps.Redis != nil {
@@ -41,11 +41,12 @@ func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *
 	uploadRepo := persistence.NewUploadFileRepository(deps.DB)
 	uploadSvc := mediaapp.NewService(uploadRepo, "", deps.EventBus)
 	uploadHandler := handler.NewUploadHandler(uploadSvc)
-	authenticated.Post("/upload", uploadHandler.UploadFile)
-	authenticated.Get("/uploads", uploadHandler.ListUploads)
-	authenticated.Put("/upload/:id", uploadHandler.RenameUpload)
-	authenticated.Delete("/upload/:id", uploadHandler.DeleteUpload)
-	authenticated.Get("/upload/:id/download", uploadHandler.DownloadUpload)
+	adminOnly := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminOnly.Post("/upload", uploadHandler.UploadFile)
+	adminOnly.Get("/uploads", uploadHandler.ListUploads)
+	adminOnly.Put("/upload/:id", uploadHandler.RenameUpload)
+	adminOnly.Delete("/upload/:id", uploadHandler.DeleteUpload)
+	adminOnly.Get("/upload/:id/download", uploadHandler.DownloadUpload)
 
 	adminNotificationRepo := persistence.NewAdminNotificationRepository(deps.DB)
 	adminNotificationSvc := adminnotification.NewService(adminNotificationRepo, deps.EventBus)
