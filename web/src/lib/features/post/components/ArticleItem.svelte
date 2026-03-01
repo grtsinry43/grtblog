@@ -4,6 +4,7 @@
 	import { Calendar, Eye, Heart, ExternalLink, Sparkles } from 'lucide-svelte';
 	import type { PostSummary } from '$lib/features/post/types';
 	import { buildPostPath, buildCategoryPath } from '$lib/shared/utils/content-path';
+	import { isDifferentDay } from '$lib/shared/utils/date';
 
 	let { post } = $props<{ post: PostSummary }>();
 
@@ -15,6 +16,8 @@
 		const day = String(date.getUTCDate()).padStart(2, '0');
 		return `${year}/${month}/${day}`;
 	};
+
+	const showUpdated = $derived(isDifferentDay(post.createdAt, post.updatedAt));
 
 	const handleCategoryClick = (e: MouseEvent) => {
 		e.preventDefault();
@@ -48,6 +51,7 @@
 		<div class="flex items-center gap-1.5">
 			<Calendar size={14} strokeWidth={1.5} />
 			<span>{formatDate(post.createdAt)}</span>
+			{#if showUpdated}<span class="text-ink-300 dark:text-ink-600">（更新于 {formatDate(post.updatedAt)}）</span>{/if}
 		</div>
 
 		<!-- Category -->

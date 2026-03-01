@@ -4,6 +4,7 @@
 	import { authLogin } from '$lib/shared/actions/auth-login';
 	import { preloadTurnstile } from '$lib/shared/actions/turnstile';
 	import { authModalStore } from '$lib/shared/stores/authModalStore';
+	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
 	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import {
@@ -253,118 +254,104 @@
 			userStore.setUser(profile);
 		}
 	});
+
+	// Sync: when FloatingWindow is closed externally (e.g. user clicks outside),
+	// reset authModalStore without re-triggering windowStore.close().
+	$effect(() => {
+		if (!windowStore.isOpen && $authModalStore.open) {
+			authModalStore._reset();
+		}
+	});
 </script>
 
-{#if $authModalStore.open}
-	<div class="fixed inset-0 z-50 flex items-center justify-center px-6 py-10">
-		<button class="absolute inset-0" aria-label="关闭登录弹窗" onclick={handleClose}></button>
-		<div
-			class="relative w-full shadow-lg max-w-md rounded-default border border-ink-100 bg-white/90 p-8 backdrop-blur-lg dark:border-ink-800 dark:bg-ink-900/70"
-			role="dialog"
-			aria-modal="true"
-			aria-label="登录"
-		>
-			<div class="flex items-start justify-between">
-				<div>
-					<p class="text-xs font-mono text-ink-500">👋 欢迎回来</p>
-					<h2 class="mt-1 text-2xl font-serif text-ink-900 dark:text-ink-100">
-						登录到 {$websiteName}
-					</h2>
-				</div>
-				<Button
-					variant="icon"
-					class="h-8 w-8 rounded-default text-ink-400 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-ink-800 dark:hover:text-ink-100"
-					aria-label="关闭"
-					onclick={handleClose}
-				>
-					✕
-				</Button>
-			</div>
+<div>
+	<p class="text-xs font-mono text-ink-500">欢迎回来</p>
+	<h2 class="mt-1 text-2xl font-serif text-ink-900 dark:text-ink-100">
+		登录到 {$websiteName}
+	</h2>
 
-			<div class="mt-8 space-y-5">
-				<AuthOAuthList
-					onSelect={startOAuthLogin}
-					onToggleLogin={() => setShowPasswordLogin(!showPasswordLogin)}
+	<div class="mt-6 space-y-5">
+		<AuthOAuthList
+			onSelect={startOAuthLogin}
+			onToggleLogin={() => setShowPasswordLogin(!showPasswordLogin)}
+		/>
+
+		{#if showPasswordLogin || !hasOAuthProviders}
+			<form
+				class="space-y-5"
+				use:authLogin={{
+					execute: executeLogin,
+					getPayload: (formEl) => {
+						const data = new FormData(formEl);
+						return {
+							credential: String(data.get('credential') ?? ''),
+							password: String(data.get('password') ?? ''),
+							turnstileToken: turnstileToken || undefined
+						};
+					},
+					onStart: () => {
+						setLoginState({ loading: true, error: '' });
+						setTurnstileState({ error: '' });
+					},
+					onSuccess: () => {
+						setLoginState({ loading: false });
+						token = getToken();
+						if (loginMutation.data?.user) {
+							userStore.setUser(loginMutation.data.user);
+						}
+						authModalStore.close();
+					},
+					onError: (err) => {
+						setLoginState({
+							loading: false,
+							error: err instanceof Error ? err.message : '登录失败，请稍后重试'
+						});
+						if ($authModel?.turnstile.enabled) {
+							turnstileToken = '';
+							setTurnstileState({ error: '人机校验未通过，请重试' });
+						}
+					},
+					onFinally: () => {
+						setLoginState({ loading: false });
+					}
+				}}
+			>
+				<AuthField label="用户名 / 邮箱" name="credential" autocomplete="username" required />
+
+				<AuthField
+					label="密码"
+					name="password"
+					type="password"
+					autocomplete="current-password"
+					required
 				/>
 
-				{#if showPasswordLogin || !hasOAuthProviders}
-					<form
-						class="space-y-5"
-						use:authLogin={{
-							execute: executeLogin,
-							getPayload: (formEl) => {
-								const data = new FormData(formEl);
-								return {
-									credential: String(data.get('credential') ?? ''),
-									password: String(data.get('password') ?? ''),
-									turnstileToken: turnstileToken || undefined
-								};
-							},
-							onStart: () => {
-								setLoginState({ loading: true, error: '' });
-								setTurnstileState({ error: '' });
-							},
-							onSuccess: () => {
-								setLoginState({ loading: false });
-								token = getToken();
-								if (loginMutation.data?.user) {
-									userStore.setUser(loginMutation.data.user);
-								}
-								authModalStore.close();
-							},
-							onError: (err) => {
-								setLoginState({
-									loading: false,
-									error: err instanceof Error ? err.message : '登录失败，请稍后重试'
-								});
-								if ($authModel?.turnstile.enabled) {
-									turnstileToken = '';
-									setTurnstileState({ error: '人机校验未通过，请重试' });
-								}
-							},
-							onFinally: () => {
-								setLoginState({ loading: false });
-							}
-						}}
-					>
-						<AuthField label="用户名 / 邮箱" name="credential" autocomplete="username" required />
+				<AuthTurnstile
+					onToken={handleTurnstileToken}
+					onExpired={handleTurnstileExpired}
+					onError={handleTurnstileError}
+				/>
 
-						<AuthField
-							label="密码"
-							name="password"
-							type="password"
-							autocomplete="current-password"
-							required
-						/>
+				<input type="hidden" name="turnstileToken" value={turnstileToken} />
 
-						<AuthTurnstile
-							onToken={handleTurnstileToken}
-							onExpired={handleTurnstileExpired}
-							onError={handleTurnstileError}
-						/>
-
-						<input type="hidden" name="turnstileToken" value={turnstileToken} />
-
-						{#if $authModel?.login.error}
-							<p class="text-sm text-cinnabar-600 dark:text-cinnabar-400">
-								{$authModel.login.error}
-							</p>
-						{/if}
-
-						<Button
-							class="w-full rounded-default bg-jade-600 text-white hover:bg-jade-700"
-							type="submit"
-							loading={$authModel?.login.loading ?? false}
-							disabled={!canSubmit}
-						>
-							{$authModel?.login.loading ? '登录中…' : '登录'}
-						</Button>
-					</form>
+				{#if $authModel?.login.error}
+					<p class="text-sm text-cinnabar-600 dark:text-cinnabar-400">
+						{$authModel.login.error}
+					</p>
 				{/if}
-			</div>
-		</div>
+
+				<Button
+					class="w-full rounded-default bg-jade-600 text-white hover:bg-jade-700"
+					type="submit"
+					loading={$authModel?.login.loading ?? false}
+					disabled={!canSubmit}
+				>
+					{$authModel?.login.loading ? '登录中…' : '登录'}
+				</Button>
+			</form>
+		{/if}
 	</div>
-{/if}
+</div>
 
 <style lang="postcss">
 	@reference "$routes/layout.css";

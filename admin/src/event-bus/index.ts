@@ -7,9 +7,11 @@ import type { EventBusKeys } from '@/event-bus/interface'
 
 export function useEventBus() {
   const routerEventBus = _useEventBus<EventBusKeys['router']>('router')
+  const healthEventBus = _useEventBus<EventBusKeys['health']>('health')
 
   return {
     routerEventBus,
+    healthEventBus,
   }
 }
 

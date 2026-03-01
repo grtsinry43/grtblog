@@ -189,7 +189,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Delete("/global-notifications/:id", globalNotificationHandler.Delete)
 
 	logHandler := handler.NewAdminLogHandler("storage/logs/app.log", 200)
-	systemHandler := handler.NewSystemHandler(deps.Config.App, deps.DB, deps.Redis, deps.EventBus)
+	systemHandler := handler.NewSystemHandler(deps.Config.App, deps.DB, deps.Redis, deps.EventBus, deps.HealthState)
 	adminStatsSvc := adminstats.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, wsManager)
 	adminStatsHandler := handler.NewAdminStatsHandler(adminStatsSvc)
 	observabilityHandler := handler.NewAdminObservabilityHandler(deps.Observability)

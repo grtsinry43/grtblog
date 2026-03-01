@@ -54,7 +54,7 @@
 </script>
 
 <a
-	class="group not-prose relative my-5 flex h-[88px] items-stretch overflow-hidden rounded-default border border-ink-200/60 bg-white/40 transition-all duration-300 hover:border-jade-400/50 hover:bg-white hover:shadow-subtle dark:border-ink-800/60 dark:bg-ink-900/30 dark:hover:border-jade-800/80 dark:hover:bg-ink-900/10"
+	class="group not-prose relative my-5 flex min-h-[88px] items-stretch overflow-hidden rounded-default border border-ink-200/60 bg-white/40 transition-all duration-300 hover:border-jade-400/50 hover:bg-white hover:shadow-subtle dark:border-ink-800/60 dark:bg-ink-900/30 dark:hover:border-jade-800/80 dark:hover:bg-ink-900/10"
 	href={resolvedHref}
 	{target}
 	{rel}
@@ -73,11 +73,11 @@
 			</span>
 		</div>
 
-		<h4 class="truncate text-[13px] font-bold text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-100 dark:group-hover:text-jade-400">
+		<h4 class="line-clamp-2 break-words text-[13px] font-bold text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-100 dark:group-hover:text-jade-400">
 			{title || href}
 		</h4>
 
-		<div class="mt-1.5 truncate text-[11px] text-ink-500 dark:text-ink-500">
+		<div class="mt-1.5 line-clamp-2 break-words text-[11px] text-ink-500 dark:text-ink-500">
 			{#if description}
 				{description}
 			{:else if children}

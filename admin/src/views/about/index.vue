@@ -4,14 +4,23 @@ import { onMounted, ref } from 'vue'
 
 import packageJson from '@/../package.json'
 import { ScrollContainer } from '@/components'
+import { getSystemStatus } from '@/services/system'
 
 defineOptions({
   name: 'About',
 })
 
 const APP_NAME = import.meta.env.VITE_APP_NAME
-const version = packageJson.version
+const version = ref('')
+const commit = ref('')
 const { dependencies, devDependencies } = packageJson
+
+getSystemStatus().then((res) => {
+  version.value = res.app.version
+  commit.value = res.app.commit ?? ''
+}).catch(() => {
+  version.value = packageJson.version
+})
 
 let codeToHtml: any
 const dependenciesCodeHighlight = ref('')
@@ -78,9 +87,9 @@ onMounted(async () => {
     <div class="mt-4 mb-2">
       <div class="flex items-center gap-3">
         <h1 class="text-2xl font-semibold text-neutral-800 dark:text-neutral-100">
-          {{ APP_NAME }}
+          Grtblog Admin
         </h1>
-        <NTag size="small" round type="info">v{{ version }}</NTag>
+        <NTag size="small" round type="info">{{ version }}{{ commit ? ` (${commit})` : '' }}</NTag>
       </div>
       <p class="mt-1 text-sm font-medium text-neutral-500 dark:text-neutral-400">
         面向创作者与读者的全栈内容平台

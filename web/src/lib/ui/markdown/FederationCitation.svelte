@@ -19,7 +19,7 @@
 		status?: string;
 	}>();
 
-	const isApproved = $derived(status === 'approved' || status === 'delivered' || status === 'accepted');
+	const isApproved = $derived(status === 'approved');
 	const resolvedUrl = $derived(url || `https://${instance}/posts/${postId}`);
 	const displayTitle = $derived(title || resolvedUrl);
 </script>

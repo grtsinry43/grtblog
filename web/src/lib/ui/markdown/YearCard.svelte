@@ -25,7 +25,7 @@
 	href={url && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(url) ? resolve(url) : url || '#'}
 	{target}
 	{rel}
-	class="group not-prose relative my-6 flex h-[100px] items-stretch overflow-hidden rounded-default border border-ink-200/70 bg-ink-50/20 transition-all duration-300 hover:border-jade-400/40 hover:bg-white hover:shadow-subtle dark:border-ink-800/60 dark:bg-ink-900/40 dark:hover:border-jade-800/80 dark:hover:bg-ink-900/60"
+	class="group not-prose relative my-6 flex min-h-[100px] items-stretch overflow-hidden rounded-default border border-ink-200/70 bg-ink-50/20 transition-all duration-300 hover:border-jade-400/40 hover:bg-white hover:shadow-subtle dark:border-ink-800/60 dark:bg-ink-900/40 dark:hover:border-jade-800/80 dark:hover:bg-ink-900/60"
 >
 	<!-- 封面背景 (自适应) -->
 	{#if cover}
@@ -45,11 +45,11 @@
 			<div class="h-[1px] w-4 bg-ink-200 dark:bg-ink-700 transition-all duration-300 group-hover:w-8"></div>
 		</div>
 
-		<h3 class="font-serif text-[18px] font-bold tracking-tight text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-50 dark:group-hover:text-jade-400">
+		<h3 class="font-serif text-[18px] font-bold tracking-tight text-ink-900 transition-colors group-hover:text-jade-700 dark:text-ink-50 dark:group-hover:text-jade-400 line-clamp-2 break-words">
 			{title}
 		</h3>
 
-		<div class="truncate text-[11px] leading-relaxed text-ink-500 dark:text-ink-400">
+		<div class="line-clamp-2 break-words text-[11px] leading-relaxed text-ink-500 dark:text-ink-400">
 			{#if children}
 				{@render children()}
 			{:else}

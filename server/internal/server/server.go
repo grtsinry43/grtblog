@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,6 +21,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
@@ -37,19 +39,20 @@ import (
 
 // Server wraps Fiber with configuration and dependencies.
 type Server struct {
-	cfg        config.Config
-	db         *gorm.DB
-	app        *fiber.App
-	logFile    *os.File
-	ctx        context.Context
-	cancel     context.CancelFunc
-	articleSvc *article.Service
-	sysCfgSvc  *sysconfig.Service
-	analytics  *analytics.Service
-	isrSvc     *isr.Service
-	fedSync    *appfed.SyncWorker
-	fedDeliver *appfed.DeliveryService
-	version    string
+	cfg            config.Config
+	db             *gorm.DB
+	app            *fiber.App
+	logFile        *os.File
+	ctx            context.Context
+	cancel         context.CancelFunc
+	articleSvc     *article.Service
+	sysCfgSvc      *sysconfig.Service
+	analytics      *analytics.Service
+	isrSvc         *isr.Service
+	fedSync        *appfed.SyncWorker
+	fedDeliver     *appfed.DeliveryService
+	healthChecker  *health.Checker
+	version        string
 }
 
 // New builds a Fiber server with registered routes and middlewares.
@@ -142,6 +145,11 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		fedResolver,
 	)
 
+	// Health state machine.
+	isDev := strings.ToLower(cfg.App.Env) == "development"
+	healthState := health.NewState(isDev)
+	healthChecker := health.NewChecker(healthState, db, redisClient, sysCfgSvc, eventBus, 0, cfg.App.HTMLSnapshotBaseURL)
+
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Locals("requestId") == nil {
 			reqID := c.Get("X-Request-ID")
@@ -162,38 +170,45 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 
 	// 注册路由
 	router.Register(app, router.Dependencies{
-		DB:           db,
-		Config:       cfg,
-		JWTManager:   jwtManager,
-		Turnstile:    turnstileClient,
-		SysConfig:    sysCfgSvc,
-		EventBus:     eventBus,
-		Redis:        redisClient,
-		Analytics:    analyticsSvc,
-		HTTPStats:    httpStats,
-		HTMLSnapshot: htmlSnapshotSvc,
-		ISR:          isrSvc,
+		DB:            db,
+		Config:        cfg,
+		JWTManager:    jwtManager,
+		Turnstile:     turnstileClient,
+		SysConfig:     sysCfgSvc,
+		EventBus:      eventBus,
+		Redis:         redisClient,
+		Analytics:     analyticsSvc,
+		HTTPStats:     httpStats,
+		HTMLSnapshot:  htmlSnapshotSvc,
+		ISR:           isrSvc,
+		HealthState:   healthState,
+		HealthChecker: healthChecker,
 	})
 
 	return &Server{
-		cfg:        cfg,
-		db:         db,
-		app:        app,
-		logFile:    logFile,
-		ctx:        ctx,
-		cancel:     cancel,
-		articleSvc: articleSvc,
-		sysCfgSvc:  sysCfgSvc,
-		analytics:  analyticsSvc,
-		isrSvc:     isrSvc,
-		fedSync:    fedSync,
-		fedDeliver: fedDeliver,
-		version:    buildinfo.Version(),
+		cfg:           cfg,
+		db:            db,
+		app:           app,
+		logFile:       logFile,
+		ctx:           ctx,
+		cancel:        cancel,
+		articleSvc:    articleSvc,
+		sysCfgSvc:     sysCfgSvc,
+		analytics:     analyticsSvc,
+		isrSvc:        isrSvc,
+		fedSync:       fedSync,
+		fedDeliver:    fedDeliver,
+		healthChecker: healthChecker,
+		version:       buildinfo.Version(),
 	}
 }
 
 // Start launches the Fiber HTTP server and background workers.
 func (s *Server) Start() error {
+	// 启动健康状态检查
+	if s.healthChecker != nil {
+		go s.healthChecker.Run(s.ctx)
+	}
 	// 启动热门文章同步任务
 	go s.runHotArticleSyncWorker()
 	if s.analytics != nil {

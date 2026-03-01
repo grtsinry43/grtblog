@@ -5,9 +5,10 @@ import (
 	"strings"
 )
 
-// BuildVersion can be injected at build time via:
-// -ldflags "-X github.com/grtsinry43/grtblog-v2/server/internal/buildinfo.BuildVersion=<value>"
+// BuildVersion and BuildCommit can be injected at build time via:
+// -ldflags "-X ...buildinfo.BuildVersion=<value> -X ...buildinfo.BuildCommit=<value>"
 var BuildVersion string
+var BuildCommit string
 
 // Version resolves the build/version string embedded in the binary.
 func Version() string {
@@ -44,6 +45,24 @@ func Version() string {
 		return info.Main.Version
 	}
 	return "dev"
+}
+
+// Commit returns the short git commit hash baked into the binary.
+func Commit() string {
+	if c := strings.TrimSpace(BuildCommit); c != "" {
+		return shortCommit(c)
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if !ok || info == nil {
+		return ""
+	}
+	for _, setting := range info.Settings {
+		if setting.Key == "vcs.revision" {
+			return shortCommit(setting.Value)
+		}
+	}
+	return ""
 }
 
 func shortCommit(revision string) string {

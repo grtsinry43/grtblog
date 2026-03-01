@@ -27,6 +27,7 @@ export interface SystemUpdateInfo {
 
 export interface SystemStatus {
   app: {
+    commit?: string
     goVersion: string
     startTime: string
     uptime: string

@@ -2,6 +2,7 @@
 	import type { MomentDetail } from '$lib/features/moment/types';
 	import DetailCommentSection from '$lib/ui/detail/DetailCommentSection.svelte';
 	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
+	import { formatDateCN, isDifferentDay } from '$lib/shared/utils/date';
 	import { Sun } from 'lucide-svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import TagList from '$lib/features/tag/components/TagList.svelte';
@@ -16,6 +17,8 @@
 
 	let { moment, dateStr, dateNo, onActiveAnchorChange, onContentRootChange }: Props =
 		$props();
+
+	const showUpdated = $derived(isDifferentDay(moment.createdAt, moment.updatedAt));
 </script>
 
 <div
@@ -24,19 +27,22 @@
 		md:bg-ink-50 dark:md:bg-ink-900
 		md:shadow-[0_4px_30px_-8px_rgba(0,0,0,0.06)] dark:md:shadow-none
 		md:border md:border-ink-200/80 dark:md:border-ink-200/10
-		px-4 py-10 md:p-20 md:rounded-sm relative overflow-hidden md:min-h-[80vh]
+		px-0 py-10 md:p-20 md:rounded-sm relative overflow-hidden md:min-h-[80vh]
 	"
 	style:view-transition-name={`moment-${moment.id}`}
 >
 	<div class="relative z-10">
 		<header class="mb-12 flex flex-col gap-6">
-			<div class="flex items-center justify-between border-b border-ink-800/10 pb-4">
-				<div class="flex items-center gap-3 text-xs font-mono text-ink-800/40 dark:text-ink-200/40">
+			<div class="flex items-start justify-between gap-3 border-b border-ink-800/10 pb-4">
+				<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-ink-800/40 dark:text-ink-200/40">
 					<span>NO. {dateNo}</span>
 					<span>—</span>
 					<span class="font-serif text-cinnabar-500">手记</span>
+					<span>—</span>
+					<span>{dateStr}</span>
+					{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN(moment.updatedAt)}）</span>{/if}
 				</div>
-				<div class="text-ink-800/40 dark:text-ink-200/40">
+				<div class="shrink-0 text-ink-800/40 dark:text-ink-200/40">
 					<Sun size={18} stroke-width={1.5} />
 				</div>
 			</div>

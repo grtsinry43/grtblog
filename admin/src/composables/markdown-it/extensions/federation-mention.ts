@@ -20,7 +20,7 @@ export const federationMentionExtension: MarkdownExtension = (md) => {
   })
 
   md.renderer.rules.federation_mention = (tokens, idx) => {
-    const { user, instance } = tokens[idx].meta
+    const { user, instance } = tokens[idx]!.meta!
     const esc = md.utils.escapeHtml
     return `<span class="fed-mention">@${esc(user)}<span class="fed-mention-host">@${esc(instance)}</span></span>`
   }

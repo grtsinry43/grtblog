@@ -58,7 +58,7 @@
 				onmouseleave={handleMouseLeave}
 			>
 				<a
-					href={resolve(item.url)}
+					href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolve(item.url)}
 					class="relative z-20 flex h-10 w-10 items-center justify-center rounded-default transition-all duration-200
                     {active
 						? 'bg-ink-900 text-white shadow-sm dark:bg-ink-100 dark:text-ink-950'
@@ -87,7 +87,7 @@
 									{#each item.children as child (child.url)}
 										<li>
 											<a
-												href={resolve(child.url)}
+												href={/^(https?:|\/\/)/i.test(child.url) ? child.url : resolve(child.url)}
 												class="flex items-center gap-2 rounded-default px-3 py-2 text-sm transition-colors
                                                 {isActive(child.url)
 													? 'bg-ink-100 text-ink-900 font-medium dark:bg-ink-800 dark:text-ink-100'

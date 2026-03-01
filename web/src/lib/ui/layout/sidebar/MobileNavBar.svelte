@@ -5,7 +5,7 @@
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
 	import DetailTocNavList from '$lib/ui/detail/DetailTocNavList.svelte';
 	import ThemeIcon from './ThemeIcon.svelte';
-	import { Menu, X, ChevronDown, List, Calendar, NotebookPen, FileText } from 'lucide-svelte';
+	import { X, ChevronDown, List, Calendar, NotebookPen, FileText, Home } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
 	import { tick } from 'svelte';
@@ -70,6 +70,8 @@
 	const isActive = (href: string) =>
 		page.url.pathname === href || page.url.pathname.startsWith(href + '/');
 
+	const isHomePage = $derived(page.url.pathname === '/' || page.url.pathname === '');
+
 	const isParentActive = (item: NavMenuItem) => {
 		if (isActive(item.url)) return true;
 		return item.children?.some((child) => isActive(child.url));
@@ -115,11 +117,17 @@
 	$effect(() => {
 		const pathname = page.url.pathname;
 		const detailTitle = $detailTitleStore;
+		const kind = $detailKindStore;
 		if (!browser) {
 			domDetailTitle = '';
 			return;
 		}
 		if (detailTitle) {
+			domDetailTitle = '';
+			return;
+		}
+		// Only pick up DOM h1 on detail pages (post/moment), not on list/home pages
+		if (!kind) {
 			domDetailTitle = '';
 			return;
 		}
@@ -161,11 +169,10 @@
 	>
 		<!-- Background Layer -->
 		<div
-			class="shadow-glass absolute inset-0 border-white/40 bg-white/90 backdrop-blur-xl transition-all ease-[cubic-bezier(0.23,1,0.32,1)] dark:border-ink-700 dark:bg-ink-900/90"
+			class="shadow-glass absolute inset-0 bg-white/90 backdrop-blur-xl transition-all ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-ink-900/90"
 			class:duration-0={!isMobileMenuOpen && !isMenuAnimating}
 			class:duration-500={isMobileMenuOpen || isMenuAnimating}
 			style:opacity={1}
-			style:border-width="1px"
 			style:height={isMobileMenuOpen ? '100vh' : '3rem'}
 			style:min-height={isMobileMenuOpen ? '100vh' : '3rem'}
 		></div>
@@ -179,44 +186,44 @@
 							e.stopPropagation();
 							isMobileMenuOpen = !isMobileMenuOpen;
 						}}
-						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
+						class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
 					>
-						<div class="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700">
+						<div class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700">
 							<img
 								src="https://dogeoss.grtsinry43.com/img/author.jpeg"
 								alt="Author"
 								class="h-full w-full object-cover"
 							/>
-							<span class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
-								<span
-									class="absolute inline-flex h-full w-full rounded-full opacity-75 {ownerOnline
-										? 'bg-jade-400'
-										: 'bg-ink-300 dark:bg-ink-600'}"
-								></span>
-								<span
-									class="relative inline-flex h-2.5 w-2.5 rounded-full border border-white dark:border-ink-900 {ownerOnline
-										? 'bg-jade-500'
-										: 'bg-ink-400 dark:bg-ink-500'}"
-								></span>
-							</span>
 						</div>
+						<span class="absolute bottom-0 right-0 flex h-2.5 w-2.5">
+							<span
+								class="absolute inline-flex h-full w-full rounded-full opacity-75 {ownerOnline
+									? 'bg-jade-400'
+									: 'bg-ink-300 dark:bg-ink-600'}"
+							></span>
+							<span
+								class="relative inline-flex h-2.5 w-2.5 rounded-full border border-white dark:border-ink-900 {ownerOnline
+									? 'bg-jade-500'
+									: 'bg-ink-400 dark:bg-ink-500'}"
+							></span>
+						</span>
 					</button>
 
 				<div
-					class="relative flex flex-col justify-center transition-all duration-300"
+					class="relative min-w-0 flex-1 flex flex-col justify-center transition-all duration-300"
 					class:opacity-0={isMobileMenuOpen}
 				>
 					{#if showPageTitle}
 						<span
 							transition:fly={{ y: 10, duration: 300 }}
-							class="max-w-[200px] truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
+							class="truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
 						>
 							{currentTitle}
 						</span>
 					{:else}
 						<span
 							transition:fly={{ y: -10, duration: 300 }}
-							class="max-w-[200px] truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
+							class="truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
 						>
 							{$websiteNameStore}
 						</span>
@@ -238,20 +245,6 @@
 						<List size={20} />
 					</button>
 				{/if}
-
-				<button
-					onclick={(e) => {
-						e.stopPropagation();
-						isMobileMenuOpen = !isMobileMenuOpen;
-					}}
-					class="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-				>
-					{#if isMobileMenuOpen}
-						<X size={20} class="text-ink-600 dark:text-ink-300" />
-					{:else}
-						<Menu size={20} class="text-ink-600 dark:text-ink-300" />
-					{/if}
-				</button>
 			</div>
 		</div>
 
@@ -261,15 +254,7 @@
 				transition:fly={{ y: -12, duration: 380, easing: cubicOut, opacity: 0 }}
 				class="no-scrollbar relative z-10 flex max-h-[75vh] flex-col overflow-y-auto px-2 pb-6 pt-0"
 			>
-				<!-- Decoration Header -->
-					<div
-						class="mb-3 flex items-center justify-between border-b border-ink-200/50 bg-transparent px-4 pb-4 pt-2 dark:border-ink-700/50"
-					>
-						<span class="text-xs font-bold uppercase tracking-widest text-ink-400">Navigation</span>
-						<span class="font-mono text-[10px] text-ink-300">MENU</span>
-					</div>
-
-					<div class="mb-3 rounded-default border border-ink-200 bg-white/70 px-3 py-2 dark:border-ink-700 dark:bg-ink-900/60">
+				<div class="mb-3 rounded-default border border-ink-200 bg-white/70 px-3 py-2 dark:border-ink-700 dark:bg-ink-900/60">
 						<div class="flex items-center justify-between gap-2">
 							<div class="text-xs font-medium text-ink-700 dark:text-ink-200">
 								{ownerOnline ? '站长在线中' : '站长暂时离线'}
@@ -293,6 +278,16 @@
 					</div>
 
 					<div class="flex flex-col gap-1">
+					{#if !isHomePage}
+						<a
+							href={resolve('/')}
+							onclick={handleNavigate}
+							class="mb-2 flex items-center gap-3 rounded-default border border-ink-200 bg-ink-50/50 px-3 py-2 text-ink-700 transition-colors hover:border-jade-200 hover:bg-jade-50/50 dark:border-ink-700 dark:bg-ink-800/40 dark:text-ink-200 dark:hover:border-jade-800"
+						>
+							<Home size={16} />
+							<span class="text-sm font-medium">返回首页</span>
+						</a>
+					{/if}
 					{#if $userStore.isLogin}
 						<button
 							type="button"
@@ -315,7 +310,7 @@
 							}}
 						>
 							<User size={16} />
-							<span class="text-sm font-medium">登录后使用用户中心</span>
+							<span class="text-sm font-medium">登录</span>
 						</button>
 					{/if}
 
@@ -339,7 +334,7 @@
 								{/if}
 
 								<a
-									href={resolve(item.url)}
+									href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolve(item.url)}
 									onclick={handleNavigate}
 									class="flex min-w-0 flex-1 items-center gap-3 text-left"
 								>
@@ -402,7 +397,7 @@
 									{#each item.children as sub (sub.url)}
 										{@const subActive = isActive(sub.url)}
 										<a
-											href={resolve(sub.url)}
+											href={/^(https?:|\/\/)/i.test(sub.url) ? sub.url : resolve(sub.url)}
 											onclick={handleNavigate}
 											class="group/sub relative flex items-center gap-3 rounded-lg ml-2 mr-2 py-2.5 pl-[54px] pr-4 text-left transition-colors
                                             {subActive

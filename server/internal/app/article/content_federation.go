@@ -62,11 +62,12 @@ func ExpandFederationSignals(
 		instance := sub[1]
 		postID := sub[2]
 
-		// Find delivery status.
+		// Find delivery status. Map transient statuses to the
+		// three states the frontend understands: approved / pending / rejected.
 		status := "pending"
 		dKey := "citation|" + instance + "|" + postID
 		if d, ok := deliveryByKey[dKey]; ok {
-			status = d.Status
+			status = normalizeFrontendStatus(d.Status)
 		}
 
 		// Find cached post data.
@@ -113,11 +114,11 @@ func ExpandFederationSignals(
 		status := "pending"
 		dKey := "mention|" + instance + "|" + user
 		if d, ok := deliveryByKey[dKey]; ok {
-			status = d.Status
+			status = normalizeFrontendStatus(d.Status)
 		}
 
 		return fmt.Sprintf(
-			`<fed-mention data-user="%s" data-instance="%s" data-status="%s">@%s@%s</fed-mention>`,
+			`<fed-mention user="%s" instance="%s" status="%s">@%s@%s</fed-mention>`,
 			html.EscapeString(user),
 			html.EscapeString(instance),
 			html.EscapeString(status),
@@ -131,7 +132,10 @@ func ExpandFederationSignals(
 
 func buildCitationBlock(instance, postID, title, summary, url, coverImage, authorName, status string) string {
 	var b strings.Builder
-	b.WriteString("::: fed-citation")
+	// Ensure the block is on its own lines so the markdown parser
+	// recognizes it as a component block (even if the original
+	// <cite:...> was written inline within a paragraph).
+	b.WriteString("\n\n::: fed-citation")
 	b.WriteString(fmt.Sprintf(` instance="%s"`, escAttr(instance)))
 	b.WriteString(fmt.Sprintf(` post-id="%s"`, escAttr(postID)))
 	if title != "" {
@@ -150,8 +154,24 @@ func buildCitationBlock(instance, postID, title, summary, url, coverImage, autho
 		b.WriteString(fmt.Sprintf(` author-name="%s"`, escAttr(authorName)))
 	}
 	b.WriteString(fmt.Sprintf(` status="%s"`, escAttr(status)))
-	b.WriteString("\n\n:::")
+	b.WriteString("\n\n:::\n\n")
 	return b.String()
+}
+
+// normalizeFrontendStatus maps internal delivery statuses to the three
+// states the frontend cares about: approved / pending / rejected.
+func normalizeFrontendStatus(raw string) string {
+	switch raw {
+	case federation.DeliveryStatusApproved:
+		return "approved"
+	case federation.DeliveryStatusRejected:
+		return "rejected"
+	case federation.DeliveryStatusFailed, federation.DeliveryStatusTimeout, federation.DeliveryStatusDead:
+		return "failed"
+	default:
+		// queued, sending, accepted — all treated as pending
+		return "pending"
+	}
 }
 
 func escAttr(s string) string {

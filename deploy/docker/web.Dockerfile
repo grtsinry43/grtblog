@@ -23,7 +23,9 @@ COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/build /app/build
+COPY deploy/docker/renderer-entrypoint.sh /usr/local/bin/renderer-entrypoint.sh
+RUN chmod +x /usr/local/bin/renderer-entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["node", "build/index.js"]
+ENTRYPOINT ["/usr/local/bin/renderer-entrypoint.sh"]

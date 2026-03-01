@@ -191,18 +191,20 @@
 						<Maximize2 size={12} />
 					{/if}
 				</button>
-				<button
-					onclick={() => windowStore.minimize()}
-					class="p-1 rounded-full hover:bg-ink-200/50 dark:hover:bg-ink-800/50 text-ink-400 transition-colors"
-				>
-					<Minus size={isMobile ? 16 : 12} />
-				</button>
-				<button
-					onclick={() => windowStore.close()}
-					class="p-1 rounded-full hover:bg-cinnabar-500 hover:text-white text-ink-400 transition-all"
-				>
-					<X size={isMobile ? 16 : 12} />
-				</button>
+				{#if !isMobile}
+					<button
+						onclick={() => windowStore.minimize()}
+						class="p-1 rounded-full hover:bg-ink-200/50 dark:hover:bg-ink-800/50 text-ink-400 transition-colors"
+					>
+						<Minus size={12} />
+					</button>
+					<button
+						onclick={() => windowStore.close()}
+						class="p-1 rounded-full hover:bg-cinnabar-500 hover:text-white text-ink-400 transition-all"
+					>
+						<X size={12} />
+					</button>
+				{/if}
 			</div>
 		</div>
 

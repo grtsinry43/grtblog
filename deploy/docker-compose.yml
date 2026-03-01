@@ -7,6 +7,7 @@ services:
       dockerfile: deploy/docker/server.Dockerfile
       args:
         APP_VERSION: "${APP_VERSION:-local}"
+        BUILD_COMMIT: "${BUILD_COMMIT:-unknown}"
     container_name: grtblog-server
     environment:
       APP_ENV: production
@@ -22,8 +23,6 @@ services:
       REDIS_PREFIX: "${REDIS_PREFIX:-grtblog:}"
       HTMLSNAPSHOT_BASE_URL: "http://renderer:3000"
     depends_on:
-      migrate:
-        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -38,29 +37,6 @@ services:
       - grtblog-internal
     restart: unless-stopped
 
-  migrate:
-    image: "${IMAGE_REPO_PREFIX:-}grtblog-server:${APP_VERSION:-local}"
-    container_name: grtblog-migrate
-    environment:
-      DB_DSN: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-grtblog}?sslmode=disable"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command:
-      [
-        "goose",
-        "-table",
-        "public.goose_db_version",
-        "-dir",
-        "/app/migrations",
-        "postgres",
-        "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-grtblog}?sslmode=disable",
-        "up"
-      ]
-    networks:
-      - grtblog-internal
-    restart: "no"
-
   renderer:
     image: "${IMAGE_REPO_PREFIX:-}grtblog-renderer:${APP_VERSION:-local}"
     build:
@@ -72,16 +48,23 @@ services:
       HOST: 0.0.0.0
       PORT: "3000"
       INTERNAL_API_BASE_URL: "http://server:8080/api/v2"
+    volumes:
+      - ./storage/html:/assets
     networks:
       - grtblog-internal
     restart: unless-stopped
 
-  admin:
-    image: "${IMAGE_REPO_PREFIX:-}grtblog-admin:${APP_VERSION:-local}"
-    build:
-      context: ..
-      dockerfile: deploy/docker/admin.Dockerfile
-    container_name: grtblog-admin
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: grtblog-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./storage/html:/usr/share/nginx/html:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server
+      - renderer
     networks:
       - grtblog-internal
     restart: unless-stopped

@@ -271,7 +271,7 @@ const getStatusType = (usage: number) => {
         
         <!-- Raw Info Footer (Collapsible or subtle) -->
         <div class="text-center">
-           <span class="text-xs text-gray-400">系统版本: {{ status.app.version }} | 启动时间: {{ new Date(status.app.startTime).toLocaleString() }}</span>
+           <span class="text-xs text-gray-400">系统版本: {{ status.app.version }}{{ status.app.commit ? ` (${status.app.commit})` : '' }} | 启动时间: {{ new Date(status.app.startTime).toLocaleString() }}</span>
         </div>
 
       </div>

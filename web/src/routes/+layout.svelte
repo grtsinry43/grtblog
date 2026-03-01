@@ -20,6 +20,8 @@
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { presenceStore } from '$lib/features/presence/store.svelte';
 	import { ownerStatusStore } from '$lib/features/owner-status/store.svelte';
+	import { siteHealthStore } from '$lib/features/site-health/store.svelte';
+	import SiteHealthBanner from '$lib/features/site-health/components/SiteHealthBanner.svelte';
 	import { resolvePresenceView } from '$lib/features/presence/resolve-view';
 	import PresencePagesWindow from '$lib/features/presence/components/PresencePagesWindow.svelte';
 	import ThinkingCommentsWindow from '$lib/features/thinking/components/ThinkingCommentsWindow.svelte';
@@ -60,6 +62,13 @@
 	let showRouteLoading = $state(false);
 
 	websiteInfoCtx.mountModelData(() => data.websiteInfo ?? null);
+
+	// Initialize health state from SSR data (one-time).
+	$effect(() => {
+		if (data.healthData) {
+			siteHealthStore.initFromSSR(data.healthData);
+		}
+	});
 
 	const readDetailPanelFromPageData = (view: unknown): DetailPanelModel => {
 		const empty = createEmptyDetailPanelModel();
@@ -160,9 +169,11 @@
 		consoleLogInfo();
 		presenceStore.start();
 		ownerStatusStore.start();
+		siteHealthStore.start();
 		return () => {
 			presenceStore.stop();
 			ownerStatusStore.stop();
+			siteHealthStore.stop();
 		};
 	});
 
@@ -205,7 +216,7 @@
 	<link rel="apple-touch-icon" href={siteFavicon} />
 	<title>{seoMeta.title}</title>
 	<link rel="canonical" href={seoMeta.canonicalUrl} />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 	<meta name="description" content={seoMeta.description} />
 	<meta name="keywords" content={seoMeta.keywords} />
 	<meta name="robots" content={seoMeta.robots} />
@@ -251,6 +262,7 @@
 <div class="bg-noise" aria-hidden="true"></div>
 
 <div class="md:pl-24 transition-[padding] duration-300">
+	<SiteHealthBanner />
 	<main
 		class="page-wrapper mx-auto {page.url.pathname.startsWith('/timeline')
 			? 'max-w-none px-0 py-0'
@@ -299,6 +311,11 @@
 		<QueryRoot
 			loader={() => import('$lib/features/user-center/components/UserCenterWindow.svelte')}
 		/>
+	{:else if windowStore.kind === 'login'}
+		<QueryRoot
+			loader={() => import('$lib/features/auth/components/AuthClient.svelte')}
+			fallback={authFallback}
+		/>
 	{:else}
 		<div class="flex flex-col gap-3"></div>
 	{/if}
@@ -318,10 +335,6 @@
 {#snippet authFallback()}
 	<div></div>
 {/snippet}
-<QueryRoot
-	loader={() => import('$lib/features/auth/components/AuthClient.svelte')}
-	fallback={authFallback}
-/>
 
 <style lang="postcss">
 	@reference "./layout.css";

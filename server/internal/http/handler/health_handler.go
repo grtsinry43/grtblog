@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
@@ -20,6 +21,7 @@ type HealthHandler struct {
 	db          *gorm.DB
 	redisClient *redis.Client
 	version     string
+	healthState *health.State
 }
 
 type ComponentHealthProbe struct {
@@ -29,12 +31,13 @@ type ComponentHealthProbe struct {
 	Version string `json:"version,omitempty"`
 }
 
-func NewHealthHandler(cfg config.AppConfig, db *gorm.DB, redisClient *redis.Client) *HealthHandler {
+func NewHealthHandler(cfg config.AppConfig, db *gorm.DB, redisClient *redis.Client, healthState *health.State) *HealthHandler {
 	return &HealthHandler{
 		cfg:         cfg,
 		db:          db,
 		redisClient: redisClient,
 		version:     buildinfo.Version(),
+		healthState: healthState,
 	}
 }
 
@@ -98,20 +101,44 @@ func (h *HealthHandler) Readiness(c *fiber.Ctx) error {
 		},
 	}
 
+	// Derive health state fields from the state machine (if available).
+	var maintenance bool
+	var healthBits uint8
+	var healthMode string
+	var isDev bool
+	if h.healthState != nil {
+		snap := h.healthState.Snapshot()
+		maintenance = snap.Maintenance
+		healthBits = snap.HealthBits
+		healthMode = string(snap.Mode)
+		isDev = snap.IsDev
+	} else {
+		healthMode = globalStatus
+		isDev = h.cfg.Env == "development"
+	}
+
 	data := struct {
-		Status     string                 `json:"status"`
-		App        string                 `json:"app"`
-		Env        string                 `json:"env"`
-		Version    string                 `json:"version"`
-		Time       time.Time              `json:"time"`
-		Components []ComponentHealthProbe `json:"components"`
+		Status      string                 `json:"status"`
+		App         string                 `json:"app"`
+		Env         string                 `json:"env"`
+		Version     string                 `json:"version"`
+		Time        time.Time              `json:"time"`
+		Components  []ComponentHealthProbe `json:"components"`
+		Maintenance bool                   `json:"maintenance"`
+		HealthBits  uint8                  `json:"healthBits"`
+		HealthMode  string                 `json:"healthMode"`
+		IsDev       bool                   `json:"isDev"`
 	}{
-		Status:     globalStatus,
-		App:        h.cfg.Name,
-		Env:        h.cfg.Env,
-		Version:    h.version,
-		Time:       time.Now().UTC(),
-		Components: components,
+		Status:      globalStatus,
+		App:         h.cfg.Name,
+		Env:         h.cfg.Env,
+		Version:     h.version,
+		Time:        time.Now().UTC(),
+		Components:  components,
+		Maintenance: maintenance,
+		HealthBits:  healthBits,
+		HealthMode:  healthMode,
+		IsDev:       isDev,
 	}
 
 	return response.SuccessWithMessage(c, data, globalStatus)

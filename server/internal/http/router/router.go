@@ -4,7 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +19,7 @@ import (
 	appcomment "github.com/grtsinry43/grtblog-v2/server/internal/app/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
@@ -51,11 +55,19 @@ type Dependencies struct {
 	HTMLSnapshot  *htmlsnapshot.Service
 	ISR           *isr.Service
 	OwnerStatus   *ownerstatus.Service
+	HealthState   *health.State
+	HealthChecker *health.Checker
 }
 
 // Register wires up all HTTP endpoints with middlewares.
 func Register(app *fiber.App, deps Dependencies) {
-	healthHandler := handler.NewHealthHandler(deps.Config.App, deps.DB, deps.Redis)
+	// Health state machine.
+	isDev := strings.ToLower(deps.Config.App.Env) == "development"
+	if deps.HealthState == nil {
+		deps.HealthState = health.NewState(isDev)
+	}
+
+	healthHandler := handler.NewHealthHandler(deps.Config.App, deps.DB, deps.Redis, deps.HealthState)
 
 	app.Get("/health/liveness", healthHandler.Liveness)
 	app.Get("/health/readiness", healthHandler.Readiness)
@@ -84,6 +96,12 @@ func Register(app *fiber.App, deps Dependencies) {
 	ws.RegisterPageUpdateSubscriber(eventBus, wsManager)
 	ws.RegisterNotificationSubscriber(eventBus, wsManager)
 	ws.RegisterGlobalNotificationSubscriber(eventBus, wsManager)
+	ws.RegisterHealthSubscriber(eventBus, wsManager)
+
+	// Create health checker (will be started by server.Start).
+	if deps.HealthChecker == nil {
+		deps.HealthChecker = health.NewChecker(deps.HealthState, deps.DB, deps.Redis, sysCfgSvc, eventBus, 0, deps.Config.App.HTMLSnapshotBaseURL)
+	}
 
 	webhookSettings, err := sysCfgSvc.WebhookSettings(context.Background())
 	if err != nil {
@@ -206,4 +224,28 @@ func Register(app *fiber.App, deps Dependencies) {
 	app.Get("/docs", docsHandler.Scalar)
 
 	registerFederationRoutes(app, deps)
+	registerAdminSPA(app)
+}
+
+// registerAdminSPA serves the admin Vue SPA with client-side routing support.
+func registerAdminSPA(app *fiber.App) {
+	const dir = "admin"
+
+	app.Get("/admin", func(c *fiber.Ctx) error {
+		return c.Redirect("/admin/")
+	})
+
+	app.Get("/admin/*", func(c *fiber.Ctx) error {
+		sub := c.Params("*")
+		if sub != "" {
+			// path.Clean prevents directory traversal
+			clean := path.Clean("/" + sub)
+			fp := filepath.Join(dir, clean)
+			if info, err := os.Stat(fp); err == nil && !info.IsDir() {
+				return c.SendFile(fp)
+			}
+		}
+		// SPA fallback: serve index.html for client-side routing
+		return c.SendFile(filepath.Join(dir, "index.html"))
+	})
 }

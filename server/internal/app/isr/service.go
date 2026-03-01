@@ -218,6 +218,7 @@ func (s *Service) DiscoverRoutes(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	routes = append(routes, "/posts")
 	routes = append(routes, articleRoutes...)
 	for page := int64(1); page <= articleTotalPages; page++ {
 		routes = append(routes, fmt.Sprintf("/posts/page/%d", page))

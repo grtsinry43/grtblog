@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { postDetailCtx } from '$lib/features/post/context';
 	import { sameMetrics } from './selector-equals';
-	import { formatDateCN } from '$lib/shared/utils/date';
+	import { formatDateCN, isDifferentDay } from '$lib/shared/utils/date';
 	import { ArrowLeft, Calendar, Clock } from 'lucide-svelte';
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/ui/primitives/button/Button.svelte';
@@ -14,6 +14,8 @@
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
 	const createdAtStore = postDetailCtx.selectModelData((data) => data?.createdAt ?? '');
+	const updatedAtStore = postDetailCtx.selectModelData((data) => data?.updatedAt ?? '');
+	const showUpdated = $derived(isDifferentDay($createdAtStore, $updatedAtStore));
 	const isHotStore = postDetailCtx.selectModelData((data) => data?.isHot ?? false);
 	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
 		equals: sameMetrics
@@ -90,7 +92,7 @@
 				{/if}
 				<span class="flex items-center gap-1.5">
 					<Calendar size={12} />
-					{formatDateCN($createdAtStore)}
+					{formatDateCN($createdAtStore)}{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN($updatedAtStore)}）</span>{/if}
 				</span>
 				<span class="flex items-center gap-1.5"><Clock size={12} /> 12 分钟阅读</span>
 				<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>

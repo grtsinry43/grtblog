@@ -88,12 +88,10 @@
 		/>
 	</article>
 
-	{#if toc.length}
-		<MomentDetailTocSidebar
-			{toc}
-			{contentRoot}
-			{activeAnchor}
-			onAnchorChange={handleActiveAnchorChange}
-		/>
-	{/if}
+	<MomentDetailTocSidebar
+		{toc}
+		{contentRoot}
+		{activeAnchor}
+		onAnchorChange={handleActiveAnchorChange}
+	/>
 </div>

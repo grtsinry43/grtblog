@@ -338,38 +338,3 @@ button {
 	}
 }
 
-/* Federation Mention (rendered as <fed-mention> custom element by server) */
-fed-mention {
-	display: inline;
-	padding: 0.1em 0.5em;
-	border-radius: 9999px;
-	font-size: 0.85em;
-	font-weight: 500;
-}
-
-fed-mention[data-status='delivered'],
-fed-mention[data-status='accepted'],
-fed-mention[data-status='approved'] {
-	background: var(--color-jade-100);
-	color: var(--color-jade-700);
-}
-
-:where(.dark) fed-mention[data-status='delivered'],
-:where(.dark) fed-mention[data-status='accepted'],
-:where(.dark) fed-mention[data-status='approved'] {
-	background: color-mix(in srgb, var(--color-jade-800) 40%, transparent);
-	color: var(--color-jade-300);
-}
-
-fed-mention[data-status='pending'] {
-	background: var(--color-ink-100);
-	color: var(--color-ink-500);
-	opacity: 0.6;
-}
-
-fed-mention[data-status='failed'],
-fed-mention[data-status='dead'] {
-	text-decoration: line-through;
-	opacity: 0.5;
-	color: var(--color-ink-400);
-}

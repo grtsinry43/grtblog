@@ -111,6 +111,17 @@ export const markdownComponents: MarkdownComponentDefinition[] = [
 		insertTemplate: '',
 	},
 	{
+		name: 'fed-mention',
+		label: 'Federation Mention',
+		description: '联合提及（服务端生成）',
+		attrs: [
+			{ key: 'user', label: '用户' },
+			{ key: 'instance', label: '实例' },
+			{ key: 'status', label: '状态' },
+		],
+		insertTemplate: '',
+	},
+	{
 		name: 'link-card',
 		label: 'Link Card',
 		description: '链接卡片',

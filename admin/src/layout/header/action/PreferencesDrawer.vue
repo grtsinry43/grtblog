@@ -12,12 +12,12 @@ import {
   NSlider,
   NInputNumber,
 } from 'naive-ui'
-import { h, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
 
-import packageJson from '@/../package.json'
 import { ButtonAnimation, ButtonAnimationProvider, CollapseTransitionTrigger } from '@/components'
 import { useComponentThemeOverrides, useInjection } from '@/composables'
 import { mediaQueryInjectionKey } from '@/injection'
+import { getSystemStatus } from '@/services/system'
 import { usePreferencesStore, toRefsPreferencesStore } from '@/stores'
 import { ccAPCA } from '@/utils/chromaHelper'
 import twc from '@/utils/tailwindColor'
@@ -36,6 +36,17 @@ const { preferences, themeColor, sidebarMenu, isDark } = toRefsPreferencesStore(
 const modal = useModal()
 
 const showPreferencesDrawer = ref(false)
+const serverVersion = ref('')
+
+onMounted(() => {
+  getSystemStatus().then((res) => {
+    const v = res.app.version
+    const c = res.app.commit
+    serverVersion.value = c ? `${v} (${c})` : v
+  }).catch(() => {
+    serverVersion.value = 'unknown'
+  })
+})
 
 const colorSwatches = [
   twc.red[500],
@@ -497,7 +508,7 @@ const showWatermarkModal = () => {
                   <span class="iconify size-5 ph--gear-fine" />
                   <span class="leading-4">当前版本</span>
                 </div>
-                <span class="leading-4">{{ packageJson.version }}</span>
+                <span class="leading-4">{{ serverVersion || '...' }}</span>
               </div>
             </template>
           </NDrawerContent>

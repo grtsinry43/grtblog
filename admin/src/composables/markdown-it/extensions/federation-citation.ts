@@ -20,7 +20,7 @@ export const federationCitationExtension: MarkdownExtension = (md) => {
   })
 
   md.renderer.rules.federation_citation = (tokens, idx) => {
-    const { instance, postId } = tokens[idx].meta
+    const { instance, postId } = tokens[idx]!.meta!
     const esc = md.utils.escapeHtml
     return `<div class="fed-citation-preview">\uD83D\uDD17 引用: ${esc(instance)} / ${esc(postId)}</div>`
   }

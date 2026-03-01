@@ -15,6 +15,7 @@ import (
 	"gorm.io/gorm"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
@@ -25,9 +26,11 @@ type SystemHandler struct {
 	db          *gorm.DB
 	redisClient *redis.Client
 	events      appEvent.Bus
+	healthState *health.State
 
 	// 静态/缓存数据，减少分配
 	version           string
+	commit            string
 	storageSize       uint64
 	lastStorageUpdate time.Time
 	mu                sync.RWMutex
@@ -37,7 +40,7 @@ type SystemHandler struct {
 	updateCache     SystemUpdateInfo
 }
 
-func NewSystemHandler(appCfg config.AppConfig, db *gorm.DB, redisClient *redis.Client, events appEvent.Bus) *SystemHandler {
+func NewSystemHandler(appCfg config.AppConfig, db *gorm.DB, redisClient *redis.Client, events appEvent.Bus, healthState *health.State) *SystemHandler {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
@@ -46,26 +49,32 @@ func NewSystemHandler(appCfg config.AppConfig, db *gorm.DB, redisClient *redis.C
 		db:          db,
 		redisClient: redisClient,
 		version:     buildinfo.Version(),
+		commit:      buildinfo.Commit(),
 		events:      events,
+		healthState: healthState,
 	}
 	return h
 }
 
 type SystemStatus struct {
-	App        AppInfo           `json:"app"`
-	CPU        CPUInfo           `json:"cpu"`
-	Memory     MemoryInfo        `json:"memory"`
-	Disk       DiskInfo          `json:"disk"`
-	Storage    StorageInfo       `json:"storage"`
-	Database   DatabaseStatus    `json:"database"`
-	Redis      RedisStatus       `json:"redis"`
-	Platform   PlatformInfo      `json:"platform"`
-	Components []ComponentHealth `json:"components"`
-	Update     SystemUpdateInfo  `json:"update"`
+	App          AppInfo           `json:"app"`
+	CPU          CPUInfo           `json:"cpu"`
+	Memory       MemoryInfo        `json:"memory"`
+	Disk         DiskInfo          `json:"disk"`
+	Storage      StorageInfo       `json:"storage"`
+	Database     DatabaseStatus    `json:"database"`
+	Redis        RedisStatus       `json:"redis"`
+	Platform     PlatformInfo      `json:"platform"`
+	Components   []ComponentHealth `json:"components"`
+	Update       SystemUpdateInfo  `json:"update"`
+	HealthState  uint8             `json:"healthState"`
+	HealthMode   string            `json:"healthMode"`
+	Maintenance  bool              `json:"maintenance"`
 }
 
 type AppInfo struct {
 	Version   string    `json:"version"`
+	Commit    string    `json:"commit,omitempty"`
 	GoVersion string    `json:"goVersion"`
 	StartTime time.Time `json:"startTime"`
 	Uptime    string    `json:"uptime"`
@@ -156,6 +165,7 @@ func (h *SystemHandler) GetStatus(c *fiber.Ctx) error {
 	status := SystemStatus{
 		App: AppInfo{
 			Version:   h.version,
+			Commit:    h.commit,
 			GoVersion: runtime.Version(),
 			StartTime: serverStartTime,
 			Uptime:    time.Since(serverStartTime).Truncate(time.Second).String(),
@@ -180,6 +190,12 @@ func (h *SystemHandler) GetStatus(c *fiber.Ctx) error {
 	}
 	status.Components = h.buildComponents(status)
 	status.Update = h.peekCachedUpdateCheck()
+	if h.healthState != nil {
+		snap := h.healthState.Snapshot()
+		status.HealthState = snap.HealthBits
+		status.HealthMode = string(snap.Mode)
+		status.Maintenance = snap.Maintenance
+	}
 
 	if status.Database.Status != "connected" || (status.Redis.Status != "connected" && status.Redis.Status != "not_configured") {
 		_ = h.events.Publish(c.UserContext(), appEvent.Generic{

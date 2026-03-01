@@ -23,6 +23,8 @@ import Gallery from '$lib/ui/markdown/Gallery.svelte';
 import Timeline from '$lib/ui/markdown/Timeline.svelte';
 import ChatHistory from '$lib/ui/markdown/ChatHistory.svelte';
 import FederationCitation from '$lib/ui/markdown/FederationCitation.svelte';
+import FederationMention from '$lib/ui/markdown/FederationMention.svelte';
+import { federationMentionPlugin } from '$lib/shared/markdown/federation-mention-plugin';
 
 // 显式确保这些块被解析
 const componentBlocks = Object.fromEntries(
@@ -57,12 +59,13 @@ export const markdownComponents: SvmdComponentMap = {
 	'chat-history': ChatHistory,
 	'year-card': YearCard,
 	'link-card': LinkCard,
-	'fed-citation': FederationCitation
+	'fed-citation': FederationCitation,
+	'fed-mention': FederationMention
 };
 
 export const markdownParseOptions: SvmdParseOptions = {
 	componentBlocks,
-	markdownItPlugins: [],
+	markdownItPlugins: [federationMentionPlugin],
 	markdownItOptions: {
 		html: true,
 		linkify: true,

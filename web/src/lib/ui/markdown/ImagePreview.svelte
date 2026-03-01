@@ -101,6 +101,67 @@
 		isDragging = false;
 	};
 
+	// --- Touch: pinch-to-zoom & drag ---
+	let touchStartDist = 0;
+	let touchStartScale = 1;
+	let touchStartTx = 0;
+	let touchStartTy = 0;
+	let touchStartMid = { x: 0, y: 0 };
+	let isTouchDragging = false;
+	let touchMoved = false;
+
+	const getTouchDist = (t: TouchList) => {
+		const dx = t[1].clientX - t[0].clientX;
+		const dy = t[1].clientY - t[0].clientY;
+		return Math.hypot(dx, dy);
+	};
+	const getTouchMid = (t: TouchList) => ({
+		x: (t[0].clientX + t[1].clientX) / 2,
+		y: (t[0].clientY + t[1].clientY) / 2
+	});
+
+	const handleTouchStart = (e: TouchEvent) => {
+		touchMoved = false;
+		if (e.touches.length === 2) {
+			e.preventDefault();
+			touchStartDist = getTouchDist(e.touches);
+			touchStartScale = scale;
+			touchStartTx = tx;
+			touchStartTy = ty;
+			touchStartMid = getTouchMid(e.touches);
+		} else if (e.touches.length === 1 && scale > 1) {
+			isTouchDragging = true;
+			dragStart = { x: e.touches[0].clientX - tx, y: e.touches[0].clientY - ty };
+		}
+	};
+
+	const handleTouchMove = (e: TouchEvent) => {
+		touchMoved = true;
+		if (e.touches.length === 2) {
+			e.preventDefault();
+			const dist = getTouchDist(e.touches);
+			const mid = getTouchMid(e.touches);
+			const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, touchStartScale * (dist / touchStartDist)));
+			// pan to keep midpoint stable
+			tx = touchStartTx + (mid.x - touchStartMid.x) + (touchStartMid.x - window.innerWidth / 2) * (1 - newScale / touchStartScale);
+			ty = touchStartTy + (mid.y - touchStartMid.y) + (touchStartMid.y - window.innerHeight / 2) * (1 - newScale / touchStartScale);
+			scale = newScale;
+			if (scale <= 1) { tx = 0; ty = 0; }
+		} else if (e.touches.length === 1 && isTouchDragging) {
+			tx = e.touches[0].clientX - dragStart.x;
+			ty = e.touches[0].clientY - dragStart.y;
+		}
+	};
+
+	const handleTouchEnd = (e: TouchEvent) => {
+		if (e.touches.length < 2) {
+			touchStartDist = 0;
+		}
+		if (e.touches.length === 0) {
+			isTouchDragging = false;
+		}
+	};
+
 	const handleKeydown = (e: KeyboardEvent) => {
 		switch (e.key) {
 			case 'Escape':
@@ -128,14 +189,28 @@
 	};
 
 	// Non-passive wheel listener (needed for e.preventDefault() to work)
+	// Also attaches touch listeners for pinch-to-zoom
 	function wheelAction(node: HTMLElement) {
 		node.addEventListener('wheel', handleWheel, { passive: false });
+		node.addEventListener('touchstart', handleTouchStart, { passive: false });
+		node.addEventListener('touchmove', handleTouchMove, { passive: false });
+		node.addEventListener('touchend', handleTouchEnd);
 		return {
 			destroy() {
 				node.removeEventListener('wheel', handleWheel);
+				node.removeEventListener('touchstart', handleTouchStart);
+				node.removeEventListener('touchmove', handleTouchMove);
+				node.removeEventListener('touchend', handleTouchEnd);
 			}
 		};
 	}
+
+	// Click on stage (blank area) to close — don't close if user was dragging/pinching
+	const handleStageClick = (e: MouseEvent | TouchEvent) => {
+		if (e.target === e.currentTarget && scale <= 1) {
+			triggerClose();
+		}
+	};
 
 	// FLIP entrance animation
 	$effect(() => {
@@ -236,6 +311,7 @@
 		class:ip-dragging={isDragging}
 		class:ip-grab={scale > 1}
 		onmousedown={handleMouseDown}
+		onclick={handleStageClick}
 		use:wheelAction
 	>
 		<img
@@ -383,6 +459,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		touch-action: none;
 	}
 	:global(.ip-grab) {
 		cursor: grab;

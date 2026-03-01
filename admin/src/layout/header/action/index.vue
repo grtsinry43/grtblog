@@ -6,6 +6,8 @@ import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey } from '@/injection'
 import { toRefsPreferencesStore } from '@/stores'
 
+import DevModeBadge from '@/components/health/DevModeBadge.vue'
+
 import FullScreen from './FullScreen.vue'
 import Notification from './Notification.vue'
 import PreferencesDrawer from './PreferencesDrawer.vue'
@@ -26,6 +28,7 @@ const { navigationMode } = toRefsPreferencesStore()
 </script>
 <template>
   <div class="flex items-center">
+    <DevModeBadge />
     <ButtonAnimation
       :animation="false"
       tag="a"

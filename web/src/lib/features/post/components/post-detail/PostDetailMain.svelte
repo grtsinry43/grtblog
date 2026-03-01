@@ -43,12 +43,10 @@
 		<PostDetailComments />
 	</main>
 
-	{#if $tocStore.length}
-		<PostDetailTocSidebar
-			toc={$tocStore}
-			{contentRoot}
-			{activeAnchor}
-			onAnchorChange={handleActiveAnchorChange}
-		/>
-	{/if}
+	<PostDetailTocSidebar
+		toc={$tocStore}
+		{contentRoot}
+		{activeAnchor}
+		onAnchorChange={handleActiveAnchorChange}
+	/>
 </div>

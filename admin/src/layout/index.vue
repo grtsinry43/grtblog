@@ -5,13 +5,16 @@ import { computed, defineAsyncComponent, h, onMounted, onUnmounted, watch } from
 
 import texturePng from '@/assets/texture.png'
 import { CollapseTransition, EmptyPlaceholder } from '@/components'
+import HealthBanner from '@/components/health/HealthBanner.vue'
+import DevModeBadge from '@/components/health/DevModeBadge.vue'
 import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey, layoutInjectionKey } from '@/injection'
 import { adminRealtimeWSCore } from '@/services/realtime-ws'
 import { getSystemUpdateCheck } from '@/services/system'
-import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore } from '@/stores'
+import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore, useHealthStore } from '@/stores'
 
 import type { OwnerStatusPayload } from '@/services/owner-status'
+import type { HealthWSPayload } from '@/services/health'
 
 import FooterLayout from './footer/index.vue'
 import HeaderLayout from './header/index.vue'
@@ -32,6 +35,7 @@ const {
 } = toRefsPreferencesStore()
 const { token, user } = toRefsUserStore()
 const realtimeStore = useRealtimeStore()
+const healthStore = useHealthStore()
 const queryClient = useQueryClient()
 
 const AsyncMobileHeader = defineAsyncComponent(() => import('./mobile/MobileHeader.vue'))
@@ -94,6 +98,12 @@ const stopRealtimeConnectionListener = adminRealtimeWSCore.onConnection((connect
 })
 
 const stopRealtimeMessageListener = adminRealtimeWSCore.onMessage((payload) => {
+  // Dispatch health state messages.
+  if (payload && typeof payload === 'object' && (payload as Record<string, unknown>).type === 'system.health.state') {
+    healthStore.handleWSMessage(payload as HealthWSPayload)
+    return
+  }
+
   const ownerStatus = normalizeOwnerStatusPayload(payload)
   if (!ownerStatus) return
   queryClient.setQueryData(['owner-status', 'user-dropdown'], ownerStatus)
@@ -128,9 +138,11 @@ onUnmounted(() => {
   stopRealtimeMessageListener()
   adminRealtimeWSCore.stop()
   realtimeStore.setRealtimeWsConnected(false)
+  healthStore.stopPolling()
 })
 
 onMounted(() => {
+  healthStore.startPolling()
   void queryClient.prefetchQuery({
     queryKey: ['system-update-check'],
     queryFn: () => getSystemUpdateCheck(false),
@@ -191,6 +203,7 @@ function normalizeOwnerStatusPayload(payload: unknown): OwnerStatusPayload | nul
         }
       "
     >
+      <HealthBanner />
       <HeaderLayout v-if="!isMaxSm" />
       <AsyncMobileHeader v-else />
       <div class="flex flex-1 overflow-hidden">
