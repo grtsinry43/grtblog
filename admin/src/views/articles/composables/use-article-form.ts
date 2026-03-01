@@ -29,6 +29,7 @@ export function useArticleForm() {
   const form = reactive({
     title: '',
     summary: '',
+    aiSummary: null as string | null,
     leadIn: '',
     content: '',
     cover: '',
@@ -67,6 +68,7 @@ export function useArticleForm() {
       // 数据回填
       form.title = data.title
       form.summary = data.summary || ''
+      form.aiSummary = data.aiSummary ?? null
       form.leadIn = data.leadIn || ''
       form.content = data.content
       form.cover = data.cover || ''
@@ -103,9 +105,10 @@ export function useArticleForm() {
       // 构造 payload，去除空字符串
       const payload = {
         ...form,
+        aiSummary: form.aiSummary || null,
         leadIn: form.leadIn || null,
         cover: form.cover || null,
-        shortUrl: form.shortUrl, // Update usually requires shortUrl to be present. If it can be empty, check API. Assuming non-empty for update.
+        shortUrl: form.shortUrl,
         extInfo: extInfo.value ?? undefined,
       }
 

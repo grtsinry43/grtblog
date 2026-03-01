@@ -21,9 +21,10 @@ import {
 } from 'naive-ui'
 import { computed, onMounted, ref, toRef } from 'vue'
 
-import { generateTitle } from '@/services/ai'
+import { generateTitle, generateSummaryStream } from '@/services/ai'
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
+import MultiImageInput from '@/components/image-picker/MultiImageInput.vue'
 
 import { useMomentForm } from './composables/use-moment-form'
 import { useMomentTaxonomySelect } from './composables/use-moment-taxonomy-select'
@@ -71,6 +72,44 @@ async function handleAIGenerate() {
   } finally {
     aiGenerating.value = false
   }
+}
+
+// AI 摘要生成
+const aiSummaryLoading = ref(false)
+const aiSummaryResult = ref('')
+const aiSummaryDone = ref(false)
+
+async function handleAISummary() {
+  if (!form.content?.trim()) {
+    message.warning('请先输入内容')
+    return
+  }
+  aiSummaryLoading.value = true
+  aiSummaryResult.value = ''
+  aiSummaryDone.value = false
+  try {
+    await generateSummaryStream(form.content, (chunk) => {
+      aiSummaryResult.value += chunk
+    })
+    aiSummaryDone.value = true
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : 'AI 摘要生成失败')
+    aiSummaryResult.value = ''
+  } finally {
+    aiSummaryLoading.value = false
+  }
+}
+
+function adoptAISummary() {
+  form.aiSummary = aiSummaryResult.value
+  aiSummaryResult.value = ''
+  aiSummaryDone.value = false
+  message.success('已采纳 AI 摘要')
+}
+
+function dismissAISummary() {
+  aiSummaryResult.value = ''
+  aiSummaryDone.value = false
 }
 
 const stats = computed(() => getStats(form.content))
@@ -395,28 +434,77 @@ onMounted(async () => {
               class="space-y-4"
             >
               <NFormItem
-                label="摘要"
                 :show-feedback="false"
               >
+                <template #label>
+                  <span>摘要</span>
+                  <span class="ml-1 text-xs opacity-50">用于外显描述、OG 信息、SEO</span>
+                </template>
                 <NInput
                   v-model:value="form.summary"
                   type="textarea"
-                  placeholder="简短的摘要..."
+                  placeholder="外显摘要，用于列表卡片、网页描述、社交分享..."
                   :autosize="{ minRows: 2, maxRows: 4 }"
                 />
               </NFormItem>
               <NFormItem
+                :show-feedback="false"
+              >
+                <template #label>
+                  <span>AI 摘要</span>
+                  <span class="ml-1 text-xs opacity-50">用于正文前的总结导读</span>
+                </template>
+                <NInput
+                  v-model:value="form.aiSummary"
+                  type="textarea"
+                  placeholder="AI 生成的内容导读，展示在正文之前..."
+                  :autosize="{ minRows: 2, maxRows: 4 }"
+                />
+              </NFormItem>
+              <div class="flex flex-col gap-2">
+                <NButton
+                  size="small"
+                  :loading="aiSummaryLoading"
+                  :disabled="!form.content?.trim() || aiSummaryLoading"
+                  @click="handleAISummary"
+                >
+                  <template #icon><div class="iconify ph--sparkle" /></template>
+                  AI 生成导读摘要
+                </NButton>
+                <div
+                  v-if="aiSummaryLoading || aiSummaryResult"
+                  class="rounded-lg border border-current/10 p-3 text-sm leading-relaxed"
+                >
+                  <span>{{ aiSummaryResult }}</span>
+                  <span
+                    v-if="aiSummaryLoading"
+                    class="inline-block w-1.5 animate-pulse bg-current"
+                    >&nbsp;</span
+                  >
+                </div>
+                <div
+                  v-if="aiSummaryDone"
+                  class="flex justify-end gap-2"
+                >
+                  <NButton
+                    size="small"
+                    quaternary
+                    @click="dismissAISummary"
+                    >放弃</NButton
+                  >
+                  <NButton
+                    size="small"
+                    type="primary"
+                    @click="adoptAISummary"
+                    >采纳</NButton
+                  >
+                </div>
+              </div>
+              <NFormItem
                 label="配图"
                 :show-feedback="false"
               >
-                <NInput
-                  v-model:value="form.image"
-                  type="textarea"
-                  placeholder="每行一个图片 URL"
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                >
-                  <template #prefix><div class="iconify ph--image" /></template>
-                </NInput>
+                <MultiImageInput v-model:value="form.image" />
               </NFormItem>
             </NForm>
           </div>

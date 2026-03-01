@@ -61,7 +61,7 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 	article := &content.Article{
 		Title:       cmd.Title,
 		Summary:     summary,
-		AISummary:   nil, // 后续可以添加 AI 摘要功能
+		AISummary:   cmd.AISummary,
 		LeadIn:      cmd.LeadIn,
 		TOC:         toc,
 		Content:     cmd.Content,
@@ -146,6 +146,7 @@ func (s *Service) UpdateArticle(ctx context.Context, cmd UpdateArticleCmd) (*con
 	// 更新字段
 	existing.Title = cmd.Title
 	existing.Summary = summary
+	existing.AISummary = cmd.AISummary
 	existing.LeadIn = cmd.LeadIn
 	existing.TOC = toc
 	existing.Content = cmd.Content

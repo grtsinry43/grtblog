@@ -144,6 +144,55 @@ export function rewriteContent(content: string, instruction: string) {
   })
 }
 
+export async function generateSummaryStream(
+  content: string,
+  onChunk: (text: string) => void,
+): Promise<void> {
+  const token = getAuthToken()
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const resp = await fetch(`${API_BASE_URL}/admin/ai/generate-summary/stream`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content }),
+  })
+
+  if (!resp.ok) {
+    throw new Error(`请求失败（${resp.status}）`)
+  }
+
+  const reader = resp.body?.getReader()
+  if (!reader) throw new Error('无法读取响应流')
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue
+      const data = line.slice(6)
+      if (data === '[DONE]') return
+      try {
+        const parsed = JSON.parse(data) as { content?: string; error?: string }
+        if (parsed.error) throw new Error(parsed.error)
+        if (parsed.content) onChunk(parsed.content)
+      } catch (e) {
+        if (e instanceof Error && e.message !== data) throw e
+      }
+    }
+  }
+}
+
 export async function rewriteContentStream(
   content: string,
   instruction: string,

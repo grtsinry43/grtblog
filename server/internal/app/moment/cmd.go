@@ -6,6 +6,7 @@ import "time"
 type CreateMomentCmd struct {
 	Title        string
 	Summary      string
+	AISummary    *string
 	Content      string
 	Image        *string
 	ColumnID     *int64
@@ -24,6 +25,7 @@ type UpdateMomentCmd struct {
 	ID           int64
 	Title        string
 	Summary      string
+	AISummary    *string
 	Content      string
 	Image        *string
 	ColumnID     *int64

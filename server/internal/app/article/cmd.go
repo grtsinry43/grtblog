@@ -6,6 +6,7 @@ import "time"
 type CreateArticleCmd struct {
 	Title        string
 	Summary      string
+	AISummary    *string
 	LeadIn       *string
 	Content      string
 	Cover        *string
@@ -25,6 +26,7 @@ type UpdateArticleCmd struct {
 	ID           int64
 	Title        string
 	Summary      string
+	AISummary    *string
 	LeadIn       *string
 	Content      string
 	Cover        *string

@@ -10,6 +10,7 @@ import (
 type CreateArticleReq struct {
 	Title        string     `json:"title" validate:"required,max=255"`
 	Summary      string     `json:"summary"`
+	AISummary    *string    `json:"aiSummary,omitempty"`
 	LeadIn       *string    `json:"leadIn,omitempty"`
 	Content      string     `json:"content" validate:"required"`
 	Cover        *string    `json:"cover,omitempty"`
@@ -27,6 +28,7 @@ type CreateArticleReq struct {
 type createArticleReqJSON struct {
 	Title        string   `json:"title"`
 	Summary      string   `json:"summary"`
+	AISummary    *string  `json:"aiSummary"`
 	LeadIn       *string  `json:"leadIn"`
 	Content      string   `json:"content"`
 	Cover        *string  `json:"cover"`
@@ -48,6 +50,7 @@ func (r *CreateArticleReq) UnmarshalJSON(data []byte) error {
 	}
 	r.Title = aux.Title
 	r.Summary = aux.Summary
+	r.AISummary = aux.AISummary
 	r.LeadIn = aux.LeadIn
 	r.Content = aux.Content
 	r.Cover = aux.Cover
@@ -81,6 +84,7 @@ func (r *CreateArticleReq) UnmarshalJSON(data []byte) error {
 type UpdateArticleReq struct {
 	Title        string   `json:"title" validate:"required,max=255"`
 	Summary      string   `json:"summary"`
+	AISummary    *string  `json:"aiSummary,omitempty"`
 	LeadIn       *string  `json:"leadIn,omitempty"`
 	Content      string   `json:"content" validate:"required"`
 	Cover        *string  `json:"cover,omitempty"`

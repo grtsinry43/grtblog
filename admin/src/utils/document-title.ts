@@ -1,7 +1,8 @@
+import { ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
 const ADMIN_PANEL_TITLE = '管理后台'
-const DEFAULT_SITE_NAME = 'grtblog'
+const DEFAULT_SITE_NAME = 'Grtblog Admin'
 const FALLBACK_SITE_NAME = (import.meta.env.VITE_APP_NAME || DEFAULT_SITE_NAME).trim() || DEFAULT_SITE_NAME
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v2').replace(/\/$/, '')
 
@@ -15,7 +16,8 @@ interface ApiEnvelope<T> {
   data: T
 }
 
-let cachedSiteName: string | null = null
+const cachedSiteName = ref<string | null>(null)
+const cachedFavicon = ref<string | null>(null)
 let pendingSiteNameRequest: Promise<string> | null = null
 
 function toText(value: unknown): string {
@@ -60,21 +62,26 @@ function normalizeSiteName(siteName: string | null | undefined) {
   return text || FALLBACK_SITE_NAME
 }
 
-function extractSiteName(data: unknown): string {
-  if (data && typeof data === 'object' && !Array.isArray(data) && 'website_name' in data) {
-    return normalizeSiteName((data as Record<string, unknown>).website_name as string)
+function extractField(data: unknown, key: string): string | null {
+  if (data && typeof data === 'object' && !Array.isArray(data) && key in data) {
+    const val = (data as Record<string, unknown>)[key]
+    return typeof val === 'string' ? val.trim() || null : null
   }
   if (Array.isArray(data)) {
     const item = data.find(
       (it): it is WebsiteInfoItem =>
-        !!it && typeof it === 'object' && 'key' in it && (it as WebsiteInfoItem).key === 'website_name',
+        !!it && typeof it === 'object' && 'key' in it && (it as WebsiteInfoItem).key === key,
     )
-    return normalizeSiteName(item?.value)
+    return item?.value?.trim() || null
   }
-  return FALLBACK_SITE_NAME
+  return null
 }
 
-async function fetchSiteNameFromBackend() {
+function extractSiteName(data: unknown): string {
+  return normalizeSiteName(extractField(data, 'website_name'))
+}
+
+async function fetchSiteInfoFromBackend() {
   const response = await fetch(`${API_BASE_URL}/public/website-info`, {
     method: 'GET',
     headers: {
@@ -91,11 +98,16 @@ async function fetchSiteNameFromBackend() {
     throw new Error('invalid website info payload')
   }
 
+  cachedFavicon.value = extractField(payload.data, 'favicon')
   return extractSiteName(payload.data)
 }
 
 export function getCachedSiteName() {
-  return normalizeSiteName(cachedSiteName)
+  return normalizeSiteName(cachedSiteName.value)
+}
+
+export function getCachedFavicon() {
+  return cachedFavicon.value
 }
 
 export function resolveDocumentTitle(route: RouteLocationNormalizedLoaded, siteName: string) {
@@ -107,15 +119,15 @@ export function applyDocumentTitle(route: RouteLocationNormalizedLoaded, siteNam
 }
 
 export async function ensureBackendSiteName() {
-  if (cachedSiteName) return cachedSiteName
+  if (cachedSiteName.value) return cachedSiteName.value
 
   if (!pendingSiteNameRequest) {
-    pendingSiteNameRequest = fetchSiteNameFromBackend()
+    pendingSiteNameRequest = fetchSiteInfoFromBackend()
       .then((siteName) => {
-        cachedSiteName = normalizeSiteName(siteName)
-        return cachedSiteName
+        cachedSiteName.value = normalizeSiteName(siteName)
+        return cachedSiteName.value
       })
-      .catch(() => normalizeSiteName(cachedSiteName))
+      .catch(() => normalizeSiteName(cachedSiteName.value))
       .finally(() => {
         pendingSiteNameRequest = null
       })

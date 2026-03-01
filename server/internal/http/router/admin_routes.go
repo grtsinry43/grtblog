@@ -221,4 +221,5 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/ai/generate-title", aiHandler.GenerateTitle)
 	admin.Post("/ai/rewrite-content", aiHandler.RewriteContent)
 	admin.Post("/ai/rewrite-content/stream", aiHandler.RewriteContentStream)
+	admin.Post("/ai/generate-summary/stream", aiHandler.GenerateSummaryStream)
 }

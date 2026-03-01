@@ -245,10 +245,10 @@ const handleMouseLeave = () => {
             </n-tabs>
         </div>
 
-        <div class="flex-1 relative min-h-0">
-             <n-spin :show="isLoading" class="h-full flex flex-col">
+        <div class="flex-1 relative min-h-80">
+             <n-spin :show="isLoading" class="absolute inset-0 flex flex-col">
                 <EmptyPlaceholder :show="!isLoading && comments.length === 0" description="暂无评论" />
-                
+
                 <div class="flex-1 overflow-auto px-4 py-4" v-if="comments.length > 0">
                     <n-list hoverable clickable bordered>
                         <n-list-item 

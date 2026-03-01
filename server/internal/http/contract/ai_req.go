@@ -87,3 +87,11 @@ type AIRewriteContentReq struct {
 type AIRewriteContentResp struct {
 	Content string `json:"content"`
 }
+
+type AIGenerateSummaryReq struct {
+	Content string `json:"content"`
+}
+
+type AIGenerateSummaryResp struct {
+	Summary string `json:"summary"`
+}

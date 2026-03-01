@@ -72,6 +72,7 @@ export interface ListArticlesParams {
 export interface CreateArticlePayload {
   title: string
   summary: string
+  aiSummary?: string | null
   leadIn?: string | null
   content: string
   cover?: string | null
@@ -89,6 +90,7 @@ export interface CreateArticlePayload {
 export interface UpdateArticlePayload {
   title: string
   summary: string
+  aiSummary?: string | null
   leadIn?: string | null
   content: string
   cover?: string | null

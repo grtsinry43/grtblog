@@ -109,3 +109,23 @@ export function deleteTag(id: number) {
     method: 'DELETE',
   })
 }
+
+export interface TagContentItem {
+  id: number
+  title: string
+  shortUrl: string
+  summary: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TagRelatedContents {
+  articles: TagContentItem[]
+  moments: TagContentItem[]
+}
+
+export function getTagContents(id: number) {
+  return request<TagRelatedContents>(`/tags/${id}/contents`, {
+    method: 'GET',
+  })
+}

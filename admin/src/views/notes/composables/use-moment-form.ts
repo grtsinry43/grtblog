@@ -38,6 +38,7 @@ export function useMomentForm() {
   const form = reactive({
     title: '',
     summary: '',
+    aiSummary: null as string | null,
     content: '',
     image: '',
     columnId: null as number | null,
@@ -73,6 +74,7 @@ export function useMomentForm() {
 
       form.title = data.title
       form.summary = data.summary || ''
+      form.aiSummary = data.aiSummary ?? null
       form.content = data.content
       form.image = joinImages(data.image)
       form.columnId = data.columnId ?? null
@@ -107,6 +109,7 @@ export function useMomentForm() {
       const basePayload = {
         title: form.title,
         summary: form.summary,
+        aiSummary: form.aiSummary || null,
         content: form.content,
         image: images.length ? images : undefined,
         columnId: form.columnId ?? undefined,

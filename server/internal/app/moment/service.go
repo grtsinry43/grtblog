@@ -59,7 +59,7 @@ func (s *Service) CreateMoment(ctx context.Context, authorID int64, cmd CreateMo
 	moment := &content.Moment{
 		Title:       cmd.Title,
 		Summary:     summary,
-		AISummary:   nil,
+		AISummary:   cmd.AISummary,
 		TOC:         toc,
 		Content:     cmd.Content,
 		ContentHash: content.MomentContentHash(cmd.Title, summary, cmd.Content),
@@ -132,6 +132,7 @@ func (s *Service) UpdateMoment(ctx context.Context, cmd UpdateMomentCmd) (*conte
 
 	existing.Title = cmd.Title
 	existing.Summary = summary
+	existing.AISummary = cmd.AISummary
 	existing.TOC = toc
 	existing.Content = cmd.Content
 	existing.ContentHash = content.MomentContentHash(cmd.Title, summary, cmd.Content)

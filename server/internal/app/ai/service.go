@@ -47,13 +47,15 @@ type RewriteResult struct {
 }
 
 const (
-	taskKeyCommentModeration = "ai.task.commentModeration.modelId"
-	taskKeyTitleGeneration   = "ai.task.titleGeneration.modelId"
-	taskKeyContentRewrite    = "ai.task.contentRewrite.modelId"
+	taskKeyCommentModeration  = "ai.task.commentModeration.modelId"
+	taskKeyTitleGeneration    = "ai.task.titleGeneration.modelId"
+	taskKeyContentRewrite     = "ai.task.contentRewrite.modelId"
+	taskKeySummaryGeneration  = "ai.task.summaryGeneration.modelId"
 
-	promptKeyCommentModeration = "ai.prompt.commentModeration"
-	promptKeyTitleGeneration   = "ai.prompt.titleGeneration"
-	promptKeyContentRewrite    = "ai.prompt.contentRewrite"
+	promptKeyCommentModeration  = "ai.prompt.commentModeration"
+	promptKeyTitleGeneration    = "ai.prompt.titleGeneration"
+	promptKeyContentRewrite     = "ai.prompt.contentRewrite"
+	promptKeySummaryGeneration  = "ai.prompt.summaryGeneration"
 
 	defaultModerationPrompt = `你是一个博客评论审核助手。请判断以下评论是否应该通过审核。
 评判标准：
@@ -75,6 +77,8 @@ const (
 2. 根据用户指令调整文风、篇幅或表达方式
 3. 使用 Markdown 格式输出
 请直接返回改写后的内容，不要包含额外的说明。`
+
+	defaultSummaryPrompt = `你是一个博客摘要生成助手。请根据以下文章内容生成一段简洁的摘要，2-3句话概括文章核心内容。请直接返回摘要文本，不要包含额外说明。`
 )
 
 // ModerateComment 使用 AI 审核评论内容。
@@ -196,6 +200,28 @@ func (s *Service) RewriteContentStream(ctx context.Context, content, instruction
 		Messages: []infraai.ChatMessage{
 			{Role: "system", Content: prompt},
 			{Role: "user", Content: userMsg},
+		},
+	}, onChunk)
+}
+
+// GenerateSummaryStream 使用 AI 流式生成文章摘要，通过 onChunk 回调增量返回。
+func (s *Service) GenerateSummaryStream(ctx context.Context, content string, onChunk func(string) error) error {
+	if err := s.checkEnabled(ctx); err != nil {
+		return err
+	}
+
+	client, modelID, err := s.buildClient(ctx, taskKeySummaryGeneration)
+	if err != nil {
+		return fmt.Errorf("build ai client: %w", err)
+	}
+
+	prompt := s.readPrompt(ctx, promptKeySummaryGeneration, defaultSummaryPrompt)
+
+	return client.ChatStream(ctx, infraai.ChatRequest{
+		Model: modelID,
+		Messages: []infraai.ChatMessage{
+			{Role: "system", Content: prompt},
+			{Role: "user", Content: content},
 		},
 	}, onChunk)
 }

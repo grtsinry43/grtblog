@@ -10,6 +10,7 @@ import (
 type CreateMomentReq struct {
 	Title        string     `json:"title" validate:"required,max=255"`
 	Summary      string     `json:"summary"`
+	AISummary    *string    `json:"aiSummary,omitempty"`
 	Content      string     `json:"content" validate:"required"`
 	Image        []string   `json:"image,omitempty"`
 	ColumnID     *int64     `json:"columnId,omitempty"`
@@ -26,6 +27,7 @@ type CreateMomentReq struct {
 type createMomentReqJSON struct {
 	Title        string   `json:"title"`
 	Summary      string   `json:"summary"`
+	AISummary    *string  `json:"aiSummary"`
 	Content      string   `json:"content"`
 	Image        []string `json:"image"`
 	ColumnID     *int64   `json:"columnId"`
@@ -46,6 +48,7 @@ func (r *CreateMomentReq) UnmarshalJSON(data []byte) error {
 	}
 	r.Title = aux.Title
 	r.Summary = aux.Summary
+	r.AISummary = aux.AISummary
 	r.Content = aux.Content
 	r.Image = aux.Image
 	r.ColumnID = aux.ColumnID
@@ -78,6 +81,7 @@ func (r *CreateMomentReq) UnmarshalJSON(data []byte) error {
 type UpdateMomentReq struct {
 	Title        string   `json:"title" validate:"required,max=255"`
 	Summary      string   `json:"summary"`
+	AISummary    *string  `json:"aiSummary,omitempty"`
 	Content      string   `json:"content" validate:"required"`
 	Image        []string `json:"image,omitempty"`
 	ColumnID     *int64   `json:"columnId,omitempty"`

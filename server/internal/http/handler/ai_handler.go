@@ -326,6 +326,41 @@ func (h *AIHandler) RewriteContentStream(c *fiber.Ctx) error {
 	return nil
 }
 
+func (h *AIHandler) GenerateSummaryStream(c *fiber.Ctx) error {
+	var req contract.AIGenerateSummaryReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if strings.TrimSpace(req.Content) == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "内容不能为空")
+	}
+
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		defer cancel()
+		err := h.svc.GenerateSummaryStream(ctx, req.Content, func(chunk string) error {
+			data, _ := json.Marshal(map[string]string{"content": chunk})
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
+				return err
+			}
+			return w.Flush()
+		})
+		if err != nil {
+			data, _ := json.Marshal(map[string]string{"error": err.Error()})
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			w.Flush()
+		}
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+		w.Flush()
+	})
+	return nil
+}
+
 // ── Helpers ──
 
 func isValidProviderType(t string) bool {

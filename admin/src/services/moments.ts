@@ -71,6 +71,7 @@ export interface ListMomentsParams {
 export interface CreateMomentPayload {
   title: string
   summary: string
+  aiSummary?: string | null
   content: string
   image?: string[]
   columnId?: number | null
@@ -87,6 +88,7 @@ export interface CreateMomentPayload {
 export interface UpdateMomentPayload {
   title: string
   summary: string
+  aiSummary?: string | null
   content: string
   image?: string[]
   columnId?: number | null
