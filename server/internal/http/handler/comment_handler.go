@@ -280,7 +280,7 @@ func (h *CommentHandler) GetAdminVisitorProfile(c *fiber.Ctx) error {
 	recentItems := make([]contract.AdminVisitorRecentCommentResp, 0, len(recentComments))
 	for _, item := range recentComments {
 		recentItems = append(recentItems, contract.AdminVisitorRecentCommentResp{
-			ID:        item.ID,
+			ID:        strconv.FormatInt(item.ID, 10),
 			AreaID:    item.AreaID,
 			Content:   item.Content,
 			Status:    item.Status,
@@ -329,15 +329,23 @@ func (h *CommentHandler) MarkCommentsViewed(c *fiber.Ctx) error {
 	if len(req.IDs) == 0 {
 		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
 	}
+	ids := make([]int64, 0, len(req.IDs))
+	for _, raw := range req.IDs {
+		id, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+		if err != nil || id <= 0 {
+			return response.NewBizErrorWithMsg(response.ParamsError, "ids 包含无效值")
+		}
+		ids = append(ids, id)
+	}
 	isViewed := true
 	if req.IsViewed != nil {
 		isViewed = *req.IsViewed
 	}
 	if err := h.svc.MarkCommentsViewed(c.Context(), comment.MarkCommentsViewedCmd{
-		IDs:      req.IDs,
+		IDs:      ids,
 		IsViewed: isViewed,
 	}); err != nil {
-		return err
+		return h.mapCommentError(c, err)
 	}
 	if isViewed {
 		return response.SuccessWithMessage[any](c, nil, "已标记已读")
@@ -690,7 +698,7 @@ func toAdminCommentResp(item *domaincomment.Comment) contract.AdminCommentResp {
 		content = toStringPtr(item.Content)
 	}
 	return contract.AdminCommentResp{
-		ID:                item.ID,
+		ID:                strconv.FormatInt(item.ID, 10),
 		AreaID:            item.AreaID,
 		AreaType:          item.AreaType,
 		AreaRefID:         item.AreaRefID,
@@ -717,7 +725,7 @@ func toAdminCommentResp(item *domaincomment.Comment) contract.AdminCommentResp {
 		FederatedActor:    item.FederatedActor,
 		CanReply:          item.CanReply,
 		Status:            item.Status,
-		ParentID:          item.ParentID,
+		ParentID:          int64PtrToString(item.ParentID),
 		CreatedAt:         item.CreatedAt,
 		UpdatedAt:         item.UpdatedAt,
 		DeletedAt:         item.DeletedAt,
@@ -831,6 +839,14 @@ func toStringPtr(v string) *string {
 		return nil
 	}
 	return &val
+}
+
+func int64PtrToString(v *int64) *string {
+	if v == nil {
+		return nil
+	}
+	value := strconv.FormatInt(*v, 10)
+	return &value
 }
 
 func isValidCommentStatus(status string) bool {

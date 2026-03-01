@@ -3,10 +3,8 @@ import {
   NButton,
   NCard,
   NDataTable,
-  NForm,
   NFormItem,
   NInput,
-  NModal,
   NSelect,
   NSpace,
   NSwitch,
@@ -15,10 +13,11 @@ import {
 } from 'naive-ui'
 import { computed, h, reactive, ref } from 'vue'
 
-import { ScrollContainer } from '@/components'
+import { FormModal, ScrollContainer } from '@/components'
 import { useTable } from '@/composables/table/use-table'
 import { listSiteUsers, updateSiteUser } from '@/services/site-users'
 import { toRefsUserStore } from '@/stores'
+import { formatDate } from '@/utils/format'
 
 import type { DataTableColumns } from 'naive-ui'
 import type { SiteUser } from '@/types/site-users'
@@ -129,10 +128,6 @@ const columns = computed<DataTableColumns<SiteUser>>(() => [
   },
 ])
 
-function formatDate(value?: string) {
-  if (!value) return '-'
-  return new Date(value).toLocaleString()
-}
 
 function resolveBoolFilter(raw: string): boolean | undefined {
   if (raw === 'true') return true
@@ -233,30 +228,22 @@ async function saveEdit() {
       />
     </NCard>
 
-    <NModal v-model:show="editVisible" preset="card" title="编辑用户" style="width: 560px">
-      <NForm label-placement="left" label-width="84">
-        <NFormItem label="用户名">
-          <NInput :value="formModel.username" disabled />
-        </NFormItem>
-        <NFormItem label="昵称">
-          <NInput v-model:value="formModel.nickname" placeholder="请输入昵称" />
-        </NFormItem>
-        <NFormItem label="邮箱">
-          <NInput v-model:value="formModel.email" placeholder="请输入邮箱（可留空）" />
-        </NFormItem>
-        <NFormItem label="启用">
-          <NSwitch v-model:value="formModel.isActive" :disabled="isEditingSelf" />
-        </NFormItem>
-        <NFormItem label="管理员">
-          <NSwitch v-model:value="formModel.isAdmin" :disabled="isEditingSelf" />
-        </NFormItem>
-      </NForm>
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="editVisible = false">取消</NButton>
-          <NButton type="primary" :loading="saving" @click="saveEdit">保存</NButton>
-        </NSpace>
-      </template>
-    </NModal>
+    <FormModal v-model:show="editVisible" title="编辑用户" :loading="saving" @confirm="saveEdit">
+      <NFormItem label="用户名">
+        <NInput :value="formModel.username" disabled />
+      </NFormItem>
+      <NFormItem label="昵称">
+        <NInput v-model:value="formModel.nickname" placeholder="请输入昵称" />
+      </NFormItem>
+      <NFormItem label="邮箱">
+        <NInput v-model:value="formModel.email" placeholder="请输入邮箱（可留空）" />
+      </NFormItem>
+      <NFormItem label="启用">
+        <NSwitch v-model:value="formModel.isActive" :disabled="isEditingSelf" />
+      </NFormItem>
+      <NFormItem label="管理员">
+        <NSwitch v-model:value="formModel.isAdmin" :disabled="isEditingSelf" />
+      </NFormItem>
+    </FormModal>
   </ScrollContainer>
 </template>

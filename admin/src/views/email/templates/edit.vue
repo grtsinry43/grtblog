@@ -36,9 +36,10 @@ const message = useMessage()
 const route = useRoute()
 const router = useRouter()
 
-const isEdit = computed(() => route.params.code !== 'new')
+const isEdit = computed(() => !!route.params.code)
 const loading = ref(false)
 const saving = ref(false)
+const isInternal = ref(false)
 const eventOptions = ref<{ label: string; value: string }[]>([])
 const currentEventFields = ref<AdminEventFieldResp[]>([])
 
@@ -102,7 +103,7 @@ watch(
 watch(
   () => route.params.code,
   (newCode) => {
-    if (newCode === 'new') {
+    if (!newCode) {
       form.code = ''
       form.name = ''
       form.eventName = ''
@@ -111,6 +112,7 @@ watch(
       form.textTemplate = ''
       form.toEmails = []
       form.isEnabled = true
+      isInternal.value = false
       currentEventFields.value = []
     } else {
       fetchDetail()
@@ -133,7 +135,8 @@ async function fetchDetail() {
       form.textTemplate = target.textTemplate
       form.toEmails = target.toEmails || []
       form.isEnabled = target.isEnabled
-      
+      isInternal.value = target.isInternal
+
       // Trigger fetch details
       if (form.eventName) {
         await fetchEventDetails(form.eventName)
@@ -350,8 +353,10 @@ onMounted(async () => {
                 v-model:value="form.eventName"
                 :options="eventOptions"
                 filterable
+                :disabled="isInternal"
                 placeholder="选择关联的系统事件"
               />
+              <div v-if="isInternal" class="mt-1 text-xs text-neutral-400">内置模版不允许更改触发事件</div>
             </NFormItem>
             <NFormItem label="默认收件人">
               <NSelect

@@ -17,14 +17,12 @@ import {
   NNumberAnimation,
   NResult
 } from 'naive-ui'
-import { 
-  Desktop24Regular, 
-  ArrowClockwise24Regular,
-} from '@vicons/fluent'
+import { ArrowClockwise24Regular } from '@vicons/fluent'
 import { ref, onMounted, computed } from 'vue'
 
-import { ScrollContainer } from '@/components'
+import { PageHeader, ScrollContainer } from '@/components'
 import { getSystemStatus } from '@/services/system'
+import { formatBytes } from '@/utils/format'
 
 import type { SystemStatus } from '@/services/system'
 
@@ -55,15 +53,6 @@ onMounted(() => {
   fetchData()
 })
 
-const formatBytes = (bytes: number | string, decimals = 2) => {
-  const b = typeof bytes === 'string' ? parseFloat(bytes) : bytes
-  if (isNaN(b) || b === 0) return '0 Bytes'
-  const k = 1024
-  const dm = decimals < 0 ? 0 : decimals
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-  const i = Math.floor(Math.log(b) / Math.log(k))
-  return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
-}
 
 const memoryPercentage = computed(() => {
   if (!status.value) return 0
@@ -86,24 +75,22 @@ const getStatusType = (usage: number) => {
 <template>
   <ScrollContainer wrapper-class="p-4 md:p-6 space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div>
-        <h1 class="text-2xl font-light text-gray-900 dark:text-gray-100 flex items-center gap-3">
-          <NIcon :component="Desktop24Regular" class="text-primary" />
-          <span>系统状态</span>
-        </h1>
-        <p class="text-sm text-gray-500 mt-1 pl-1">
+    <PageHeader title="系统状态" icon="ph--desktop" description="实时监控应用运行各项指标">
+      <template #description>
+        <p class="mt-1 pl-1 text-sm text-gray-500">
           实时监控应用运行各项指标
-          <span class="text-xs opacity-75 ml-2">更新于 {{ lastUpdated.toLocaleTimeString() }}</span>
+          <span class="ml-2 text-xs opacity-75">更新于 {{ lastUpdated.toLocaleTimeString() }}</span>
         </p>
-      </div>
-      <NButton :loading="loading" @click="fetchData" size="small" secondary round>
-        <template #icon>
-          <NIcon :component="ArrowClockwise24Regular" />
-        </template>
-        刷新
-      </NButton>
-    </div>
+      </template>
+      <template #actions>
+        <NButton :loading="loading" size="small" secondary round @click="fetchData">
+          <template #icon>
+            <NIcon :component="ArrowClockwise24Regular" />
+          </template>
+          刷新
+        </NButton>
+      </template>
+    </PageHeader>
 
     <NSpin :show="loading && !status">
       <div v-if="status" class="space-y-6">

@@ -27,7 +27,7 @@ import { ApiError } from '@/services/http'
 import { bootstrapObservabilityPages } from '@/services/observability'
 import { updateWebsiteInfo } from '@/services/website-info'
 import { useUserStore, usePreferencesStore } from '@/stores'
-import ThemeColorPopover from '@/views/sign-in/component/ThemeColorPopover.vue'
+import ThemeColorPopover from '@/views/sign-in/components/ThemeColorPopover.vue'
 
 import type { FormItemRule } from 'naive-ui'
 

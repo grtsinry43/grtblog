@@ -20,6 +20,13 @@ const columns: DataTableColumns<EmailTemplate> = [
     title: '名称',
     key: 'name',
     width: 200,
+    render: (row) =>
+      h('span', { class: 'inline-flex items-center gap-1.5' }, [
+        row.name,
+        row.isInternal
+          ? h(NTag, { size: 'tiny', type: 'default', bordered: false, round: true }, { default: () => '内置' })
+          : null,
+      ]),
   },
   {
     title: '编码',
@@ -65,25 +72,27 @@ const columns: DataTableColumns<EmailTemplate> = [
           },
           { default: () => '编辑' },
         ),
-        h(
-          NPopconfirm,
-          {
-            onPositiveClick: () => handleDelete(row),
-          },
-          {
-            trigger: () =>
-              h(
-                NButton,
-                {
-                  size: 'small',
-                  type: 'error',
-                  secondary: true,
-                },
-                { default: () => '删除' },
-              ),
-            default: () => '确认删除该模版？',
-          },
-        ),
+        row.isInternal
+          ? null
+          : h(
+              NPopconfirm,
+              {
+                onPositiveClick: () => handleDelete(row),
+              },
+              {
+                trigger: () =>
+                  h(
+                    NButton,
+                    {
+                      size: 'small',
+                      type: 'error',
+                      secondary: true,
+                    },
+                    { default: () => '删除' },
+                  ),
+                default: () => '确认删除该模版？',
+              },
+            ),
       ]),
   },
 ]

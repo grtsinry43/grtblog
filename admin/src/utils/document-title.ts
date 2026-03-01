@@ -60,17 +60,22 @@ function normalizeSiteName(siteName: string | null | undefined) {
   return text || FALLBACK_SITE_NAME
 }
 
-function extractSiteName(items: unknown): string {
-  if (!Array.isArray(items)) return FALLBACK_SITE_NAME
-  const websiteNameItem = items.find(
-    (item): item is WebsiteInfoItem =>
-      !!item && typeof item === 'object' && 'key' in item && (item as WebsiteInfoItem).key === 'website_name',
-  )
-  return normalizeSiteName(websiteNameItem?.value)
+function extractSiteName(data: unknown): string {
+  if (data && typeof data === 'object' && !Array.isArray(data) && 'website_name' in data) {
+    return normalizeSiteName((data as Record<string, unknown>).website_name as string)
+  }
+  if (Array.isArray(data)) {
+    const item = data.find(
+      (it): it is WebsiteInfoItem =>
+        !!it && typeof it === 'object' && 'key' in it && (it as WebsiteInfoItem).key === 'website_name',
+    )
+    return normalizeSiteName(item?.value)
+  }
+  return FALLBACK_SITE_NAME
 }
 
 async function fetchSiteNameFromBackend() {
-  const response = await fetch(`${API_BASE_URL}/website-info`, {
+  const response = await fetch(`${API_BASE_URL}/public/website-info`, {
     method: 'GET',
     headers: {
       Accept: 'application/json',

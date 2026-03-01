@@ -23,35 +23,35 @@ export function listComments(params: ListCommentsParams) {
     })
 }
 
-export function replyComment(id: number, payload: ReplyCommentPayload) {
+export function replyComment(id: string, payload: ReplyCommentPayload) {
     return request<Comment>(`/admin/comments/${id}/reply`, {
         method: 'POST',
         body: payload,
     })
 }
 
-export function updateCommentStatus(id: number, payload: UpdateCommentStatusPayload) {
+export function updateCommentStatus(id: string, payload: UpdateCommentStatusPayload) {
     return request<void>(`/admin/comments/${id}/status`, {
         method: 'PUT',
         body: payload,
     })
 }
 
-export function setCommentAuthor(id: number, payload: SetCommentAuthorPayload) {
+export function setCommentAuthor(id: string, payload: SetCommentAuthorPayload) {
     return request<void>(`/admin/comments/${id}/author`, {
         method: 'PUT',
         body: payload,
     })
 }
 
-export function setCommentTop(id: number, payload: SetCommentTopPayload) {
+export function setCommentTop(id: string, payload: SetCommentTopPayload) {
     return request<void>(`/admin/comments/${id}/top`, {
         method: 'PUT',
         body: payload,
     })
 }
 
-export function deleteComment(id: number) {
+export function deleteComment(id: string) {
     return request<void>(`/admin/comments/${id}`, {
         method: 'DELETE',
     })

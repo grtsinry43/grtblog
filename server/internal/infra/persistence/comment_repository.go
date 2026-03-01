@@ -425,10 +425,30 @@ func (r *CommentRepository) SetViewedStatus(ctx context.Context, ids []int64, is
 	if len(ids) == 0 {
 		return nil
 	}
-	return r.db.WithContext(ctx).
+	result := r.db.WithContext(ctx).Unscoped().
 		Model(&model.Comment{}).
 		Where("id IN ?", ids).
-		Update("is_viewed", isViewed).Error
+		Update("is_viewed", isViewed)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected > 0 {
+		return nil
+	}
+
+	// If no rows were updated, treat it as success only when records already exist
+	// and are already in the target viewed state; otherwise return not found.
+	var matched int64
+	if err := r.db.WithContext(ctx).Unscoped().
+		Model(&model.Comment{}).
+		Where("id IN ?", ids).
+		Count(&matched).Error; err != nil {
+		return err
+	}
+	if matched == 0 {
+		return comment.ErrCommentNotFound
+	}
+	return nil
 }
 
 func (r *CommentRepository) SetAuthorStatus(ctx context.Context, id int64, isAuthor bool) error {

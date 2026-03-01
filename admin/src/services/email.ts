@@ -11,6 +11,7 @@ export interface EmailTemplate {
     textTemplate: string
     toEmails: string[]
     isEnabled: boolean
+    isInternal: boolean
     createdAt: string
     updatedAt: string
 }

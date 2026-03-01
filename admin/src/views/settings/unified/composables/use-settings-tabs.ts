@@ -51,7 +51,8 @@ export function useSettingsTabs() {
 
   watch(activeTab, (tab) => {
     if (route.query.tab !== tab) {
-      router.replace({ query: { ...route.query, tab } })
+      const url = router.resolve({ query: { ...route.query, tab } }).href
+      history.replaceState(history.state, '', url)
     }
   })
 

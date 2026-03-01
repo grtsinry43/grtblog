@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NPopconfirm, NSpace, useMessage } from 'naive-ui'
+import { NButton, NCard, NDataTable, NFormItem, NInput, NPopconfirm, NSpace, useMessage } from 'naive-ui'
 import { h, onMounted, reactive, ref } from 'vue'
 
-import { ScrollContainer } from '@/components'
+import { FormModal, ScrollContainer } from '@/components'
 import { createCategory, deleteCategory, listCategories, updateCategory } from '@/services/taxonomy'
+import { formatDate } from '@/utils/format'
 
 import type { CategoryItem } from '@/services/taxonomy'
 import type { DataTableColumns } from 'naive-ui'
@@ -63,10 +64,6 @@ const columns: DataTableColumns<CategoryItem> = [
 
 const modalTitle = ref('新建分类')
 
-function formatDate(value?: string) {
-  if (!value) return '-'
-  return new Date(value).toLocaleString()
-}
 
 async function fetchData() {
   loading.value = true
@@ -155,22 +152,13 @@ onMounted(() => {
       />
     </NCard>
 
-    <NModal v-model:show="editVisible" preset="card" :title="modalTitle" style="width: 560px">
-      <NForm label-placement="left" label-width="84">
-        <NFormItem label="分类名称">
-          <NInput v-model:value="formModel.name" placeholder="请输入分类名称" />
-        </NFormItem>
-        <NFormItem label="分类短链">
-          <NInput v-model:value="formModel.shortUrl" placeholder="例如 frontend" />
-        </NFormItem>
-      </NForm>
-
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="editVisible = false">取消</NButton>
-          <NButton type="primary" :loading="saving" @click="handleSubmit">保存</NButton>
-        </NSpace>
-      </template>
-    </NModal>
+    <FormModal v-model:show="editVisible" :title="modalTitle" :loading="saving" @confirm="handleSubmit">
+      <NFormItem label="分类名称">
+        <NInput v-model:value="formModel.name" placeholder="请输入分类名称" />
+      </NFormItem>
+      <NFormItem label="分类短链">
+        <NInput v-model:value="formModel.shortUrl" placeholder="例如 frontend" />
+      </NFormItem>
+    </FormModal>
   </ScrollContainer>
 </template>

@@ -1,26 +1,47 @@
 <script setup lang="ts">
-import { NCard, NSplit, NButton, NScrollbar, NTag } from 'naive-ui'
+import { NScrollbar, NTag } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 
 import packageJson from '@/../package.json'
 import { ScrollContainer } from '@/components'
-import { useInjection } from '@/composables'
-import { mediaQueryInjectionKey } from '@/injection'
 
 defineOptions({
   name: 'About',
 })
 
-let codeToHtml: any
-
-const { isMaxMd } = useInjection(mediaQueryInjectionKey)
-
 const APP_NAME = import.meta.env.VITE_APP_NAME
-
+const version = packageJson.version
 const { dependencies, devDependencies } = packageJson
 
+let codeToHtml: any
 const dependenciesCodeHighlight = ref('')
 const devDependenciesCodeHighlight = ref('')
+
+const frontendTech = [
+  { name: 'Vue 3', icon: 'ph--vue-logo', color: '#42b883', desc: '渐进式 JavaScript 框架' },
+  { name: 'Naive UI', icon: null, color: '#75B93F', desc: '企业级 Vue 3 组件库' },
+  { name: 'Vite', icon: 'ph--lightning', color: '#9499ff', desc: '下一代前端构建工具' },
+  { name: 'TailwindCSS 4', icon: 'ph--wind', color: '#00bcff', desc: '原子化 CSS 框架' },
+  { name: 'TypeScript', icon: 'ph--file-ts', color: '#3178C6', desc: '类型安全的 JavaScript' },
+  { name: 'Pinia', icon: 'ph--tree-structure', color: '#FFD859', desc: 'Vue 状态管理' },
+]
+
+const backendTech = [
+  { name: 'Go', icon: 'ph--code', color: '#00ADD8', desc: '高性能后端语言' },
+  { name: 'Fiber', icon: 'ph--rocket-launch', color: '#00ACD7', desc: 'Express 风格 Go 框架' },
+  { name: 'PostgreSQL', icon: 'ph--database', color: '#4169E1', desc: '关系型数据库' },
+  { name: 'Redis', icon: 'ph--hard-drives', color: '#DC382D', desc: '缓存与消息队列' },
+  { name: 'SvelteKit', icon: 'ph--monitor', color: '#FF3E00', desc: '前台 SSR 渲染引擎' },
+]
+
+const features = [
+  { icon: 'ph--article', title: 'Markdown 写作', desc: '组件块扩展：相册、提示框、时间轴、链接卡片' },
+  { icon: 'ph--newspaper', title: '内容管理', desc: '文章、动态、思考、页面的完整生命周期管理' },
+  { icon: 'ph--cloud-arrow-up', title: '媒体资源', desc: '图片与文件上传、预览、重命名与批量管理' },
+  { icon: 'ph--shield-check', title: '安全与权限', desc: 'JWT + RBAC 权限控制、OAuth 绑定、登录限流' },
+  { icon: 'ph--arrows-clockwise', title: '事件驱动更新', desc: '内容变更触发异步刷新，WebSocket 推送实时更新' },
+  { icon: 'ph--chart-line-up', title: '数据分析', desc: '访客画像、行为漏斗、流量趋势、可观测性监控' },
+]
 
 onMounted(async () => {
   if (!codeToHtml) {
@@ -50,154 +71,177 @@ onMounted(async () => {
     .catch(() => (devDependenciesCodeHighlight.value = JSON.stringify(devDependencies, null, 2)))
 })
 </script>
-<template>
-  <ScrollContainer wrapper-class="flex flex-col gap-y-2">
-    <NCard
-      :title="`关于 ${APP_NAME}`"
-      :size="isMaxMd ? 'small' : undefined"
-    >
-      <p class="text-base">
-        {{ APP_NAME }} 是一个轻盈而优雅的后台管理模板，主要技术栈由
-        <a
-          href="https://vuejs.org/"
-          target="_blank"
-        >
-          <NButton
-            strong
-            secondary
-            size="small"
-            color="#42b883"
-          >
-            Vue3
-          </NButton>
-        </a>
-        <a
-          href="https://www.naiveui.com/"
-          target="_blank"
-        >
-          <NButton
-            strong
-            secondary
-            color="#75B93F"
-            size="small"
-            style="margin-left: 4px"
-          >
-            Naive UI
-          </NButton>
-        </a>
-        <a
-          href="https://vitejs.dev/"
-          target="_blank"
-        >
-          <NButton
-            strong
-            secondary
-            color="#9499ff"
-            size="small"
-            style="margin-left: 4px"
-          >
-            Vite7
-          </NButton>
-        </a>
-        <a
-          href="https://tailwindcss.com/"
-          target="_blank"
-        >
-          <NButton
-            strong
-            secondary
-            color="#00bcff"
-            size="small"
-            class="ml-1!"
-          >
-            TailwindCSS4
-          </NButton>
-        </a>
-        和
-        <NButton
-          strong
-          secondary
-          size="small"
-        >
-          TypeScript
-        </NButton>
-        构建。
-      </p>
-      <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-        grtblog-v2 是对 v1 的系统性重构：回到单体结构、减少依赖与复杂度，以默认 SSG 为主、按需引入 SSR / API，
-        面向创作者与读者打造一个可持续维护的内容平台。
-      </p>
-      <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-        本后台为 lithe admin 的二次开发版本，专为 grtblog-v2 的内容管理、发布与运营流程定制。
-      </p>
-      <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-        项目由 Go API、SvelteKit 前台、Vue 后台与共享 Markdown 组件能力组成。
-      </p>
-      <div class="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
-        <p>面向用户的核心能力：</p>
-        <ul class="mt-1 list-disc pl-5">
-          <li>Markdown 写作与组件块：相册、提示框、时间轴、链接卡片、年终卡片等。</li>
-          <li>文章与元信息管理：摘要/导语/封面/短链、置顶/热门/原创、分类与标签。</li>
-          <li>媒体资源管理：图片与文件上传、预览、重命名与下载。</li>
-          <li>账号与安全：JWT + RBAC 权限控制、OAuth 绑定、登录限流与人机校验。</li>
-        </ul>
-      </div>
-      <div class="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
-        <p>渲染与更新机制：</p>
-        <ul class="mt-1 list-disc pl-5">
-          <li>SvelteKit 作为渲染器输出 SSR 页面，后端抓取生成静态 HTML 快照对外发布。</li>
-          <li>文章变更触发事件驱动的异步刷新，并通过 WebSocket 推送内容更新。</li>
-          <li>前台基于内容哈希校验版本，必要时拉取最新内容。</li>
-          <li>规划引入脏路径计算，仅刷新受影响的页面与列表。</li>
-        </ul>
-      </div>
-      <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-        另外提供 WebSocket 房间能力，用于内容互动场景。
-      </p>
-    </NCard>
-    <div class="flex gap-x-2 max-lg:flex-col">
-      <NCard
-        title="依赖信息"
-        :size="isMaxMd ? 'small' : undefined"
-      >
-        <NSplit
-          direction="vertical"
-          pane1-class="pb-4"
-          pane2-class="pt-4"
-          default-size="2"
-        >
-          <template #1>
-            <NTag
-              class="mb-4"
-              :bordered="false"
-              type="info"
-              size="small"
-              >dependencies</NTag
-            >
-            <NScrollbar>
-              <div v-html="dependenciesCodeHighlight"></div>
-            </NScrollbar>
-          </template>
 
-          <template #2>
-            <NTag
-              class="mb-4"
-              :bordered="false"
-              type="info"
-              size="small"
-              >devDependencies</NTag
-            >
-            <NScrollbar>
-              <div v-html="devDependenciesCodeHighlight"></div>
-            </NScrollbar>
-          </template>
-          <template #resize-trigger>
-            <div
-              class="h-px w-full cursor-col-resize bg-neutral-200 transition-[background-color] dark:bg-neutral-700"
-            ></div>
-          </template>
-        </NSplit>
-      </NCard>
+<template>
+  <ScrollContainer wrapper-class="flex flex-col gap-y-4 pb-6">
+    <!-- Section 1: Hero -->
+    <div class="mt-4 mb-2">
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-semibold text-neutral-800 dark:text-neutral-100">
+          {{ APP_NAME }}
+        </h1>
+        <NTag size="small" round type="info">v{{ version }}</NTag>
+      </div>
+      <p class="mt-1 text-sm font-medium text-neutral-500 dark:text-neutral-400">
+        面向创作者与读者的全栈内容平台
+      </p>
+      <p class="mt-3 max-w-3xl text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+        grtblog-v2 是对 v1 的系统性重构：回到单体结构、减少依赖与复杂度，以默认 SSG 为主、按需引入 SSR / API。
+        项目由 Go API、SvelteKit 前台、Vue 后台与共享 Markdown 组件能力组成，本后台为 Lithe Admin 的二次开发版本，
+        专为内容管理、发布与运营流程定制。
+      </p>
+    </div>
+
+    <!-- Section 2: Tech Stack -->
+    <div>
+      <h2 class="mb-3 text-base font-medium text-neutral-700 dark:text-neutral-200">前端技术</h2>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div
+          v-for="tech in frontendTech"
+          :key="tech.name"
+          class="flex items-center gap-3 rounded border border-naive-border bg-naive-card p-4 transition-[background-color,border-color]"
+        >
+          <div
+            class="grid size-10 shrink-0 place-items-center rounded-full"
+            :style="{ backgroundColor: tech.color + '18' }"
+          >
+            <span
+              v-if="tech.icon"
+              class="size-5 iconify"
+              :class="tech.icon"
+              :style="{ color: tech.color }"
+            />
+            <span
+              v-else
+              class="text-sm font-bold"
+              :style="{ color: tech.color }"
+            >N</span>
+          </div>
+          <div class="min-w-0">
+            <div class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ tech.name }}</div>
+            <div class="text-xs text-neutral-500 dark:text-neutral-400">{{ tech.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="mb-3 text-base font-medium text-neutral-700 dark:text-neutral-200">后端技术</h2>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div
+          v-for="tech in backendTech"
+          :key="tech.name"
+          class="flex items-center gap-3 rounded border border-naive-border bg-naive-card p-4 transition-[background-color,border-color]"
+        >
+          <div
+            class="grid size-10 shrink-0 place-items-center rounded-full"
+            :style="{ backgroundColor: tech.color + '18' }"
+          >
+            <span
+              class="size-5 iconify"
+              :class="tech.icon"
+              :style="{ color: tech.color }"
+            />
+          </div>
+          <div class="min-w-0">
+            <div class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ tech.name }}</div>
+            <div class="text-xs text-neutral-500 dark:text-neutral-400">{{ tech.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Features -->
+    <div>
+      <h2 class="mb-3 text-base font-medium text-neutral-700 dark:text-neutral-200">核心能力</h2>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          v-for="feat in features"
+          :key="feat.title"
+          class="flex gap-3 rounded border border-naive-border bg-naive-card p-4 transition-[background-color,border-color]"
+        >
+          <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/8">
+            <span class="size-5 text-primary iconify" :class="feat.icon" />
+          </div>
+          <div class="min-w-0">
+            <div class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ feat.title }}</div>
+            <div class="mt-0.5 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{{ feat.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Architecture Overview -->
+    <div>
+      <h2 class="mb-3 text-base font-medium text-neutral-700 dark:text-neutral-200">架构概览</h2>
+      <div class="rounded border border-naive-border bg-naive-card p-5 transition-[background-color,border-color]">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <!-- API Layer -->
+          <div class="flex flex-col items-center gap-2 rounded-lg bg-neutral-50 p-4 dark:bg-neutral-800/50">
+            <span class="iconify ph--cloud size-6 text-sky-500" />
+            <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">Go API 服务</span>
+            <div class="flex flex-wrap justify-center gap-1.5">
+              <NTag size="tiny" round>Fiber</NTag>
+              <NTag size="tiny" round>GORM</NTag>
+              <NTag size="tiny" round>JWT</NTag>
+              <NTag size="tiny" round>WebSocket</NTag>
+            </div>
+            <div class="flex items-center gap-1 text-xs text-neutral-400">
+              <span class="iconify ph--arrows-left-right size-3.5" />
+              <span>PostgreSQL / Redis</span>
+            </div>
+          </div>
+
+          <!-- SSR Layer -->
+          <div class="flex flex-col items-center gap-2 rounded-lg bg-neutral-50 p-4 dark:bg-neutral-800/50">
+            <span class="iconify ph--browser size-6 text-orange-500" />
+            <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">SvelteKit 前台</span>
+            <div class="flex flex-wrap justify-center gap-1.5">
+              <NTag size="tiny" round>SSR 渲染</NTag>
+              <NTag size="tiny" round>静态快照</NTag>
+              <NTag size="tiny" round>内容哈希</NTag>
+            </div>
+            <div class="flex items-center gap-1 text-xs text-neutral-400">
+              <span class="iconify ph--arrow-right size-3.5" />
+              <span>HTML 快照发布</span>
+            </div>
+          </div>
+
+          <!-- Admin Layer -->
+          <div class="flex flex-col items-center gap-2 rounded-lg bg-neutral-50 p-4 dark:bg-neutral-800/50">
+            <span class="iconify ph--layout size-6 text-emerald-500" />
+            <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">Vue 3 后台</span>
+            <div class="flex flex-wrap justify-center gap-1.5">
+              <NTag size="tiny" round>Naive UI</NTag>
+              <NTag size="tiny" round>Pinia</NTag>
+              <NTag size="tiny" round>TailwindCSS</NTag>
+            </div>
+            <div class="flex items-center gap-1 text-xs text-neutral-400">
+              <span class="iconify ph--arrows-left-right size-3.5" />
+              <span>WebSocket 实时通信</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Dependencies -->
+    <div>
+      <h2 class="mb-3 text-base font-medium text-neutral-700 dark:text-neutral-200">依赖信息</h2>
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="rounded border border-naive-border bg-naive-card p-4 transition-[background-color,border-color]">
+          <NTag class="mb-3" :bordered="false" type="info" size="small">dependencies</NTag>
+          <NScrollbar style="max-height: 420px">
+            <div v-html="dependenciesCodeHighlight"></div>
+          </NScrollbar>
+        </div>
+        <div class="rounded border border-naive-border bg-naive-card p-4 transition-[background-color,border-color]">
+          <NTag class="mb-3" :bordered="false" type="info" size="small">devDependencies</NTag>
+          <NScrollbar style="max-height: 420px">
+            <div v-html="devDependenciesCodeHighlight"></div>
+          </NScrollbar>
+        </div>
+      </div>
     </div>
   </ScrollContainer>
 </template>

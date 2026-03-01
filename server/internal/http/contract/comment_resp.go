@@ -69,7 +69,7 @@ type PublicCommentListResp struct {
 }
 
 type AdminCommentResp struct {
-	ID                int64      `json:"id"`
+	ID                string     `json:"id"`
 	AreaID            int64      `json:"areaId"`
 	AreaType          *string    `json:"areaType,omitempty"`
 	AreaRefID         *int64     `json:"areaRefId,omitempty"`
@@ -96,7 +96,7 @@ type AdminCommentResp struct {
 	FederatedActor    *string    `json:"federatedActor"`
 	CanReply          bool       `json:"canReply"`
 	Status            string     `json:"status"`
-	ParentID          *int64     `json:"parentId"`
+	ParentID          *string    `json:"parentId"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
 	DeletedAt         *time.Time `json:"deletedAt,omitempty"`
@@ -145,7 +145,7 @@ type AdminVisitorListResp struct {
 }
 
 type AdminVisitorRecentCommentResp struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	AreaID    int64     `json:"areaId"`
 	Content   string    `json:"content"`
 	Status    string    `json:"status"`

@@ -50,8 +50,8 @@ type SetCommentAreaCloseReq struct {
 }
 
 type MarkCommentsViewedReq struct {
-	IDs      []int64 `json:"ids"`
-	IsViewed *bool   `json:"isViewed,omitempty"`
+	IDs      []string `json:"ids"`
+	IsViewed *bool    `json:"isViewed,omitempty"`
 }
 
 type ImportCommentReq struct {

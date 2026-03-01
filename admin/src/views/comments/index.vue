@@ -34,7 +34,7 @@ import {
   setCommentAuthor,
   markCommentsViewed,
 } from '@/services/comments'
-import { CommentStatus, type Comment } from '@/types/comments'
+import { CommentStatus, type Comment, type CommentListResponse } from '@/types/comments'
 import CommentSource from './components/CommentSource.vue'
 import {
   TrashOutline,
@@ -77,7 +77,7 @@ const total = computed(() => data.value?.total || 0)
 
 // Mutations
 const updateStatusMutation = useMutation({
-  mutationFn: ({ id, status }: { id: number; status: CommentStatus }) =>
+  mutationFn: ({ id, status }: { id: string; status: CommentStatus }) =>
     updateCommentStatus(id, { status }),
   onSuccess: () => {
     message.success('状态更新成功')
@@ -87,7 +87,7 @@ const updateStatusMutation = useMutation({
 })
 
 const deleteMutation = useMutation({
-  mutationFn: (id: number) => deleteComment(id),
+  mutationFn: (id: string) => deleteComment(id),
   onSuccess: () => {
     message.success('评论已删除')
     queryClient.invalidateQueries({ queryKey: ['comments'] })
@@ -96,7 +96,7 @@ const deleteMutation = useMutation({
 })
 
 const topMutation = useMutation({
-  mutationFn: ({ id, isTop }: { id: number; isTop: boolean }) => setCommentTop(id, { isTop }),
+  mutationFn: ({ id, isTop }: { id: string; isTop: boolean }) => setCommentTop(id, { isTop }),
   onSuccess: () => {
     message.success('置顶状态已更新')
     queryClient.invalidateQueries({ queryKey: ['comments'] })
@@ -104,7 +104,7 @@ const topMutation = useMutation({
 })
 
 const authorMutation = useMutation({
-  mutationFn: ({ id, isAuthor }: { id: number; isAuthor: boolean }) =>
+  mutationFn: ({ id, isAuthor }: { id: string; isAuthor: boolean }) =>
     setCommentAuthor(id, { isAuthor }),
   onSuccess: () => {
     message.success('作者标记已更新')
@@ -114,7 +114,7 @@ const authorMutation = useMutation({
 })
 
 const replyMutation = useMutation({
-  mutationFn: ({ id, content }: { id: number; content: string }) => replyComment(id, { content }),
+  mutationFn: ({ id, content }: { id: string; content: string }) => replyComment(id, { content }),
   onSuccess: () => {
     message.success('回复成功')
     replyContent.value = ''
@@ -125,21 +125,21 @@ const replyMutation = useMutation({
 })
 
 const markViewedMutation = useMutation({
-  mutationFn: (ids: number[]) => markCommentsViewed({ ids, isViewed: true }),
+  mutationFn: (ids: string[]) => markCommentsViewed({ ids, isViewed: true }),
   onSuccess: (_, ids) => {
-     queryClient.setQueryData(['comments', activeStatus.value, page.value, pageSize.value, onlyUnviewed.value], (oldData: any) => {
-         if (!oldData) return oldData
-         return {
-             ...oldData,
-             items: oldData.items.map((item: Comment) => {
-                 if (ids.includes(item.id)) {
-                     return { ...item, isViewed: true }
-                 }
-                 return item
-             })
-         }
-     })
-  }
+    queryClient.setQueriesData<CommentListResponse>(
+      { queryKey: ['comments'] },
+      (oldData) => {
+        if (!oldData?.items) return oldData
+        return {
+          ...oldData,
+          items: oldData.items.map((item) =>
+            ids.includes(item.id) ? { ...item, isViewed: true } : item,
+          ),
+        }
+      },
+    )
+  },
 })
 
 // Actions
@@ -160,7 +160,7 @@ const handleAuthor = (comment: Comment) => {
 }
 
 // Reply Logic
-const replyTargetId = ref<number | null>(null)
+const replyTargetId = ref<string | null>(null)
 const replyContent = ref('')
 const showReplyInput = (comment: Comment) => {
   if (replyTargetId.value === comment.id) {

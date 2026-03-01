@@ -6,7 +6,7 @@ export enum CommentStatus {
 }
 
 export interface Comment {
-    id: number
+    id: string
     areaId: number
     areaType?: string
     areaRefId?: number
@@ -28,7 +28,7 @@ export interface Comment {
     isViewed: boolean
     isTop: boolean
     status: CommentStatus
-    parentId?: number
+    parentId?: string
     createdAt: string
     updatedAt: string
     deletedAt?: string
@@ -71,6 +71,6 @@ export interface SetCommentAreaClosePayload {
 }
 
 export interface MarkCommentsViewedPayload {
-    ids: number[]
+    ids: string[]
     isViewed?: boolean
 }

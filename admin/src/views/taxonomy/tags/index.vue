@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NPopconfirm, NSpace, useMessage } from 'naive-ui'
+import { NButton, NCard, NDataTable, NFormItem, NInput, NPopconfirm, NSpace, useMessage } from 'naive-ui'
 import { h, onMounted, reactive, ref } from 'vue'
 
-import { ScrollContainer } from '@/components'
+import { FormModal, ScrollContainer } from '@/components'
 import { createTag, deleteTag, listTags, updateTag } from '@/services/taxonomy'
+import { formatDate } from '@/utils/format'
 
 import type { TagItem } from '@/services/taxonomy'
 import type { DataTableColumns } from 'naive-ui'
@@ -61,10 +62,6 @@ const columns: DataTableColumns<TagItem> = [
 
 const modalTitle = ref('新建标签')
 
-function formatDate(value?: string) {
-  if (!value) return '-'
-  return new Date(value).toLocaleString()
-}
 
 async function fetchData() {
   loading.value = true
@@ -146,19 +143,10 @@ onMounted(() => {
       />
     </NCard>
 
-    <NModal v-model:show="editVisible" preset="card" :title="modalTitle" style="width: 520px">
-      <NForm label-placement="left" label-width="84">
-        <NFormItem label="标签名称">
-          <NInput v-model:value="formModel.name" placeholder="请输入标签名称" />
-        </NFormItem>
-      </NForm>
-
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="editVisible = false">取消</NButton>
-          <NButton type="primary" :loading="saving" @click="handleSubmit">保存</NButton>
-        </NSpace>
-      </template>
-    </NModal>
+    <FormModal v-model:show="editVisible" :title="modalTitle" :loading="saving" @confirm="handleSubmit">
+      <NFormItem label="标签名称">
+        <NInput v-model:value="formModel.name" placeholder="请输入标签名称" />
+      </NFormItem>
+    </FormModal>
   </ScrollContainer>
 </template>

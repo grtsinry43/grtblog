@@ -12,7 +12,7 @@ import { ApiError } from '@/services/http'
 import { toRefsPreferencesStore, useUserStore } from '@/stores'
 import twc from '@/utils/tailwindColor'
 
-import ThemeColorPopover from './component/ThemeColorPopover.vue'
+import ThemeColorPopover from './components/ThemeColorPopover.vue'
 
 import type { FormItemRule } from 'naive-ui'
 
@@ -27,9 +27,9 @@ const userStore = useUserStore()
 const message = useMessage()
 
 const illustrations = [
-  defineAsyncComponent(() => import('./component/Illustration1.vue')),
-  defineAsyncComponent(() => import('./component/Illustration2.vue')),
-  defineAsyncComponent(() => import('./component/Illustration3.vue')),
+  defineAsyncComponent(() => import('./components/Illustration1.vue')),
+  defineAsyncComponent(() => import('./components/Illustration2.vue')),
+  defineAsyncComponent(() => import('./components/Illustration3.vue')),
 ]
 
 const loading = ref(false)

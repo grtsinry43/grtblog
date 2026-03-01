@@ -4,7 +4,6 @@ import {
   NCard,
   NDataTable,
   NDatePicker,
-  NForm,
   NFormItem,
   NInput,
   NModal,
@@ -15,8 +14,10 @@ import {
 } from 'naive-ui'
 import { computed, h, ref } from 'vue'
 
+import { FormModal } from '@/components'
 import { useTable } from '@/composables/table/use-table'
 import { createAdminToken, deleteAdminToken, listAdminTokens } from '@/services/admin-tokens'
+import { formatDate } from '@/utils/format'
 
 import type { DataTableColumns } from 'naive-ui'
 import type { AdminTokenItem } from '@/services/admin-tokens'
@@ -128,10 +129,6 @@ async function handleDelete(row: AdminTokenItem) {
   refresh()
 }
 
-function formatDate(iso: string) {
-  if (!iso) return '-'
-  return new Date(iso).toLocaleString()
-}
 </script>
 
 <template>
@@ -150,26 +147,25 @@ function formatDate(iso: string) {
     />
   </NCard>
 
-  <NModal v-model:show="createVisible" preset="card" title="新建管理员 Token" style="width: 520px">
-    <NForm label-placement="left" label-width="96">
-      <NFormItem label="描述">
-        <NInput
-          v-model:value="formParams.description"
-          maxlength="200"
-          placeholder="可选，用于区分用途（例如：CI 调用）"
-        />
-      </NFormItem>
-      <NFormItem label="过期时间" required>
-        <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
-      </NFormItem>
-    </NForm>
-    <template #footer>
-      <NSpace justify="end">
-        <NButton @click="createVisible = false">取消</NButton>
-        <NButton type="primary" :loading="saving" @click="handleCreate">创建</NButton>
-      </NSpace>
-    </template>
-  </NModal>
+  <FormModal
+    v-model:show="createVisible"
+    title="新建管理员 Token"
+    :loading="saving"
+    :label-width="96"
+    confirm-text="创建"
+    @confirm="handleCreate"
+  >
+    <NFormItem label="描述">
+      <NInput
+        v-model:value="formParams.description"
+        maxlength="200"
+        placeholder="可选，用于区分用途（例如：CI 调用）"
+      />
+    </NFormItem>
+    <NFormItem label="过期时间" required>
+      <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
+    </NFormItem>
+  </FormModal>
 
   <NModal v-model:show="revealVisible" preset="card" title="Token 已生成" style="width: 560px">
     <div class="mb-3 text-sm text-[var(--text-color-2)]">仅展示一次，请立即复制保存。</div>

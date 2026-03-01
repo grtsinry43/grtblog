@@ -3,11 +3,8 @@ import {
   NButton,
   NCard,
   NDataTable,
-  NForm,
   NFormItem,
   NInput,
-  NModal,
-  NPagination,
   NPopconfirm,
   NSpace,
   NSwitch,
@@ -16,6 +13,7 @@ import {
   useMessage,
 } from 'naive-ui'
 import { h, ref, computed } from 'vue'
+import { FormModal, ScrollContainer } from '@/components'
 import { useTable } from '@/composables/table/use-table'
 import {
   listGlobalNotifications,
@@ -25,6 +23,7 @@ import {
 } from '@/services/global-notifications'
 import type { DataTableColumns } from 'naive-ui'
 import type { GlobalNotificationItem } from '@/services/global-notifications'
+import { formatDate } from '@/utils/format'
 
 defineOptions({
   name: 'GlobalNotificationList',
@@ -66,7 +65,7 @@ const columns = computed<DataTableColumns<GlobalNotificationItem>>(() => [
     render: (row) => formatDate(row.expireAt),
   },
   {
-    title: '允许“不再提示”',
+    title: '允许"不再提示"',
     key: 'allowClose',
     width: 180,
     render: (row) =>
@@ -195,15 +194,10 @@ async function handleDelete(row: GlobalNotificationItem) {
   }
 }
 
-// Utils
-function formatDate(iso: string) {
-  if (!iso) return '-'
-  return new Date(iso).toLocaleString()
-}
 </script>
 
 <template>
-  <div class="p-4">
+  <ScrollContainer wrapper-class="p-4">
     <NCard title="全站通知管理">
       <template #header-extra>
         <NButton type="primary" @click="openCreate">新建通知</NButton>
@@ -220,36 +214,30 @@ function formatDate(iso: string) {
       />
     </NCard>
 
-    <NModal
+    <FormModal
       v-model:show="formVisible"
-      preset="card"
       :title="formTitle"
-      style="width: 500px"
+      :loading="saving"
+      :label-width="100"
+      @confirm="handleSave"
     >
-      <NForm label-placement="left" label-width="100">
-        <NFormItem label="内容" required>
-          <NInput
-            v-model:value="formParams.content"
-            type="textarea"
-            placeholder="请输入通知内容"
-          />
-        </NFormItem>
-        <NFormItem label="开始时间" required>
-          <NDatePicker v-model:value="formParams.publishAt" type="datetime" style="width: 100%" />
-        </NFormItem>
-        <NFormItem label="结束时间" required>
-          <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
-        </NFormItem>
-        <NFormItem label="允许“不再提示”">
-          <NSwitch v-model:value="formParams.allowClose" />
-        </NFormItem>
-      </NForm>
-      <template #footer>
-        <NSpace justify="end">
-          <NButton @click="formVisible = false">取消</NButton>
-          <NButton type="primary" :loading="saving" @click="handleSave">保存</NButton>
-        </NSpace>
-      </template>
-    </NModal>
-  </div>
+      <NFormItem label="内容" required>
+        <NInput
+          v-model:value="formParams.content"
+          type="textarea"
+          placeholder="请输入通知内容"
+        />
+      </NFormItem>
+      <NFormItem label="开始时间" required>
+        <NDatePicker v-model:value="formParams.publishAt" type="datetime" style="width: 100%" />
+      </NFormItem>
+      <NFormItem label="结束时间" required>
+        <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
+      </NFormItem>
+      <NFormItem>
+        <template #label>允许&ldquo;不再提示&rdquo;</template>
+        <NSwitch v-model:value="formParams.allowClose" />
+      </NFormItem>
+    </FormModal>
+  </ScrollContainer>
 </template>
