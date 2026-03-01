@@ -13,6 +13,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
+	domainfed "github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
@@ -22,20 +23,39 @@ import (
 )
 
 type ArticleHandler struct {
-	svc         *article.Service
-	contentRepo content.Repository
-	commentRepo domaincomment.CommentRepository
-	userRepo    identity.Repository
-	apCfgSvc    *sysconfig.Service
+	svc            *article.Service
+	contentRepo    content.Repository
+	commentRepo    domaincomment.CommentRepository
+	userRepo       identity.Repository
+	apCfgSvc       *sysconfig.Service
+	deliveryRepo   domainfed.OutboundDeliveryRepository
+	postCacheRepo  domainfed.FederatedPostCacheRepository
+	instanceRepo   domainfed.FederationInstanceRepository
 }
 
-func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository, apCfgSvc *sysconfig.Service) *ArticleHandler {
-	return &ArticleHandler{
+func NewArticleHandler(svc *article.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository, apCfgSvc *sysconfig.Service, opts ...ArticleHandlerOption) *ArticleHandler {
+	h := &ArticleHandler{
 		svc:         svc,
 		contentRepo: contentRepo,
 		commentRepo: commentRepo,
 		userRepo:    userRepo,
 		apCfgSvc:    apCfgSvc,
+	}
+	for _, o := range opts {
+		o(h)
+	}
+	return h
+}
+
+// ArticleHandlerOption configures optional dependencies on ArticleHandler.
+type ArticleHandlerOption func(*ArticleHandler)
+
+// WithFederationRepos injects federation repositories for content expansion.
+func WithFederationRepos(deliveryRepo domainfed.OutboundDeliveryRepository, postCacheRepo domainfed.FederatedPostCacheRepository, instanceRepo domainfed.FederationInstanceRepository) ArticleHandlerOption {
+	return func(h *ArticleHandler) {
+		h.deliveryRepo = deliveryRepo
+		h.postCacheRepo = postCacheRepo
+		h.instanceRepo = instanceRepo
 	}
 }
 
@@ -330,14 +350,19 @@ func (h *ArticleHandler) GetArticleByShortURL(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "短链接不能为空")
 	}
 
-	article, err := h.svc.GetArticleByShortURL(c.Context(), shortURL)
+	art, err := h.svc.GetArticleByShortURL(c.Context(), shortURL)
 	if err != nil {
 		return err
 	}
 
-	articleResponse, err := h.toArticleResp(c.Context(), article)
+	articleResponse, err := h.toArticleResp(c.Context(), art)
 	if err != nil {
 		return err
+	}
+
+	// Expand federation signals in public content.
+	if articleResponse != nil && h.deliveryRepo != nil && h.postCacheRepo != nil && h.instanceRepo != nil {
+		articleResponse.Content = h.expandFederationContent(c.Context(), art, articleResponse.Content)
 	}
 
 	return response.Success(c, articleResponse)
@@ -829,6 +854,35 @@ func buildFediverseReplyURL(template string, articleURL string, objectURL string
 		return tpl
 	}
 	return tpl + encodedArticle
+}
+
+func (h *ArticleHandler) expandFederationContent(ctx context.Context, art *content.Article, contentStr string) string {
+	if contentStr == "" || art == nil {
+		return contentStr
+	}
+	deliveries, err := h.deliveryRepo.ListBySourceArticle(ctx, art.ID, 100)
+	if err != nil {
+		return contentStr
+	}
+	// Collect unique instance IDs from deliveries to fetch instances and cached posts.
+	instanceURLs := make(map[string]struct{})
+	for _, d := range deliveries {
+		instanceURLs[d.TargetInstanceURL] = struct{}{}
+	}
+	var allInstances []domainfed.FederationInstance
+	var allPosts []domainfed.FederatedPostCache
+	for u := range instanceURLs {
+		inst, err := h.instanceRepo.GetByBaseURL(ctx, u)
+		if err != nil || inst == nil {
+			continue
+		}
+		allInstances = append(allInstances, *inst)
+		posts, err := h.postCacheRepo.ListByInstance(ctx, inst.ID, nil, 100)
+		if err == nil {
+			allPosts = append(allPosts, posts...)
+		}
+	}
+	return article.ExpandFederationSignals(contentStr, deliveries, allPosts, allInstances)
 }
 
 func mapTOCNodes(nodes []content.TOCNode) []contract.TOCNode {

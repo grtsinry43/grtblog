@@ -8,6 +8,8 @@ import type {
   FederationActivityPubPublishResp,
   FederationAdminProxyResp,
   FederationAdminRemoteCheckResp,
+  FederationAuthorListResp,
+  FederationCachedPostListResp,
   FederationInstanceDetailResp,
   FederationInstanceListReq,
   FederationInstanceListResp,
@@ -119,5 +121,19 @@ export function listFederationActivityPubFollowers(page = 1, pageSize = 20) {
       page,
       pageSize,
     },
+  })
+}
+
+export function searchFederationAuthors(query: string, limit = 20) {
+  return request<FederationAuthorListResp>('/admin/federation/authors/search', {
+    method: 'GET',
+    query: { q: query, limit },
+  })
+}
+
+export function listFederationInstancePosts(instanceId: number, query?: string, limit = 20) {
+  return request<FederationCachedPostListResp>(`/admin/federation/instances/${instanceId}/posts`, {
+    method: 'GET',
+    query: { q: query || '', limit },
   })
 }

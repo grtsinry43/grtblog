@@ -20,25 +20,27 @@ import (
 )
 
 type FederationAdminHandler struct {
-	cfgSvc       *sysconfig.Service
-	contentRepo  content.Repository
-	deliverySvc  *appfed.DeliveryService
-	instanceRepo domainfed.FederationInstanceRepository
-	resolver     *fedinfra.Resolver
-	events       appEvent.Bus
+	cfgSvc        *sysconfig.Service
+	contentRepo   content.Repository
+	deliverySvc   *appfed.DeliveryService
+	instanceRepo  domainfed.FederationInstanceRepository
+	postCacheRepo domainfed.FederatedPostCacheRepository
+	resolver      *fedinfra.Resolver
+	events        appEvent.Bus
 }
 
-func NewFederationAdminHandler(cfgSvc *sysconfig.Service, contentRepo content.Repository, deliverySvc *appfed.DeliveryService, instanceRepo domainfed.FederationInstanceRepository, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
+func NewFederationAdminHandler(cfgSvc *sysconfig.Service, contentRepo content.Repository, deliverySvc *appfed.DeliveryService, instanceRepo domainfed.FederationInstanceRepository, postCacheRepo domainfed.FederatedPostCacheRepository, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
 	return &FederationAdminHandler{
-		cfgSvc:       cfgSvc,
-		contentRepo:  contentRepo,
-		deliverySvc:  deliverySvc,
-		instanceRepo: instanceRepo,
-		resolver:     resolver,
-		events:       events,
+		cfgSvc:        cfgSvc,
+		contentRepo:   contentRepo,
+		deliverySvc:   deliverySvc,
+		instanceRepo:  instanceRepo,
+		postCacheRepo: postCacheRepo,
+		resolver:      resolver,
+		events:        events,
 	}
 }
 
@@ -519,6 +521,89 @@ func (h *FederationAdminHandler) UpdateInstanceStatus(c *fiber.Ctx) error {
 		return err
 	}
 	return response.Success(c, mapFederationInstance(*instance))
+}
+
+// ListInstancePosts 按实例浏览/搜索缓存文章。
+// @Summary 按实例搜索缓存文章
+// @Tags FederationAdmin
+// @Produce json
+// @Param id path int true "实例ID"
+// @Param q query string false "搜索关键词"
+// @Param limit query int false "返回数量" default(20)
+// @Success 200 {object} contract.FederationCachedPostListResp
+// @Security BearerAuth
+// @Router /admin/federation/instances/{id}/posts [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) ListInstancePosts(c *fiber.Ctx) error {
+	if h.postCacheRepo == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的实例ID")
+	}
+	keyword := strings.TrimSpace(c.Query("q"))
+	limit := parseIntQuery(c, "limit", 20)
+	posts, err := h.postCacheRepo.SearchPostsByInstance(c.Context(), id, keyword, limit)
+	if err != nil {
+		return err
+	}
+	items := make([]contract.FederationCachedPostResp, len(posts))
+	for i, p := range posts {
+		authorName := ""
+		if len(p.Author) > 0 {
+			var author struct {
+				Name string `json:"name"`
+			}
+			if jsonErr := json.Unmarshal(p.Author, &author); jsonErr == nil {
+				authorName = author.Name
+			}
+		}
+		items[i] = contract.FederationCachedPostResp{
+			ID:            p.ID,
+			RemotePostID:  p.RemotePostID,
+			InstanceID:    p.InstanceID,
+			URL:           p.URL,
+			Title:         p.Title,
+			Summary:       p.Summary,
+			CoverImage:    p.CoverImage,
+			AuthorName:    authorName,
+			PublishedAt:   p.PublishedAt.UTC().Format(time.RFC3339),
+			AllowCitation: p.AllowCitation,
+		}
+	}
+	return response.Success(c, contract.FederationCachedPostListResp{Items: items})
+}
+
+// SearchAuthors 搜索缓存作者（mention 用）。
+// @Summary 搜索缓存作者
+// @Tags FederationAdmin
+// @Produce json
+// @Param q query string false "搜索关键词"
+// @Param limit query int false "返回数量" default(20)
+// @Success 200 {object} contract.FederationAuthorListResp
+// @Security BearerAuth
+// @Router /admin/federation/authors/search [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) SearchAuthors(c *fiber.Ctx) error {
+	if h.postCacheRepo == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "联邦服务未初始化")
+	}
+	keyword := strings.TrimSpace(c.Query("q"))
+	limit := parseIntQuery(c, "limit", 20)
+	authors, err := h.postCacheRepo.SearchAuthors(c.Context(), keyword, limit)
+	if err != nil {
+		return err
+	}
+	items := make([]contract.FederationAuthorResp, len(authors))
+	for i, a := range authors {
+		items[i] = contract.FederationAuthorResp{
+			Name:         a.Name,
+			InstanceURL:  a.InstanceURL,
+			InstanceName: a.InstanceName,
+		}
+	}
+	return response.Success(c, contract.FederationAuthorListResp{Items: items})
 }
 
 func (h *FederationAdminHandler) resolveArticle(c *fiber.Ctx, id *int64, shortURL *string) (*content.Article, error) {

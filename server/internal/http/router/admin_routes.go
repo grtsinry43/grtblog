@@ -120,7 +120,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
 	outboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
 	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, deps.EventBus)
-	federationAdminHandler := handler.NewFederationAdminHandler(sysCfgSvc, contentRepo, deliverySvc, instanceRepo, resolver, deps.EventBus)
+	postCacheRepo := persistence.NewFederatedPostCacheRepository(deps.DB)
+	federationAdminHandler := handler.NewFederationAdminHandler(sysCfgSvc, contentRepo, deliverySvc, instanceRepo, postCacheRepo, resolver, deps.EventBus)
 	federationReviewHandler := handler.NewFederationReviewHandler(
 		persistence.NewFederatedCitationRepository(deps.DB),
 		persistence.NewFederatedMentionRepository(deps.DB),
@@ -148,7 +149,9 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Get("/federation/remote/check", federationAdminHandler.CheckRemote)
 	admin.Get("/federation/instances", federationAdminHandler.ListInstances)
 	admin.Get("/federation/instances/:id", federationAdminHandler.GetInstance)
+	admin.Get("/federation/instances/:id/posts", federationAdminHandler.ListInstancePosts)
 	admin.Put("/federation/instances/:id/status", federationAdminHandler.UpdateInstanceStatus)
+	admin.Get("/federation/authors/search", federationAdminHandler.SearchAuthors)
 	admin.Get("/federation/outbound", federationAdminHandler.ListOutbound)
 	admin.Get("/federation/outbound/:id", federationAdminHandler.GetOutbound)
 	admin.Get("/federation/outbound/request/:requestId", federationAdminHandler.GetOutboundByRequestID)

@@ -14,6 +14,7 @@ import {
 import { customBlockExtension } from './extensions/custom-block'
 import { slashCommandSource } from './extensions/slash-command'
 import './editor.css'
+import { federationHighlightPlugin } from './extensions/federation-highlight'
 import { slashHintExtension } from './extensions/slash-hint'
 import { addUpload, removeUpload, uploadStateField } from './use-upload-extensions'
 
@@ -124,6 +125,7 @@ export function useCodeMirror(container: Ref<HTMLElement | undefined>, props: Us
         }),
         customBlockExtension,
         slashHintExtension,
+        federationHighlightPlugin,
         createComponentEditorExtension({ onEdit: props.onComponentEdit }),
 
         // 注册事件总线扩展

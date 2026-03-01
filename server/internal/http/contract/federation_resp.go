@@ -98,3 +98,34 @@ type FederationArticleInteractionsResp struct {
 	InboundCitations []FederationCitationInteractionResp `json:"inbound_citations"`
 	Outbound         []FederationOutboundInteractionResp `json:"outbound"`
 }
+
+// FederationCachedPostResp 缓存文章搜索结果。
+type FederationCachedPostResp struct {
+	ID            int64   `json:"id"`
+	RemotePostID  *string `json:"remotePostId,omitempty"`
+	InstanceID    int64   `json:"instanceId"`
+	URL           string  `json:"url"`
+	Title         string  `json:"title"`
+	Summary       string  `json:"summary"`
+	CoverImage    *string `json:"coverImage,omitempty"`
+	AuthorName    string  `json:"authorName,omitempty"`
+	PublishedAt   string  `json:"publishedAt"`
+	AllowCitation bool    `json:"allowCitation"`
+}
+
+// FederationCachedPostListResp 缓存文章搜索列表。
+type FederationCachedPostListResp struct {
+	Items []FederationCachedPostResp `json:"items"`
+}
+
+// FederationAuthorResp 作者搜索结果。
+type FederationAuthorResp struct {
+	Name         string `json:"name"`
+	InstanceURL  string `json:"instanceUrl"`
+	InstanceName string `json:"instanceName"`
+}
+
+// FederationAuthorListResp 作者搜索列表。
+type FederationAuthorListResp struct {
+	Items []FederationAuthorResp `json:"items"`
+}

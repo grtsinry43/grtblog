@@ -50,5 +50,11 @@ func newArticleHandler(deps Dependencies) *handler.ArticleHandler {
 	commentRepo := persistence.NewCommentRepository(deps.DB)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	articleSvc := article.NewService(contentRepo, commentRepo, deps.EventBus)
-	return handler.NewArticleHandler(articleSvc, contentRepo, commentRepo, identityRepo, deps.SysConfig)
+	return handler.NewArticleHandler(articleSvc, contentRepo, commentRepo, identityRepo, deps.SysConfig,
+		handler.WithFederationRepos(
+			persistence.NewOutboundDeliveryRepository(deps.DB),
+			persistence.NewFederatedPostCacheRepository(deps.DB),
+			persistence.NewFederationInstanceRepository(deps.DB),
+		),
+	)
 }

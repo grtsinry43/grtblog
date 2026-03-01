@@ -22,6 +22,7 @@ import Callout from '$lib/ui/markdown/Callout.svelte';
 import Gallery from '$lib/ui/markdown/Gallery.svelte';
 import Timeline from '$lib/ui/markdown/Timeline.svelte';
 import ChatHistory from '$lib/ui/markdown/ChatHistory.svelte';
+import FederationCitation from '$lib/ui/markdown/FederationCitation.svelte';
 
 // 显式确保这些块被解析
 const componentBlocks = Object.fromEntries(
@@ -55,7 +56,8 @@ export const markdownComponents: SvmdComponentMap = {
 	timeline: Timeline,
 	'chat-history': ChatHistory,
 	'year-card': YearCard,
-	'link-card': LinkCard
+	'link-card': LinkCard,
+	'fed-citation': FederationCitation
 };
 
 export const markdownParseOptions: SvmdParseOptions = {

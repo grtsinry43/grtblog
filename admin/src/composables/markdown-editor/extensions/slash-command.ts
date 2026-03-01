@@ -19,6 +19,24 @@ const baseOptions: Completion[] = [
       view.dom.dispatchEvent(new CustomEvent('ai-rewrite-trigger', { bubbles: true }))
     },
   },
+  {
+    label: '@mention',
+    type: 'function',
+    detail: '联合提及',
+    apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
+      view.dispatch({ changes: { from, to, insert: '' } })
+      view.dom.dispatchEvent(new CustomEvent('federation-mention-trigger', { bubbles: true }))
+    },
+  },
+  {
+    label: 'Citation',
+    type: 'function',
+    detail: '联合引用',
+    apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
+      view.dispatch({ changes: { from, to, insert: '' } })
+      view.dom.dispatchEvent(new CustomEvent('federation-citation-trigger', { bubbles: true }))
+    },
+  },
 ]
 
 const componentOptions: Completion[] = markdownComponents.map((component) => ({

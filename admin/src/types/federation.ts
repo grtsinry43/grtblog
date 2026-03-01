@@ -169,3 +169,30 @@ export interface FederationActivityPubFollowerListResp {
     page: number
     size: number
 }
+
+export interface FederationCachedPostResp {
+    id: number
+    remotePostId?: string
+    instanceId: number
+    url: string
+    title: string
+    summary: string
+    coverImage?: string
+    authorName?: string
+    publishedAt: string
+    allowCitation: boolean
+}
+
+export interface FederationCachedPostListResp {
+    items: FederationCachedPostResp[]
+}
+
+export interface FederationAuthorResp {
+    name: string
+    instanceUrl: string
+    instanceName: string
+}
+
+export interface FederationAuthorListResp {
+    items: FederationAuthorResp[]
+}

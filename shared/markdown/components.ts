@@ -95,6 +95,22 @@ export const markdownComponents: MarkdownComponentDefinition[] = [
 		insertTemplate: '::: year-card url="" title="" type="page" cover="" blur="7px"\n\n:::'
 	},
 	{
+		name: 'fed-citation',
+		label: 'Federation Citation',
+		description: '联合引用卡片（服务端生成）',
+		attrs: [
+			{ key: 'instance', label: '实例' },
+			{ key: 'post-id', label: '文章ID' },
+			{ key: 'title', label: '标题' },
+			{ key: 'summary', label: '摘要' },
+			{ key: 'url', label: '链接' },
+			{ key: 'cover-image', label: '封面图' },
+			{ key: 'author-name', label: '作者' },
+			{ key: 'status', label: '状态' },
+		],
+		insertTemplate: '',
+	},
+	{
 		name: 'link-card',
 		label: 'Link Card',
 		description: '链接卡片',

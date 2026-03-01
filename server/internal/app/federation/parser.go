@@ -22,6 +22,12 @@ var (
 	citationPattern = regexp.MustCompile(`<cite:([^|<>]+)\|([^<>]+)>`)
 )
 
+// MentionPatternPublic returns the compiled mention regex for external use.
+func MentionPatternPublic() *regexp.Regexp { return mentionPattern }
+
+// CitationPatternPublic returns the compiled citation regex for external use.
+func CitationPatternPublic() *regexp.Regexp { return citationPattern }
+
 // ParseSignals scans article content for mention/citation markers.
 func ParseSignals(content string) (mentions []MentionSignal, citations []CitationSignal) {
 	if strings.TrimSpace(content) == "" {

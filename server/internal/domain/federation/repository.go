@@ -15,12 +15,21 @@ type FederationInstanceRepository interface {
 	List(ctx context.Context, status string, keyword string, page int, pageSize int) ([]FederationInstance, int64, error)
 }
 
+// AuthorInfo represents a de-duplicated author extracted from cached posts.
+type AuthorInfo struct {
+	Name         string
+	InstanceURL  string
+	InstanceName string
+}
+
 // FederatedPostCacheRepository stores cached timeline posts.
 type FederatedPostCacheRepository interface {
 	UpsertBatch(ctx context.Context, posts []FederatedPostCache) error
 	ListByInstance(ctx context.Context, instanceID int64, since *time.Time, limit int) ([]FederatedPostCache, error)
 	ListRecent(ctx context.Context, limit int) ([]FederatedPostCache, error)
 	ListTimeline(ctx context.Context, page, pageSize int) ([]FederatedPostCache, int64, error)
+	SearchPostsByInstance(ctx context.Context, instanceID int64, keyword string, limit int) ([]FederatedPostCache, error)
+	SearchAuthors(ctx context.Context, keyword string, limit int) ([]AuthorInfo, error)
 }
 
 // FederatedCitationRepository stores citation workflows.

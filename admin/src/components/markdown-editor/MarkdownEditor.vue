@@ -14,11 +14,15 @@ import {
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import EditorAIToolbar from '@/components/markdown-editor/EditorAIToolbar.vue'
+import EditorCitationPicker from '@/components/markdown-editor/EditorCitationPicker.vue'
 import EditorFloatingMenu from '@/components/markdown-editor/EditorFloatingMenu.vue'
+import EditorMentionPicker from '@/components/markdown-editor/EditorMentionPicker.vue'
 import { useAIToolbar } from '@/composables/markdown-editor/use-ai-toolbar'
+import { useCitationPicker } from '@/composables/markdown-editor/use-citation-picker'
 import { useCodeMirror } from '@/composables/markdown-editor/use-codemirror'
 import { useComponentInserter } from '@/composables/markdown-editor/use-component-inserter.ts'
 import { useFloatingMenu } from '@/composables/markdown-editor/use-floating-menu'
+import { useMentionPicker } from '@/composables/markdown-editor/use-mention-picker'
 import { uploadFile } from '@/services/uploads'
 import { cah } from '@/utils/chromaHelper'
 
@@ -105,8 +109,20 @@ const { isVisible, menuPos, activeFormats, executeCommand } = useFloatingMenu({
 // 4. AI 改写工具栏
 const aiToolbar = useAIToolbar(() => view.value)
 
+// 5. Federation pickers
+const mentionPicker = useMentionPicker(view)
+const citationPicker = useCitationPicker(view)
+
 function onAIRewriteTrigger() {
   aiToolbar.open()
+}
+
+function onMentionTrigger() {
+  mentionPicker.open()
+}
+
+function onCitationTrigger() {
+  citationPicker.open()
 }
 
 async function handleAIExecute() {
@@ -119,9 +135,13 @@ async function handleAIExecute() {
 
 onMounted(() => {
   editorRef.value?.addEventListener('ai-rewrite-trigger', onAIRewriteTrigger)
+  editorRef.value?.addEventListener('federation-mention-trigger', onMentionTrigger)
+  editorRef.value?.addEventListener('federation-citation-trigger', onCitationTrigger)
 })
 onUnmounted(() => {
   editorRef.value?.removeEventListener('ai-rewrite-trigger', onAIRewriteTrigger)
+  editorRef.value?.removeEventListener('federation-mention-trigger', onMentionTrigger)
+  editorRef.value?.removeEventListener('federation-citation-trigger', onCitationTrigger)
 })
 
 // 5. 光标与选择更新事件
@@ -235,6 +255,35 @@ watch(
       @accept="aiToolbar.accept()"
       @reject="aiToolbar.reject()"
       @close="aiToolbar.close()"
+    />
+
+    <EditorMentionPicker
+      :show="mentionPicker.state.show"
+      :query="mentionPicker.state.query"
+      :results="mentionPicker.state.results"
+      :loading="mentionPicker.state.loading"
+      @update:show="(v) => { if (!v) mentionPicker.close() }"
+      @search="mentionPicker.search"
+      @select="mentionPicker.insert"
+      @insertRaw="mentionPicker.insertRaw"
+    />
+
+    <EditorCitationPicker
+      :show="citationPicker.state.show"
+      :step="citationPicker.state.step"
+      :instances="citationPicker.state.instances"
+      :instance-filter="citationPicker.state.instanceFilter"
+      :selected-instance="citationPicker.state.selectedInstance"
+      :posts="citationPicker.state.posts"
+      :search-query="citationPicker.state.searchQuery"
+      :loading="citationPicker.state.loading"
+      @update:show="(v) => { if (!v) citationPicker.close() }"
+      @selectInstance="citationPicker.selectInstance"
+      @searchPosts="citationPicker.searchPosts"
+      @filterInstances="(v) => { citationPicker.state.instanceFilter = v }"
+      @select="citationPicker.insert"
+      @back="citationPicker.back"
+      @insertRaw="citationPicker.insertRaw"
     />
   </div>
 </template>

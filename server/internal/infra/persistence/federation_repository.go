@@ -207,6 +207,71 @@ func (r *FederatedPostCacheRepository) ListTimeline(ctx context.Context, page, p
 	return result, total, nil
 }
 
+func (r *FederatedPostCacheRepository) SearchPostsByInstance(ctx context.Context, instanceID int64, keyword string, limit int) ([]federation.FederatedPostCache, error) {
+	query := r.db.WithContext(ctx).Where("instance_id = ?", instanceID)
+	if kw := strings.TrimSpace(keyword); kw != "" {
+		like := "%" + kw + "%"
+		query = query.Where("title ILIKE ? OR summary ILIKE ?", like, like)
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	query = query.Order("published_at DESC").Limit(limit)
+	var recs []model.FederatedPostCache
+	if err := query.Find(&recs).Error; err != nil {
+		return nil, err
+	}
+	result := make([]federation.FederatedPostCache, len(recs))
+	for i, rec := range recs {
+		result[i] = mapFederatedPostCacheToDomain(rec)
+	}
+	return result, nil
+}
+
+func (r *FederatedPostCacheRepository) SearchAuthors(ctx context.Context, keyword string, limit int) ([]federation.AuthorInfo, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	type row struct {
+		Name         string  `gorm:"column:author_name"`
+		InstanceURL  string  `gorm:"column:base_url"`
+		InstanceName *string `gorm:"column:instance_name"`
+	}
+	query := r.db.WithContext(ctx).
+		Table("federated_post_cache").
+		Select("DISTINCT ON (author->>'name', federation_instance.base_url) author->>'name' AS author_name, federation_instance.base_url, federation_instance.name AS instance_name").
+		Joins("JOIN federation_instance ON federation_instance.id = federated_post_cache.instance_id").
+		Where("author->>'name' IS NOT NULL AND author->>'name' != ''")
+	if kw := strings.TrimSpace(keyword); kw != "" {
+		like := "%" + kw + "%"
+		query = query.Where("author->>'name' ILIKE ?", like)
+	}
+	query = query.Limit(limit)
+	var rows []row
+	if err := query.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	result := make([]federation.AuthorInfo, len(rows))
+	for i, r := range rows {
+		instanceName := ""
+		if r.InstanceName != nil {
+			instanceName = *r.InstanceName
+		}
+		result[i] = federation.AuthorInfo{
+			Name:         r.Name,
+			InstanceURL:  r.InstanceURL,
+			InstanceName: instanceName,
+		}
+	}
+	return result, nil
+}
+
 // FederatedCitationRepository stores citation workflows.
 type FederatedCitationRepository struct {
 	db *gorm.DB

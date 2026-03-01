@@ -190,6 +190,49 @@
   font-weight: 600;
 }
 
+/* Federation mention badge */
+.fed-mention {
+  display: inline;
+  padding: 0.1em 0.5em;
+  border-radius: 9999px;
+  font-size: 0.85em;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--cm-accent, #3b82f6) 15%, transparent);
+  color: var(--cm-accent, #3b82f6);
+}
+
+.fed-mention-host {
+  opacity: 0.6;
+  font-size: 0.9em;
+}
+
+/* Federation citation preview card */
+.fed-citation-preview {
+  display: block;
+  margin: 8px 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--cm-tooltip-border, #e5e7eb);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--cm-tooltip-bg, #ffffff) 60%, transparent);
+  font-size: 13px;
+  color: var(--cm-fg-muted, #64748b);
+}
+
+/* CodeMirror federation highlights */
+.cm-federation-mention {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--cm-accent, #3b82f6) 12%, transparent);
+  color: var(--cm-accent, #3b82f6);
+}
+
+.cm-federation-citation {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--cm-syntax-string, #22c55e) 12%, transparent);
+  color: var(--cm-syntax-string, #22c55e);
+}
+
 @keyframes cm-upload-shimmer {
   0% {
     background-position: 200% 0;

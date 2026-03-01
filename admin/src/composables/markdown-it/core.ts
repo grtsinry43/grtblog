@@ -1,6 +1,8 @@
 import MarkdownIt from 'markdown-it'
 
 import { componentBlockExtension } from './extensions/comp-block.ts'
+import { federationCitationExtension } from './extensions/federation-citation'
+import { federationMentionExtension } from './extensions/federation-mention'
 import { highlightPlugin } from './plugins/highlight'
 
 import type { MarkdownConfig } from './types'
@@ -23,6 +25,8 @@ export function createMarkdownIt(config: MarkdownConfig = {}) {
 
   // 2. 加载自定义业务扩展 Extensions
   componentBlockExtension(md)
+  federationMentionExtension(md)
+  federationCitationExtension(md)
 
   return md
 }
