@@ -231,10 +231,6 @@ func Register(app *fiber.App, deps Dependencies) {
 func registerAdminSPA(app *fiber.App) {
 	const dir = "admin"
 
-	app.Get("/admin", func(c *fiber.Ctx) error {
-		return c.Redirect("/admin/")
-	})
-
 	app.Get("/admin/*", func(c *fiber.Ctx) error {
 		sub := c.Params("*")
 		if sub != "" {

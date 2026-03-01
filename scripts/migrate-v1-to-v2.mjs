@@ -10,6 +10,7 @@
  * - website info (incl. footer/theme patch), owner status, latest global notification
  *
  * Not migrated by this script:
+ * - users/accounts (v2 has no public admin-create-user API after initialization)
  * - likes, views, detailed analytics, uploads binary data
  */
 
@@ -60,6 +61,8 @@ const RESERVED_PAGE_SHORT_URLS = new Set([
 ]);
 
 const NAV_ROOT_PARENT_KEY = '__root__';
+const COMMENT_ID_MODE_VALUES = new Set(['source', 'target']);
+const COMMENT_AUTHOR_MODE_VALUES = new Set(['keep', 'map', 'none']);
 
 let tempIdSeed = -1;
 
@@ -177,6 +180,18 @@ async function main() {
     verbose: Boolean(args.verbose),
     includeBuiltinPages: Boolean(args.includeBuiltinPages),
     pageSize: clampInt(args.pageSize || process.env.MIGRATE_PAGE_SIZE || 100, 10, 100),
+    commentIdMode: normalizeEnumArg(
+      args.commentIdMode || process.env.MIGRATE_COMMENT_ID_MODE || 'source',
+      COMMENT_ID_MODE_VALUES,
+      'source',
+      '--comment-id-mode',
+    ),
+    commentAuthorMode: normalizeEnumArg(
+      args.commentAuthorMode || process.env.MIGRATE_COMMENT_AUTHOR_MODE || 'map',
+      COMMENT_AUTHOR_MODE_VALUES,
+      'map',
+      '--comment-author-mode',
+    ),
     continueOnError: !args.strict,
     steps: selectedSteps,
   };
@@ -902,6 +917,7 @@ async function syncComments(ctx) {
 
   const { mapping: areaMapping, sourceIndex: sourceAreaIndex } = await buildCommentAreaMapping(ctx);
   console.log(`mapped source comment areas: ${areaMapping.size}`);
+  const authorResolver = await buildCommentAuthorResolver(ctx, sourceComments);
 
   const commentsBySourceArea = new Map();
   for (const src of sourceComments) {
@@ -974,6 +990,10 @@ async function syncComments(ctx) {
                 src,
                 targetAreaId,
                 parentTargetId,
+                {
+                  keepSourceCommentId: ctx.config.commentIdMode === 'source',
+                  resolvedAuthorId: resolveImportedCommentAuthorId(ctx, authorResolver, src),
+                },
               );
               const targetCommentId = toIdString(created?.id);
               if (!targetCommentId) {
@@ -1462,6 +1482,7 @@ async function buildSourceCommentAreaIndex(ctx) {
   const map = new Map();
 
   const articleList = await fetchSourcePaged(ctx.source, '/admin/article/all', ctx.config.pageSize);
+  const articleTitleToShortUrl = new Map();
   for (const item of articleList.items) {
     await withItemGuard(
       ctx,
@@ -1472,11 +1493,25 @@ async function buildSourceCommentAreaIndex(ctx) {
         const detail = await ctx.source.request(`/admin/article/${encodeURIComponent(id)}`, {
           authRequired: true,
         });
-        const areaId = toIdString(detail?.commentId ?? detail?.commentAreaId ?? item?.commentId ?? item?.commentAreaId);
         const shortUrl = normalizeShortUrl(
           detail?.shortUrl ?? item?.shortUrl,
           slugify(cleanString(detail?.title) || cleanString(item?.title) || `article-${id}`),
         );
+        indexUniqueStringMap(
+          articleTitleToShortUrl,
+          normalizeName(detail?.title || item?.title),
+          shortUrl,
+        );
+        let areaId = toIdString(detail?.commentId ?? detail?.commentAreaId ?? item?.commentId ?? item?.commentAreaId);
+        if (!areaId && shortUrl) {
+          const articleDetailPublic = await ctx.source.request(`/article/${encodeURIComponent(shortUrl)}`, {
+            authRequired: false,
+          });
+          areaId = toIdString(articleDetailPublic?.commentId ?? articleDetailPublic?.commentAreaId);
+          if (areaId) {
+            incStat(ctx, 'comment.area_source_article_public_detail');
+          }
+        }
         if (!areaId || !shortUrl) return;
         map.set(areaId, { type: 'article', shortUrl });
       },
@@ -1489,6 +1524,7 @@ async function buildSourceCommentAreaIndex(ctx) {
     '/admin/statusUpdate/all',
     ctx.config.pageSize,
   );
+  const momentTitleToShortUrl = new Map();
   for (const item of momentList.items) {
     await withItemGuard(
       ctx,
@@ -1499,11 +1535,25 @@ async function buildSourceCommentAreaIndex(ctx) {
         const detail = await ctx.source.request(`/admin/statusUpdate/${encodeURIComponent(id)}`, {
           authRequired: true,
         });
-        const areaId = toIdString(detail?.commentId ?? detail?.commentAreaId ?? item?.commentId ?? item?.commentAreaId);
         const shortUrl = normalizeShortUrl(
           detail?.shortUrl ?? item?.shortUrl,
           slugify(cleanString(detail?.title) || cleanString(item?.title) || `moment-${id}`),
         );
+        indexUniqueStringMap(
+          momentTitleToShortUrl,
+          normalizeName(detail?.title || item?.title),
+          shortUrl,
+        );
+        let areaId = toIdString(detail?.commentId ?? detail?.commentAreaId ?? item?.commentId ?? item?.commentAreaId);
+        if (!areaId && shortUrl) {
+          const momentDetailPublic = await ctx.source.request(`/statusUpdate/${encodeURIComponent(shortUrl)}`, {
+            authRequired: false,
+          });
+          areaId = toIdString(momentDetailPublic?.commentId ?? momentDetailPublic?.commentAreaId);
+          if (areaId) {
+            incStat(ctx, 'comment.area_source_moment_public_detail');
+          }
+        }
         if (!areaId || !shortUrl) return;
         map.set(areaId, { type: 'moment', shortUrl });
       },
@@ -1512,6 +1562,7 @@ async function buildSourceCommentAreaIndex(ctx) {
   }
 
   const pageList = await fetchSourcePaged(ctx.source, '/admin/page/all', ctx.config.pageSize);
+  const pageTitleToShortUrl = new Map();
   for (const item of pageList.items) {
     await withItemGuard(
       ctx,
@@ -1530,6 +1581,11 @@ async function buildSourceCommentAreaIndex(ctx) {
         if (!shortUrl) {
           shortUrl = slugify(cleanString(detail?.title) || `page-${id}`);
         }
+        indexUniqueStringMap(
+          pageTitleToShortUrl,
+          normalizeName(detail?.title || item?.title),
+          shortUrl,
+        );
         if (!areaId || !shortUrl) return;
         map.set(areaId, { type: 'page', shortUrl });
       },
@@ -1537,7 +1593,66 @@ async function buildSourceCommentAreaIndex(ctx) {
     );
   }
 
+  const sourceAreas = ensureArray(
+    await ctx.source.request('/admin/comment/allArea', { authRequired: true }),
+  );
+  for (const area of sourceAreas) {
+    await withItemGuard(
+      ctx,
+      `load source area fallback:${area?.id ?? 'unknown'}`,
+      async () => {
+        const areaId = toIdString(area?.id);
+        if (!areaId || map.has(areaId)) return;
+
+        const parsed = parseSourceAreaName(area?.areaName);
+        if (!parsed) return;
+
+        let shortUrl = null;
+        if (parsed.type === 'article') {
+          shortUrl = pickUniqueMappedId(articleTitleToShortUrl, parsed.normalizedTitle);
+        } else if (parsed.type === 'moment') {
+          shortUrl = pickUniqueMappedId(momentTitleToShortUrl, parsed.normalizedTitle);
+        } else if (parsed.type === 'page') {
+          shortUrl = pickUniqueMappedId(pageTitleToShortUrl, parsed.normalizedTitle);
+        }
+        if (!shortUrl) return;
+
+        map.set(areaId, { type: parsed.type, shortUrl });
+        incStat(ctx, 'comment.area_source_fallback_by_area_name');
+      },
+      'comment.area_source_failed',
+    );
+  }
+
   return map;
+}
+
+function parseSourceAreaName(areaName) {
+  const raw = cleanString(areaName);
+  if (!raw) return null;
+  const idx = raw.indexOf(':');
+  if (idx <= 0) return null;
+
+  const prefix = cleanString(raw.slice(0, idx));
+  const title = cleanString(raw.slice(idx + 1));
+  if (!prefix || !title) return null;
+
+  let type = '';
+  if (prefix === '文章') {
+    type = 'article';
+  } else if (prefix === '分享') {
+    type = 'moment';
+  } else if (prefix === '页面') {
+    type = 'page';
+  } else {
+    return null;
+  }
+
+  return {
+    type,
+    title,
+    normalizedTitle: normalizeName(title),
+  };
 }
 
 async function buildTargetCommentAreaIndex(ctx) {
@@ -1639,9 +1754,9 @@ function orderSourceCommentsForCreate(items) {
   });
 }
 
-async function importTargetCommentWithFallback(ctx, src, targetAreaId, parentTargetId) {
+async function importTargetCommentWithFallback(ctx, src, targetAreaId, parentTargetId, importOptions = {}) {
   try {
-    return await importTargetComment(ctx, src, targetAreaId, parentTargetId);
+    return await importTargetComment(ctx, src, targetAreaId, parentTargetId, importOptions);
   } catch (error) {
     if (!parentTargetId || !shouldRetryCommentWithoutParent(error)) {
       throw error;
@@ -1651,11 +1766,146 @@ async function importTargetCommentWithFallback(ctx, src, targetAreaId, parentTar
       `comment parent fallback to root: sourceCommentId=${sourceId}, reason=${error?.message || String(error)}`,
     );
     incStat(ctx, 'comment.parent_fallback_root');
-    return importTargetComment(ctx, src, targetAreaId, null);
+    return importTargetComment(ctx, src, targetAreaId, null, importOptions);
   }
 }
 
-async function importTargetComment(ctx, src, targetAreaId, parentTargetId) {
+async function buildCommentAuthorResolver(ctx, sourceComments) {
+  const mode = ctx.config.commentAuthorMode;
+  if (mode === 'none' || mode === 'keep') {
+    return {
+      mode,
+      sourceToTargetAuthorId: new Map(),
+      warnedUnmappedSourceAuthor: new Set(),
+    };
+  }
+
+  const targetUsers = await fetchTargetPaged(ctx.target, '/admin/users', ctx.config.pageSize, {
+    authRequired: true,
+  });
+  const users = ensureArray(targetUsers.items);
+  console.log(`loaded target users for comment-author mapping: ${users.length}`);
+
+  const targetIdSet = new Set();
+  const emailToTargetId = new Map();
+  const nicknameToTargetId = new Map();
+  const adminIds = [];
+
+  for (const item of users) {
+    const targetId = toIdString(item?.id);
+    if (!targetId) continue;
+    targetIdSet.add(targetId);
+    indexUniqueStringMap(emailToTargetId, normalizeEmail(item?.email), targetId);
+    indexUniqueStringMap(nicknameToTargetId, normalizeNickname(item?.nickname), targetId);
+    if (toBoolean(item?.isAdmin, false)) {
+      adminIds.push(targetId);
+    }
+  }
+
+  const ownerFallbackAdminId = adminIds.length === 1 ? adminIds[0] : null;
+  if (!ownerFallbackAdminId && adminIds.length > 1) {
+    ctx.warnings.push(
+      `comment author map: multiple admin users found (${adminIds.length}), disabled owner fallback`,
+    );
+  }
+
+  const sourceToTargetAuthorId = new Map();
+  for (const src of sourceComments) {
+    const sourceAuthorId = toIdString(src?.authorId);
+    if (!sourceAuthorId || sourceToTargetAuthorId.has(sourceAuthorId)) continue;
+
+    let resolved = null;
+    if (targetIdSet.has(sourceAuthorId)) {
+      resolved = sourceAuthorId;
+      incStat(ctx, 'comment.author.map_by_id');
+    } else {
+      const byEmail = pickUniqueMappedId(emailToTargetId, normalizeEmail(src?.email));
+      if (byEmail) {
+        resolved = byEmail;
+        incStat(ctx, 'comment.author.map_by_email');
+      } else {
+        const byNickname = pickUniqueMappedId(nicknameToTargetId, normalizeNickname(src?.nickName));
+        if (byNickname) {
+          resolved = byNickname;
+          incStat(ctx, 'comment.author.map_by_nickname');
+        } else if (toBoolean(src?.isOwner, false) && ownerFallbackAdminId) {
+          resolved = ownerFallbackAdminId;
+          incStat(ctx, 'comment.author.map_by_owner_admin');
+        } else {
+          incStat(ctx, 'comment.author.map_unresolved_source_user');
+        }
+      }
+    }
+
+    sourceToTargetAuthorId.set(sourceAuthorId, resolved);
+  }
+
+  return {
+    mode,
+    sourceToTargetAuthorId,
+    warnedUnmappedSourceAuthor: new Set(),
+  };
+}
+
+function resolveImportedCommentAuthorId(ctx, resolver, src) {
+  const sourceAuthorId = toIdString(src?.authorId);
+  if (!sourceAuthorId) {
+    return null;
+  }
+
+  if (resolver.mode === 'none') {
+    incStat(ctx, 'comment.author.cleared_none_mode');
+    return null;
+  }
+
+  if (resolver.mode === 'keep') {
+    incStat(ctx, 'comment.author.kept_source');
+    return sourceAuthorId;
+  }
+
+  const mapped = resolver.sourceToTargetAuthorId.get(sourceAuthorId);
+  if (mapped) {
+    incStat(ctx, 'comment.author.mapped_for_import');
+    return mapped;
+  }
+
+  incStat(ctx, 'comment.author.cleared_unmapped');
+  if (!resolver.warnedUnmappedSourceAuthor.has(sourceAuthorId)) {
+    resolver.warnedUnmappedSourceAuthor.add(sourceAuthorId);
+    const email = normalizeEmail(src?.email);
+    const nickname = cleanString(src?.nickName);
+    ctx.warnings.push(
+      `comment author not mapped, fallback to visitor: sourceAuthorId=${sourceAuthorId}, email=${email || '-'}, nickName=${nickname || '-'}`,
+    );
+  }
+  return null;
+}
+
+function indexUniqueStringMap(map, key, id) {
+  if (!key || !id) return;
+  if (!map.has(key)) {
+    map.set(key, id);
+    return;
+  }
+  if (map.get(key) !== id) {
+    map.set(key, null);
+  }
+}
+
+function pickUniqueMappedId(map, key) {
+  if (!key) return null;
+  return map.get(key) || null;
+}
+
+function normalizeEmail(value) {
+  return cleanString(value).toLowerCase();
+}
+
+function normalizeNickname(value) {
+  return cleanString(value).toLowerCase();
+}
+
+async function importTargetComment(ctx, src, targetAreaId, parentTargetId, importOptions = {}) {
   const sourceCommentId = toIdString(src?.id);
   const content = cleanString(src?.content) || (cleanString(src?.deletedAt) ? '[deleted]' : '');
   if (!content) {
@@ -1663,14 +1913,14 @@ async function importTargetComment(ctx, src, targetAreaId, parentTargetId) {
   }
 
   const isOwner = toBoolean(src?.isOwner, false);
-  const authorId = toIdString(src?.authorId);
+  const authorId = toIdString(importOptions?.resolvedAuthorId);
   const createdAt = toRFC3339OrNull(src?.createdAt);
   const updatedAt = toRFC3339OrNull(src?.updatedAt || src?.createdAt);
   const deletedAt = toRFC3339OrNull(src?.deletedAt);
   const status = normalizeCommentImportStatus(src?.status);
 
   const payload = {
-    id: sourceCommentId || null,
+    id: importOptions?.keepSourceCommentId ? sourceCommentId || null : null,
     areaId: toIdString(targetAreaId),
     content,
     authorId: authorId || null,
@@ -2112,6 +2362,8 @@ function parseArgs(argv) {
     sourceToken: '',
     targetToken: '',
     pageSize: '',
+    commentIdMode: '',
+    commentAuthorMode: '',
     dryRun: false,
     verbose: false,
     includeBuiltinPages: false,
@@ -2166,6 +2418,12 @@ function parseArgs(argv) {
         break;
       case '--page-size':
         out.pageSize = v;
+        break;
+      case '--comment-id-mode':
+        out.commentIdMode = v;
+        break;
+      case '--comment-author-mode':
+        out.commentAuthorMode = v;
         break;
       default:
         throw new Error(`Unknown argument: ${arg}`);
@@ -2235,6 +2493,8 @@ function logConfig(config) {
   console.log(`- include builtin pages: ${config.includeBuiltinPages ? 'yes' : 'no'}`);
   console.log(`- strict mode: ${config.continueOnError ? 'no' : 'yes'}`);
   console.log(`- page size: ${config.pageSize}`);
+  console.log(`- comment id mode: ${config.commentIdMode}`);
+  console.log(`- comment author mode: ${config.commentAuthorMode}`);
   console.log(`- steps: ${steps || '(none)'}`);
 }
 
@@ -2251,6 +2511,8 @@ Options:
   --steps=<list>              comma-separated steps
   --skip=<list>               comma-separated steps to skip
   --page-size=<n>             pagination size (10-100, default 100)
+  --comment-id-mode=<mode>    source|target (default source)
+  --comment-author-mode=<m>   keep|map|none (default map)
   --dry-run                   print actions without write requests
   --include-builtin-pages     migrate v1 built-in pages too
   --strict                    stop at first failed step/item
@@ -2291,6 +2553,16 @@ function printSummary(ctx) {
   }
 
   console.log('\nDone.');
+}
+
+function normalizeEnumArg(value, allowedValues, fallback, name) {
+  const normalized = cleanString(value).toLowerCase() || fallback;
+  if (!allowedValues.has(normalized)) {
+    throw new Error(
+      `Invalid value for ${name}: ${value}. Allowed: ${[...allowedValues].join(', ')}`,
+    );
+  }
+  return normalized;
 }
 
 function incStat(ctx, key, delta = 1) {

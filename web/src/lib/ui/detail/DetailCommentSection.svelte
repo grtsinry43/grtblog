@@ -24,7 +24,7 @@
 </script>
 
 {#if commentAreaId}
-	<div class={containerClass}>
+	<div class={containerClass} data-comment-area>
 		{#snippet commentFallback()}
 			<div class={fallbackContainerClass}>
 				<Loading size={fallbackSize} duration={1000} text={fallbackText} />

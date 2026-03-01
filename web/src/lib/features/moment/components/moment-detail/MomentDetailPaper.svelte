@@ -2,6 +2,7 @@
 	import type { MomentDetail } from '$lib/features/moment/types';
 	import DetailCommentSection from '$lib/ui/detail/DetailCommentSection.svelte';
 	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
+	import DetailActionBar from '$lib/ui/detail/DetailActionBar.svelte';
 	import { formatDateCN, isDifferentDay } from '$lib/shared/utils/date';
 	import { Sun } from 'lucide-svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
@@ -76,6 +77,14 @@
 			className="max-w-none text-ink-900/80 dark:text-ink-200/90 font-serif text-justify text-[15px]"
 			{onContentRootChange}
 			{onActiveAnchorChange}
+		/>
+
+		<DetailActionBar
+			contentType="moment"
+			contentId={moment.id}
+			likes={moment.metrics?.likes ?? 0}
+			comments={moment.metrics?.comments ?? 0}
+			tone="cinnabar"
 		/>
 
 		<div class="mt-24 flex justify-center opacity-40">

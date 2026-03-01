@@ -1,16 +1,21 @@
 <script lang="ts">
 	import { postDetailCtx } from '$lib/features/post/context';
-	import { sameToc } from './selector-equals';
+	import { sameToc, sameMetrics } from './selector-equals';
 	import PostDetailAiSummary from './PostDetailAiSummary.svelte';
 	import PostDetailComments from './PostDetailComments.svelte';
 	import PostDetailFooter from './PostDetailFooter.svelte';
 	import PostDetailMarkdown from './PostDetailMarkdown.svelte';
 	import PostDetailTocSidebar from './PostDetailTocSidebar.svelte';
 	import PostDetailLeadIn from './PostDetailLeadIn.svelte';
+	import DetailActionBar from '$lib/ui/detail/DetailActionBar.svelte';
 
 	const aiSummaryStore = postDetailCtx.selectModelData((data) => data?.aiSummary ?? '');
 	const contentStore = postDetailCtx.selectModelData((data) => data?.content ?? '');
 	const tocStore = postDetailCtx.selectModelData((data) => data?.toc ?? [], { equals: sameToc });
+	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
+	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
+		equals: sameMetrics
+	});
 
 	let contentRoot: HTMLElement | null = $state(null);
 	let activeAnchor: string | null = $state(null);
@@ -37,6 +42,14 @@
 			toc={$tocStore}
 			onContentRootChange={handleContentRootChange}
 			onActiveAnchorChange={handleActiveAnchorChange}
+		/>
+
+		<DetailActionBar
+			contentType="article"
+			contentId={$postIdStore}
+			likes={$metricsStore?.likes ?? 0}
+			comments={$metricsStore?.comments ?? 0}
+			tone="jade"
 		/>
 
 		<PostDetailFooter />
