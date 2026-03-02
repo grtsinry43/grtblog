@@ -7,8 +7,7 @@ export type TimelineStats = {
 };
 
 export const flattenAndLayoutTimeline = (
-	data: TimelineByYearResponse,
-	pixelsPerMonth = 500
+	data: TimelineByYearResponse
 ): {
 	items: UnifiedTimelineItem[];
 	totalWidth: number;
@@ -73,19 +72,47 @@ export const flattenAndLayoutTimeline = (
 	const startMonth = firstDate.getMonth();
 	const endYear = lastDate.getFullYear();
 	const endMonth = lastDate.getMonth();
-
 	const totalMonths = (endYear - startYear) * 12 + (endMonth - startMonth) + 1;
 
+	// --- Dynamic month widths (proportional scale) ---
+	const EMPTY_MONTH_PX = 80;
+	const PX_PER_ITEM = 280;
+	const MIN_ACTIVE_PX = 350;
+
+	// Count items per month and assign month indices
+	const itemCountPerMonth = new Array(totalMonths).fill(0);
+	items.forEach((item) => {
+		const mIdx =
+			(item.publishedAt.getFullYear() - startYear) * 12 +
+			(item.publishedAt.getMonth() - startMonth);
+		item.monthIndex = mIdx;
+		itemCountPerMonth[mIdx]++;
+	});
+
+	// Per-month widths: empty months compressed, dense months expanded
+	const monthWidths: number[] = itemCountPerMonth.map((count: number) =>
+		count === 0 ? EMPTY_MONTH_PX : Math.max(MIN_ACTIVE_PX, count * PX_PER_ITEM)
+	);
+
+	// Cumulative X start positions
+	const monthStartX: number[] = [];
+	let cumX = 0;
+	for (let i = 0; i < totalMonths; i++) {
+		monthStartX.push(cumX);
+		cumX += monthWidths[i];
+	}
+	const totalWidth = cumX;
+
+	// Build month markers (x = center of month region)
 	const yearStats: Record<string, TimelineStats> = {};
 	const months: { year: string; month: number; x: number; stats: TimelineStats }[] = [];
-
 	for (let i = 0; i < totalMonths; i++) {
 		const m = (startMonth + i) % 12;
 		const y = startYear + Math.floor((startMonth + i) / 12);
 		months.push({
 			year: String(y),
 			month: m + 1,
-			x: i * pixelsPerMonth,
+			x: monthStartX[i] + monthWidths[i] / 2,
 			stats: { posts: 0, moments: 0, thinkings: 0 }
 		});
 		if (!yearStats[String(y)]) {
@@ -93,22 +120,72 @@ export const flattenAndLayoutTimeline = (
 		}
 	}
 
-	const lanes = [-160, 160, -80, 80, -240, 240];
-	let lastLaneIndex = -1;
+	// --- Overlap-aware item placement ---
+	const CARD_W = 250;
+	const CARD_H = 150;
+	// Alternating above/below for staggered layout
+	const lanes = [-75, 75, -220, 220];
+	const placed: { x: number; y: number }[] = [];
 
-	items.forEach((item, idx) => {
-		const mIdx =
-			(item.publishedAt.getFullYear() - startYear) * 12 +
-			(item.publishedAt.getMonth() - startMonth);
-		const jitter = Math.sin(idx) * 60;
-		item.targetX = mIdx * pixelsPerMonth + jitter + pixelsPerMonth / 2;
+	// Group items by month for horizontal distribution
+	const monthGroups: Map<number, number[]> = new Map();
+	items.forEach((_, idx) => {
+		const mIdx = items[idx].monthIndex!;
+		if (!monthGroups.has(mIdx)) monthGroups.set(mIdx, []);
+		monthGroups.get(mIdx)!.push(idx);
+	});
 
-		if (item.type === 'yearSummary') {
-			item.targetY = -40;
-			lastLaneIndex = -1;
-		} else {
-			lastLaneIndex = (lastLaneIndex + 1) % lanes.length;
-			item.targetY = lanes[lastLaneIndex];
+	// Process months in order
+	for (let mIdx = 0; mIdx < totalMonths; mIdx++) {
+		const indices = monthGroups.get(mIdx);
+		if (!indices) continue;
+
+		const mStart = monthStartX[mIdx];
+		const mWidth = monthWidths[mIdx];
+		const count = indices.length;
+
+		indices.forEach((itemIdx, localIdx) => {
+			const item = items[itemIdx];
+
+			// Horizontal: spread items evenly within the month region
+			const padding = CARD_W * 0.55;
+			const usableWidth = mWidth - padding * 2;
+			if (count === 1) {
+				item.targetX = mStart + mWidth / 2;
+			} else {
+				const spacing = usableWidth / (count - 1);
+				item.targetX = mStart + padding + localIdx * spacing;
+			}
+
+			// Vertical: find the best lane with least overlap, cycling start for staggered layout
+			if (item.type === 'yearSummary') {
+				item.targetY = -40;
+			} else {
+				let bestLane = lanes[0];
+				let minOverlap = Infinity;
+
+				// Cycle starting lane so consecutive items alternate above/below
+				const startLane = localIdx % lanes.length;
+				for (let j = 0; j < lanes.length; j++) {
+					const lane = lanes[(startLane + j) % lanes.length];
+					let worstOverlap = 0;
+					for (const p of placed) {
+						const dx = Math.abs(item.targetX - p.x);
+						const dy = Math.abs(lane - p.y);
+						const overlapX = Math.max(0, CARD_W - dx);
+						const overlapY = Math.max(0, CARD_H - dy);
+						worstOverlap = Math.max(worstOverlap, overlapX * overlapY);
+					}
+					if (worstOverlap < minOverlap) {
+						minOverlap = worstOverlap;
+						bestLane = lane;
+						if (worstOverlap === 0) break;
+					}
+				}
+				item.targetY = bestLane;
+			}
+
+			placed.push({ x: item.targetX, y: item.targetY! });
 
 			// Update stats
 			const type = item.type;
@@ -117,13 +194,8 @@ export const flattenAndLayoutTimeline = (
 				months[mIdx].stats[key]++;
 				yearStats[item.year][key]++;
 			}
-		}
-	});
+		});
+	}
 
-	return {
-		items,
-		totalWidth: totalMonths * pixelsPerMonth,
-		months,
-		yearStats
-	};
+	return { items, totalWidth, months, yearStats };
 };

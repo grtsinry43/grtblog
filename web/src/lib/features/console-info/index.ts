@@ -15,8 +15,10 @@ export const consoleLogInfo = (): void => {
 
 	const mottoStyle = `font-style: italic; font-size: 11px; opacity: 0.6; padding-top: 4px; line-height: 1.5; font-family: system-ui, sans-serif;`;
 
+	const commitSuffix = brand.commit && brand.commit !== 'dev' ? ` (${brand.commit.slice(0, 7)})` : '';
+
 	console.log(
-		`%c${brand.name}%c${brand.version}%c ${brand.slogan}`,
+		`%c${brand.name}%c${brand.version}${commitSuffix}%c ${brand.slogan}`,
 		nameStyle,
 		verStyle,
 		sloganStyle

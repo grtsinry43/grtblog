@@ -2,6 +2,7 @@
 	import type { UnifiedTimelineItem } from '../types';
 	import TimelineItem from './TimelineItem.svelte';
 	import YearIndicator from './YearIndicator.svelte';
+	import { Sparkles } from 'lucide-svelte';
 
 	let { data } = $props<{
 		data: {
@@ -22,9 +23,12 @@
 
 	let containerRef: HTMLDivElement | undefined = $state();
 
-	// Total scroll height (vertical) determines the "time travel" speed
-	const scrollPerMonth = 400;
-	const verticalHeight = $derived(months.length * scrollPerMonth + innerHeight);
+	// Advanced blur toggle (off by default for performance)
+	let highQuality = $state(false);
+
+	// Scroll height proportional to timeline width for consistent pacing
+	const SCROLL_RATIO = 1.5;
+	const verticalHeight = $derived(totalWidth * SCROLL_RATIO + innerHeight);
 
 	// Progress (0 to 1) based on vertical scroll
 	const progress = $derived.by(() => {
@@ -35,8 +39,19 @@
 		return Math.max(0, Math.min(1, p));
 	});
 
-	// The currently focused X coordinate on the timeline (what's in the center of the screen)
+	// The currently focused X coordinate on the timeline
 	const focusedX = $derived(progress * totalWidth);
+
+	// Viewport culling: only render items within range
+	const CULL_RANGE = 1500;
+	const visibleItems = $derived(
+		items.filter((item) => Math.abs((item.targetX ?? 0) - focusedX) < CULL_RANGE)
+	);
+
+	// Cull month markers too
+	const visibleMonths = $derived(
+		months.filter((m) => Math.abs(m.x - focusedX) < innerWidth + 300)
+	);
 
 	// Which year is currently in focus for the YearIndicator
 	const currentYear = $derived.by(() => {
@@ -78,12 +93,18 @@
 				class="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:64px_64px]"
 			></div>
 
-			<!-- Decorative Orbs -->
+			<!-- Decorative Orbs (HQ: parallax drift with progress) -->
 			<div
-				class="absolute -left-1/4 -top-1/4 h-[800px] w-[800px] rounded-full bg-jade-500/10 blur-[120px] dark:bg-jade-500/15"
+				class="absolute -left-1/4 -top-1/4 h-[800px] w-[800px] rounded-full bg-jade-500/10 blur-[120px] will-change-transform dark:bg-jade-500/15"
+				style={highQuality
+					? `transform: translate(${progress * 200 - 100}px, ${progress * 80 - 40}px);`
+					: ''}
 			></div>
 			<div
-				class="absolute -right-1/4 -bottom-1/4 h-[900px] w-[900px] rounded-full bg-amber-500/5 blur-[120px] dark:bg-amber-500/10"
+				class="absolute -right-1/4 -bottom-1/4 h-[900px] w-[900px] rounded-full bg-amber-500/5 blur-[120px] will-change-transform dark:bg-amber-500/10"
+				style={highQuality
+					? `transform: translate(${-progress * 160 + 80}px, ${-progress * 60 + 30}px);`
+					: ''}
 			></div>
 		</div>
 
@@ -94,6 +115,19 @@
 			yearStats={currentMonthData.yearStats}
 		/>
 
+		<!-- HQ Blur Toggle -->
+		<button
+			type="button"
+			class="fixed right-6 bottom-8 z-50 flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider backdrop-blur-sm transition-all duration-300 md:right-8
+				{highQuality
+				? 'border-jade-500/50 bg-jade-500/15 text-jade-500 shadow-jade-glow dark:border-jade-400/40 dark:bg-jade-400/10 dark:text-jade-400'
+				: 'border-ink-300/40 bg-ink-100/10 text-ink-400 hover:border-ink-400/50 hover:text-ink-500 dark:border-ink-700/50 dark:bg-ink-900/30 dark:text-ink-500 dark:hover:text-ink-400'}"
+			onclick={() => (highQuality = !highQuality)}
+		>
+			<Sparkles size={12} />
+			{highQuality ? 'HQ On' : 'HQ Off'}
+		</button>
+
 		<!-- Main Timeline Container -->
 		<div class="relative h-full w-full">
 			<!-- The Axis Line -->
@@ -101,12 +135,20 @@
 				class="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-ink-100 via-ink-200 to-ink-100 dark:from-ink-900 dark:via-ink-800 dark:to-ink-900"
 			></div>
 
+			<!-- HQ: Focus Spotlight — radial light cone at viewport center -->
+			{#if highQuality}
+				<div
+					class="pointer-events-none absolute inset-0 z-[1] transition-opacity duration-500"
+					style="background: radial-gradient(ellipse 700px 500px at 50% 50%, rgba(16,185,129,0.07) 0%, transparent 70%);"
+				></div>
+			{/if}
+
 			<!-- Month Markers on Axis -->
 			<div
 				class="absolute inset-0 flex items-center will-change-transform"
 				style="transform: translateX({innerWidth / 2 - focusedX}px);"
 			>
-				{#each months as month}
+				{#each visibleMonths as month (`${month.year}-${month.month}`)}
 					<div class="absolute flex flex-col items-center" style="left: {month.x}px;">
 						<!-- The Node Dot -->
 						<div
@@ -142,8 +184,8 @@
 					</div>
 				{/each}
 
-				<!-- Items -->
-				{#each items as item, i}
+				<!-- Items (only visible ones rendered) -->
+				{#each visibleItems as item, i (item.id)}
 					{@const distFromFocus = item.targetX! - focusedX}
 					{@const absDist = Math.abs(distFromFocus)}
 
@@ -155,9 +197,9 @@
 						? Math.max(0, 1 - Math.max(0, absDist - innerWidth * 0.35) / 150)
 						: Math.max(0.4, 1 - absDist / 1500)}
 
-					<!-- Intermediate positions for animation sync -->
 					{@const currentY = isPast ? item.targetY! : item.targetY! * flyProgress}
 					{@const currentXOffset = isPast ? 0 : (1 - flyProgress) * 400}
+					{@const isHqNear = highQuality && focusWeight > 0.7}
 
 					<div
 						class="absolute will-change-transform"
@@ -165,41 +207,53 @@
 							left: {item.targetX}px;
 							top: 50%;
 							transform: translate(-50%, -50%);
-							z-index: {item.type === 'yearSummary' ? 150 : Math.round(100 - absDist / 20)};
+							z-index: {item.type === 'yearSummary'
+							? 150
+							: Math.round(100 - absDist / 20)};
 							opacity: {focusWeight};
 						"
 					>
-						<!-- Connector System (Behind the card) -->
+						<!-- Connector System (HQ: jade glow when near focus) -->
 						<div
-							class="absolute pointer-events-none"
-							style="transform: translateX({currentXOffset}px); width: 1px; height: 1px; left: 50%; top: 50%;"
+							class="pointer-events-none absolute"
+							style="left: 50%; top: 50%; transform: translateX({currentXOffset}px);"
 						>
-							<!-- Micro-node on Axis -->
+							<!-- Micro-node on Axis — centered at origin via explicit offset -->
 							<div
-								class="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-400/60 dark:bg-ink-500/60 transition-transform duration-500"
-								style="transform: translate(-50%, -50%) scale({flyProgress});"
+								class="absolute h-1 w-1 rounded-full {isHqNear ? 'bg-jade-400 dark:bg-jade-500' : 'bg-ink-400/60 dark:bg-ink-500/60'}"
+								style="left: -2px; top: -2px; transform: scale({flyProgress});{isHqNear ? ` box-shadow: 0 0 ${focusWeight * 8}px ${focusWeight * 3}px rgba(16,185,129,${focusWeight * 0.5});` : ''}"
 							></div>
 
-							<!-- Vertical Connector Line -->
+							<!-- Vertical Connector Line — centered at origin -->
 							<div
-								class="absolute left-1/2 w-[0.5px] -translate-x-1/2 bg-ink-300/40 dark:bg-ink-700/40"
+								class="absolute {isHqNear ? 'bg-jade-400/40 dark:bg-jade-500/30' : 'bg-ink-300/40 dark:bg-ink-700/40'}"
 								style="
+									width: {isHqNear ? 1 : 0.5}px;
+									left: {isHqNear ? -0.5 : -0.25}px;
 									height: {Math.abs(currentY)}px;
-									top: {currentY > 0 ? 0 : currentY}px;
+									top: {Math.min(0, currentY)}px;
 								"
 							></div>
 						</div>
 
-						<!-- Card Animation Wrapper -->
+						<!-- Card wrapper: HQ adds 3D perspective, DOF blur+desaturation, glow halo -->
 						<div
-							class="relative z-10 transition-all duration-500 ease-out"
+							class="relative z-10"
 							style="
-								transform: 
-									translate({currentXOffset}px, {isPast ? 0 : (1 - flyProgress) * 300}px) 
+								transform:
+									{highQuality ? 'perspective(800px)' : ''}
+									translate({currentXOffset}px, {isPast
+								? 0
+								: (1 - flyProgress) * 300}px)
 									translateY({currentY}px)
 									scale({0.9 + focusWeight * 0.1})
-									rotate({isPast ? 0 : (1 - flyProgress) * 10}deg);
-								filter: blur({(1 - focusWeight) * 4}px);
+									rotate({isPast ? 0 : (1 - flyProgress) * 10}deg)
+									{highQuality
+								? `rotateY(${Math.max(-5, Math.min(5, distFromFocus * 0.004))}deg)`
+								: ''};
+								{highQuality
+								? `filter: blur(${(1 - focusWeight) * 4}px) grayscale(${(1 - focusWeight) * 0.5}); box-shadow: 0 0 ${focusWeight * 30}px ${focusWeight * 8}px rgba(16,185,129,${focusWeight * 0.12});`
+								: ''}
 							"
 						>
 							<TimelineItem {item} index={i} scrollProgress={progress} visibleIndex={0} />

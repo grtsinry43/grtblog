@@ -7,12 +7,13 @@ import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey } from '@/injection'
 import ThemeModePopover from '@/layout/header/action/ThemeModePopover.vue'
 import router from '@/router'
-import { login } from '@/services/auth'
+import { getTurnstileState, login } from '@/services/auth'
 import { ApiError } from '@/services/http'
 import { toRefsPreferencesStore, useUserStore } from '@/stores'
 import twc from '@/utils/tailwindColor'
 
 import ThemeColorPopover from './components/ThemeColorPopover.vue'
+import TurnstileWidget from './components/TurnstileWidget.vue'
 
 import type { FormItemRule } from 'naive-ui'
 
@@ -35,6 +36,15 @@ const illustrations = [
 const loading = ref(false)
 const isNavigating = ref(false)
 const isRememberMed = ref(false)
+
+const turnstileEnabled = ref(false)
+const turnstileSiteKey = ref('')
+const turnstileToken = ref('')
+
+const canSubmit = computed(() => {
+  if (turnstileEnabled.value && !turnstileToken.value) return false
+  return !loading.value && !isNavigating.value
+})
 
 const textureMaskParams = reactive({
   size: '666px 666px',
@@ -83,6 +93,7 @@ const handleSubmitClick = () => {
         const result = await login({
           credential: signInForm.account,
           password: signInForm.password,
+          ...(turnstileEnabled.value && turnstileToken.value ? { turnstileToken: turnstileToken.value } : {}),
         })
         userStore.setAuth({
           token: result.token,
@@ -104,6 +115,7 @@ const handleSubmitClick = () => {
         if (!(error instanceof ApiError)) {
           message.error('登录失败，请稍后重试')
         }
+        turnstileToken.value = ''
       } finally {
         loading.value = false
       }
@@ -125,9 +137,17 @@ function onTouchMove(e: TouchEvent) {
   updateTexturePosition(e.touches[0].clientX, e.touches[0].clientY)
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('touchmove', onTouchMove)
+
+  try {
+    const state = await getTurnstileState()
+    turnstileEnabled.value = state.enabled
+    turnstileSiteKey.value = state.siteKey ?? ''
+  } catch {
+    // Turnstile state unavailable, proceed without it
+  }
 })
 onUnmounted(() => {
   window.removeEventListener('mousemove', onMouseMove)
@@ -250,6 +270,12 @@ onUnmounted(() => {
                   </template>
                 </NInput>
               </NFormItem>
+              <TurnstileWidget
+                v-if="turnstileEnabled"
+                :site-key="turnstileSiteKey"
+                class="mb-4"
+                @update:token="turnstileToken = $event"
+              />
               <div class="flex justify-between">
                 <NCheckbox v-model:checked="isRememberMed">记住我</NCheckbox>
                 <NButton
@@ -263,7 +289,7 @@ onUnmounted(() => {
                   type="primary"
                   :loading="loading"
                   attr-type="button"
-                  :disabled="isNavigating"
+                  :disabled="!canSubmit"
                   block
                   size="medium"
                   class="bg-red-400"

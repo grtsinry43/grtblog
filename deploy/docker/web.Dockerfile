@@ -9,6 +9,12 @@ RUN pnpm install --frozen-lockfile --prod=false
 
 COPY web/. .
 COPY shared /shared
+
+ARG APP_VERSION=dev
+ARG BUILD_COMMIT=unknown
+ENV APP_VERSION=${APP_VERSION} \
+    BUILD_COMMIT=${BUILD_COMMIT}
+
 RUN pnpm build
 
 FROM node:22-alpine AS runtime

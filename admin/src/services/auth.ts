@@ -113,3 +113,14 @@ export function getOAuthBindings() {
     method: 'GET',
   })
 }
+
+export interface TurnstileStateResponse {
+  enabled: boolean
+  siteKey?: string
+}
+
+export function getTurnstileState() {
+  return request<TurnstileStateResponse>('/auth/turnstile', {
+    method: 'GET',
+  })
+}

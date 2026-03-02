@@ -39,7 +39,7 @@
 
 	<div class="min-h-[500px] px-4 sm:px-0">
 		{#if $items.length > 0}
-			<StaggerList class="space-y-2" staggerDelay={60} duration={450} y={12}>
+			<StaggerList class="space-y-2" staggerDelay={60} duration={450} y={12} key={`thinkings-${$page}`}>
 				{#each $items as item (item.id)}
 					<ThinkingItem {item} />
 				{/each}

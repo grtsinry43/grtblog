@@ -48,6 +48,9 @@ services:
     build:
       context: ..
       dockerfile: deploy/docker/web.Dockerfile
+      args:
+        APP_VERSION: "${APP_VERSION:-local}"
+        BUILD_COMMIT: "${BUILD_COMMIT:-unknown}"
     container_name: grtblog-renderer
     environment:
       NODE_ENV: production

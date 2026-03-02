@@ -1,6 +1,7 @@
 <script lang="ts">
 	import MomentItem from '$lib/features/moment/components/MomentItem.svelte';
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
+	import StaggerList from '$lib/ui/animation/StaggerList.svelte';
 	import { momentListCtx } from '$lib/features/moment/context';
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
@@ -28,7 +29,7 @@
 	};
 </script>
 
-<div class="w-full max-w-5xl mx-auto px-6 md:px-0 py-16 animate-settle origin-top">
+<div class="w-full max-w-5xl mx-auto px-6 md:px-0 py-16">
 	<!-- Header -->
 	<header class="mb-16 text-center">
 		<h1
@@ -45,11 +46,17 @@
 
 	<!-- Grid -->
 	{#if $moments.length > 0}
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
-			{#each $moments as moment, index (moment.id)}
-				<MomentItem {moment} {index} />
+		<StaggerList
+			class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-center"
+			staggerDelay={80}
+			duration={500}
+			y={16}
+			key="column-{data.columnSlug}-{$page}"
+		>
+			{#each $moments as moment (moment.id)}
+				<MomentItem {moment} />
 			{/each}
-		</div>
+		</StaggerList>
 
 		<!-- Pagination -->
 		{#if totalPages > 1}

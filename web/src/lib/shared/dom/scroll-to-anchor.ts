@@ -1,11 +1,12 @@
 /**
- * Smooth-scroll to a heading anchor inside a container,
+ * Scroll to a heading anchor inside a container,
  * updating the URL hash via `history.replaceState`.
  */
 export const scrollToAnchor = (
 	container: HTMLElement | null,
 	anchor: string,
-	event?: MouseEvent
+	event?: MouseEvent,
+	behavior: ScrollBehavior = 'smooth'
 ): void => {
 	event?.preventDefault();
 	const root = container ?? (typeof document !== 'undefined' ? document : null);
@@ -14,6 +15,6 @@ export const scrollToAnchor = (
 	if (!target) return;
 	const offset = 80;
 	const top = target.getBoundingClientRect().top + window.scrollY - offset;
-	window.scrollTo({ top, behavior: 'smooth' });
+	window.scrollTo({ top, behavior });
 	if (typeof history !== 'undefined') history.replaceState(null, '', `#${anchor}`);
 };

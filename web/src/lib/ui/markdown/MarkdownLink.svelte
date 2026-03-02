@@ -25,9 +25,9 @@
 	let site = $derived(
 		resolveLinkSite(href, typeof window !== 'undefined' ? window.location.origin : undefined)
 	);
-	const isExternal = $derived(!site && (/^https?:\/\//i.test(href) || href.startsWith('//')));
-	const rel = $derived(isExternal ? 'noopener noreferrer' : undefined);
-	const target = $derived(isExternal ? '_blank' : undefined);
+	const isAnchor = $derived(href.startsWith('#'));
+	const rel = $derived(isAnchor ? undefined : 'noopener noreferrer');
+	const target = $derived(isAnchor ? undefined : '_blank');
 	const standalone = $derived(linkStandalone ?? linkLayout === 'standalone');
 	let iconUrl = $derived(getSiteIconUrl(site, $siteFavicon));
 	const iconStyle = $derived.by(() => {

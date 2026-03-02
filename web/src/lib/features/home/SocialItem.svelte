@@ -11,7 +11,7 @@
 </script>
 
 <div class="social-item-container hover:text-jade-600 cursor-pointer">
-	<a href={href.startsWith('/') ? resolve(href) : href} class="flex items-center gap-2">
+	<a href={href.startsWith('/') ? resolve(href) : href} class="flex items-center gap-2" target="_blank" rel="noopener noreferrer">
 		<DynamicLucideIcon name={icon} size={14} />
 		<span class="font-mono hover:underline">{name}</span>
 	</a>

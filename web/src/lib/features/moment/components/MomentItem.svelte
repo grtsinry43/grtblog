@@ -8,10 +8,9 @@
 
 	interface Props {
 		moment: MomentSummary;
-		index?: number;
 	}
 
-	let { moment, index = 0 }: Props = $props();
+	let { moment }: Props = $props();
 
 	// Helpers to format date and derivation
 	const dateObj = $derived.by(() => new Date(moment.createdAt));
@@ -46,8 +45,8 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="group cursor-pointer relative animate-settle origin-top"
-	style="animation-delay: {index * 100}ms; view-transition-name: moment-{moment.id};"
+	class="group cursor-pointer relative"
+	style="view-transition-name: moment-{moment.id};"
 	onclick={handleClick}
 >
 	<!-- Card Body -->
