@@ -19,3 +19,9 @@ logs/
 
 # Prevent committing built server binary
 /server/api
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
