@@ -221,9 +221,11 @@ func Register(app *fiber.App, deps Dependencies) {
 	registerTaxonomyAdminRoutes(v2, deps)
 	registerWebhookAdminRoutes(v2, deps, webhookSvc)
 
-	docsHandler := handler.NewDocsHandler("docs/swagger.json")
-	app.Get("/docs/openapi.json", docsHandler.OpenAPI)
-	app.Get("/docs", docsHandler.Scalar)
+	if isDev {
+		docsHandler := handler.NewDocsHandler("docs/swagger.json")
+		app.Get("/docs/openapi.json", docsHandler.OpenAPI)
+		app.Get("/docs", docsHandler.Scalar)
+	}
 
 	registerFederationRoutes(app, deps)
 	registerAdminSPA(app)
@@ -236,8 +238,8 @@ func registerAdminSPA(app *fiber.App) {
 	app.Get("/admin/*", func(c *fiber.Ctx) error {
 		sub := c.Params("*")
 		if sub != "" {
-			// path.Clean prevents directory traversal
-			clean := path.Clean("/" + sub)
+			// Normalize to a relative path under admin/ to avoid path escape.
+			clean := strings.TrimPrefix(path.Clean("/"+sub), "/")
 			fp := filepath.Join(dir, clean)
 			if info, err := os.Stat(fp); err == nil && !info.IsDir() {
 				return c.SendFile(fp)

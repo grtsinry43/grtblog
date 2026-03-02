@@ -20,6 +20,7 @@ services:
       APP_PROXY_HEADER: "X-Forwarded-For"
       APP_TRUSTED_PROXY_CHECK: "true"
       APP_IP_VALIDATION: "true"
+      AUTH_SECRET: "${AUTH_SECRET:?AUTH_SECRET is required}"
       DB_DRIVER: postgres
       DB_DSN: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-grtblog}?sslmode=disable"
       REDIS_ADDR: redis:6379

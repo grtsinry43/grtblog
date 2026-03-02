@@ -109,6 +109,7 @@ Admin panel URL: `http://localhost:${NGINX_PORT:-80}/admin/`
 - `/api/*` and `/api/v2/ws/*` -> `server`
 - `/uploads/*` -> `server`
 - `/admin/*` -> `server` (admin SPA 内置于 server 镜像，Fiber 直接 serve)
+- `/docs` -> 不在生产 Nginx 代理；仅开发阶段直连后端使用
 - other paths -> `nginx try_files` static-first, fallback to `renderer` (adapter-node)
 
 ## Notes
