@@ -3,6 +3,7 @@
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { thinkingListCtx } from '$lib/features/thinking/context';
 	import PageHeader from '$lib/ui/common/PageHeader.svelte';
+	import StaggerList from '$lib/ui/animation/StaggerList.svelte';
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
@@ -40,11 +41,11 @@
 
 	<div class="min-h-[500px] px-4 sm:px-0">
 		{#if $items.length > 0}
-			<div class="space-y-2">
+			<StaggerList class="space-y-2" staggerDelay={60} duration={450} y={12}>
 				{#each $items as item (item.id)}
 					<ThinkingItem {item} />
 				{/each}
-			</div>
+			</StaggerList>
 		{:else}
 			<div
 				class="flex flex-col items-center justify-center py-32 text-ink-400 dark:text-ink-500 font-serif"

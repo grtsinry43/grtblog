@@ -1,17 +1,15 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { Spring } from 'svelte/motion';
 	import { intersect } from '$lib/shared/actions/intersect';
 	import type { Snippet } from 'svelte';
 
 	let {
 		children,
-		staggerDelay = 100,
+		staggerDelay = 80,
 		y = 16,
-		duration = 700,
+		duration = 500,
 		threshold = 0.1,
 		rootMargin,
-		spring: useSpring = true,
 		class: className = '',
 		itemSelector = ':scope > *'
 	} = $props<{
@@ -21,7 +19,6 @@
 		duration?: number;
 		threshold?: number;
 		rootMargin?: string;
-		spring?: boolean;
 		class?: string;
 		itemSelector?: string;
 	}>();
@@ -29,8 +26,6 @@
 	let wrapper: HTMLElement | undefined = $state();
 	let revealed = $state(false);
 	let reducedMotion = $state(false);
-	let springs: Spring<number>[] = $state([]);
-	let timers: ReturnType<typeof setTimeout>[] = [];
 
 	$effect(() => {
 		if (browser) {
@@ -38,72 +33,24 @@
 		}
 	});
 
-	// Hide items on client mount; create Springs initialized at 0
+	// Set initial hidden state on items
 	$effect(() => {
 		if (!browser || !wrapper || reducedMotion) return;
 
 		const items = wrapper.querySelectorAll<HTMLElement>(itemSelector);
 		for (const item of items) {
 			item.style.opacity = '0';
-			item.style.transform = `translateY(${y}px)`;
-			item.style.filter = 'blur(2px)';
-		}
-
-		if (useSpring) {
-			springs = Array.from({ length: items.length }, () => {
-				const sp = new Spring(1, { stiffness: 0.12, damping: 0.7 });
-				sp.set(0, { instant: true });
-				return sp;
-			});
 		}
 	});
 
-	// Spring-driven reveal
+	// On reveal, apply staggered CSS animations via a class + custom property
 	$effect(() => {
-		if (!revealed || !wrapper || reducedMotion || !useSpring) return;
-
-		// Clear any previous timers
-		for (const t of timers) clearTimeout(t);
-		timers = [];
-
-		springs.forEach((sp, index) => {
-			const t = setTimeout(() => {
-				sp.target = 1;
-			}, index * staggerDelay);
-			timers.push(t);
-		});
-
-		return () => {
-			for (const t of timers) clearTimeout(t);
-		};
-	});
-
-	// Reactive style updates driven by Spring values
-	$effect(() => {
-		if (!wrapper || !useSpring || reducedMotion || springs.length === 0) return;
-
-		const items = wrapper.querySelectorAll<HTMLElement>(itemSelector);
-		springs.forEach((sp, index) => {
-			const item = items[index];
-			if (!item) return;
-			const p = sp.current;
-			item.style.opacity = String(Math.max(0, Math.min(1, p)));
-			item.style.transform = `translateY(${y * (1 - p)}px)`;
-			item.style.filter = `blur(${Math.max(0, 2 * (1 - p))}px)`;
-		});
-	});
-
-	// CSS transition fallback reveal
-	$effect(() => {
-		if (!revealed || !wrapper || reducedMotion || useSpring) return;
+		if (!revealed || !wrapper || reducedMotion) return;
 
 		const items = wrapper.querySelectorAll<HTMLElement>(itemSelector);
 		items.forEach((item, index) => {
-			const itemDelay = index * staggerDelay;
-			item.style.transition = `opacity ${duration}ms cubic-bezier(0.23, 1, 0.32, 1) ${itemDelay}ms, transform ${duration}ms cubic-bezier(0.23, 1, 0.32, 1) ${itemDelay}ms, filter ${duration}ms cubic-bezier(0.23, 1, 0.32, 1) ${itemDelay}ms`;
-			item.style.opacity = '1';
-			item.style.transform = 'translateY(0)';
-			item.style.filter = 'blur(0)';
+			item.style.setProperty('--stagger-index', String(index));
+			item.classList.add('stagger-reveal');
 		});
 	});
 
@@ -112,6 +59,40 @@
 	}
 </script>
 
-<div bind:this={wrapper} class={className} use:intersect={{ onEnter, threshold, rootMargin }}>
+<div
+	bind:this={wrapper}
+	class={className}
+	use:intersect={{ onEnter, threshold, rootMargin }}
+	style:--stagger-delay="{staggerDelay}ms"
+	style:--stagger-duration="{duration}ms"
+	style:--stagger-y="{y}px"
+>
 	{@render children()}
 </div>
+
+<style>
+	div :global(.stagger-reveal) {
+		animation: stagger-enter var(--stagger-duration, 500ms) cubic-bezier(0.23, 1, 0.32, 1) both;
+		animation-delay: calc(var(--stagger-index, 0) * var(--stagger-delay, 80ms));
+	}
+
+	@keyframes stagger-enter {
+		from {
+			opacity: 0;
+			transform: translateY(var(--stagger-y, 16px));
+			filter: blur(2px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+			filter: blur(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		div :global(.stagger-reveal) {
+			animation: none;
+			opacity: 1;
+		}
+	}
+</style>
