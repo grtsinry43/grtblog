@@ -42,6 +42,18 @@ func NewHealthHandler(cfg config.AppConfig, db *gorm.DB, redisClient *redis.Clie
 }
 
 func (h *HealthHandler) Liveness(c *fiber.Ctx) error {
+	isDev := strings.EqualFold(strings.TrimSpace(h.cfg.Env), "development")
+	if !isDev {
+		data := struct {
+			Status string    `json:"status"`
+			Time   time.Time `json:"time"`
+		}{
+			Status: "alive",
+			Time:   time.Now().UTC(),
+		}
+		return response.Success(c, data)
+	}
+
 	data := struct {
 		Status     string                 `json:"status"`
 		App        string                 `json:"app"`
@@ -105,16 +117,50 @@ func (h *HealthHandler) Readiness(c *fiber.Ctx) error {
 	var maintenance bool
 	var healthBits uint8
 	var healthMode string
-	var isDev bool
+	var stateIsDev bool
 	if h.healthState != nil {
 		snap := h.healthState.Snapshot()
 		maintenance = snap.Maintenance
 		healthBits = snap.HealthBits
 		healthMode = string(snap.Mode)
-		isDev = snap.IsDev
+		stateIsDev = snap.IsDev
 	} else {
 		healthMode = globalStatus
-		isDev = h.cfg.Env == "development"
+		stateIsDev = h.cfg.Env == "development"
+	}
+
+	isDev := strings.EqualFold(strings.TrimSpace(h.cfg.Env), "development")
+	if !isDev {
+		data := struct {
+			Status      string    `json:"status"`
+			Time        time.Time `json:"time"`
+			Maintenance bool      `json:"maintenance"`
+			HealthBits  uint8     `json:"healthBits"`
+			HealthMode  string    `json:"healthMode"`
+			IsDev       bool      `json:"isDev"`
+			Components  []struct {
+				Name    string `json:"name"`
+				Status  string `json:"status"`
+				Healthy bool   `json:"healthy"`
+			} `json:"components"`
+		}{
+			Status:      globalStatus,
+			Time:        time.Now().UTC(),
+			Maintenance: maintenance,
+			HealthBits:  healthBits,
+			HealthMode:  healthMode,
+			IsDev:       stateIsDev,
+			Components: []struct {
+				Name    string `json:"name"`
+				Status  string `json:"status"`
+				Healthy bool   `json:"healthy"`
+			}{
+				{Name: "api", Status: "ready", Healthy: true},
+				{Name: "database", Status: dbStatus, Healthy: dbHealthy},
+				{Name: "redis", Status: redisStatus, Healthy: redisHealthy},
+			},
+		}
+		return response.SuccessWithMessage(c, data, globalStatus)
 	}
 
 	data := struct {
@@ -138,7 +184,7 @@ func (h *HealthHandler) Readiness(c *fiber.Ctx) error {
 		Maintenance: maintenance,
 		HealthBits:  healthBits,
 		HealthMode:  healthMode,
-		IsDev:       isDev,
+		IsDev:       stateIsDev,
 	}
 
 	return response.SuccessWithMessage(c, data, globalStatus)

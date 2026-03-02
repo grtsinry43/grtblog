@@ -89,5 +89,16 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	likeRepo := persistence.NewLikeRepository(deps.DB)
 	likeSvc := applike.NewService(likeRepo)
 	likeHandler := handler.NewLikeHandler(likeSvc)
-	public.Post("/analytics/like", likeHandler.TrackLike)
+	likeGuard := public.Group("/analytics", limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			handler.Audit(c, "analytics.like.rate_limited", map[string]any{"ip": c.IP()})
+			return response.NewBizErrorWithMsg(response.TooManyRequests, "")
+		},
+	}))
+	likeGuard.Post("/like", likeHandler.TrackLike)
 }

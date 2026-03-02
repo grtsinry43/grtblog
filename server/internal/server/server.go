@@ -39,24 +39,28 @@ import (
 
 // Server wraps Fiber with configuration and dependencies.
 type Server struct {
-	cfg            config.Config
-	db             *gorm.DB
-	app            *fiber.App
-	logFile        *os.File
-	ctx            context.Context
-	cancel         context.CancelFunc
-	articleSvc     *article.Service
-	sysCfgSvc      *sysconfig.Service
-	analytics      *analytics.Service
-	isrSvc         *isr.Service
-	fedSync        *appfed.SyncWorker
-	fedDeliver     *appfed.DeliveryService
-	healthChecker  *health.Checker
-	version        string
+	cfg           config.Config
+	db            *gorm.DB
+	app           *fiber.App
+	logFile       *os.File
+	ctx           context.Context
+	cancel        context.CancelFunc
+	articleSvc    *article.Service
+	sysCfgSvc     *sysconfig.Service
+	analytics     *analytics.Service
+	isrSvc        *isr.Service
+	fedSync       *appfed.SyncWorker
+	fedDeliver    *appfed.DeliveryService
+	healthChecker *health.Checker
+	version       string
 }
 
 // New builds a Fiber server with registered routes and middlewares.
 func New(cfg config.Config, db *gorm.DB) *Server {
+	if err := validateSecurityConfig(cfg); err != nil {
+		log.Fatalf("invalid security configuration: %v", err)
+	}
+
 	logFile := initLogging()
 	sysCfgRepo := persistence.NewSysConfigRepository(db)
 	eventBus := infraevent.NewInMemoryBus()
@@ -201,6 +205,22 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		healthChecker: healthChecker,
 		version:       buildinfo.Version(),
 	}
+}
+
+func validateSecurityConfig(cfg config.Config) error {
+	env := strings.ToLower(strings.TrimSpace(cfg.App.Env))
+	if env == "development" || env == "test" {
+		return nil
+	}
+
+	secret := strings.TrimSpace(cfg.Auth.Secret)
+	if secret == "" || secret == "change-me" {
+		return fmt.Errorf("AUTH_SECRET must be explicitly configured outside development/test")
+	}
+	if len(secret) < 32 {
+		return fmt.Errorf("AUTH_SECRET must be at least 32 characters outside development/test")
+	}
+	return nil
 }
 
 // Start launches the Fiber HTTP server and background workers.

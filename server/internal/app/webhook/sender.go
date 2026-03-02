@@ -15,6 +15,7 @@ import (
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainwebhook "github.com/grtsinry43/grtblog-v2/server/internal/domain/webhook"
+	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 )
 
 const (
@@ -79,6 +80,10 @@ func (s *Sender) RecordHistoryFromEvent(ctx context.Context, hook *domainwebhook
 func (s *Sender) sendRaw(ctx context.Context, hook *domainwebhook.Webhook, eventName string, payload string, headers map[string]string, isTest bool) error {
 	if hook == nil {
 		return errors.New("webhook is nil")
+	}
+	if err := fedinfra.ValidateRemoteURL(ctx, hook.URL); err != nil {
+		s.recordHistory(ctx, hook, eventName, payload, headers, 0, nil, "", "blocked webhook target: "+err.Error(), isTest)
+		return fmt.Errorf("blocked webhook target: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, hook.URL, strings.NewReader(payload))
 	if err != nil {

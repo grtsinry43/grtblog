@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	domainwebhook "github.com/grtsinry43/grtblog-v2/server/internal/domain/webhook"
@@ -112,6 +113,16 @@ func (s *Service) Replay(ctx context.Context, historyID int64) error {
 func normalizeAndValidate(hook *domainwebhook.Webhook) error {
 	hook.Name = strings.TrimSpace(hook.Name)
 	hook.URL = strings.TrimSpace(hook.URL)
+	if hook.URL == "" {
+		return errors.New("webhook url is required")
+	}
+	parsed, err := url.Parse(hook.URL)
+	if err != nil || parsed.Host == "" {
+		return errors.New("invalid webhook url")
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return errors.New("webhook url must use http/https")
+	}
 	if hook.PayloadTemplate != "" {
 		hook.PayloadTemplate = strings.TrimSpace(hook.PayloadTemplate)
 	}

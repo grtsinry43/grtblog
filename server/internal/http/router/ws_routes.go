@@ -131,9 +131,7 @@ func extractWSJWTToken(c *fiber.Ctx) string {
 			return protocol[len(bearerPrefix):]
 		}
 	}
-
-	// Fallback for non-browser debugging clients.
-	return strings.TrimSpace(c.Query("access_token"))
+	return ""
 }
 
 func splitHeaderTokens(value string) []string {

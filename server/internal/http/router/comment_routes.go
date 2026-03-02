@@ -3,12 +3,15 @@ package router
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
+	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/clientinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/geoip"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
@@ -19,7 +22,17 @@ func registerCommentPublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 	publicGroup := v2.Group("/comments")
 	publicGroup.Get("/areas/:areaId", commentHandler.ListCommentTree)
-	publicGroup.Post("/areas/:areaId/visitor", commentHandler.CreateCommentVisitor)
+	publicGroup.Post("/areas/:areaId/visitor", limiter.New(limiter.Config{
+		Max:        20,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			handler.Audit(c, "comments.visitor.rate_limited", map[string]any{"ip": c.IP(), "areaId": c.Params("areaId")})
+			return response.NewBizErrorWithMsg(response.TooManyRequests, "")
+		},
+	}), commentHandler.CreateCommentVisitor)
 }
 
 func registerCommentAuthRoutes(v2 fiber.Router, deps Dependencies) {

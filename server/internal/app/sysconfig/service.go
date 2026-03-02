@@ -100,9 +100,9 @@ func (s *Service) Turnstile(ctx context.Context) (turnstile.Settings, error) {
 		return settings, err
 	}
 
-	// 如果开启但未配置 Secret，视为关闭以避免空 Secret 造成误判。
+	// 如果启用但缺失 Secret，直接报错（fail-closed），避免误配置导致防护失效。
 	if settings.Enabled && strings.TrimSpace(settings.Secret) == "" {
-		settings.Enabled = false
+		return settings, turnstile.ErrMissingSecret
 	}
 	return settings, nil
 }

@@ -30,6 +30,9 @@ func RegisterArticleUpdateSubscriber(bus appEvent.Bus, manager *Manager) {
 		if !ok {
 			return nil
 		}
+		if !updated.Published {
+			return nil
+		}
 		payload := contract.ArticleContentPayload{
 			ContentHash: updated.ContentHash,
 			Title:       updated.Title,
@@ -55,6 +58,9 @@ func RegisterMomentUpdateSubscriber(bus appEvent.Bus, manager *Manager) {
 		if !ok {
 			return nil
 		}
+		if !updated.Published {
+			return nil
+		}
 		payload := contract.MomentContentPayload{
 			ContentHash: updated.ContentHash,
 			Title:       updated.Title,
@@ -78,6 +84,9 @@ func RegisterPageUpdateSubscriber(bus appEvent.Bus, manager *Manager) {
 	bus.Subscribe(page.PageUpdated{}.Name(), handlerFunc(func(ctx context.Context, event appEvent.Event) error {
 		updated, ok := event.(page.PageUpdated)
 		if !ok {
+			return nil
+		}
+		if !updated.Enabled {
 			return nil
 		}
 		payload := contract.PageContentPayload{
