@@ -44,7 +44,7 @@ const defaultHeroSocials: HomeHeroSocialLink[] = [
 
 const defaultThemeConfig: HomeThemeConfig = {
 	hero: {
-		avatarUrl: 'https://dogeoss.grtsinry43.com/img/author.jpeg',
+		avatarUrl: '',
 		description: 'Java & JavaScript full-stack developer committed to crafting excellent software.',
 		titleTemplate: defaultHeroTemplate,
 		mottoLines: [

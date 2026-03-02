@@ -1,5 +1,10 @@
 <script lang="ts">
 	import { ownerStatusStore } from '$lib/features/owner-status/store.svelte';
+	import { websiteInfoCtx } from '$lib/features/website-info/context';
+	import { resolveHomeThemeConfig } from '$lib/features/home/theme';
+
+	const websiteInfoStore = websiteInfoCtx.selectModelData((m) => m ?? null);
+	const siteAvatar = $derived(resolveHomeThemeConfig($websiteInfoStore).hero?.avatarUrl || '');
 
 	const status = $derived(ownerStatusStore.status);
 	const isOnline = $derived(status.ok === 1);
@@ -22,11 +27,15 @@
 >
 	<div class="nav-author-avatar relative z-10">
 		<a href="/" aria-label="返回首页" class="relative block">
-			<img
-				src="https://dogeoss.grtsinry43.com/img/author.jpeg"
-				alt="Author"
-				class="h-10 w-10 rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
-			/>
+			{#if siteAvatar}
+				<img
+					src={siteAvatar}
+					alt="Author"
+					class="h-10 w-10 rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
+				/>
+			{:else}
+				<div class="h-10 w-10 rounded-default bg-ink-200 dark:bg-ink-700 ring-1 ring-ink-200 dark:ring-ink-700 shadow-sm"></div>
+			{/if}
 			<span class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
 				<span
 					class="absolute inline-flex h-full w-full rounded-full opacity-75 {isOnline
@@ -80,7 +89,7 @@
 			{#if media?.title}
 				<div class="mt-2 flex items-center gap-2 rounded-default border border-ink-100 p-2 dark:border-ink-800">
 					<img
-						src={media.thumbnail || 'https://dogeoss.grtsinry43.com/img/author.jpeg'}
+						src={media.thumbnail || siteAvatar}
 						alt={media.title}
 						class="h-9 w-9 rounded-default object-cover"
 					/>

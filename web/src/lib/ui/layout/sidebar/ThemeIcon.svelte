@@ -10,11 +10,15 @@
 		startViewTransition?: (callback: () => void) => ViewTransitionLike;
 	};
 
+	const isMobile = () => window.innerWidth < 768;
+
 	const toggleTheme = async (event: MouseEvent) => {
 		const next = resolved === 'dark' ? 'light' : 'dark';
 		const doc = document as DocumentWithViewTransition;
 		const root = document.documentElement;
-		if (!doc.startViewTransition) {
+
+		// On mobile or without View Transitions support: instant switch, no animation
+		if (!doc.startViewTransition || isMobile()) {
 			theme.set(next);
 			return;
 		}
@@ -39,8 +43,8 @@
 					clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
 				},
 				{
-					duration: 500,
-					easing: 'ease-in-out',
+					duration: 350,
+					easing: 'ease-out',
 					pseudoElement: '::view-transition-new(root)'
 				}
 			);

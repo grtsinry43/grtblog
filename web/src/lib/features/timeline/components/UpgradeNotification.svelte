@@ -4,7 +4,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { onMount } from 'svelte';
 
-	let { isOpen = $bindable(false) } = $props<{ isOpen: boolean }>();
+	let { isOpen = $bindable(false) } = $props<{ isOpen?: boolean }>();
 
 	const STORAGE_KEY = 'grtblog_timeline_intro_shown';
 

@@ -13,7 +13,7 @@
 	];
 	const defaultDescription =
 		'Java & JavaScript full-stack developer committed to crafting excellent software.';
-	const defaultAvatarUrl = 'https://dogeoss.grtsinry43.com/img/author.jpeg';
+	const defaultAvatarUrl = '';
 	const defaultMottoLines = [
 		'热衷于在逻辑与感性的缝隙中构建数字花园。',
 		'也许，代码是现代的诗歌，而文字是思想的快照。'
@@ -63,15 +63,20 @@
 	<!-- [Desktop Version] -->
 	<div class="hidden md:flex flex-col gap-20">
 		<div class="hero-info flex justify-center gap-36">
-			<FadeIn y={24} duration={1000}>
-				<div class="hero-author-avatar relative z-10 w-fit">
-					<img
-						src={avatarUrl}
-						alt="Author"
-						class="h-46 w-46 rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
-					/>
-				</div>
-			</FadeIn>
+			{#if avatarUrl}
+				<FadeIn y={24} duration={1000}>
+					<div class="hero-author-avatar relative z-10 w-fit">
+						<img
+							src={avatarUrl}
+							alt="Author"
+							width="184"
+							height="184"
+							fetchpriority="high"
+							class="h-46 w-46 rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
+						/>
+					</div>
+				</FadeIn>
+			{/if}
 			<FadeIn y={20} duration={1000} delay={200}>
 				<div class="hero-welcome group">
 					<div class="hero-title-desktop font-mono leading-relaxed">
@@ -116,18 +121,23 @@
 
 	<!-- [Mobile Version] -->
 	<div class="flex md:hidden flex-col items-center pt-8">
-		<FadeIn y={15} duration={1000}>
-			<div class="relative mb-10">
-				<div
-					class="absolute inset-0 translate-x-2 translate-y-2 border border-ink-200 dark:border-ink-800 rounded-default -z-10"
-				></div>
-				<img
-					src={avatarUrl}
-					alt="Author"
-					class="h-[110px] w-[110px] rounded-default object-cover ring-1 ring-ink-100 dark:ring-ink-800 shadow-sm"
-				/>
-			</div>
-		</FadeIn>
+		{#if avatarUrl}
+			<FadeIn y={15} duration={1000}>
+				<div class="relative mb-10">
+					<div
+						class="absolute inset-0 translate-x-2 translate-y-2 border border-ink-200 dark:border-ink-800 rounded-default -z-10"
+					></div>
+					<img
+						src={avatarUrl}
+						alt="Author"
+						width="110"
+						height="110"
+						fetchpriority="high"
+						class="h-[110px] w-[110px] rounded-default object-cover ring-1 ring-ink-100 dark:ring-ink-800 shadow-sm"
+					/>
+				</div>
+			</FadeIn>
+		{/if}
 
 		<FadeIn y={10} duration={1000} delay={200}>
 			<div class="text-center px-6 group">

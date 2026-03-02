@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { ArrowRight } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
@@ -33,7 +33,7 @@
 
 	// Navigate to detail
 	const handleClick = () => {
-		goto(resolve(buildMomentPath(moment.shortUrl, moment.createdAt)));
+		goto(resolvePath(buildMomentPath(moment.shortUrl, moment.createdAt)));
 	};
 
 	// Image blur-to-sharp load effect

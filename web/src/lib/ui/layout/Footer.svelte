@@ -1,6 +1,6 @@
 <script lang="ts">
     /* eslint-disable svelte/no-navigation-without-resolve */
-    import {resolve} from '$app/paths';
+    import {resolvePath} from '$lib/shared/utils/resolve-path';
     import {resolveFooterThemeConfig} from '$lib/features/footer/theme';
     import {websiteInfoCtx} from '$lib/features/website-info/context';
 
@@ -39,7 +39,7 @@
                     <div class="flex flex-wrap gap-x-4 gap-y-2">
                         {#each section.links as link (link.name)}
                             <a
-                                    href={/^(https?:|mailto:)/i.test(link.href) ? link.href : resolve(link.href)}
+                                    href={/^(https?:|mailto:)/i.test(link.href) ? link.href : resolvePath(link.href)}
                                     class="text-sm text-ink-500 hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
                             >
                                 {link.name}
@@ -102,7 +102,7 @@
                         {#each section.links as link (link.name)}
                             <li>
                                 <a
-                                        href={/^(https?:|mailto:)/i.test(link.href) ? link.href : resolve(link.href)}
+                                        href={/^(https?:|mailto:)/i.test(link.href) ? link.href : resolvePath(link.href)}
                                         class="text-sm text-ink-500 hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
                                 >
                                     {link.name}

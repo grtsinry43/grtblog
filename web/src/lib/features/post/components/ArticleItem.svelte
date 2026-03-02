@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
 	import { Calendar, Eye, Heart, ExternalLink, Sparkles } from 'lucide-svelte';
 	import type { PostSummary } from '$lib/features/post/types';
@@ -23,12 +23,12 @@
 		e.preventDefault();
 		e.stopPropagation();
 		if (!post.categoryShortUrl) return;
-		goto(resolve(buildCategoryPath(post.categoryShortUrl)));
+		goto(resolvePath(buildCategoryPath(post.categoryShortUrl)));
 	};
 </script>
 
 <a
-	href={resolve(buildPostPath(post.shortUrl))}
+	href={resolvePath(buildPostPath(post.shortUrl))}
 	class="group relative flex flex-col gap-3 px-4 py-4 sm:px-6 sm:py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 w-full outline-none"
 >
 	<!-- Title -->

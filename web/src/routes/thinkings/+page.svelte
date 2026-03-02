@@ -3,7 +3,7 @@
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { thinkingListCtx } from '$lib/features/thinking/context';
 	import PageHeader from '$lib/ui/common/PageHeader.svelte';
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
@@ -23,9 +23,9 @@
 	const onPageChange = (p: number) => {
 		const safePage = Number.isFinite(p) && p > 1 ? p : 1;
 		if (safePage === 1) {
-			goto(resolve('/thinkings/'));
+			goto(resolvePath('/thinkings/'));
 		} else {
-			goto(resolve(`/thinkings/page/${safePage}/`));
+			goto(resolvePath(`/thinkings/page/${safePage}/`));
 		}
 	};
 </script>

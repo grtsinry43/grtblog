@@ -47,11 +47,15 @@
 		});
 	});
 
-	import '@fontsource/google-sans';
-	import '@fontsource/noto-serif-sc';
+	import '@fontsource/google-sans/400.css';
+	import '@fontsource/noto-serif-sc/400.css';
+	import '@fontsource/noto-serif-sc/500.css';
+	import '@fontsource/noto-serif-sc/600.css';
+	import '@fontsource/noto-serif-sc/700.css';
 	import '@fontsource-variable/victor-mono';
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
 	import { resolveSeoMeta } from '$lib/shared/seo/metadata';
+	import { resolveHomeThemeConfig } from '$lib/features/home/theme';
 	import {
 		createEmptyDetailPanelModel,
 		detailPanelCtx,
@@ -135,6 +139,11 @@
 	});
 
 	const websiteInfoStore = websiteInfoCtx.selectModelData((model) => model ?? null);
+	const avatarOrigin = $derived.by(() => {
+		const url = resolveHomeThemeConfig($websiteInfoStore).hero?.avatarUrl;
+		if (!url) return null;
+		try { return new URL(url).origin; } catch { return null; }
+	});
 	const normalizeIconUrl = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 	const inferIconMimeType = (iconUrl: string): string | null => {
 		const lower = iconUrl.toLowerCase();
@@ -213,6 +222,10 @@
 </script>
 
 <svelte:head>
+	{#if avatarOrigin}
+		<link rel="preconnect" href={avatarOrigin} crossorigin />
+		<link rel="dns-prefetch" href={avatarOrigin} />
+	{/if}
 	<link rel="icon" href={siteFavicon} type={siteFaviconType || undefined} />
 	<link rel="shortcut icon" href={siteFavicon} />
 	<link rel="apple-touch-icon" href={siteFavicon} />

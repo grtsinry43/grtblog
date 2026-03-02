@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { postDetailCtx } from '$lib/features/post/context';
 	import { sameMetrics } from './selector-equals';
 	import { formatDateCN, isDifferentDay } from '$lib/shared/utils/date';
@@ -56,7 +56,7 @@
 			<Badge variant="soft">文章</Badge>
 			{#if $categoryShortUrlStore}
 				<a
-					href={resolve(buildCategoryPath($categoryShortUrlStore))}
+					href={resolvePath(buildCategoryPath($categoryShortUrlStore))}
 					class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
 				>
 					{categoryLabelStore}

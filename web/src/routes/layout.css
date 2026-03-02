@@ -100,9 +100,6 @@ body {
 	background-color: var(--color-ink-50);
 	color: var(--color-ink-900);
 	-webkit-font-smoothing: antialiased;
-	transition:
-		background-color 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-		color 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root[class~='dark'] body {
@@ -139,6 +136,20 @@ body {
 /* Keep only root transition during theme toggle. */
 :root[data-theme-transitioning='true'] body * {
 	view-transition-name: none !important;
+}
+
+/* Disable expensive GPU effects during theme transition to avoid jank */
+:root[data-theme-transitioning='true'] .noise-surface::after {
+	display: none !important;
+}
+
+:root[data-theme-transitioning='true'] .bg-noise {
+	display: none !important;
+}
+
+:root[data-theme-transitioning='true'] * {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
 }
 
 /* Utilities */

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { searchSite } from './service';
 	import { onMount } from 'svelte';
@@ -138,7 +138,7 @@
 		else if (debouncedSearchTerm) saveHistory(debouncedSearchTerm);
 
 		closeWithAnimation();
-		goto(resolve(path));
+		goto(resolvePath(path));
 	}
 
 	const resolveSearchPath = (

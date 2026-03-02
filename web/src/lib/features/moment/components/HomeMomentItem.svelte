@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { ArrowRight } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
@@ -26,7 +26,7 @@
 </script>
 
 <a
-	href={resolve(buildMomentPath(moment.shortUrl, moment.createdAt))}
+	href={resolvePath(buildMomentPath(moment.shortUrl, moment.createdAt))}
 	class="home-item-card moment-item group w-full px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-cinnabar-500/30"
 	onmousemove={handleMouseMove}
 	onmouseleave={handleMouseLeave}

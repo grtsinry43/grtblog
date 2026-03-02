@@ -1,7 +1,7 @@
 <script lang="ts">
     import {browser} from '$app/environment';
     import {goto} from '$app/navigation';
-    import {resolve} from '$app/paths';
+    import {resolvePath} from '$lib/shared/utils/resolve-path';
     import {createMutation, createQuery} from '@tanstack/svelte-query';
     import {listOAuthProviders, authorizeOAuthProvider} from '$lib/features/auth/api';
     import {openOAuthPopup, saveOAuthFlowMeta, waitForOAuthPopupResult} from '$lib/features/auth/oauth-flow';
@@ -131,7 +131,7 @@
         removeToken();
         userStore.clear();
         windowStore.close();
-        await goto(resolve('/'), {replaceState: true});
+        await goto(resolvePath('/'), {replaceState: true});
         toast.success('已退出登录');
     };
 
@@ -195,7 +195,7 @@
             {#if meStore?.isAdmin}
                 <div class="pt-1">
                     <a
-                            href={resolve('/admin')}
+                            href={resolvePath('/admin')}
                             target="_blank"
                             class="inline-flex items-center gap-1.5 text-xs text-jade-600 hover:text-jade-700 dark:text-jade-400 dark:hover:text-jade-300 transition-colors"
                     >

@@ -26,17 +26,18 @@ const parseDateParts = (
 	};
 };
 
-export const buildPostPath = (slug: string): string => `/posts/${encodeURIComponent(slug)}`;
+export const buildPostPath = (slug: string): `/${string}` =>
+	`/posts/${encodeURIComponent(slug)}`;
 
-export const buildPagePath = (slug: string): string => `/${encodeURIComponent(slug)}`;
+export const buildPagePath = (slug: string): `/${string}` => `/${encodeURIComponent(slug)}`;
 
-export const buildCategoryPath = (slug: string): string =>
+export const buildCategoryPath = (slug: string): `/${string}` =>
 	`/categories/${encodeURIComponent(slug)}`;
 
-export const buildColumnPath = (slug: string): string =>
+export const buildColumnPath = (slug: string): `/${string}` =>
 	`/columns/${encodeURIComponent(slug)}`;
 
-export const buildMomentPath = (slug: string, createdAt: string | Date): string => {
+export const buildMomentPath = (slug: string, createdAt: string | Date): `/${string}` => {
 	const encodedSlug = encodeURIComponent(slug);
 	const dateParts = parseDateParts(createdAt);
 	if (!dateParts) return `/moments/0000/00/00/${encodedSlug}`;

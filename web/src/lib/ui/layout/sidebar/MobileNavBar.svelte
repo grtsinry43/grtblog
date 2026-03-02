@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { NavMenuItem } from '$lib/features/navigation/types';
 	import { buildMomentPath, buildPostPath } from '$lib/shared/utils/content-path';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
@@ -18,6 +18,7 @@
 	import { User } from 'lucide-svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context';
 	import { detailPanelCtx } from '$lib/shared/detail-panel/context';
+	import { resolveHomeThemeConfig } from '$lib/features/home/theme';
 
 	let { menuTree = [] } = $props<{ menuTree: NavMenuItem[] }>();
 
@@ -31,8 +32,12 @@
 	let navProgress = $derived(Math.max(0, Math.min((scrollY || 0) / 50, 1)));
 	let domDetailTitle = $state('');
 
+	const websiteInfoStore = websiteInfoCtx.selectModelData((data) => data ?? null);
 	const websiteNameStore = websiteInfoCtx.selectModelData(
 		(data) => data?.website_name || '墨 手记'
+	);
+	const siteAvatar = $derived(
+		resolveHomeThemeConfig($websiteInfoStore).hero?.avatarUrl || ''
 	);
 	const detailKindStore = detailPanelCtx.selectModelData((data) => data?.kind ?? null);
 	const detailTitleStore = detailPanelCtx.selectModelData((data) => data?.title ?? '');
@@ -189,11 +194,17 @@
 						class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
 					>
 						<div class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700">
-							<img
-								src="https://dogeoss.grtsinry43.com/img/author.jpeg"
-								alt="Author"
-								class="h-full w-full object-cover"
-							/>
+							{#if siteAvatar}
+								<img
+									src={siteAvatar}
+									alt="Author"
+									width="32"
+									height="32"
+									class="h-full w-full object-cover"
+								/>
+							{:else}
+								<div class="h-full w-full bg-ink-200 dark:bg-ink-700"></div>
+							{/if}
 						</div>
 						<span class="absolute bottom-0 right-0 flex h-2.5 w-2.5">
 							<span
@@ -280,7 +291,7 @@
 					<div class="flex flex-col gap-1">
 					{#if !isHomePage}
 						<a
-							href={resolve('/')}
+							href={resolvePath('/')}
 							onclick={handleNavigate}
 							class="mb-2 flex items-center gap-3 rounded-default border border-ink-200 bg-ink-50/50 px-3 py-2 text-ink-700 transition-colors hover:border-jade-200 hover:bg-jade-50/50 dark:border-ink-700 dark:bg-ink-800/40 dark:text-ink-200 dark:hover:border-jade-800"
 						>
@@ -334,7 +345,7 @@
 								{/if}
 
 								<a
-									href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolve(item.url)}
+									href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolvePath(item.url)}
 									onclick={handleNavigate}
 									class="flex min-w-0 flex-1 items-center gap-3 text-left"
 								>
@@ -397,7 +408,7 @@
 									{#each item.children as sub (sub.url)}
 										{@const subActive = isActive(sub.url)}
 										<a
-											href={/^(https?:|\/\/)/i.test(sub.url) ? sub.url : resolve(sub.url)}
+											href={/^(https?:|\/\/)/i.test(sub.url) ? sub.url : resolvePath(sub.url)}
 											onclick={handleNavigate}
 											class="group/sub relative flex items-center gap-3 rounded-lg ml-2 mr-2 py-2.5 pl-[54px] pr-4 text-left transition-colors
                                             {subActive
@@ -501,7 +512,7 @@
 						<div class="space-y-2.5">
 							{#each $relatedMomentsStore.slice(0, 2) as moment (moment.id)}
 								<a
-									href={resolve(buildMomentPath(moment.shortUrl, moment.createdAt))}
+									href={resolvePath(buildMomentPath(moment.shortUrl, moment.createdAt))}
 									onclick={handleRelatedNavigate}
 									class="block rounded-default border border-ink-100/80 bg-ink-50/40 p-3 transition-colors hover:border-cinnabar-200 hover:bg-white dark:border-ink-700/70 dark:bg-ink-900/40 dark:hover:border-cinnabar-800"
 								>
@@ -532,7 +543,7 @@
 						<div class="space-y-2.5">
 							{#each $relatedPostsStore.slice(0, 2) as post (post.id)}
 								<a
-									href={resolve(buildPostPath(post.shortUrl))}
+									href={resolvePath(buildPostPath(post.shortUrl))}
 									onclick={handleRelatedNavigate}
 									class="block rounded-default border border-ink-100/80 bg-ink-50/40 p-3 transition-colors hover:border-jade-200 hover:bg-white dark:border-ink-700/70 dark:bg-ink-900/40 dark:hover:border-jade-800"
 								>

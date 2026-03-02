@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { ArrowLeft, Compass, RefreshCw } from 'lucide-svelte';
 
 	type ErrorPayload = {
@@ -49,7 +49,7 @@
 
 		<div class="mt-8 flex flex-wrap items-center gap-3">
 			<a
-				href={resolve('/')}
+				href={resolvePath('/')}
 				class="inline-flex items-center gap-2 rounded-default border border-jade-500/30 bg-jade-500/10 px-4 py-2 text-sm text-jade-700 transition-colors hover:bg-jade-500/20 dark:text-jade-300"
 			>
 				<Compass size={14} />

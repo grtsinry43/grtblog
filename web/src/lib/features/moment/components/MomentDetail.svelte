@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { MomentDetail } from '$lib/features/moment/types';
 	import { ArrowLeft } from 'lucide-svelte';
 	import StickyHeader from '$lib/ui/common/StickyHeader.svelte';
@@ -58,7 +58,7 @@
 				<div class="w-1.5 h-1.5 rounded-full bg-ink-300 dark:bg-ink-800/50 shadow-inner"></div>
 				{#if columnSlug}
 					<a
-						href={resolve(buildColumnPath(columnSlug))}
+						href={resolvePath(buildColumnPath(columnSlug))}
 						class="[writing-mode:vertical-rl] text-[11px] font-serif font-bold text-cinnabar-500 tracking-[0.3em] opacity-80 hover:opacity-100 transition-opacity"
 					>
 						{columnLabel}

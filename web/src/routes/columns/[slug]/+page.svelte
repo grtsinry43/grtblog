@@ -2,7 +2,7 @@
 	import MomentItem from '$lib/features/moment/components/MomentItem.svelte';
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { momentListCtx } from '$lib/features/moment/context';
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
 
 	let { data } = $props();
@@ -19,7 +19,7 @@
 	const onPageChange = (p: number) => {
 		const safePage = Number.isFinite(p) && p > 1 ? p : 1;
 		goto(
-			resolve(
+			resolvePath(
 				safePage === 1
 					? `/columns/${data.columnSlug}/`
 					: `/columns/${data.columnSlug}/page/${safePage}/`

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { PostSummary } from '$lib/features/post/types';
 	import { ArrowRight } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
@@ -26,7 +26,7 @@
 </script>
 
 <a
-	href={resolve(buildPostPath(post.shortUrl))}
+	href={resolvePath(buildPostPath(post.shortUrl))}
 	class="home-item-card article-item group w-full px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-jade-500/30"
 	onmousemove={handleMouseMove}
 	onmouseleave={handleMouseLeave}
