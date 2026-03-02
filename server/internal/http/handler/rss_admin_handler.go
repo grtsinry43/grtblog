@@ -3,15 +3,15 @@ package handler
 import (
 	"github.com/gofiber/fiber/v2"
 
-	apprss "github.com/grtsinry43/grtblog-v2/server/internal/app/rss"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/rss"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
 type RSSAdminHandler struct {
-	svc *apprss.AccessAnalyticsService
+	svc *rss.AccessAnalyticsService
 }
 
-func NewRSSAdminHandler(svc *apprss.AccessAnalyticsService) *RSSAdminHandler {
+func NewRSSAdminHandler(svc *rss.AccessAnalyticsService) *RSSAdminHandler {
 	return &RSSAdminHandler{svc: svc}
 }
 
@@ -21,7 +21,7 @@ func NewRSSAdminHandler(svc *apprss.AccessAnalyticsService) *RSSAdminHandler {
 // @Produce json
 // @Param days query int false "统计天数（默认7，最大90）"
 // @Param top query int false "Top数量（默认12，最大50）"
-// @Success 200 {object} apprss.AccessStats
+// @Success 200 {object} rss.AccessStats
 // @Security BearerAuth
 // @Router /admin/rss/access-stats [get]
 func (h *RSSAdminHandler) GetAccessStats(c *fiber.Ctx) error {
@@ -33,4 +33,3 @@ func (h *RSSAdminHandler) GetAccessStats(c *fiber.Ctx) error {
 	}
 	return response.Success(c, stats)
 }
-

@@ -169,10 +169,11 @@ func (s *Service) Login(ctx context.Context, cmd LoginCmd) (*LoginResult, error)
 }
 
 type OAuthLoginCmd struct {
-	Provider string
-	Code     string
-	State    string
-	Redirect string
+	Provider     string
+	Code         string
+	State        string
+	Redirect     string
+	ContextNonce string
 }
 
 type OAuthAuthorizeResult struct {
@@ -196,10 +197,10 @@ func (s *Service) LoginWithProvider(ctx context.Context, cmd OAuthLoginCmd) (*Lo
 	if err != nil {
 		return nil, err
 	}
-	if stateData.Provider != cmd.Provider {
-		return nil, errors.New("state/provider mismatch")
-	}
 	defer s.stateStore.Delete(ctx, cmd.State)
+	if err := validateOAuthState(stateData, cmd); err != nil {
+		return nil, err
+	}
 
 	conf := buildOAuth2Config(providerCfg)
 	options := []oauth2.AuthCodeOption{}
@@ -346,10 +347,10 @@ func (s *Service) BindOAuth(ctx context.Context, userID int64, cmd OAuthLoginCmd
 	if err != nil {
 		return err
 	}
-	if stateData.Provider != cmd.Provider {
-		return errors.New("state/provider mismatch")
-	}
 	defer s.stateStore.Delete(ctx, cmd.State)
+	if err := validateOAuthState(stateData, cmd); err != nil {
+		return err
+	}
 
 	conf := buildOAuth2Config(providerCfg)
 	options := []oauth2.AuthCodeOption{}
@@ -438,9 +439,13 @@ func (s *Service) ListProviders(ctx context.Context) ([]identity.OAuthProvider, 
 }
 
 // Authorize 生成授权 URL 和 state（可含 PKCE）。
-func (s *Service) Authorize(ctx context.Context, providerKey, redirect string, stateTTL time.Duration) (*OAuthAuthorizeResult, error) {
+func (s *Service) Authorize(ctx context.Context, providerKey, redirect, contextNonce string, stateTTL time.Duration) (*OAuthAuthorizeResult, error) {
 	if s.oauthRepo == nil || s.stateStore == nil {
 		return nil, ErrProviderNotConfigured
+	}
+	contextNonceHash := HashContextNonce(contextNonce)
+	if contextNonceHash == "" {
+		return nil, errors.New("missing oauth state context")
 	}
 	cfg, err := s.oauthRepo.GetByKey(ctx, providerKey)
 	if err != nil {
@@ -461,10 +466,11 @@ func (s *Service) Authorize(ctx context.Context, providerKey, redirect string, s
 	}
 
 	if err := s.stateStore.Save(ctx, state, OAuthState{
-		Provider:     providerKey,
-		Redirect:     redirect,
-		CodeVerifier: codeVerifier,
-		CreatedAt:    time.Now(),
+		Provider:         providerKey,
+		Redirect:         redirect,
+		CodeVerifier:     codeVerifier,
+		ContextNonceHash: contextNonceHash,
+		CreatedAt:        time.Now(),
 	}, stateTTL); err != nil {
 		return nil, err
 	}
@@ -502,6 +508,25 @@ func buildOAuth2Config(p *identity.OAuthProvider) *oauth2.Config {
 func splitScopes(sc string) []string {
 	parts := strings.Fields(sc)
 	return parts
+}
+
+func validateOAuthState(stateData *OAuthState, cmd OAuthLoginCmd) error {
+	if stateData == nil {
+		return errors.New("state not found")
+	}
+	if stateData.Provider != cmd.Provider {
+		return errors.New("state/provider mismatch")
+	}
+
+	expectedRedirect := strings.TrimSpace(stateData.Redirect)
+	actualRedirect := strings.TrimSpace(cmd.Redirect)
+	if expectedRedirect != actualRedirect {
+		return errors.New("state/redirect mismatch")
+	}
+	if !VerifyContextNonce(cmd.ContextNonce, stateData.ContextNonceHash) {
+		return errors.New("state/context mismatch")
+	}
+	return nil
 }
 
 type ExternalProfile struct {

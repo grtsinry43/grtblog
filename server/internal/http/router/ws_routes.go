@@ -87,6 +87,23 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 		ipLimiter.Release(c.IP())
 	}
 
+	resolveWSUserFromToken := func(c *fiber.Ctx, token string) error {
+		if deps.JWTManager == nil {
+			return fiber.NewError(fiber.StatusUnauthorized, "ws auth unavailable")
+		}
+		claims, parseErr := deps.JWTManager.Parse(token)
+		if parseErr != nil || claims == nil || claims.UserID <= 0 {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")
+		}
+		user, dbErr := userRepo.FindByID(c.Context(), claims.UserID)
+		if dbErr != nil || !user.IsActive {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")
+		}
+		c.Locals("wsUserID", user.ID)
+		c.Locals("wsUserIsAdmin", user.IsAdmin)
+		return nil
+	}
+
 	v2.Use("/ws/realtime", func(c *fiber.Ctx) error {
 		acquired, err := wsAcquire(c)
 		if err != nil {
@@ -96,26 +113,12 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 		if token == "" {
 			return c.Next()
 		}
-		if deps.JWTManager == nil {
+		if err := resolveWSUserFromToken(c, token); err != nil {
 			if acquired {
 				wsRelease(c)
 			}
-			return fiber.NewError(fiber.StatusUnauthorized, "ws auth unavailable")
+			return err
 		}
-		claims, parseErr := deps.JWTManager.Parse(token)
-		if parseErr != nil || claims == nil || claims.UserID <= 0 {
-			if acquired {
-				wsRelease(c)
-			}
-			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")
-		}
-		c.Locals("wsUserID", claims.UserID)
-		// Re-verify admin status from database instead of trusting JWT claim.
-		isAdmin := false
-		if user, dbErr := userRepo.FindByID(c.Context(), claims.UserID); dbErr == nil {
-			isAdmin = user.IsAdmin
-		}
-		c.Locals("wsUserIsAdmin", isAdmin)
 		return c.Next()
 	})
 	v2.Get("/ws/realtime", websocket.New(wsHandler.HandleRealtime))
@@ -159,22 +162,19 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 			return err
 		}
 		token := extractWSJWTToken(c)
-		if token != "" && deps.JWTManager != nil {
-			claims, parseErr := deps.JWTManager.Parse(token)
-			if parseErr == nil && claims != nil && claims.UserID > 0 {
-				c.Locals("wsUserID", claims.UserID)
-				c.Locals("wsUserIsAdmin", claims.IsAdmin)
-				return c.Next()
-			}
+		if token == "" {
 			if acquired {
 				wsRelease(c)
 			}
-			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")
+			return fiber.NewError(fiber.StatusUnauthorized, "missing ws token")
 		}
-		if acquired {
-			wsRelease(c)
+		if err := resolveWSUserFromToken(c, token); err != nil {
+			if acquired {
+				wsRelease(c)
+			}
+			return err
 		}
-		return fiber.NewError(fiber.StatusUnauthorized, "missing ws token")
+		return c.Next()
 	})
 	v2.Get("/ws/notifications", websocket.New(wsHandler.HandleNotification, websocket.Config{
 		Subprotocols: []string{"grtblog.jwt"},

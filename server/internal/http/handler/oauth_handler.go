@@ -54,10 +54,15 @@ func (h *OAuthHandler) ListProviders(c *fiber.Ctx) error {
 func (h *OAuthHandler) Authorize(c *fiber.Ctx) error {
 	provider := c.Params("provider")
 	redirect := c.Query("redirect_uri")
-	res, err := h.svc.Authorize(c.Context(), provider, redirect, h.stateTTL)
+	contextNonce, err := auth.GenerateContextNonce()
 	if err != nil {
 		return err
 	}
+	res, err := h.svc.Authorize(c.Context(), provider, redirect, contextNonce, h.stateTTL)
+	if err != nil {
+		return err
+	}
+	setOAuthStateNonceCookie(c, contextNonce, h.stateTTL)
 	return response.Success(c, contract.AuthorizeResp{
 		AuthURL:       res.AuthURL,
 		State:         res.State,
@@ -83,10 +88,14 @@ func (h *OAuthHandler) Callback(c *fiber.Ctx) error {
 	if req.Code == "" || req.State == "" {
 		return response.NewBizErrorWithMsg(response.ParamsError, "code/state 不能为空")
 	}
+	contextNonce := readOAuthStateNonceCookie(c)
+	clearOAuthStateNonceCookie(c)
 	result, err := h.svc.LoginWithProvider(c.Context(), auth.OAuthLoginCmd{
-		Provider: provider,
-		Code:     req.Code,
-		State:    req.State,
+		Provider:     provider,
+		Code:         req.Code,
+		State:        req.State,
+		Redirect:     req.RedirectURI,
+		ContextNonce: contextNonce,
 	})
 	if err != nil {
 		if err == auth.ErrUserDisabled {
@@ -102,4 +111,36 @@ func (h *OAuthHandler) Callback(c *fiber.Ctx) error {
 
 func splitScopes(sc string) []string {
 	return strings.Fields(sc)
+}
+
+func setOAuthStateNonceCookie(c *fiber.Ctx, nonce string, ttl time.Duration) {
+	maxAge := int(ttl.Seconds())
+	if maxAge < 0 {
+		maxAge = 0
+	}
+	c.Cookie(&fiber.Cookie{
+		Name:     auth.OAuthStateNonceCookieName,
+		Value:    nonce,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HTTPOnly: true,
+		Secure:   strings.EqualFold(c.Protocol(), "https"),
+		SameSite: "Lax",
+	})
+}
+
+func clearOAuthStateNonceCookie(c *fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     auth.OAuthStateNonceCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HTTPOnly: true,
+		Secure:   strings.EqualFold(c.Protocol(), "https"),
+		SameSite: "Lax",
+	})
+}
+
+func readOAuthStateNonceCookie(c *fiber.Ctx) string {
+	return strings.TrimSpace(c.Cookies(auth.OAuthStateNonceCookieName))
 }

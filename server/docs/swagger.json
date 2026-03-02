@@ -8,6 +8,165 @@
     },
     "basePath": "/api/v2",
     "paths": {
+        "/admin/activitypub/config": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ActivityPubAdmin"
+                ],
+                "summary": "ActivityPub 配置列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "指定配置 key（逗号分隔）",
+                        "name": "keys",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.SysConfigTreeResp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ActivityPubAdmin"
+                ],
+                "summary": "更新 ActivityPub 配置",
+                "parameters": [
+                    {
+                        "description": "配置更新参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.SysConfigBatchUpdateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.SysConfigTreeResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/activitypub/followers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ActivityPubAdmin"
+                ],
+                "summary": "查询 ActivityPub 关注者",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationActivityPubFollowerListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/activitypub/publish": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ActivityPubAdmin"
+                ],
+                "summary": "推送 ActivityPub 时间线",
+                "parameters": [
+                    {
+                        "description": "推送参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationActivityPubPublishReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationActivityPubPublishResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/articles": {
             "get": {
                 "security": [
@@ -196,6 +355,42 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.EmptyRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/articles/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Article"
+                ],
+                "summary": "获取文章详情（管理员）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ArticleResp"
                         }
                     }
                 }
@@ -527,6 +722,44 @@
                 }
             }
         },
+        "/admin/comments/import": {
+            "post": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "导入评论（管理端，全字段）",
+                "parameters": [
+                    {
+                        "description": "评论导入参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.ImportCommentReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.CreateCommentResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/comments/viewed": {
             "put": {
                 "security": [
@@ -827,6 +1060,103 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.EmailEventCatalogResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/email/outbox": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "获取邮件出站队列",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "事件名",
+                        "name": "eventName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "主题关键字",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmailOutboxListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/email/outbox/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "获取邮件出站详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "出站记录 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.EmailOutboxResp"
                         }
                     }
                 }
@@ -1279,6 +1609,48 @@
                 }
             }
         },
+        "/admin/federation/authors/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "搜索缓存作者",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "返回数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationAuthorListResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/federation/citations/request": {
             "post": {
                 "security": [
@@ -1443,6 +1815,33 @@
                 }
             }
         },
+        "/admin/federation/export": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "导出联合配置",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.SysConfigExportResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/federation/friendlinks/request": {
             "post": {
                 "security": [
@@ -1480,6 +1879,44 @@
                         "schema": {
                             "$ref": "#/definitions/contract.FederationAdminProxyResp"
                         }
+                    }
+                }
+            }
+        },
+        "/admin/federation/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "导入联合配置",
+                "parameters": [
+                    {
+                        "description": "导入数据",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.SysConfigImportReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -1576,6 +2013,55 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.FederationInstanceDetailResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/federation/instances/{id}/posts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "按实例搜索缓存文章",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "实例ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "返回数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationCachedPostListResp"
                         }
                     }
                 }
@@ -2848,6 +3334,42 @@
                 }
             }
         },
+        "/admin/moments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Moment"
+                ],
+                "summary": "获取手记详情（管理员）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "手记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MomentResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/nav-menus": {
             "get": {
                 "security": [
@@ -3242,6 +3764,80 @@
                 }
             }
         },
+        "/admin/pages/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Page"
+                ],
+                "summary": "获取页面详情（管理员）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页面ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.PageResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/rss/access-stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RSSAdmin"
+                ],
+                "summary": "获取 RSS 访问统计（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "统计天数（默认7，最大90）",
+                        "name": "days",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Top数量（默认12，最大50）",
+                        "name": "top",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rss.AccessStats"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/stats/dashboard": {
             "get": {
                 "security": [
@@ -3618,6 +4214,227 @@
                     "200": {
                         "description": "OK",
                         "schema": {}
+                    }
+                }
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AdminUser"
+                ],
+                "summary": "获取本站用户列表（管理端）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "关键词（用户名/昵称/邮箱）",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否管理员",
+                        "name": "admin",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否启用",
+                        "name": "active",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.AdminUserListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AdminUser"
+                ],
+                "summary": "更新本站用户（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新用户参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.UpdateAdminUserReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.UserResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/visitors": {
+            "get": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "获取访客画像列表（管理端）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "关键词（visitorId/昵称/邮箱/IP/地区/设备）",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.AdminVisitorListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/visitors/insights": {
+            "get": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "获取访客画像统计图数据（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "统计天数（默认30，最大180）",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.AdminVisitorInsightsResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/visitors/{visitorId}": {
+            "get": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CommentAdmin"
+                ],
+                "summary": "获取访客画像详情（管理端）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "访客ID",
+                        "name": "visitorId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "最近评论数量",
+                        "name": "recentLimit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.AdminVisitorProfileResp"
+                        }
                     }
                 }
             }
@@ -5877,6 +6694,25 @@
                 }
             }
         },
+        "/public/friend-links/apply-config": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FriendLink"
+                ],
+                "summary": "获取友链申请配置",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FriendLinkApplyConfigResp"
+                        }
+                    }
+                }
+            }
+        },
         "/public/friend-timeline": {
             "get": {
                 "produces": [
@@ -5934,6 +6770,79 @@
                 }
             }
         },
+        "/public/home/activity-pulse": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home"
+                ],
+                "summary": "获取首页创作律动数据",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "天数（默认365，最大730，传 all 返回全量）",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.GenericMessageEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/home/inspiration-stats": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home"
+                ],
+                "summary": "获取首页灵感模块统计数据",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "GitHub 用户名（可选）",
+                        "name": "githubUsername",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.GenericMessageEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/home/timeline-by-year": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home"
+                ],
+                "summary": "获取时间轴按年份聚合数据",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.GenericMessageEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/public/html/posts/refresh": {
             "post": {
                 "produces": [
@@ -5942,7 +6851,7 @@
                 "tags": [
                     "Public"
                 ],
-                "summary": "刷新文章 HTML 缓存",
+                "summary": "触发 ISR bootstrap（兼容 refresh 路径）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6046,6 +6955,28 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.SiteSearchResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/tags": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public"
+                ],
+                "summary": "获取公开标签列表（含文章数量）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/contract.TagPublicResp"
+                            }
                         }
                     }
                 }
@@ -6910,6 +7841,9 @@
                 "browser": {
                     "type": "string"
                 },
+                "canReply": {
+                    "type": "boolean"
+                },
                 "content": {
                     "type": "string"
                 },
@@ -6922,8 +7856,14 @@
                 "email": {
                     "type": "string"
                 },
+                "federatedActor": {
+                    "type": "string"
+                },
+                "federatedProtocol": {
+                    "type": "string"
+                },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "ip": {
                     "type": "string"
@@ -6932,6 +7872,9 @@
                     "type": "boolean"
                 },
                 "isDeleted": {
+                    "type": "boolean"
+                },
+                "isFederated": {
                     "type": "boolean"
                 },
                 "isFriend": {
@@ -6953,7 +7896,7 @@
                     "type": "string"
                 },
                 "parentId": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "platform": {
                     "type": "string"
@@ -7103,6 +8046,284 @@
                 }
             }
         },
+        "contract.AdminUserListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.UserResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.AdminVisitorDistributionResp": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.AdminVisitorFunnelResp": {
+            "type": "object",
+            "properties": {
+                "commentRateByLike": {
+                    "type": "number"
+                },
+                "commentRateByView": {
+                    "type": "number"
+                },
+                "commentVisitors": {
+                    "type": "integer"
+                },
+                "likeRate": {
+                    "type": "number"
+                },
+                "likeVisitors": {
+                    "type": "integer"
+                },
+                "viewVisitors": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.AdminVisitorInsightsResp": {
+            "type": "object",
+            "properties": {
+                "browserTop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminVisitorDistributionResp"
+                    }
+                },
+                "dataSource": {
+                    "type": "string"
+                },
+                "days": {
+                    "type": "integer"
+                },
+                "funnel": {
+                    "$ref": "#/definitions/contract.AdminVisitorFunnelResp"
+                },
+                "generatedAt": {
+                    "type": "string"
+                },
+                "locationTop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminVisitorDistributionResp"
+                    }
+                },
+                "platformTop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminVisitorDistributionResp"
+                    }
+                },
+                "segments": {
+                    "$ref": "#/definitions/contract.AdminVisitorSegmentsResp"
+                },
+                "trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminVisitorTrendResp"
+                    }
+                }
+            }
+        },
+        "contract.AdminVisitorListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminVisitorResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.AdminVisitorProfileResp": {
+            "type": "object",
+            "properties": {
+                "profile": {
+                    "$ref": "#/definitions/contract.AdminVisitorResp"
+                },
+                "recentComments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.AdminVisitorRecentCommentResp"
+                    }
+                }
+            }
+        },
+        "contract.AdminVisitorRecentCommentResp": {
+            "type": "object",
+            "properties": {
+                "areaId": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isDeleted": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.AdminVisitorResp": {
+            "type": "object",
+            "properties": {
+                "activeDays": {
+                    "type": "integer"
+                },
+                "approvedComments": {
+                    "type": "integer"
+                },
+                "blockedComments": {
+                    "type": "integer"
+                },
+                "browser": {
+                    "type": "string"
+                },
+                "deletedComments": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstSeenAt": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "lastLikedAt": {
+                    "type": "string"
+                },
+                "lastSeenAt": {
+                    "type": "string"
+                },
+                "lastViewedAt": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "pendingComments": {
+                    "type": "integer"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "rejectedComments": {
+                    "type": "integer"
+                },
+                "topComments": {
+                    "type": "integer"
+                },
+                "totalComments": {
+                    "type": "integer"
+                },
+                "totalLikes": {
+                    "type": "integer"
+                },
+                "totalViews": {
+                    "type": "integer"
+                },
+                "uniqueLikedItems": {
+                    "type": "integer"
+                },
+                "uniqueViewItems": {
+                    "type": "integer"
+                },
+                "visitorId": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.AdminVisitorSegmentsResp": {
+            "type": "object",
+            "properties": {
+                "active1d": {
+                    "type": "integer"
+                },
+                "active30d": {
+                    "type": "integer"
+                },
+                "active3d": {
+                    "type": "integer"
+                },
+                "active7d": {
+                    "type": "integer"
+                },
+                "highlyEngaged": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.AdminVisitorTrendResp": {
+            "type": "object",
+            "properties": {
+                "activeVisitors": {
+                    "type": "integer"
+                },
+                "comments": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "newVisitors": {
+                    "type": "integer"
+                },
+                "returningVisitors": {
+                    "type": "integer"
+                },
+                "views": {
+                    "type": "integer"
+                }
+            }
+        },
         "contract.ArticleListItemResp": {
             "type": "object",
             "properties": {
@@ -7209,6 +8430,12 @@
                 "categoryId": {
                     "type": "integer"
                 },
+                "categoryName": {
+                    "type": "string"
+                },
+                "categoryShortUrl": {
+                    "type": "string"
+                },
                 "commentAreaId": {
                     "type": "integer"
                 },
@@ -7226,6 +8453,12 @@
                 },
                 "extInfo": {
                     "type": "object"
+                },
+                "fediverseObjectUrl": {
+                    "type": "string"
+                },
+                "fediverseReplyUrl": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
@@ -7634,6 +8867,9 @@
                 "browser": {
                     "type": "string"
                 },
+                "canReply": {
+                    "type": "boolean"
+                },
                 "children": {
                     "type": "array",
                     "items": {
@@ -7649,6 +8885,12 @@
                 "deletedAt": {
                     "type": "string"
                 },
+                "federatedActor": {
+                    "type": "string"
+                },
+                "federatedProtocol": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -7656,6 +8898,9 @@
                     "type": "boolean"
                 },
                 "isDeleted": {
+                    "type": "boolean"
+                },
+                "isFederated": {
                     "type": "boolean"
                 },
                 "isFriend": {
@@ -7704,6 +8949,9 @@
                 "title"
             ],
             "properties": {
+                "aiSummary": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -7782,6 +9030,9 @@
                 "browser": {
                     "type": "string"
                 },
+                "canReply": {
+                    "type": "boolean"
+                },
                 "content": {
                     "type": "string"
                 },
@@ -7791,6 +9042,12 @@
                 "deletedAt": {
                     "type": "string"
                 },
+                "federatedActor": {
+                    "type": "string"
+                },
+                "federatedProtocol": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -7798,6 +9055,9 @@
                     "type": "boolean"
                 },
                 "isDeleted": {
+                    "type": "boolean"
+                },
+                "isFederated": {
                     "type": "boolean"
                 },
                 "isFriend": {
@@ -7909,6 +9169,9 @@
                 "title"
             ],
             "properties": {
+                "aiSummary": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -8127,6 +9390,76 @@
                 }
             }
         },
+        "contract.EmailOutboxListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.EmailOutboxResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.EmailOutboxResp": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "eventName": {
+                    "type": "string"
+                },
+                "htmlBody": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lastError": {
+                    "type": "string"
+                },
+                "nextRetryAt": {
+                    "type": "string"
+                },
+                "retryCount": {
+                    "type": "integer"
+                },
+                "sentAt": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "templateCode": {
+                    "type": "string"
+                },
+                "textBody": {
+                    "type": "string"
+                },
+                "toEmails": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.EmailPublicSubscriptionResp": {
             "type": "object",
             "properties": {
@@ -8320,6 +9653,110 @@
                 }
             }
         },
+        "contract.FederationActivityPubFollowerListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationActivityPubFollowerResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.FederationActivityPubFollowerResp": {
+            "type": "object",
+            "properties": {
+                "actor_id": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "followed_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "inbox_url": {
+                    "type": "string"
+                },
+                "last_seen_at": {
+                    "type": "string"
+                },
+                "preferred_username": {
+                    "type": "string"
+                },
+                "shared_inbox_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationActivityPubPublishReq": {
+            "type": "object",
+            "properties": {
+                "source_id": {
+                    "type": "integer"
+                },
+                "source_type": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationActivityPubPublishResp": {
+            "type": "object",
+            "properties": {
+                "activity_id": {
+                    "type": "string"
+                },
+                "deliveries": {
+                    "type": "integer"
+                },
+                "failed_target": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "failure_count": {
+                    "type": "integer"
+                },
+                "object_id": {
+                    "type": "string"
+                },
+                "published_at": {
+                    "type": "string"
+                },
+                "source_id": {
+                    "type": "integer"
+                },
+                "source_type": {
+                    "type": "string"
+                },
+                "success_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "contract.FederationAdminCitationReq": {
             "type": "object",
             "properties": {
@@ -8428,6 +9865,77 @@
                     "items": {
                         "$ref": "#/definitions/contract.FederationOutboundInteractionResp"
                     }
+                }
+            }
+        },
+        "contract.FederationAuthorListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationAuthorResp"
+                    }
+                }
+            }
+        },
+        "contract.FederationAuthorResp": {
+            "type": "object",
+            "properties": {
+                "instanceName": {
+                    "type": "string"
+                },
+                "instanceUrl": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FederationCachedPostListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FederationCachedPostResp"
+                    }
+                }
+            }
+        },
+        "contract.FederationCachedPostResp": {
+            "type": "object",
+            "properties": {
+                "allowCitation": {
+                    "type": "boolean"
+                },
+                "authorName": {
+                    "type": "string"
+                },
+                "coverImage": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instanceId": {
+                    "type": "integer"
+                },
+                "publishedAt": {
+                    "type": "string"
+                },
+                "remotePostId": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
                 }
             }
         },
@@ -9109,6 +10617,17 @@
                 }
             }
         },
+        "contract.FriendLinkApplyConfigResp": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "requirements": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.FriendLinkCreateReq": {
             "type": "object",
             "properties": {
@@ -9405,6 +10924,96 @@
                 }
             }
         },
+        "contract.ImportCommentReq": {
+            "type": "object",
+            "required": [
+                "areaId",
+                "content"
+            ],
+            "properties": {
+                "areaId": {
+                    "type": "integer"
+                },
+                "authorId": {
+                    "type": "integer"
+                },
+                "browser": {
+                    "type": "string"
+                },
+                "canReply": {
+                    "type": "boolean"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "federatedActor": {
+                    "type": "string"
+                },
+                "federatedObjectId": {
+                    "type": "string"
+                },
+                "federatedProtocol": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "isAuthor": {
+                    "type": "boolean"
+                },
+                "isFederated": {
+                    "type": "boolean"
+                },
+                "isFriend": {
+                    "type": "boolean"
+                },
+                "isOwner": {
+                    "type": "boolean"
+                },
+                "isTop": {
+                    "type": "boolean"
+                },
+                "isViewed": {
+                    "type": "boolean"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "parentId": {
+                    "type": "integer"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "visitorId": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.ListThinkingResp": {
             "type": "object",
             "properties": {
@@ -9471,7 +11080,7 @@
                 "ids": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "type": "string"
                     }
                 },
                 "isViewed": {
@@ -9601,6 +11210,12 @@
                 },
                 "columnId": {
                     "type": "integer"
+                },
+                "columnName": {
+                    "type": "string"
+                },
+                "columnShortUrl": {
+                    "type": "string"
                 },
                 "commentAreaId": {
                     "type": "integer"
@@ -9763,6 +11378,9 @@
             "type": "object",
             "properties": {
                 "code": {
+                    "type": "string"
+                },
+                "redirectUri": {
                     "type": "string"
                 },
                 "state": {
@@ -10206,6 +11824,32 @@
                 }
             }
         },
+        "contract.SysConfigExportItem": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {}
+            }
+        },
+        "contract.SysConfigExportResp": {
+            "type": "object",
+            "properties": {
+                "configs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SysConfigExportItem"
+                    }
+                },
+                "exportedAt": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
         "contract.SysConfigGroupResp": {
             "type": "object",
             "properties": {
@@ -10229,6 +11873,23 @@
                 },
                 "path": {
                     "type": "string"
+                }
+            }
+        },
+        "contract.SysConfigImportReq": {
+            "type": "object",
+            "required": [
+                "configs"
+            ],
+            "properties": {
+                "configs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.SysConfigExportItem"
+                    }
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
@@ -10385,6 +12046,20 @@
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.TagPublicResp": {
+            "type": "object",
+            "properties": {
+                "articleCount": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -10602,6 +12277,23 @@
                 }
             }
         },
+        "contract.UpdateAdminUserReq": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "isAdmin": {
+                    "type": "boolean"
+                },
+                "nickname": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.UpdateArticleReq": {
             "type": "object",
             "required": [
@@ -10610,6 +12302,9 @@
                 "title"
             ],
             "properties": {
+                "aiSummary": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -10703,6 +12398,9 @@
                 "title"
             ],
             "properties": {
+                "aiSummary": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -11192,9 +12890,6 @@
         "contract.WebsiteInfoResp": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
                 "infoJson": {
                     "type": "object"
                 },
@@ -11202,9 +12897,6 @@
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "updatedAt": {
                     "type": "string"
                 },
                 "value": {
@@ -11419,6 +13111,9 @@
         "handler.AppInfo": {
             "type": "object",
             "properties": {
+                "commit": {
+                    "type": "string"
+                },
                 "goVersion": {
                     "type": "string"
                 },
@@ -11438,6 +13133,26 @@
             "properties": {
                 "cores": {
                     "type": "integer"
+                }
+            }
+        },
+        "handler.ComponentHealth": {
+            "type": "object",
+            "properties": {
+                "checkedAt": {
+                    "type": "string"
+                },
+                "healthy": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },
@@ -11526,6 +13241,9 @@
                     "$ref": "#/definitions/handler.DBPoolStats"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 }
             }
@@ -11660,6 +13378,9 @@
                 },
                 "usedMemory": {
                     "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },
@@ -11681,6 +13402,12 @@
                 "app": {
                     "$ref": "#/definitions/handler.AppInfo"
                 },
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.ComponentHealth"
+                    }
+                },
                 "cpu": {
                     "$ref": "#/definitions/handler.CPUInfo"
                 },
@@ -11689,6 +13416,15 @@
                 },
                 "disk": {
                     "$ref": "#/definitions/handler.DiskInfo"
+                },
+                "healthMode": {
+                    "type": "string"
+                },
+                "healthState": {
+                    "type": "integer"
+                },
+                "maintenance": {
+                    "type": "boolean"
                 },
                 "memory": {
                     "$ref": "#/definitions/handler.MemoryInfo"
@@ -11701,6 +13437,9 @@
                 },
                 "storage": {
                     "$ref": "#/definitions/handler.StorageInfo"
+                },
+                "update": {
+                    "$ref": "#/definitions/handler.SystemUpdateInfo"
                 }
             }
         },
@@ -11720,6 +13459,53 @@
                     "$ref": "#/definitions/response.Meta"
                 },
                 "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.SystemUpdateInfo": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "checkedAt": {
+                    "type": "string"
+                },
+                "comparison": {
+                    "type": "string"
+                },
+                "currentPrerelease": {
+                    "type": "boolean"
+                },
+                "currentVersion": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "hasUpdate": {
+                    "type": "boolean"
+                },
+                "latestRelease": {
+                    "$ref": "#/definitions/handler.UpdateReleaseInfo"
+                },
+                "latestStableRelease": {
+                    "$ref": "#/definitions/handler.UpdateReleaseInfo"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "repo": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "targetRelease": {
+                    "$ref": "#/definitions/handler.UpdateReleaseInfo"
+                },
+                "upgradeUrl": {
                     "type": "string"
                 }
             }
@@ -11760,6 +13546,26 @@
                     "$ref": "#/definitions/response.Meta"
                 },
                 "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.UpdateReleaseInfo": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "prerelease": {
+                    "type": "boolean"
+                },
+                "publishedAt": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }
@@ -11821,6 +13627,96 @@
                 },
                 "timestamp": {
                     "type": "string"
+                }
+            }
+        },
+        "rss.AccessBucket": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "rss.AccessStats": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "generatedAt": {
+                    "type": "string"
+                },
+                "topBrowsers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessBucket"
+                    }
+                },
+                "topClients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessBucket"
+                    }
+                },
+                "topHints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessBucket"
+                    }
+                },
+                "topIps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessBucket"
+                    }
+                },
+                "topLocations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessBucket"
+                    }
+                },
+                "topPlatforms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessBucket"
+                    }
+                },
+                "topUserAgents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessBucket"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rss.AccessTrend"
+                    }
+                },
+                "uniqueIp": {
+                    "type": "integer"
+                }
+            }
+        },
+        "rss.AccessTrend": {
+            "type": "object",
+            "properties": {
+                "hour": {
+                    "type": "string"
+                },
+                "requests": {
+                    "type": "integer"
+                },
+                "uniqueIp": {
+                    "type": "integer"
                 }
             }
         }

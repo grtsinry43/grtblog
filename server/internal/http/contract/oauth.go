@@ -37,6 +37,7 @@ type AuthorizeRespEnvelope struct {
 
 // OAuthCallbackReq 回调请求。
 type OAuthCallbackReq struct {
-	Code  string `json:"code"`
-	State string `json:"state"`
+	Code        string `json:"code"`
+	State       string `json:"state"`
+	RedirectURI string `json:"redirectUri,omitempty"`
 }

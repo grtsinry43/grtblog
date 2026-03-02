@@ -220,10 +220,14 @@ func (h *AuthHandler) BindOAuth(c *fiber.Ctx) error {
 	if req.Code == "" || req.State == "" || provider == "" {
 		return response.NewBizErrorWithMsg(response.ParamsError, "provider/code/state 不能为空")
 	}
+	contextNonce := readOAuthStateNonceCookie(c)
+	clearOAuthStateNonceCookie(c)
 	if err := h.svc.BindOAuth(c.Context(), claims.UserID, auth.OAuthLoginCmd{
-		Provider: provider,
-		Code:     req.Code,
-		State:    req.State,
+		Provider:     provider,
+		Code:         req.Code,
+		State:        req.State,
+		Redirect:     req.RedirectURI,
+		ContextNonce: contextNonce,
 	}); err != nil {
 		if errors.Is(err, identity.ErrOAuthAlreadyBound) {
 			return response.NewBizErrorWithMsg(response.ParamsError, "该第三方账号已绑定其他用户")
