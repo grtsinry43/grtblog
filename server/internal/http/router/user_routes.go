@@ -34,7 +34,7 @@ func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *
 
 	friendLinkRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
 	friendLinkSvc := friendlink.NewService(friendLinkRepo, deps.EventBus)
-	friendLinkHandler := handler.NewFriendLinkHandler(friendLinkSvc)
+	friendLinkHandler := handler.NewFriendLinkHandler(friendLinkSvc, deps.SysConfig)
 	friendLinks := authenticated.Group("/friend-links")
 	friendLinks.Post("/applications", friendLinkHandler.SubmitApplication)
 

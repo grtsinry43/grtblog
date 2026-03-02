@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/copier"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
@@ -14,11 +15,12 @@ import (
 )
 
 type FriendLinkHandler struct {
-	svc *friendlink.Service
+	svc    *friendlink.Service
+	sysCfg *sysconfig.Service
 }
 
-func NewFriendLinkHandler(svc *friendlink.Service) *FriendLinkHandler {
-	return &FriendLinkHandler{svc: svc}
+func NewFriendLinkHandler(svc *friendlink.Service, sysCfg *sysconfig.Service) *FriendLinkHandler {
+	return &FriendLinkHandler{svc: svc, sysCfg: sysCfg}
 }
 
 // SubmitApplication godoc
@@ -31,6 +33,12 @@ func NewFriendLinkHandler(svc *friendlink.Service) *FriendLinkHandler {
 // @Security BearerAuth
 // @Router /friend-links/applications [post]
 func (h *FriendLinkHandler) SubmitApplication(c *fiber.Ctx) error {
+	if h.sysCfg != nil {
+		if v, err := h.sysCfg.GetConfigValue(c.Context(), "friendlink.apply.enabled"); err == nil && v == "false" {
+			return response.NewBizErrorWithMsg(response.Unauthorized, "友链申请功能已关闭")
+		}
+	}
+
 	var req contract.FriendLinkApplicationReq
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)

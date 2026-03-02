@@ -6,16 +6,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
 type FriendLinkPublicHandler struct {
-	svc *friendlink.LinkService
+	svc    *friendlink.LinkService
+	sysCfg *sysconfig.Service
 }
 
-func NewFriendLinkPublicHandler(svc *friendlink.LinkService) *FriendLinkPublicHandler {
-	return &FriendLinkPublicHandler{svc: svc}
+func NewFriendLinkPublicHandler(svc *friendlink.LinkService, sysCfg *sysconfig.Service) *FriendLinkPublicHandler {
+	return &FriendLinkPublicHandler{svc: svc, sysCfg: sysCfg}
 }
 
 // ListPublic godoc
@@ -53,4 +55,26 @@ func (h *FriendLinkPublicHandler) ListPublic(c *fiber.Ctx) error {
 		}
 	}
 	return response.Success(c, respItems)
+}
+
+// GetApplyConfig godoc
+// @Summary 获取友链申请配置
+// @Tags FriendLink
+// @Produce json
+// @Success 200 {object} contract.FriendLinkApplyConfigResp
+// @Router /public/friend-links/apply-config [get]
+func (h *FriendLinkPublicHandler) GetApplyConfig(c *fiber.Ctx) error {
+	resp := contract.FriendLinkApplyConfigResp{
+		Enabled:      true,
+		Requirements: "",
+	}
+	if h.sysCfg != nil {
+		if v, err := h.sysCfg.GetConfigValue(c.Context(), "friendlink.apply.enabled"); err == nil && v == "false" {
+			resp.Enabled = false
+		}
+		if v, err := h.sysCfg.GetConfigValue(c.Context(), "friendlink.apply.requirements"); err == nil {
+			resp.Requirements = v
+		}
+	}
+	return response.Success(c, resp)
 }

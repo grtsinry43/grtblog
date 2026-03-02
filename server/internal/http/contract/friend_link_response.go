@@ -43,6 +43,12 @@ func ToFriendLinkApplicationResp(app social.FriendLinkApplication) FriendLinkApp
 	}
 }
 
+// FriendLinkApplyConfigResp 友链申请配置（公开端）。
+type FriendLinkApplyConfigResp struct {
+	Enabled      bool   `json:"enabled"`
+	Requirements string `json:"requirements"`
+}
+
 // FriendLinkApplicationRespEnvelope 用于 swagger 展示友链申请操作结果。
 type FriendLinkApplicationRespEnvelope struct {
 	Code   int                       `json:"code"`

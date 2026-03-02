@@ -41,7 +41,11 @@ export default defineComponent({
     }
 
     const handleCheck = (rowKeys: DataTableRowKey[]) => {
-      checkedRowKeys.value = rowKeys
+      // Exclude builtin pages from batch selection
+      checkedRowKeys.value = rowKeys.filter((key) => {
+        const row = data.value.find((item) => item.id === key)
+        return row && !row.isBuiltin
+      })
     }
 
     const handleToggleEnabled = async (row: PageListItem) => {
@@ -100,7 +104,14 @@ export default defineComponent({
         key: 'title',
         width: 260,
         render: (row) => (
-          <div class='font-medium text-gray-700 dark:text-gray-200'>{row.title}</div>
+          <div class='flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200'>
+            {row.title}
+            {row.isBuiltin && (
+              <NTag size='tiny' type='info' bordered={false}>
+                内置
+              </NTag>
+            )}
+          </div>
         ),
       },
       {
@@ -162,14 +173,16 @@ export default defineComponent({
             >
               编辑
             </NButton>
-            <NButton
-              size='small'
-              type='error'
-              secondary
-              onClick={() => handleDelete(row.id)}
-            >
-              删除
-            </NButton>
+            {!row.isBuiltin && (
+              <NButton
+                size='small'
+                type='error'
+                secondary
+                onClick={() => handleDelete(row.id)}
+              >
+                删除
+              </NButton>
+            )}
           </NSpace>
         ),
       },

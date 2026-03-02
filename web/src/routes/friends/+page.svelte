@@ -1,8 +1,8 @@
 <script lang="ts">
 	import FriendLinkGrid from '$lib/features/friend-link/components/FriendLinkGrid.svelte';
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
-	import { FadeIn, SlideIn } from '$lib/ui/animation';
-	import { Heart, Plus } from 'lucide-svelte';
+	import { FadeIn } from '$lib/ui/animation';
+	import { Plus } from 'lucide-svelte';
 
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { authModalStore } from '$lib/shared/stores/authModalStore';
@@ -43,38 +43,40 @@
 				>
 					友链说明
 				</h2>
-				<ul class="text-xs text-ink-500 dark:text-ink-400 space-y-3 font-serif">
-					<li class="flex gap-2">
-						<span>•</span> 优先考虑经常更新、内容优质的技术博客或生活记录。
-					</li>
-					<li class="flex gap-2">
-						<span>•</span> 站点需支持 HTTPS，且排版整洁，无大量广告或误导性内容。
-					</li>
-					<li class="flex gap-2">
-						<span>•</span> 申请前请先在贵站添加本站链接，这将视作一种友好的相互确认。
-					</li>
-					<li class="flex gap-2">
-						<span>•</span> 本站名称：<span
-							class="text-jade-600 dark:text-jade-400 font-sans font-bold">grtBlog</span
-						>
-					</li>
-					<li class="flex gap-2">
-						<span>•</span> 本站地址：<span
-							class="text-jade-600 dark:text-jade-400 font-sans font-bold"
-							>https://grtsinry43.com</span
-						>
-					</li>
-				</ul>
 
-				<div class="mt-10 flex justify-center">
-					<button
-						onclick={handleApplyClick}
-						class="flex items-center gap-2 px-4 py-2 bg-ink-900 dark:bg-ink-100 text-ink-0 dark:text-ink-950 rounded-default hover:bg-jade-600 dark:hover:bg-jade-400 transition-all duration-300 font-bold text-[11px] shadow-sm group"
-					>
-						<Plus size={14} class="group-hover:rotate-90 transition-transform duration-300" />
-						申请加入
-					</button>
-				</div>
+				{#if data.applyConfig.requirements}
+					<div class="text-xs text-ink-500 dark:text-ink-400 space-y-3 font-serif whitespace-pre-line">
+						{data.applyConfig.requirements}
+					</div>
+				{:else}
+					<ul class="text-xs text-ink-500 dark:text-ink-400 space-y-3 font-serif">
+						<li class="flex gap-2">
+							<span>•</span> 优先考虑经常更新、内容优质的技术博客或生活记录。
+						</li>
+						<li class="flex gap-2">
+							<span>•</span> 站点需支持 HTTPS，且排版整洁，无大量广告或误导性内容。
+						</li>
+						<li class="flex gap-2">
+							<span>•</span> 申请前请先在贵站添加本站链接，这将视作一种友好的相互确认。
+						</li>
+					</ul>
+				{/if}
+
+				{#if data.applyConfig.enabled}
+					<div class="mt-10 flex justify-center">
+						<button
+							onclick={handleApplyClick}
+							class="flex items-center gap-2 px-4 py-2 bg-ink-900 dark:bg-ink-100 text-ink-0 dark:text-ink-950 rounded-default hover:bg-jade-600 dark:hover:bg-jade-400 transition-all duration-300 font-bold text-[11px] shadow-sm group"
+						>
+							<Plus size={14} class="group-hover:rotate-90 transition-transform duration-300" />
+							申请加入
+						</button>
+					</div>
+				{:else}
+					<div class="mt-10 text-center text-xs text-ink-400 dark:text-ink-500 font-mono">
+						友链申请暂未开放
+					</div>
+				{/if}
 			</div>
 		</div>
 	</FadeIn>

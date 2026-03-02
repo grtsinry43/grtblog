@@ -43,8 +43,9 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
 	friendLinkSvc := friendlink.NewLinkService(friendLinkRepo)
-	friendLinkHandler := handler.NewFriendLinkPublicHandler(friendLinkSvc)
+	friendLinkHandler := handler.NewFriendLinkPublicHandler(friendLinkSvc, deps.SysConfig)
 	public.Get("/friend-links", friendLinkHandler.ListPublic)
+	public.Get("/friend-links/apply-config", friendLinkHandler.GetApplyConfig)
 	friendTimelineSvc := friendtimeline.NewService(persistence.NewFederatedPostCacheRepository(deps.DB), deps.Redis, deps.Config.Redis.Prefix)
 	friendTimelineHandler := handler.NewFriendTimelineHandler(friendTimelineSvc)
 	public.Get("/friend-timeline", friendTimelineHandler.ListPublic)

@@ -13,3 +13,8 @@ export interface FriendApplyForm {
 	rssUrl?: string;
 	message?: string;
 }
+
+export interface FriendLinkApplyConfig {
+	enabled: boolean;
+	requirements: string;
+}
