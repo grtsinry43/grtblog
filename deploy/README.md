@@ -11,15 +11,42 @@ Update at least these values in `.env`:
 
 - `POSTGRES_PASSWORD`
 - `AUTH_SECRET`
-- `APP_VERSION` (tag 发布用 `v1.2.3`；非 tag 中间构建建议用 commit hash，如 `8f3c1a2b9d4e`)
+- `IMAGE_REPO_PREFIX` / `APP_VERSION` (see below)
 - `APP_UPDATE_CHECK_ENABLED` / `APP_UPDATE_CHECK_REPO` (后台更新检查来源，默认 GitHub Release)
 
 更新检查策略：Admin 面板打开时触发一次，服务端 30 分钟内复用缓存，不会频繁请求 GitHub API。
+
+### Using prebuilt images from GHCR (recommended)
+
+Every tagged release triggers a GitHub Actions workflow that builds multi-arch (`linux/amd64` + `linux/arm64`) images and pushes them to `ghcr.io/grtsinry43/`.
+
+```ini
+IMAGE_REPO_PREFIX=ghcr.io/grtsinry43/
+APP_VERSION=1.2.3
+```
+
+Tag strategy:
+- Stable `v1.2.3` → tags `1.2.3`, `1.2`, `latest`
+- Prerelease `v2.0.0-alpha.1` → tag `2.0.0-alpha.1` only (no `latest`)
+
+### Using local builds
+
+Leave `IMAGE_REPO_PREFIX` empty and build from source:
+
+```ini
+IMAGE_REPO_PREFIX=
+APP_VERSION=local
+```
 
 ## 2) Start
 
 ```bash
 mkdir -p storage/html storage/uploads storage/geoip
+
+# Prebuilt images:
+docker compose up -d
+
+# Local build:
 docker compose up -d --build
 ```
 
@@ -53,8 +80,9 @@ docker compose exec server goose -table public.goose_db_version -dir /app/migrat
 
 ```bash
 # Update APP_VERSION in .env, then:
-docker compose pull server renderer
+docker compose pull server renderer   # prebuilt images
 docker compose up -d server renderer
+# For local builds: docker compose up -d --build server renderer
 ```
 
 Nginx 不会被重建。通过 `resolver 127.0.0.11 valid=10s` 自动发现新容器 IP，无需手动 reload。
