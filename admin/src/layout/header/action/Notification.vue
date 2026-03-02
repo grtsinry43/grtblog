@@ -19,6 +19,7 @@ const reconnectTimer = ref<number | null>(null)
 const isUnmounted = ref(false)
 const reconnectAttempts = ref(0)
 const seenNotifIds = ref(new Set<number>())
+const pausedByVisibility = ref(false)
 
 const { data: unreadData } = useQuery({
   queryKey: ['admin-notifications', 'unread'],
@@ -96,17 +97,41 @@ const connectWs = async () => {
   ws.value.onerror = () => {}
 
   ws.value.onclose = (event) => {
-    if (!isUnmounted.value && event.code !== 1000) scheduleReconnect()
     ws.value = null
+    if (!isUnmounted.value && !pausedByVisibility.value && event.code !== 1000) scheduleReconnect()
+  }
+}
+
+const handleVisibilityChange = () => {
+  if (isUnmounted.value) return
+  if (document.hidden) {
+    pausedByVisibility.value = true
+    clearReconnectTimer()
+    if (ws.value) {
+      ws.value.close(1000, 'visibility')
+      ws.value = null
+    }
+  } else {
+    if (pausedByVisibility.value) {
+      pausedByVisibility.value = false
+      reconnectAttempts.value = 0
+      void connectWs()
+    }
   }
 }
 
 onMounted(() => {
-  void connectWs()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  if (!document.hidden) {
+    void connectWs()
+  } else {
+    pausedByVisibility.value = true
+  }
 })
 
 onUnmounted(() => {
   isUnmounted.value = true
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
   clearReconnectTimer()
   ws.value?.close()
 })

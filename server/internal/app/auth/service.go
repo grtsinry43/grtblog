@@ -22,6 +22,8 @@ var (
 	ErrRegisterClosed        = errors.New("register is only allowed for initial admin setup")
 	ErrLastOAuthBinding      = errors.New("cannot unbind last oauth binding for non-admin user")
 	ErrUserDisabled          = errors.New("user disabled")
+	ErrPasswordTooWeak       = errors.New("password must be at least 8 characters")
+	ErrAdminOnly             = errors.New("login is restricted to admin users")
 )
 
 // ExternalProvider 用于未来扩展 OAuth/OIDC, 当前仅定义接口。
@@ -105,6 +107,9 @@ func (s *Service) Register(ctx context.Context, cmd RegisterCmd) (*identity.User
 	if cmd.Username == "" || cmd.Email == "" || cmd.Password == "" {
 		return nil, identity.ErrInvalidCredentials
 	}
+	if len(cmd.Password) < 8 {
+		return nil, ErrPasswordTooWeak
+	}
 	if _, err := mail.ParseAddress(cmd.Email); err != nil {
 		return nil, identity.ErrInvalidCredentials
 	}
@@ -148,7 +153,7 @@ func (s *Service) Login(ctx context.Context, cmd LoginCmd) (*LoginResult, error)
 		return nil, ErrUserDisabled
 	}
 	if !user.IsAdmin {
-		return nil, identity.ErrInvalidCredentials
+		return nil, ErrAdminOnly
 	}
 	token, claims, err := s.manager.Generate(user.ID, user.IsAdmin)
 	if err != nil {
@@ -301,6 +306,9 @@ func (s *Service) CurrentUser(ctx context.Context, userID int64) (*identity.User
 func (s *Service) ChangePassword(ctx context.Context, cmd ChangePasswordCmd) error {
 	if cmd.UserID == 0 || cmd.NewPassword == "" {
 		return identity.ErrInvalidCredentials
+	}
+	if len(cmd.NewPassword) < 8 {
+		return ErrPasswordTooWeak
 	}
 	user, err := s.users.FindByID(ctx, cmd.UserID)
 	if err != nil {

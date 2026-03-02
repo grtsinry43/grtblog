@@ -58,7 +58,18 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	searchRepo := persistence.NewSearchRepository(deps.DB)
 	searchSvc := appsearch.NewService(searchRepo, deps.Redis, deps.Config.Redis.Prefix)
 	searchHandler := handler.NewSearchHandler(searchSvc)
-	public.Get("/search", searchHandler.SiteSearch)
+	searchGuard := public.Group("/search", limiter.New(limiter.Config{
+		Max:        30,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			handler.Audit(c, "search.rate_limited", map[string]any{"ip": c.IP()})
+			return response.NewBizErrorWithMsg(response.TooManyRequests, "")
+		},
+	}))
+	searchGuard.Get("/", searchHandler.SiteSearch)
 
 	rssSvc := apprss.NewService(
 		persistence.NewContentRepository(deps.DB),

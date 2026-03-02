@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -13,37 +15,115 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
 )
 
+// wsIPLimiter tracks per-IP WebSocket connection counts.
+type wsIPLimiter struct {
+	mu    sync.Mutex
+	conns map[string]*int64
+	max   int64
+}
+
+func newWSIPLimiter(max int64) *wsIPLimiter {
+	return &wsIPLimiter{conns: make(map[string]*int64), max: max}
+}
+
+func (l *wsIPLimiter) acquire(ip string) bool {
+	l.mu.Lock()
+	counter, ok := l.conns[ip]
+	if !ok {
+		var n int64
+		counter = &n
+		l.conns[ip] = counter
+	}
+	l.mu.Unlock()
+	cur := atomic.AddInt64(counter, 1)
+	if cur > l.max {
+		atomic.AddInt64(counter, -1)
+		return false
+	}
+	return true
+}
+
+func (l *wsIPLimiter) Release(ip string) {
+	l.mu.Lock()
+	counter, ok := l.conns[ip]
+	l.mu.Unlock()
+	if ok {
+		atomic.AddInt64(counter, -1)
+	}
+}
+
 func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	thinkingRepo := persistence.NewThinkingRepository(deps.DB)
 	presenceResolver := ws.NewPresenceTitleResolver(contentRepo, thinkingRepo)
 	presenceHub := ws.NewPresenceHub(manager, presenceResolver)
 	wsHandler := handler.NewWSHandler(manager, deps.Analytics, presenceHub, deps.OwnerStatus)
+	userRepo := persistence.NewIdentityRepository(deps.DB)
+
+	// Per-IP WebSocket connection limit (50 connections per IP).
+	ipLimiter := newWSIPLimiter(50)
+
+	// wsAcquire checks upgrade + per-IP limit. On success the caller MUST
+	// store limiter/IP in Locals so the WS handler can release on disconnect.
+	// Returns (acquired, error). When acquired is true the caller must ensure
+	// Release is eventually called (via handler defer) even if a later
+	// middleware step fails — so we always pass through to the handler and
+	// let it release via defer.
+	wsAcquire := func(c *fiber.Ctx) (bool, error) {
+		if !websocket.IsWebSocketUpgrade(c) {
+			return false, fiber.ErrUpgradeRequired
+		}
+		if !ipLimiter.acquire(c.IP()) {
+			return false, fiber.NewError(fiber.StatusTooManyRequests, "too many WebSocket connections")
+		}
+		c.Locals("wsIPLimiter", ipLimiter)
+		c.Locals("wsClientIP", c.IP())
+		return true, nil
+	}
+
+	// wsRelease undoes an acquire when the middleware rejects before reaching
+	// the WebSocket handler (so the handler's defer won't fire).
+	wsRelease := func(c *fiber.Ctx) {
+		ipLimiter.Release(c.IP())
+	}
 
 	v2.Use("/ws/realtime", func(c *fiber.Ctx) error {
-		if !websocket.IsWebSocketUpgrade(c) {
-			return fiber.ErrUpgradeRequired
+		acquired, err := wsAcquire(c)
+		if err != nil {
+			return err
 		}
 		token := extractWSJWTToken(c)
 		if token == "" {
 			return c.Next()
 		}
 		if deps.JWTManager == nil {
+			if acquired {
+				wsRelease(c)
+			}
 			return fiber.NewError(fiber.StatusUnauthorized, "ws auth unavailable")
 		}
-		claims, err := deps.JWTManager.Parse(token)
-		if err != nil || claims == nil || claims.UserID <= 0 {
+		claims, parseErr := deps.JWTManager.Parse(token)
+		if parseErr != nil || claims == nil || claims.UserID <= 0 {
+			if acquired {
+				wsRelease(c)
+			}
 			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")
 		}
 		c.Locals("wsUserID", claims.UserID)
-		c.Locals("wsUserIsAdmin", claims.IsAdmin)
+		// Re-verify admin status from database instead of trusting JWT claim.
+		isAdmin := false
+		if user, dbErr := userRepo.FindByID(c.Context(), claims.UserID); dbErr == nil {
+			isAdmin = user.IsAdmin
+		}
+		c.Locals("wsUserIsAdmin", isAdmin)
 		return c.Next()
 	})
 	v2.Get("/ws/realtime", websocket.New(wsHandler.HandleRealtime))
 
 	v2.Use("/ws/presence", func(c *fiber.Ctx) error {
-		if !websocket.IsWebSocketUpgrade(c) {
-			return fiber.ErrUpgradeRequired
+		_, err := wsAcquire(c)
+		if err != nil {
+			return err
 		}
 		return c.Next()
 	})
@@ -57,13 +137,15 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 		if !strings.HasSuffix(path, "/ws") {
 			return c.Next()
 		}
-		if !websocket.IsWebSocketUpgrade(c) {
-			return fiber.ErrUpgradeRequired
+		_, err := wsAcquire(c)
+		if err != nil {
+			return err
 		}
 
-		roomKey, err := parseWSRoomKey(c)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		roomKey, parseErr := parseWSRoomKey(c)
+		if parseErr != nil {
+			wsRelease(c)
+			return fiber.NewError(fiber.StatusBadRequest, parseErr.Error())
 		}
 		c.Locals("wsRoomKey", roomKey)
 		return c.Next()
@@ -72,18 +154,25 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 	v2.Get("/ws", websocket.New(wsHandler.Handle))
 
 	v2.Use("/ws/notifications", func(c *fiber.Ctx) error {
-		if !websocket.IsWebSocketUpgrade(c) {
-			return fiber.ErrUpgradeRequired
+		acquired, err := wsAcquire(c)
+		if err != nil {
+			return err
 		}
 		token := extractWSJWTToken(c)
 		if token != "" && deps.JWTManager != nil {
-			claims, err := deps.JWTManager.Parse(token)
-			if err == nil && claims != nil && claims.UserID > 0 {
+			claims, parseErr := deps.JWTManager.Parse(token)
+			if parseErr == nil && claims != nil && claims.UserID > 0 {
 				c.Locals("wsUserID", claims.UserID)
 				c.Locals("wsUserIsAdmin", claims.IsAdmin)
 				return c.Next()
 			}
+			if acquired {
+				wsRelease(c)
+			}
 			return fiber.NewError(fiber.StatusUnauthorized, "invalid ws token")
+		}
+		if acquired {
+			wsRelease(c)
 		}
 		return fiber.NewError(fiber.StatusUnauthorized, "missing ws token")
 	})

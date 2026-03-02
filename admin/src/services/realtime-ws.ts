@@ -10,6 +10,9 @@ class AdminRealtimeWSCore {
   private reconnectAttempts = 0
   private reconnectTimer: number | null = null
   private panelPingTimer: number | null = null
+  private visibilityBound = false
+  /** True when the tab was hidden and we intentionally disconnected. */
+  private pausedByVisibility = false
 
   private jwtToken: string | null = null
   private panelHeartbeatEnabled = false
@@ -20,12 +23,19 @@ class AdminRealtimeWSCore {
   start() {
     if (this.started) return
     this.started = true
+    this.bindVisibility()
+    if (document.hidden) {
+      this.pausedByVisibility = true
+      return
+    }
     this.connect()
   }
 
   stop() {
     this.started = false
     this.reconnectAttempts = 0
+    this.pausedByVisibility = false
+    this.unbindVisibility()
     this.clearReconnectTimer()
     this.clearPanelPingTimer()
     if (this.socket) {
@@ -70,6 +80,39 @@ class AdminRealtimeWSCore {
     }
   }
 
+  private handleVisibilityChange = () => {
+    if (!this.started) return
+    if (document.hidden) {
+      this.pausedByVisibility = true
+      this.clearReconnectTimer()
+      this.clearPanelPingTimer()
+      if (this.socket) {
+        const active = this.socket
+        this.socket = null
+        active.close(1000, 'visibility')
+      }
+      this.setConnected(false)
+    } else {
+      if (this.pausedByVisibility) {
+        this.pausedByVisibility = false
+        this.reconnectAttempts = 0
+        this.connect()
+      }
+    }
+  }
+
+  private bindVisibility() {
+    if (this.visibilityBound) return
+    this.visibilityBound = true
+    document.addEventListener('visibilitychange', this.handleVisibilityChange)
+  }
+
+  private unbindVisibility() {
+    if (!this.visibilityBound) return
+    this.visibilityBound = false
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange)
+  }
+
   private connect() {
     if (!this.started) return
     const socket = this.createSocket()
@@ -106,7 +149,7 @@ class AdminRealtimeWSCore {
       this.socket = null
       this.clearPanelPingTimer()
       this.setConnected(false)
-      if (!this.started) return
+      if (!this.started || this.pausedByVisibility) return
       this.scheduleReconnect()
     }
   }

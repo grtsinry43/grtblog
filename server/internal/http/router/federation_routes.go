@@ -37,6 +37,8 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	if deps.Redis != nil {
 		cache = federation.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 		rateLimiter = federation.NewRedisRateLimiter(deps.Redis, deps.Config.Redis.Prefix)
+	} else {
+		rateLimiter = federation.NewInMemoryRateLimiter()
 	}
 	resolver := federation.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
 	verifier := federation.NewVerifier(resolver, 5*time.Minute)

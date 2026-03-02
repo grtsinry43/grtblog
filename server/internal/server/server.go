@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -126,6 +127,34 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 				log.Printf("[panic] %s %s: %v\n%s", c.Method(), c.Path(), e, stack)
 			}
 		},
+	}))
+
+	// CORS: read allowed origins from sysconfig (site.public_url, site.api_url).
+	app.Use(cors.New(cors.Config{
+		AllowOriginsFunc: func(origin string) bool {
+			if origin == "" {
+				return false
+			}
+			info, err := sysCfgSvc.WebsiteInfo(ctx)
+			if err != nil {
+				return false
+			}
+			for _, key := range []string{"public_url", "api_url"} {
+				allowed := strings.TrimRight(strings.TrimSpace(info[key]), "/")
+				if allowed != "" && strings.EqualFold(origin, allowed) {
+					return true
+				}
+			}
+			// In development mode, allow localhost origins.
+			if strings.ToLower(cfg.App.Env) == "development" {
+				return strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1")
+			}
+			return false
+		},
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Request-ID",
+		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+		AllowCredentials: true,
+		MaxAge:           3600,
 	}))
 
 	jwtManager := jwt.NewManager(cfg.Auth)

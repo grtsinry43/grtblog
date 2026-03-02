@@ -17,6 +17,9 @@ class RealtimeWSCore {
 	private reconnectAttempts = 0;
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 	private connected = false;
+	private visibilityBound = false;
+	/** True when the tab was hidden and we intentionally disconnected. */
+	private pausedByVisibility = false;
 
 	private presenceReport: PresenceClientReport | null = null;
 	private contentSubscription: ContentSubscription | null = null;
@@ -55,16 +58,24 @@ class RealtimeWSCore {
 	start() {
 		if (!browser || this.started) return;
 		this.started = true;
+		this.bindVisibility();
+		// If the tab is already hidden at start time, defer connection.
+		if (document.hidden) {
+			this.pausedByVisibility = true;
+			return;
+		}
 		this.connect();
 	}
 
 	stop() {
 		this.started = false;
 		this.reconnectAttempts = 0;
+		this.pausedByVisibility = false;
 		this.sentPresenceKey = '';
 		this.sentContentKey = '';
 		this.sentVisitorId = '';
 		this.seenFingerprints.clear();
+		this.unbindVisibility();
 
 		if (this.reconnectTimer) {
 			clearTimeout(this.reconnectTimer);
@@ -110,6 +121,46 @@ class RealtimeWSCore {
 		return () => {
 			this.contentListeners.delete(listener);
 		};
+	}
+
+	private handleVisibilityChange = () => {
+		if (!this.started) return;
+		if (document.hidden) {
+			// Tab went to background — disconnect to save resources.
+			this.pausedByVisibility = true;
+			if (this.reconnectTimer) {
+				clearTimeout(this.reconnectTimer);
+				this.reconnectTimer = null;
+			}
+			if (this.socket) {
+				const active = this.socket;
+				this.socket = null;
+				active.close(1000, 'visibility');
+			}
+			this.setConnected(false);
+		} else {
+			// Tab came back to foreground — reconnect.
+			if (this.pausedByVisibility) {
+				this.pausedByVisibility = false;
+				this.reconnectAttempts = 0;
+				this.sentPresenceKey = '';
+				this.sentContentKey = '';
+				this.sentVisitorId = '';
+				this.connect();
+			}
+		}
+	};
+
+	private bindVisibility() {
+		if (this.visibilityBound || !browser) return;
+		this.visibilityBound = true;
+		document.addEventListener('visibilitychange', this.handleVisibilityChange);
+	}
+
+	private unbindVisibility() {
+		if (!this.visibilityBound) return;
+		this.visibilityBound = false;
+		document.removeEventListener('visibilitychange', this.handleVisibilityChange);
 	}
 
 	private connect() {
@@ -172,7 +223,7 @@ class RealtimeWSCore {
 			if (this.socket !== socket) return;
 			this.socket = null;
 			this.setConnected(false);
-			if (!this.started) return;
+			if (!this.started || this.pausedByVisibility) return;
 			this.scheduleReconnect();
 		};
 	}

@@ -24,6 +24,7 @@ func NewWSHandler(manager *ws.Manager, analyticsSvc *analytics.Service, presence
 }
 
 func (h *WSHandler) Handle(conn *websocket.Conn) {
+	defer releaseWSIPLimit(conn)
 	if h.manager == nil {
 		return
 	}
@@ -55,6 +56,7 @@ func (h *WSHandler) Handle(conn *websocket.Conn) {
 }
 
 func (h *WSHandler) HandleNotification(conn *websocket.Conn) {
+	defer releaseWSIPLimit(conn)
 	if h.manager == nil {
 		return
 	}
@@ -88,6 +90,7 @@ func (h *WSHandler) HandleNotification(conn *websocket.Conn) {
 }
 
 func (h *WSHandler) HandlePresence(conn *websocket.Conn) {
+	defer releaseWSIPLimit(conn)
 	if h.manager == nil || h.presenceHub == nil {
 		return
 	}
@@ -134,6 +137,7 @@ type realtimeInboundMessage struct {
 }
 
 func (h *WSHandler) HandleRealtime(conn *websocket.Conn) {
+	defer releaseWSIPLimit(conn)
 	if h.manager == nil || h.presenceHub == nil {
 		return
 	}
@@ -238,6 +242,19 @@ func localUserIsAdmin(conn *websocket.Conn) bool {
 		return v
 	default:
 		return false
+	}
+}
+
+// releaseWSIPLimit decrements the per-IP WS connection counter set by the
+// upgrade middleware. It is safe to call even if no limiter was attached.
+func releaseWSIPLimit(conn *websocket.Conn) {
+	type releaser interface {
+		Release(ip string)
+	}
+	if r, ok := conn.Locals("wsIPLimiter").(releaser); ok {
+		if ip, ok := conn.Locals("wsClientIP").(string); ok && ip != "" {
+			r.Release(ip)
+		}
 	}
 }
 
