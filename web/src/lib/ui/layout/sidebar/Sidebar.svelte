@@ -59,6 +59,7 @@
 			>
 				<a
 					href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolve(item.url)}
+					aria-label={item.name}
 					class="relative z-20 flex h-10 w-10 items-center justify-center rounded-default transition-all duration-200
                     {active
 						? 'bg-ink-900 text-white shadow-sm dark:bg-ink-100 dark:text-ink-950'
@@ -137,6 +138,7 @@
 		<Button
 			variant="icon"
 			onclick={() => uiState.openSearch()}
+			aria-label="搜索"
 			class="h-10 w-10 rounded-default text-ink-400 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-ink-800 dark:hover:text-ink-100"
 		>
 			<SearchIcon class="h-5 w-5" />
