@@ -19,7 +19,7 @@
 	}
 </script>
 
-<div class="friends-page max-w-5xl mx-auto space-y-16">
+<div class="friends-page max-w-5xl mx-auto py-10 space-y-16">
 	<PageHeader 
 		title="友情链接" 
 		tag="Friends" 

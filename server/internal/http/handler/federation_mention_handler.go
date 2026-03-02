@@ -143,6 +143,16 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 		status = "approved"
 	}
 
+	// Idempotency: skip if we already processed this request.
+	if reqID := strings.TrimSpace(payload.RequestID); reqID != "" {
+		if existing, err := h.mentionRepo.FindBySourceRequestID(c.Context(), reqID); err == nil && existing != nil {
+			return response.Success(c, contract.FederationMentionNotifyResp{
+				MentionID: existing.ID,
+				Delivered: existing.Status == "approved",
+			})
+		}
+	}
+
 	mention := &federation.FederatedMention{
 		SourceInstanceID: instance.ID,
 		SourceRequestID:  toOptionalString(payload.RequestID),

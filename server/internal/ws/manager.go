@@ -16,6 +16,7 @@ type Manager struct {
 	cacheSize       int
 	roomTTL         time.Duration
 	cleanupInterval time.Duration
+	messageTTL      time.Duration
 	done            chan struct{}
 	currentOnline   int64
 	joinTotal       int64
@@ -31,6 +32,7 @@ type Config struct {
 	CacheSize       int
 	RoomTTL         time.Duration
 	CleanupInterval time.Duration
+	MessageTTL      time.Duration
 }
 
 type room struct {
@@ -77,6 +79,10 @@ func NewManager(cfg Config) *Manager {
 	if cleanupInterval <= 0 {
 		cleanupInterval = 5 * time.Second
 	}
+	messageTTL := cfg.MessageTTL
+	if messageTTL <= 0 {
+		messageTTL = 60 * time.Second
+	}
 	manager := &Manager{
 		rooms:           make(map[string]*room),
 		clientRooms:     make(map[*Client]map[string]struct{}),
@@ -84,6 +90,7 @@ func NewManager(cfg Config) *Manager {
 		cacheSize:       cacheSize,
 		roomTTL:         roomTTL,
 		cleanupInterval: cleanupInterval,
+		messageTTL:      messageTTL,
 		done:            make(chan struct{}),
 		latencyBins:     make([]int64, len(latencyBoundariesMS)+1),
 	}
@@ -212,10 +219,13 @@ func (m *Manager) joinRoomLocked(roomKey string, cl *Client) [][]byte {
 
 	rm.mu.Lock()
 	rm.clients[cl] = struct{}{}
-	rm.lastActivity = time.Now()
-	cached := make([][]byte, len(rm.cache))
-	for i, msg := range rm.cache {
-		cached[i] = append([]byte(nil), msg.payload...)
+	now := time.Now()
+	rm.lastActivity = now
+	cached := make([][]byte, 0, len(rm.cache))
+	for _, msg := range rm.cache {
+		if now.Sub(msg.at) <= m.messageTTL {
+			cached = append(cached, append([]byte(nil), msg.payload...))
+		}
 	}
 	rm.mu.Unlock()
 
@@ -355,10 +365,21 @@ func (m *Manager) cleanupRooms() {
 	for key, rm := range m.rooms {
 		rm.mu.Lock()
 		expired := len(rm.clients) == 0 && now.Sub(rm.lastActivity) > m.roomTTL
-		rm.mu.Unlock()
 		if expired {
+			rm.mu.Unlock()
 			delete(m.rooms, key)
+			continue
 		}
+		// Prune expired cached messages from alive rooms.
+		n := 0
+		for _, msg := range rm.cache {
+			if now.Sub(msg.at) <= m.messageTTL {
+				rm.cache[n] = msg
+				n++
+			}
+		}
+		rm.cache = rm.cache[:n]
+		rm.mu.Unlock()
 	}
 	m.mu.Unlock()
 }

@@ -8,6 +8,11 @@ services:
       args:
         APP_VERSION: "${APP_VERSION:-local}"
         BUILD_COMMIT: "${BUILD_COMMIT:-unknown}"
+        VITE_APP_BASE: "${VITE_APP_BASE:-/admin/}"
+        VITE_APP_NAME: "${VITE_APP_NAME:-Grtblog Admin}"
+        VITE_APP_TITLE: "${VITE_APP_TITLE:-管理后台}"
+        VITE_WATERMARK_CONTENT: "${VITE_WATERMARK_CONTENT:-}"
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-/api/v2}"
     container_name: grtblog-server
     environment:
       APP_ENV: production

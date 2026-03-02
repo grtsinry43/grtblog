@@ -1,8 +1,6 @@
-import packageJson from '@/../package.json'
-
 export function checkVersion() {
   const storageKey = 'version'
-  const currentVersion = packageJson.version
+  const currentVersion = __APP_VERSION__
   const storedVersion = localStorage.getItem(storageKey)
 
   if (storedVersion !== currentVersion) {

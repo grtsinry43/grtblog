@@ -65,6 +65,10 @@ export function createMomentLiveUpdate(callbacks: MomentLiveUpdateCallbacks) {
 
 			const payload = data as MomentContentPayload;
 			if (!payload?.contentHash) return;
+
+			const currentHash = callbacks.getContentHash();
+			if (currentHash && currentHash === payload.contentHash) return;
+
 			applyPayload(payload);
 		});
 	};

@@ -22,7 +22,10 @@ func NewRedisRateLimiter(client *redis.Client, prefix string) *RedisRateLimiter 
 }
 
 func (l *RedisRateLimiter) Allow(ctx context.Context, key string, limit int, window time.Duration) (bool, error) {
-	if l == nil || l.client == nil || limit <= 0 {
+	if l == nil || l.client == nil {
+		return false, nil
+	}
+	if limit <= 0 {
 		return true, nil
 	}
 	if window <= 0 {

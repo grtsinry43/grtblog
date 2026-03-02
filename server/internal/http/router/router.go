@@ -90,6 +90,7 @@ func Register(app *fiber.App, deps Dependencies) {
 		CacheSize:       3,
 		RoomTTL:         30 * time.Second,
 		CleanupInterval: 5 * time.Second,
+		MessageTTL:      60 * time.Second,
 	})
 	ws.RegisterArticleUpdateSubscriber(eventBus, wsManager)
 	ws.RegisterMomentUpdateSubscriber(eventBus, wsManager)
@@ -154,6 +155,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	isr.RegisterThinkingSubscribers(eventBus, isrSvc)
 	isr.RegisterFriendLinkSubscribers(eventBus, isrSvc)
 	isr.RegisterLayoutSubscribers(eventBus, isrSvc)
+	isr.RegisterTagContentCacheSubscribers(eventBus, deps.Redis, deps.Config.Redis.Prefix)
 	deps.Observability = observability.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, eventBus, deps.HTTPStats, wsManager, htmlSnapshotSvc, isrSvc)
 	ownerStatusSvc := deps.OwnerStatus
 	if ownerStatusSvc == nil {

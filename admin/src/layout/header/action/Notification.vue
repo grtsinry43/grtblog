@@ -18,6 +18,7 @@ const isPopoverShow = ref(false)
 const reconnectTimer = ref<number | null>(null)
 const isUnmounted = ref(false)
 const reconnectAttempts = ref(0)
+const seenNotifIds = ref(new Set<number>())
 
 const { data: unreadData } = useQuery({
   queryKey: ['admin-notifications', 'unread'],
@@ -78,6 +79,9 @@ const connectWs = async () => {
       if (!data || typeof data !== 'object' || (!data.title && !data.content)) {
         return
       }
+      const id = typeof data.id === 'number' ? data.id : 0
+      if (id > 0 && seenNotifIds.value.has(id)) return
+      if (id > 0) seenNotifIds.value.add(id)
       queryClient.invalidateQueries({ queryKey: ['admin-notifications'] })
       notification.create({
         title: data.title || '收到新通知',

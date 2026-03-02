@@ -15,9 +15,7 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"net"
 	"net/http"
-	"net/netip"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -318,6 +316,12 @@ func (s *Service) BuildNodeInfo20(ctx context.Context, baseURL string) (map[stri
 		"activeHalfyear": 1,
 		"activeMonth":    1,
 	}
+	var localPosts int64
+	if s.contentRepo != nil {
+		if _, total, err := s.contentRepo.ListPublicArticlesForFederation(ctx, nil, nil, 1, 1); err == nil {
+			localPosts = total
+		}
+	}
 	return map[string]any{
 		"version": "2.0",
 		"software": map[string]any{
@@ -329,7 +333,7 @@ func (s *Service) BuildNodeInfo20(ctx context.Context, baseURL string) (map[stri
 		"openRegistrations": false,
 		"usage": map[string]any{
 			"users":      usageUsers,
-			"localPosts": 0,
+			"localPosts": localPosts,
 		},
 		"metadata": map[string]any{
 			"homepage": baseURL,
@@ -539,8 +543,7 @@ func (s *Service) HandleInbox(ctx context.Context, baseURL string, req *http.Req
 	case "create":
 		return s.handleCreate(ctx, baseURL, settings, activity)
 	case "undo":
-		// Minimal compatibility: ignore silently.
-		return nil
+		return s.handleUndo(ctx, activity)
 	default:
 		return nil
 	}
@@ -598,6 +601,30 @@ func (s *Service) handleFollow(ctx context.Context, baseURL string, settings sys
 		return err
 	}
 	return s.sendActivity(ctx, settings, baseURL, follower.InboxURL, payload)
+}
+
+func (s *Service) handleUndo(ctx context.Context, activity activityEnvelope) error {
+	if s.followers == nil {
+		return nil
+	}
+	actorID := parseActorID(activity.Actor)
+	if actorID == "" {
+		return nil
+	}
+	// Parse the inner object to determine what is being undone.
+	var inner activityEnvelope
+	if err := json.Unmarshal(activity.Object, &inner); err != nil {
+		return nil
+	}
+	if !strings.EqualFold(strings.TrimSpace(inner.Type), "Follow") {
+		return nil
+	}
+	follower, err := s.followers.GetByActorID(ctx, actorID)
+	if err != nil || follower == nil {
+		return nil
+	}
+	follower.Status = "inactive"
+	return s.followers.Upsert(ctx, follower)
 }
 
 func (s *Service) handleCreate(ctx context.Context, baseURL string, settings sysconfig.ActivityPubSettings, activity activityEnvelope) error {
@@ -839,7 +866,7 @@ func (s *Service) resolvePublicKeyForKeyID(ctx context.Context, keyID string) (c
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return nil, "", errors.New("invalid key id scheme")
 	}
-	if err := validateRemoteURL(ctx, keyID); err != nil {
+	if err := fedinfra.ValidateRemoteURL(ctx, keyID); err != nil {
 		return nil, "", err
 	}
 	actorURL := strings.TrimRight(keyID, "#")
@@ -874,7 +901,7 @@ func (s *Service) fetchRemoteActor(ctx context.Context, actorID string) (*remote
 	if actorID == "" {
 		return nil, errors.New("actor id is empty")
 	}
-	if err := validateRemoteURL(ctx, actorID); err != nil {
+	if err := fedinfra.ValidateRemoteURL(ctx, actorID); err != nil {
 		return nil, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, actorID, nil)
@@ -901,7 +928,7 @@ func (s *Service) fetchRemoteActor(ctx context.Context, actorID string) (*remote
 }
 
 func (s *Service) sendActivity(ctx context.Context, settings sysconfig.ActivityPubSettings, baseURL string, targetURL string, payload []byte) error {
-	if err := validateRemoteURL(ctx, targetURL); err != nil {
+	if err := fedinfra.ValidateRemoteURL(ctx, targetURL); err != nil {
 		return err
 	}
 	if strings.TrimSpace(settings.PrivateKey) == "" {
@@ -1289,55 +1316,3 @@ func sameURL(a, b string) bool {
 	return strings.EqualFold(a, b)
 }
 
-func validateRemoteURL(ctx context.Context, raw string) error {
-	parsed, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil {
-		return err
-	}
-	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return errors.New("unsupported remote scheme")
-	}
-	host := strings.TrimSpace(parsed.Hostname())
-	if host == "" {
-		return errors.New("missing remote host")
-	}
-	if isBlockedHost(host) {
-		return errors.New("blocked remote host")
-	}
-	ips, err := net.DefaultResolver.LookupIP(ctx, "ip", host)
-	if err != nil {
-		return err
-	}
-	if len(ips) == 0 {
-		return errors.New("remote host resolves to no ip")
-	}
-	for _, ip := range ips {
-		addr, ok := netip.AddrFromSlice(ip)
-		if !ok {
-			return errors.New("invalid remote ip")
-		}
-		if isPrivateAddr(addr) {
-			//return errors.New("private ip blocked")
-		}
-	}
-	return nil
-}
-
-func isBlockedHost(host string) bool {
-	host = strings.ToLower(strings.TrimSpace(host))
-	if host == "" {
-		return true
-	}
-	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
-		return true
-	}
-	if strings.HasSuffix(host, ".local") {
-		return true
-	}
-	return false
-}
-
-func isPrivateAddr(ip netip.Addr) bool {
-	return ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() ||
-		ip.IsLinkLocalMulticast() || ip.IsMulticast() || ip.IsUnspecified()
-}

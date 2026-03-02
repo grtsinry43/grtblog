@@ -149,6 +149,16 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 		citationType = "reference"
 	}
 
+	// Idempotency: skip if we already processed this request.
+	if reqID := strings.TrimSpace(payload.RequestID); reqID != "" {
+		if existing, err := h.citationRepo.FindBySourceRequestID(c.Context(), reqID); err == nil && existing != nil {
+			return response.Success(c, contract.FederationCitationResponseResp{
+				CitationID: existing.ID,
+				Status:     existing.Status,
+			})
+		}
+	}
+
 	citation := &federation.FederatedCitation{
 		SourceInstanceID: instance.ID,
 		SourceRequestID:  toOptionalString(payload.RequestID),

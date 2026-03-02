@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func validateRemoteURL(ctx context.Context, raw string) error {
+func ValidateRemoteURL(ctx context.Context, raw string) error {
 	parsed, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func validateRemoteURL(ctx context.Context, raw string) error {
 	if host == "" {
 		return fmt.Errorf("missing host")
 	}
-	if isBlockedHost(host) {
+	if IsBlockedHost(host) {
 		return fmt.Errorf("blocked host")
 	}
 	ips, err := net.DefaultResolver.LookupIP(ctx, "ip", host)
@@ -36,14 +36,14 @@ func validateRemoteURL(ctx context.Context, raw string) error {
 		if !ok {
 			return fmt.Errorf("invalid ip")
 		}
-		if isPrivateAddr(addr) {
+		if IsPrivateAddr(addr) {
 			return fmt.Errorf("private address blocked")
 		}
 	}
 	return nil
 }
 
-func isBlockedHost(host string) bool {
+func IsBlockedHost(host string) bool {
 	host = strings.ToLower(strings.TrimSpace(host))
 	if host == "" {
 		return true
@@ -57,8 +57,7 @@ func isBlockedHost(host string) bool {
 	return false
 }
 
-func isPrivateAddr(ip netip.Addr) bool {
+func IsPrivateAddr(ip netip.Addr) bool {
 	return ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() ||
 		ip.IsLinkLocalMulticast() || ip.IsMulticast() || ip.IsUnspecified()
-	return false
 }

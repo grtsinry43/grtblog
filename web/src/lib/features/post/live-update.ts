@@ -71,6 +71,10 @@ export function createPostLiveUpdate(callbacks: PostLiveUpdateCallbacks) {
 
 			const payload = data as PostContentPayload;
 			if (!payload?.contentHash) return;
+
+			const currentHash = callbacks.getContentHash();
+			if (currentHash && currentHash === payload.contentHash) return;
+
 			applyPayload(payload);
 		});
 	};

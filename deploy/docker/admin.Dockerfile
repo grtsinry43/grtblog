@@ -10,7 +10,18 @@ RUN pnpm install --frozen-lockfile --prod=false
 COPY admin/. ./
 COPY shared /shared
 
-ENV VITE_APP_BASE=/admin/
+ARG VITE_APP_BASE=/admin/
+ARG VITE_APP_NAME=Grtblog Admin
+ARG VITE_APP_TITLE=管理后台
+ARG VITE_WATERMARK_CONTENT=
+ARG VITE_API_BASE_URL=/api/v2
+
+ENV VITE_APP_BASE=${VITE_APP_BASE} \
+    VITE_APP_NAME=${VITE_APP_NAME} \
+    VITE_APP_TITLE=${VITE_APP_TITLE} \
+    VITE_WATERMARK_CONTENT=${VITE_WATERMARK_CONTENT} \
+    VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 RUN pnpm build
 
 FROM nginx:1.27-alpine AS runtime

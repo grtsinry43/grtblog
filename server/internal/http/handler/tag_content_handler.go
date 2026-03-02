@@ -2,27 +2,39 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
+	"github.com/redis/go-redis/v9"
 )
 
 type TagContentHandler struct {
 	articleHandler *ArticleHandler
 	momentHandler  *MomentHandler
 	contentRepo    content.Repository
+	redis          *redis.Client
+	redisPrefix    string
 }
 
-func NewTagContentHandler(articleHandler *ArticleHandler, momentHandler *MomentHandler, contentRepo content.Repository) *TagContentHandler {
+func NewTagContentHandler(articleHandler *ArticleHandler, momentHandler *MomentHandler, contentRepo content.Repository, redisClient *redis.Client, redisPrefix string) *TagContentHandler {
 	return &TagContentHandler{
 		articleHandler: articleHandler,
 		momentHandler:  momentHandler,
 		contentRepo:    contentRepo,
+		redis:          redisClient,
+		redisPrefix:    redisPrefix,
 	}
+}
+
+func (h *TagContentHandler) cacheKey(tagID int64) string {
+	return fmt.Sprintf("%stag:contents:%d", h.redisPrefix, tagID)
 }
 
 // ListByTagID godoc
@@ -43,6 +55,17 @@ func (h *TagContentHandler) ListByTagID(c *fiber.Ctx) error {
 			return response.NewBizErrorWithMsg(response.NotFound, "标签不存在")
 		}
 		return err
+	}
+
+	// Try Redis cache first.
+	if h.redis != nil {
+		cached, err := h.redis.Get(c.Context(), h.cacheKey(tagID)).Bytes()
+		if err == nil {
+			var resp contract.TagRelatedContentsResp
+			if json.Unmarshal(cached, &resp) == nil {
+				return response.Success(c, resp)
+			}
+		}
 	}
 
 	published := true
@@ -73,10 +96,21 @@ func (h *TagContentHandler) ListByTagID(c *fiber.Ctx) error {
 		momentItems[i] = *respItem
 	}
 
-	return response.Success(c, contract.TagRelatedContentsResp{
+	resp := contract.TagRelatedContentsResp{
 		Articles: articleItems,
 		Moments:  momentItems,
-	})
+	}
+
+	// Write to Redis cache (no TTL — event-driven invalidation only).
+	if h.redis != nil {
+		if data, err := json.Marshal(resp); err == nil {
+			if err := h.redis.Set(c.Context(), h.cacheKey(tagID), data, 0).Err(); err != nil {
+				log.Printf("tag content cache write error: %v", err)
+			}
+		}
+	}
+
+	return response.Success(c, resp)
 }
 
 func (h *TagContentHandler) listAllTaggedArticles(ctx context.Context, tagID int64, published *bool) ([]*content.Article, error) {

@@ -291,6 +291,18 @@ func (r *FederatedCitationRepository) Create(ctx context.Context, citation *fede
 	return nil
 }
 
+func (r *FederatedCitationRepository) FindBySourceRequestID(ctx context.Context, sourceRequestID string) (*federation.FederatedCitation, error) {
+	var rec model.FederatedCitation
+	if err := r.db.WithContext(ctx).Where("source_request_id = ?", sourceRequestID).First(&rec).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, federation.ErrFederatedCitationNotFound
+		}
+		return nil, err
+	}
+	item := mapFederatedCitationToDomain(rec)
+	return &item, nil
+}
+
 func (r *FederatedCitationRepository) GetByID(ctx context.Context, id int64) (*federation.FederatedCitation, error) {
 	var rec model.FederatedCitation
 	if err := r.db.WithContext(ctx).First(&rec, id).Error; err != nil {
@@ -373,6 +385,18 @@ func (r *FederatedMentionRepository) Create(ctx context.Context, mention *federa
 	mention.ID = rec.ID
 	mention.CreatedAt = rec.CreatedAt
 	return nil
+}
+
+func (r *FederatedMentionRepository) FindBySourceRequestID(ctx context.Context, sourceRequestID string) (*federation.FederatedMention, error) {
+	var rec model.FederatedMention
+	if err := r.db.WithContext(ctx).Where("source_request_id = ?", sourceRequestID).First(&rec).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, federation.ErrFederatedMentionNotFound
+		}
+		return nil, err
+	}
+	item := mapFederatedMentionToDomain(rec)
+	return &item, nil
 }
 
 func (r *FederatedMentionRepository) GetByID(ctx context.Context, id int64) (*federation.FederatedMention, error) {

@@ -65,6 +65,10 @@ export function createPageLiveUpdate(callbacks: PageLiveUpdateCallbacks) {
 
 			const payload = data as PageContentPayload;
 			if (!payload?.contentHash) return;
+
+			const currentHash = callbacks.getContentHash();
+			if (currentHash && currentHash === payload.contentHash) return;
+
 			applyPayload(payload);
 		});
 	};

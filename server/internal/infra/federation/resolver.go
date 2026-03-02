@@ -86,7 +86,7 @@ func (r *Resolver) fetchJSON(ctx context.Context, baseURL string, filename strin
 	if err != nil {
 		return err
 	}
-	if err := validateRemoteURL(ctx, wellKnownURL); err != nil {
+	if err := ValidateRemoteURL(ctx, wellKnownURL); err != nil {
 		return err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, wellKnownURL, nil)

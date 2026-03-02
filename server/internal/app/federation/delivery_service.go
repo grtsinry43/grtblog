@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -151,7 +152,9 @@ func (s *DeliveryService) ProcessRetryQueue(ctx context.Context, limit int) erro
 		return err
 	}
 	for i := range items {
-		_, _ = s.Retry(ctx, items[i].ID)
+		if _, err := s.Retry(ctx, items[i].ID); err != nil {
+			log.Printf("[federation] retry failed delivery_id=%d request_id=%s err=%v", items[i].ID, items[i].RequestID, err)
+		}
 	}
 	return nil
 }

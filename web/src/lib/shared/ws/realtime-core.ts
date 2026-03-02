@@ -28,6 +28,30 @@ class RealtimeWSCore {
 	private presenceListeners = new Set<PresenceListener>();
 	private contentListeners = new Set<ContentListener>();
 
+	/** Fingerprint dedup: hash → timestamp (ms). Survives reconnects. */
+	private seenFingerprints = new Map<number, number>();
+
+	private djb2(str: string): number {
+		let hash = 5381;
+		for (let i = 0; i < str.length; i++) {
+			hash = ((hash << 5) + hash + str.charCodeAt(i)) >>> 0;
+		}
+		return hash;
+	}
+
+	private isDuplicate(raw: string): boolean {
+		const hash = this.djb2(raw);
+		if (this.seenFingerprints.has(hash)) return true;
+		this.seenFingerprints.set(hash, Date.now());
+		if (this.seenFingerprints.size > 100) {
+			const cutoff = Date.now() - 10 * 60 * 1000;
+			for (const [k, ts] of this.seenFingerprints) {
+				if (ts < cutoff) this.seenFingerprints.delete(k);
+			}
+		}
+		return false;
+	}
+
 	start() {
 		if (!browser || this.started) return;
 		this.started = true;
@@ -40,6 +64,7 @@ class RealtimeWSCore {
 		this.sentPresenceKey = '';
 		this.sentContentKey = '';
 		this.sentVisitorId = '';
+		this.seenFingerprints.clear();
 
 		if (this.reconnectTimer) {
 			clearTimeout(this.reconnectTimer);
@@ -130,6 +155,9 @@ class RealtimeWSCore {
 				}
 				return;
 			}
+
+			// Deduplicate non-presence messages across reconnects.
+			if (this.isDuplicate(event.data)) return;
 
 			for (const listener of this.contentListeners) {
 				listener(payload);

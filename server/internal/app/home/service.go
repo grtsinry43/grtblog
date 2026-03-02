@@ -14,15 +14,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence/model"
 )
 
 const (
-	defaultRangeDays = 365
-	maxRangeDays     = 730
-	githubBaseURL    = "https://api.github.com"
+	defaultRangeDays      = 365
+	maxRangeDays          = 730
+	githubBaseURL         = "https://api.github.com"
+	githubStatsCacheTTL   = time.Hour
 )
 
 var (
@@ -31,9 +33,11 @@ var (
 )
 
 type Service struct {
-	db         *gorm.DB
-	now        func() time.Time
-	httpClient *http.Client
+	db          *gorm.DB
+	now         func() time.Time
+	httpClient  *http.Client
+	redis       *redis.Client
+	redisPrefix string
 }
 
 type ActivityPulsePoint struct {
@@ -106,10 +110,12 @@ type TimelineYearBucket struct {
 	Thinkings   []TimelineThinkingItem `json:"thinkings"`
 }
 
-func NewService(db *gorm.DB) *Service {
+func NewService(db *gorm.DB, redisClient *redis.Client, redisPrefix string) *Service {
 	return &Service{
-		db:  db,
-		now: time.Now,
+		db:          db,
+		now:         time.Now,
+		redis:       redisClient,
+		redisPrefix: redisPrefix,
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -281,6 +287,12 @@ func (s *Service) GetInspirationStats(ctx context.Context, githubUsername string
 		return stats, nil
 	}
 
+	// 尝试从 Redis 读取缓存
+	if cached, err := s.getGitHubStatsCache(ctx, username); err == nil && cached != nil {
+		stats.GitHub = cached
+		return stats, nil
+	}
+
 	githubStats, err := s.fetchGitHubStats(ctx, username)
 	if err != nil {
 		// GitHub 是增强信息，不应该阻断首页渲染。
@@ -289,6 +301,12 @@ func (s *Service) GetInspirationStats(ctx context.Context, githubUsername string
 		return stats, nil
 	}
 	stats.GitHub = githubStats
+
+	// 写入 Redis 缓存
+	if err := s.setGitHubStatsCache(ctx, username, githubStats); err != nil {
+		log.Printf("[home] github stats cache write failed username=%s err=%v", username, err)
+	}
+
 	return stats, nil
 }
 
@@ -509,6 +527,39 @@ func (s *Service) fetchGitHubJSON(ctx context.Context, endpoint string, target a
 		return err
 	}
 	return nil
+}
+
+func (s *Service) githubStatsCacheKey(username string) string {
+	return fmt.Sprintf("%shome:github_stats:%s", s.redisPrefix, strings.ToLower(username))
+}
+
+func (s *Service) getGitHubStatsCache(ctx context.Context, username string) (*GitHubStats, error) {
+	if s.redis == nil {
+		return nil, nil
+	}
+	val, err := s.redis.Get(ctx, s.githubStatsCacheKey(username)).Result()
+	if err == redis.Nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var stats GitHubStats
+	if err := json.Unmarshal([]byte(val), &stats); err != nil {
+		return nil, err
+	}
+	return &stats, nil
+}
+
+func (s *Service) setGitHubStatsCache(ctx context.Context, username string, stats *GitHubStats) error {
+	if s.redis == nil || stats == nil {
+		return nil
+	}
+	payload, err := json.Marshal(stats)
+	if err != nil {
+		return err
+	}
+	return s.redis.Set(ctx, s.githubStatsCacheKey(username), payload, githubStatsCacheTTL).Err()
 }
 
 func normalizeDateKey(raw string) string {

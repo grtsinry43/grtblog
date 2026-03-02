@@ -73,7 +73,7 @@ class RealtimeActivityStore {
 	private pruneSeen() {
 		const now = Date.now();
 		for (const [key, timestamp] of Object.entries(this.seen)) {
-			if (!Number.isFinite(timestamp) || now-timestamp > 5 * 60 * 1000) {
+			if (!Number.isFinite(timestamp) || now-timestamp > 15 * 60 * 1000) {
 				delete this.seen[key];
 			}
 		}

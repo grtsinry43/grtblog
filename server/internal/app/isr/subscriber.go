@@ -3,12 +3,14 @@ package isr
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/moment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/page"
+	"github.com/redis/go-redis/v9"
 )
 
 type handlerFunc func(ctx context.Context, event appEvent.Event) error
@@ -242,4 +244,49 @@ func extractPageEventPayload(event appEvent.Event) (pageID int64, shortURL strin
 	default:
 		return 0, ""
 	}
+}
+
+// RegisterTagContentCacheSubscribers subscribes to article/moment CRUD events
+// and clears all tag:contents:* Redis keys so that the tag content API
+// rebuilds its cache on the next request.
+func RegisterTagContentCacheSubscribers(bus appEvent.Bus, redisClient *redis.Client, redisPrefix string) {
+	if bus == nil || redisClient == nil {
+		return
+	}
+
+	invalidate := handlerFunc(func(ctx context.Context, _ appEvent.Event) error {
+		pattern := fmt.Sprintf("%stag:contents:*", redisPrefix)
+		var cursor uint64
+		for {
+			keys, next, err := redisClient.Scan(ctx, cursor, pattern, 200).Result()
+			if err != nil {
+				log.Printf("tag content cache scan error: %v", err)
+				return nil
+			}
+			if len(keys) > 0 {
+				if err := redisClient.Del(ctx, keys...).Err(); err != nil {
+					log.Printf("tag content cache del error: %v", err)
+				}
+			}
+			cursor = next
+			if cursor == 0 {
+				break
+			}
+		}
+		return nil
+	})
+
+	// Article events
+	bus.Subscribe(article.ArticleCreated{}.Name(), invalidate)
+	bus.Subscribe(article.ArticleUpdated{}.Name(), invalidate)
+	bus.Subscribe(article.ArticlePublished{}.Name(), invalidate)
+	bus.Subscribe(article.ArticleUnpublished{}.Name(), invalidate)
+	bus.Subscribe(article.ArticleDeleted{}.Name(), invalidate)
+
+	// Moment events
+	bus.Subscribe(moment.MomentCreated{}.Name(), invalidate)
+	bus.Subscribe(moment.MomentUpdated{}.Name(), invalidate)
+	bus.Subscribe(moment.MomentPublished{}.Name(), invalidate)
+	bus.Subscribe(moment.MomentUnpublished{}.Name(), invalidate)
+	bus.Subscribe(moment.MomentDeleted{}.Name(), invalidate)
 }

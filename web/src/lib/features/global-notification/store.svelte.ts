@@ -21,6 +21,7 @@ class GlobalNotificationStore {
 	private unbindConnection: (() => void) | null = null;
 	private unbindContent: (() => void) | null = null;
 	private tickTimer: ReturnType<typeof setInterval> | null = null;
+	private refreshDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private activeToastId: string | number | null = null;
 	private activeToastKey = '';
 	private suppressedDismissToastIDs: Record<string, true> = {};
@@ -34,7 +35,7 @@ class GlobalNotificationStore {
 			const wasConnected = this.isConnected;
 			this.isConnected = connected;
 			if (connected && !wasConnected) {
-				void this.refreshNow();
+				this.debouncedRefresh();
 			}
 		});
 
@@ -61,6 +62,10 @@ class GlobalNotificationStore {
 			clearInterval(this.tickTimer);
 			this.tickTimer = null;
 		}
+		if (this.refreshDebounceTimer) {
+			clearTimeout(this.refreshDebounceTimer);
+			this.refreshDebounceTimer = null;
+		}
 
 		this.unbindConnection?.();
 		this.unbindConnection = null;
@@ -73,6 +78,14 @@ class GlobalNotificationStore {
 		if (!browser || !this.current) return;
 		this.dismissTransient(this.current);
 		this.syncCurrent();
+	}
+
+	private debouncedRefresh() {
+		if (this.refreshDebounceTimer) clearTimeout(this.refreshDebounceTimer);
+		this.refreshDebounceTimer = setTimeout(() => {
+			this.refreshDebounceTimer = null;
+			void this.refreshNow();
+		}, 2000);
 	}
 
 	private async refreshNow() {

@@ -19,7 +19,7 @@ getSystemStatus().then((res) => {
   version.value = res.app.version
   commit.value = res.app.commit ?? ''
 }).catch(() => {
-  version.value = packageJson.version
+  version.value = __APP_VERSION__
 })
 
 let codeToHtml: any

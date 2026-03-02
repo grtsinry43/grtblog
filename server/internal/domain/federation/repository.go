@@ -36,6 +36,7 @@ type FederatedPostCacheRepository interface {
 type FederatedCitationRepository interface {
 	Create(ctx context.Context, citation *FederatedCitation) error
 	GetByID(ctx context.Context, id int64) (*FederatedCitation, error)
+	FindBySourceRequestID(ctx context.Context, sourceRequestID string) (*FederatedCitation, error)
 	UpdateStatus(ctx context.Context, id int64, status string, reason *string) error
 	ListByTarget(ctx context.Context, articleID int64, status string) ([]FederatedCitation, error)
 	List(ctx context.Context, status string, limit int) ([]FederatedCitation, error)
@@ -45,6 +46,7 @@ type FederatedCitationRepository interface {
 type FederatedMentionRepository interface {
 	Create(ctx context.Context, mention *FederatedMention) error
 	GetByID(ctx context.Context, id int64) (*FederatedMention, error)
+	FindBySourceRequestID(ctx context.Context, sourceRequestID string) (*FederatedMention, error)
 	UpdateStatus(ctx context.Context, id int64, status string, reason *string) error
 	MarkRead(ctx context.Context, id int64) error
 	ListByUser(ctx context.Context, userID int64, unreadOnly bool) ([]FederatedMention, error)

@@ -55,5 +55,7 @@ func newTagContentHandler(deps Dependencies) *handler.TagContentHandler {
 		newArticleHandler(deps),
 		newMomentHandler(deps),
 		persistence.NewContentRepository(deps.DB),
+		deps.Redis,
+		deps.Config.Redis.Prefix,
 	)
 }

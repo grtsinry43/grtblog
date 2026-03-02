@@ -27,7 +27,7 @@ func (c *Client) DoSigned(ctx context.Context, method string, url string, body [
 	if c.signer == nil {
 		return nil, fmt.Errorf("signer not configured")
 	}
-	if err := validateRemoteURL(ctx, url); err != nil {
+	if err := ValidateRemoteURL(ctx, url); err != nil {
 		return nil, err
 	}
 	var reader *bytes.Reader
