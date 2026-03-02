@@ -18,6 +18,8 @@ const setupMarkerFileName = ".setupdone"
 var requiredWebsiteInfoKeys = []string{
 	"website_name",
 	"public_url",
+	"description",
+	"keywords",
 }
 
 type State struct {

@@ -111,6 +111,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Put("/federation/config", fedCfgHandler.UpdateFederationConfig)
 	admin.Get("/activitypub/config", activityPubCfgHandler.ListActivityPubConfig)
 	admin.Put("/activitypub/config", activityPubCfgHandler.UpdateActivityPubConfig)
+	admin.Get("/federation/export", fedCfgHandler.ExportFederationConfigs)
+	admin.Post("/federation/import", fedCfgHandler.ImportFederationConfigs)
 
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	instanceRepo := persistence.NewFederationInstanceRepository(deps.DB)

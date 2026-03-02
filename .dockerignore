@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.claude
+.DS_Store
+
+**/node_modules
+admin/dist
+web/build
+
+deploy/storage
+deploy/.env
+
+docs
+*.md

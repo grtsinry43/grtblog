@@ -8,10 +8,11 @@ Usage:
 
 Example:
   scripts/release.sh v1.2.3
-  scripts/release.sh v1.2.3 --push
+  scripts/release.sh v2.0.0-alpha.1
+  scripts/release.sh v2.0.0-rc.1 --push
 
 What it does:
-  1) Validate semantic version format (vMAJOR.MINOR.PATCH)
+  1) Validate semantic version format (vMAJOR.MINOR.PATCH[-{alpha|beta|rc}.N])
   2) Generate docs/releases/<version>.md from git commits
   3) Create annotated git tag
   4) Optionally push the tag to origin
@@ -48,8 +49,8 @@ for arg in "${@:2}"; do
   esac
 done
 
-if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Version must match vMAJOR.MINOR.PATCH, got: $VERSION" >&2
+if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+  echo "Version must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-(alpha|beta|rc).N, got: $VERSION" >&2
   exit 1
 fi
 

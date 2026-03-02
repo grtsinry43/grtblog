@@ -29,7 +29,7 @@ export interface LoginPayload {
 export interface RegisterPayload {
   username: string
   nickname?: string
-  email?: string
+  email: string
   password: string
   turnstileToken?: string
 }

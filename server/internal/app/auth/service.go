@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -100,7 +101,11 @@ type AccessInfo struct {
 
 func (s *Service) Register(ctx context.Context, cmd RegisterCmd) (*identity.User, error) {
 	cmd.Username = strings.TrimSpace(cmd.Username)
-	if cmd.Username == "" || cmd.Password == "" {
+	cmd.Email = strings.TrimSpace(cmd.Email)
+	if cmd.Username == "" || cmd.Email == "" || cmd.Password == "" {
+		return nil, identity.ErrInvalidCredentials
+	}
+	if _, err := mail.ParseAddress(cmd.Email); err != nil {
 		return nil, identity.ErrInvalidCredentials
 	}
 	hashed, err := bcrypt.GenerateFromPassword([]byte(cmd.Password), bcrypt.DefaultCost)
@@ -110,7 +115,7 @@ func (s *Service) Register(ctx context.Context, cmd RegisterCmd) (*identity.User
 	user := &identity.User{
 		Username: cmd.Username,
 		Nickname: firstNonEmpty(cmd.Nickname, cmd.Username),
-		Email:    strings.TrimSpace(cmd.Email),
+		Email:    cmd.Email,
 		Password: string(hashed),
 		IsActive: true,
 	}

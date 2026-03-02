@@ -93,3 +93,17 @@ export function updateActivityPubConfigs(items: SysConfigUpdateItem[]) {
     body: { items },
   })
 }
+
+export interface ConfigExportData {
+  version: number
+  exportedAt: string
+  configs: { key: string; value: unknown }[]
+}
+
+export function exportFederationConfigs() {
+  return request<ConfigExportData>('/admin/federation/export', { method: 'GET' })
+}
+
+export function importFederationConfigs(data: ConfigExportData) {
+  return request<void>('/admin/federation/import', { method: 'POST', body: data })
+}

@@ -41,7 +41,7 @@ COPY server/. .
 
 RUN GOBIN=/out go install github.com/pressly/goose/v3/cmd/goose@${GOOSE_VERSION}
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN CGO_ENABLED=0 GOOS=linux \
   go build -trimpath -ldflags="-s -w \
   -X github.com/grtsinry43/grtblog-v2/server/internal/buildinfo.BuildVersion=${APP_VERSION} \
   -X github.com/grtsinry43/grtblog-v2/server/internal/buildinfo.BuildCommit=${BUILD_COMMIT}" \

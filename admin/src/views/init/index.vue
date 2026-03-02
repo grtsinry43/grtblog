@@ -96,8 +96,28 @@ const form = reactive({
   keywords: '',
 })
 
+const requiredTrimmedRule = (message: string): FormItemRule => ({
+  validator: (_rule, value: string) => !!(value || '').trim(),
+  message,
+  trigger: ['input', 'blur'],
+})
+
 const rules: Record<string, FormItemRule[]> = {
-  username: [{ required: true, message: '请输入管理员账号', trigger: ['input', 'blur'] }],
+  username: [requiredTrimmedRule('请输入管理员账号')],
+  nickname: [requiredTrimmedRule('请输入昵称')],
+  email: [
+    {
+      validator: (_rule, value: string) => {
+        const email = (value || '').trim()
+        if (!email) return new Error('请输入邮箱')
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          return new Error('请输入有效邮箱地址')
+        }
+        return true
+      },
+      trigger: ['input', 'blur'],
+    },
+  ],
   password: [{ required: true, message: '请输入密码', trigger: ['input', 'blur'] }],
   confirmPassword: [
     { required: true, message: '请再次输入密码', trigger: ['input', 'blur'] },
@@ -107,8 +127,10 @@ const rules: Record<string, FormItemRule[]> = {
       trigger: ['input', 'blur'],
     },
   ],
-  websiteName: [{ required: true, message: '请输入站点名称', trigger: ['input', 'blur'] }],
-  publicUrl: [{ required: true, message: '请输入站点公开地址', trigger: ['input', 'blur'] }],
+  websiteName: [requiredTrimmedRule('请输入站点名称')],
+  publicUrl: [requiredTrimmedRule('请输入站点公开地址')],
+  description: [requiredTrimmedRule('请输入一句话描述')],
+  keywords: [requiredTrimmedRule('请输入关键词')],
 }
 
 const needsAccountSetup = computed(() => !setupState.value?.hasUser)
@@ -169,8 +191,8 @@ async function submitSetup() {
     if (needsAccountSetup.value) {
       await register({
         username: form.username.trim(),
-        nickname: form.nickname.trim() || form.username.trim(),
-        email: form.email.trim() || undefined,
+        nickname: form.nickname.trim(),
+        email: form.email.trim(),
         password: form.password,
       })
       const loginResp = await login({
@@ -195,24 +217,17 @@ async function submitSetup() {
     }
 
     if (needsWebsiteSetup.value) {
-      const tasks: Promise<unknown>[] = []
       const websiteName = form.websiteName.trim()
       const publicURL = normalizePublicURL(form.publicUrl)
       const description = form.description.trim()
       const keywords = form.keywords.trim()
-      if (websiteName) {
-        tasks.push(updateWebsiteInfo('website_name', { value: websiteName }))
-      }
-      if (publicURL) {
-        tasks.push(updateWebsiteInfo('public_url', { value: publicURL }))
-        tasks.push(updateWebsiteInfo('api_url', { value: `${publicURL}/api/v2` }))
-      }
-      if (description) {
-        tasks.push(updateWebsiteInfo('description', { value: description }))
-      }
-      if (keywords) {
-        tasks.push(updateWebsiteInfo('keywords', { value: keywords }))
-      }
+      const tasks: Promise<unknown>[] = [
+        updateWebsiteInfo('website_name', { value: websiteName }),
+        updateWebsiteInfo('public_url', { value: publicURL }),
+        updateWebsiteInfo('api_url', { value: `${publicURL}/api/v2` }),
+        updateWebsiteInfo('description', { value: description }),
+        updateWebsiteInfo('keywords', { value: keywords }),
+      ]
       await Promise.all(tasks)
     }
 
@@ -387,7 +402,10 @@ onMounted(() => {
                       >
                       </NInput>
                     </NFormItem>
-                    <NFormItem label="昵称">
+                    <NFormItem
+                      label="昵称"
+                      path="nickname"
+                    >
                       <NInput
                         v-model:value="form.nickname"
                         placeholder="显示的名称"
@@ -418,7 +436,10 @@ onMounted(() => {
                       >
                       </NInput>
                     </NFormItem>
-                    <NFormItem label="邮箱">
+                    <NFormItem
+                      label="邮箱"
+                      path="email"
+                    >
                       <NInput
                         v-model:value="form.email"
                         placeholder="example@domain.com"
@@ -452,7 +473,10 @@ onMounted(() => {
                       >
                       </NInput>
                     </NFormItem>
-                    <NFormItem label="一句话描述">
+                    <NFormItem
+                      label="一句话描述"
+                      path="description"
+                    >
                       <NInput
                         v-model:value="form.description"
                         type="textarea"
@@ -461,7 +485,10 @@ onMounted(() => {
                         class="resize-none"
                       />
                     </NFormItem>
-                    <NFormItem label="关键词">
+                    <NFormItem
+                      label="关键词"
+                      path="keywords"
+                    >
                       <NInput
                         v-model:value="form.keywords"
                         placeholder="Tag1, Tag2..."
@@ -578,7 +605,7 @@ onMounted(() => {
                   :show-icon="false"
                   class="mt-4 mb-6"
                 >
-                  请登录后将进入设置 > 站点信息，补全站点名称、公开地址和描述等信息。
+                  请登录后将进入设置 > 站点信息，补全站点名称、公开地址、描述和关键词等信息。
                 </NAlert>
                 <NButton
                   type="primary"

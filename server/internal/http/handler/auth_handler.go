@@ -58,6 +58,9 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		if errors.Is(err, auth.ErrRegisterClosed) {
 			return response.NewBizErrorWithMsg(response.ParamsError, "仅允许初始化管理员账号，普通用户请使用 OAuth 登录")
 		}
+		if errors.Is(err, identity.ErrInvalidCredentials) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "用户名、邮箱和密码不能为空，且邮箱格式必须正确")
+		}
 		if errors.Is(err, identity.ErrUserExists) {
 			return response.NewBizErrorWithMsg(response.ParamsError, "用户名或邮箱已存在")
 		}
