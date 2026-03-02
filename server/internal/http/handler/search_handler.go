@@ -88,7 +88,7 @@ func buildSearchPath(kind domainsearch.Kind, id int64, shortURL *string) string 
 		}
 		return "/pages/" + strconv.FormatInt(id, 10)
 	case domainsearch.KindThinking:
-		return "/thinkings/" + strconv.FormatInt(id, 10)
+		return "/thinkings#thinking-" + strconv.FormatInt(id, 10)
 	default:
 		return fmt.Sprintf("/content/%d", id)
 	}

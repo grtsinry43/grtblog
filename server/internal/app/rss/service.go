@@ -186,8 +186,8 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 			contentText := strings.TrimSpace(t.Content)
 			items = append(items, Item{
 				Title:       buildThinkingTitle(contentText, t.ID),
-				Description: buildRSSDescription(buildURL(baseURL, fmt.Sprintf("/thinkings/%d", t.ID)), renderHTML(contentText)),
-				Link:        buildURL(baseURL, fmt.Sprintf("/thinkings/%d", t.ID)),
+				Description: buildRSSDescription(buildURL(baseURL, fmt.Sprintf("/thinkings#thinking-%d", t.ID)), renderHTML(contentText)),
+				Link:        buildURL(baseURL, fmt.Sprintf("/thinkings#thinking-%d", t.ID)),
 				GUID:        fmt.Sprintf("thinking-%d", t.ID),
 				Category:    "thinking",
 				AuthorName:  s.resolveAuthorByUserID(ctx, t.AuthorID, authorCache).name,

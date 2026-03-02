@@ -4,8 +4,11 @@
 	import { thinkingListCtx } from '$lib/features/thinking/context';
 	import PageHeader from '$lib/ui/common/PageHeader.svelte';
 	import StaggerList from '$lib/ui/animation/StaggerList.svelte';
+	import { scrollToAnchor } from '$lib/shared/dom/scroll-to-anchor';
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import { tick } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
@@ -29,6 +32,16 @@
 			goto(resolvePath(`/thinkings/page/${safePage}/`));
 		}
 	};
+
+	// Scroll to anchor (e.g. #thinking-42) from RSS / search links
+	$effect(() => {
+		if (!browser) return;
+		const hash = window.location.hash.replace(/^#/, '');
+		if (!hash) return;
+		tick().then(() => {
+			scrollToAnchor(null, hash, undefined, 'instant');
+		});
+	});
 </script>
 
 <div class="pt-16 pb-20 max-w-4xl mx-auto">
