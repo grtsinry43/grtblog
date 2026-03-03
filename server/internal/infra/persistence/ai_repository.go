@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 
@@ -14,6 +15,7 @@ type AIRepository struct {
 	db           *gorm.DB
 	providerRepo *GormRepository[model.AIProvider]
 	modelRepo    *GormRepository[model.AIModel]
+	taskLogRepo  *GormRepository[model.AITaskLog]
 }
 
 func NewAIRepository(db *gorm.DB) *AIRepository {
@@ -21,6 +23,7 @@ func NewAIRepository(db *gorm.DB) *AIRepository {
 		db:           db,
 		providerRepo: NewGormRepository[model.AIProvider](db),
 		modelRepo:    NewGormRepository[model.AIModel](db),
+		taskLogRepo:  NewGormRepository[model.AITaskLog](db),
 	}
 }
 
@@ -196,4 +199,116 @@ func toModelDomain(rec *model.AIModel) *domainai.Model {
 		CreatedAt:  rec.CreatedAt,
 		UpdatedAt:  rec.UpdatedAt,
 	}
+}
+
+// ── TaskLog CRUD ──
+
+func (r *AIRepository) CreateTaskLog(ctx context.Context, l *domainai.TaskLog) error {
+	rec := toTaskLogModel(l)
+	if err := r.taskLogRepo.Create(ctx, &rec); err != nil {
+		return err
+	}
+	l.ID = rec.ID
+	l.CreatedAt = rec.CreatedAt
+	l.UpdatedAt = rec.UpdatedAt
+	return nil
+}
+
+func (r *AIRepository) UpdateTaskLog(ctx context.Context, l *domainai.TaskLog) error {
+	rec := toTaskLogModel(l)
+	return r.db.WithContext(ctx).Save(&rec).Error
+}
+
+func (r *AIRepository) GetTaskLogByID(ctx context.Context, id int64) (*domainai.TaskLog, error) {
+	rec, err := r.taskLogRepo.FirstByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("task log not found")
+		}
+		return nil, err
+	}
+	return toTaskLogDomain(rec), nil
+}
+
+func (r *AIRepository) ListTaskLogs(ctx context.Context, opts domainai.TaskLogListOptions) ([]*domainai.TaskLog, int64, error) {
+	query := r.db.WithContext(ctx).Model(&model.AITaskLog{})
+
+	if opts.TaskType != nil && *opts.TaskType != "" {
+		query = query.Where("task_type = ?", *opts.TaskType)
+	}
+	if opts.Status != nil && *opts.Status != "" {
+		query = query.Where("status = ?", *opts.Status)
+	}
+	if opts.Search != nil && *opts.Search != "" {
+		like := "%" + *opts.Search + "%"
+		query = query.Where("input_text ILIKE ? OR output_text ILIKE ? OR model_name ILIKE ?", like, like, like)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	page := opts.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := opts.PageSize
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	var records []model.AITaskLog
+	if err := query.Order("created_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&records).Error; err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]*domainai.TaskLog, len(records))
+	for i := range records {
+		result[i] = toTaskLogDomain(&records[i])
+	}
+	return result, total, nil
+}
+
+func toTaskLogModel(l *domainai.TaskLog) model.AITaskLog {
+	rec := model.AITaskLog{
+		ID:            l.ID,
+		TaskType:      l.TaskType,
+		ModelName:     l.ModelName,
+		ProviderName:  l.ProviderName,
+		Status:        l.Status,
+		InputText:     l.InputText,
+		OutputText:    l.OutputText,
+		DurationMs:    l.DurationMs,
+		TriggerSource: l.TriggerSource,
+		CreatedAt:     l.CreatedAt,
+		UpdatedAt:     l.UpdatedAt,
+	}
+	if l.ErrorMessage != "" {
+		rec.ErrorMessage = &l.ErrorMessage
+	}
+	return rec
+}
+
+func toTaskLogDomain(rec *model.AITaskLog) *domainai.TaskLog {
+	l := &domainai.TaskLog{
+		ID:            rec.ID,
+		TaskType:      rec.TaskType,
+		ModelName:     rec.ModelName,
+		ProviderName:  rec.ProviderName,
+		Status:        rec.Status,
+		InputText:     rec.InputText,
+		OutputText:    rec.OutputText,
+		DurationMs:    rec.DurationMs,
+		TriggerSource: rec.TriggerSource,
+		CreatedAt:     rec.CreatedAt,
+		UpdatedAt:     rec.UpdatedAt,
+	}
+	if rec.ErrorMessage != nil {
+		l.ErrorMessage = *rec.ErrorMessage
+	}
+	return l
 }

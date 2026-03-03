@@ -493,6 +493,26 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     component: 'global-notifications/index',
   },
   {
+    path: 'ai',
+    name: 'aiManagement',
+    icon: 'iconify ph--brain',
+    label: 'AI',
+    redirect: 'ai/task-logs',
+    children: [
+      {
+        path: 'task-logs',
+        name: 'aiTaskLogs',
+        label: '任务日志',
+        icon: 'iconify ph--list-checks',
+        meta: {
+          componentName: 'AITaskLogs',
+          showTab: true,
+        },
+        component: 'ai/tasks/index',
+      },
+    ],
+  },
+  {
     path: 'email',
     name: 'emailManagement',
     icon: 'iconify ph--envelope',

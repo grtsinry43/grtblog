@@ -18,4 +18,10 @@ type Repository interface {
 	ListModelsByProvider(ctx context.Context, providerID int64) ([]*Model, error)
 	UpdateModel(ctx context.Context, m *Model) error
 	DeleteModel(ctx context.Context, id int64) error
+
+	// TaskLog
+	CreateTaskLog(ctx context.Context, log *TaskLog) error
+	UpdateTaskLog(ctx context.Context, log *TaskLog) error
+	GetTaskLogByID(ctx context.Context, id int64) (*TaskLog, error)
+	ListTaskLogs(ctx context.Context, opts TaskLogListOptions) ([]*TaskLog, int64, error)
 }

@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	domainai "github.com/grtsinry43/grtblog-v2/server/internal/domain/ai"
 	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
@@ -47,15 +49,15 @@ type RewriteResult struct {
 }
 
 const (
-	taskKeyCommentModeration  = "ai.task.commentModeration.modelId"
-	taskKeyTitleGeneration    = "ai.task.titleGeneration.modelId"
-	taskKeyContentRewrite     = "ai.task.contentRewrite.modelId"
-	taskKeySummaryGeneration  = "ai.task.summaryGeneration.modelId"
+	taskKeyCommentModeration = "ai.task.commentModeration.modelId"
+	taskKeyTitleGeneration   = "ai.task.titleGeneration.modelId"
+	taskKeyContentRewrite    = "ai.task.contentRewrite.modelId"
+	taskKeySummaryGeneration = "ai.task.summaryGeneration.modelId"
 
-	promptKeyCommentModeration  = "ai.prompt.commentModeration"
-	promptKeyTitleGeneration    = "ai.prompt.titleGeneration"
-	promptKeyContentRewrite     = "ai.prompt.contentRewrite"
-	promptKeySummaryGeneration  = "ai.prompt.summaryGeneration"
+	promptKeyCommentModeration = "ai.prompt.commentModeration"
+	promptKeyTitleGeneration   = "ai.prompt.titleGeneration"
+	promptKeyContentRewrite    = "ai.prompt.contentRewrite"
+	promptKeySummaryGeneration = "ai.prompt.summaryGeneration"
 
 	defaultModerationPrompt = `你是一个博客评论审核助手。请判断以下评论是否应该通过审核。
 评判标准：
@@ -82,15 +84,17 @@ const (
 )
 
 // ModerateComment 使用 AI 审核评论内容。
-func (s *Service) ModerateComment(ctx context.Context, content string) (*ModerationResult, error) {
+func (s *Service) ModerateComment(ctx context.Context, content, triggerSource string) (*ModerationResult, error) {
 	if err := s.checkEnabled(ctx); err != nil {
 		return nil, err
 	}
 
-	client, modelID, err := s.buildClient(ctx, taskKeyCommentModeration)
+	client, modelID, modelName, providerName, err := s.buildClientExt(ctx, taskKeyCommentModeration)
 	if err != nil {
 		return nil, fmt.Errorf("build ai client: %w", err)
 	}
+
+	taskLog, startTime := s.recordTaskStart(ctx, domainai.TaskTypeCommentModeration, content, triggerSource, modelName, providerName)
 
 	prompt := s.readPrompt(ctx, promptKeyCommentModeration, defaultModerationPrompt)
 
@@ -102,14 +106,19 @@ func (s *Service) ModerateComment(ctx context.Context, content string) (*Moderat
 		},
 	})
 	if err != nil {
+		s.recordTaskEnd(ctx, taskLog, "", err, startTime)
 		return nil, fmt.Errorf("ai chat: %w", err)
 	}
 
 	var result ModerationResult
 	cleaned := extractJSON(resp.Content)
 	if err := json.Unmarshal([]byte(cleaned), &result); err != nil {
-		return nil, fmt.Errorf("parse moderation result: %w (raw: %s)", err, resp.Content)
+		parseErr := fmt.Errorf("parse moderation result: %w (raw: %s)", err, resp.Content)
+		s.recordTaskEnd(ctx, taskLog, resp.Content, parseErr, startTime)
+		return nil, parseErr
 	}
+
+	s.recordTaskEnd(ctx, taskLog, resp.Content, nil, startTime)
 	return &result, nil
 }
 
@@ -119,10 +128,12 @@ func (s *Service) GenerateTitle(ctx context.Context, content string) (*TitleResu
 		return nil, err
 	}
 
-	client, modelID, err := s.buildClient(ctx, taskKeyTitleGeneration)
+	client, modelID, modelName, providerName, err := s.buildClientExt(ctx, taskKeyTitleGeneration)
 	if err != nil {
 		return nil, fmt.Errorf("build ai client: %w", err)
 	}
+
+	taskLog, startTime := s.recordTaskStart(ctx, domainai.TaskTypeTitleGeneration, content, domainai.TriggerManual, modelName, providerName)
 
 	prompt := s.readPrompt(ctx, promptKeyTitleGeneration, defaultTitlePrompt)
 
@@ -134,14 +145,19 @@ func (s *Service) GenerateTitle(ctx context.Context, content string) (*TitleResu
 		},
 	})
 	if err != nil {
+		s.recordTaskEnd(ctx, taskLog, "", err, startTime)
 		return nil, fmt.Errorf("ai chat: %w", err)
 	}
 
 	var result TitleResult
 	cleaned := extractJSON(resp.Content)
 	if err := json.Unmarshal([]byte(cleaned), &result); err != nil {
-		return nil, fmt.Errorf("parse title result: %w (raw: %s)", err, resp.Content)
+		parseErr := fmt.Errorf("parse title result: %w (raw: %s)", err, resp.Content)
+		s.recordTaskEnd(ctx, taskLog, resp.Content, parseErr, startTime)
+		return nil, parseErr
 	}
+
+	s.recordTaskEnd(ctx, taskLog, resp.Content, nil, startTime)
 	return &result, nil
 }
 
@@ -151,17 +167,19 @@ func (s *Service) RewriteContent(ctx context.Context, content, instruction strin
 		return nil, err
 	}
 
-	client, modelID, err := s.buildClient(ctx, taskKeyContentRewrite)
+	client, modelID, modelName, providerName, err := s.buildClientExt(ctx, taskKeyContentRewrite)
 	if err != nil {
 		return nil, fmt.Errorf("build ai client: %w", err)
 	}
-
-	prompt := s.readPrompt(ctx, promptKeyContentRewrite, defaultRewritePrompt)
 
 	userMsg := content
 	if instruction != "" {
 		userMsg = fmt.Sprintf("用户指令：%s\n\n原文内容：\n%s", instruction, content)
 	}
+
+	taskLog, startTime := s.recordTaskStart(ctx, domainai.TaskTypeContentRewrite, userMsg, domainai.TriggerManual, modelName, providerName)
+
+	prompt := s.readPrompt(ctx, promptKeyContentRewrite, defaultRewritePrompt)
 
 	resp, err := client.Chat(ctx, infraai.ChatRequest{
 		Model: modelID,
@@ -171,9 +189,11 @@ func (s *Service) RewriteContent(ctx context.Context, content, instruction strin
 		},
 	})
 	if err != nil {
+		s.recordTaskEnd(ctx, taskLog, "", err, startTime)
 		return nil, fmt.Errorf("ai chat: %w", err)
 	}
 
+	s.recordTaskEnd(ctx, taskLog, resp.Content, nil, startTime)
 	return &RewriteResult{Content: resp.Content}, nil
 }
 
@@ -183,25 +203,34 @@ func (s *Service) RewriteContentStream(ctx context.Context, content, instruction
 		return err
 	}
 
-	client, modelID, err := s.buildClient(ctx, taskKeyContentRewrite)
+	client, modelID, modelName, providerName, err := s.buildClientExt(ctx, taskKeyContentRewrite)
 	if err != nil {
 		return fmt.Errorf("build ai client: %w", err)
 	}
-
-	prompt := s.readPrompt(ctx, promptKeyContentRewrite, defaultRewritePrompt)
 
 	userMsg := content
 	if instruction != "" {
 		userMsg = fmt.Sprintf("用户指令：%s\n\n原文内容：\n%s", instruction, content)
 	}
 
-	return client.ChatStream(ctx, infraai.ChatRequest{
+	taskLog, startTime := s.recordTaskStart(ctx, domainai.TaskTypeContentRewrite, userMsg, domainai.TriggerManual, modelName, providerName)
+
+	prompt := s.readPrompt(ctx, promptKeyContentRewrite, defaultRewritePrompt)
+
+	var collected strings.Builder
+	streamErr := client.ChatStream(ctx, infraai.ChatRequest{
 		Model: modelID,
 		Messages: []infraai.ChatMessage{
 			{Role: "system", Content: prompt},
 			{Role: "user", Content: userMsg},
 		},
-	}, onChunk)
+	}, func(chunk string) error {
+		collected.WriteString(chunk)
+		return onChunk(chunk)
+	})
+
+	s.recordTaskEnd(ctx, taskLog, collected.String(), streamErr, startTime)
+	return streamErr
 }
 
 // GenerateSummaryStream 使用 AI 流式生成文章摘要，通过 onChunk 回调增量返回。
@@ -210,20 +239,39 @@ func (s *Service) GenerateSummaryStream(ctx context.Context, content string, onC
 		return err
 	}
 
-	client, modelID, err := s.buildClient(ctx, taskKeySummaryGeneration)
+	client, modelID, modelName, providerName, err := s.buildClientExt(ctx, taskKeySummaryGeneration)
 	if err != nil {
 		return fmt.Errorf("build ai client: %w", err)
 	}
 
+	taskLog, startTime := s.recordTaskStart(ctx, domainai.TaskTypeSummaryGeneration, content, domainai.TriggerManual, modelName, providerName)
+
 	prompt := s.readPrompt(ctx, promptKeySummaryGeneration, defaultSummaryPrompt)
 
-	return client.ChatStream(ctx, infraai.ChatRequest{
+	var collected strings.Builder
+	streamErr := client.ChatStream(ctx, infraai.ChatRequest{
 		Model: modelID,
 		Messages: []infraai.ChatMessage{
 			{Role: "system", Content: prompt},
 			{Role: "user", Content: content},
 		},
-	}, onChunk)
+	}, func(chunk string) error {
+		collected.WriteString(chunk)
+		return onChunk(chunk)
+	})
+
+	s.recordTaskEnd(ctx, taskLog, collected.String(), streamErr, startTime)
+	return streamErr
+}
+
+// ── TaskLog 查询代理 ──
+
+func (s *Service) ListTaskLogs(ctx context.Context, opts domainai.TaskLogListOptions) ([]*domainai.TaskLog, int64, error) {
+	return s.repo.ListTaskLogs(ctx, opts)
+}
+
+func (s *Service) GetTaskLogByID(ctx context.Context, id int64) (*domainai.TaskLog, error) {
+	return s.repo.GetTaskLogByID(ctx, id)
 }
 
 // ── Provider / Model CRUD 代理 ──
@@ -291,35 +339,69 @@ func (s *Service) checkEnabled(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) buildClient(ctx context.Context, taskConfigKey string) (infraai.Client, string, error) {
+// buildClientExt extends buildClient to also return model name and provider name.
+func (s *Service) buildClientExt(ctx context.Context, taskConfigKey string) (infraai.Client, string, string, string, error) {
 	modelIDStr, err := s.cfgGet.GetConfigValue(ctx, taskConfigKey)
 	if err != nil || strings.TrimSpace(modelIDStr) == "" {
-		return nil, "", fmt.Errorf("该任务未配置 AI 模型 (key: %s)", taskConfigKey)
+		return nil, "", "", "", fmt.Errorf("该任务未配置 AI 模型 (key: %s)", taskConfigKey)
 	}
 
 	modelID, err := strconv.ParseInt(strings.TrimSpace(modelIDStr), 10, 64)
 	if err != nil {
-		return nil, "", fmt.Errorf("无效的模型 ID: %s", modelIDStr)
+		return nil, "", "", "", fmt.Errorf("无效的模型 ID: %s", modelIDStr)
 	}
 
 	m, p, err := s.repo.GetModelWithProvider(ctx, modelID)
 	if err != nil {
-		return nil, "", fmt.Errorf("获取模型信息失败: %w", err)
+		return nil, "", "", "", fmt.Errorf("获取模型信息失败: %w", err)
 	}
 
 	if !p.IsActive {
-		return nil, "", fmt.Errorf("AI 提供商 %q 已禁用", p.Name)
+		return nil, "", "", "", fmt.Errorf("AI 提供商 %q 已禁用", p.Name)
 	}
 	if !m.IsActive {
-		return nil, "", fmt.Errorf("AI 模型 %q 已禁用", m.Name)
+		return nil, "", "", "", fmt.Errorf("AI 模型 %q 已禁用", m.Name)
 	}
 
 	client, err := infraai.NewClient(p.Type, p.APIURL, p.APIKey)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", "", err
 	}
 
-	return client, m.ModelID, nil
+	return client, m.ModelID, m.Name, p.Name, nil
+}
+
+func (s *Service) recordTaskStart(ctx context.Context, taskType, input, triggerSource, modelName, providerName string) (*domainai.TaskLog, time.Time) {
+	startTime := time.Now()
+	taskLog := &domainai.TaskLog{
+		TaskType:      taskType,
+		ModelName:     modelName,
+		ProviderName:  providerName,
+		Status:        domainai.TaskStatusRunning,
+		InputText:     truncateText(input, 10000),
+		TriggerSource: triggerSource,
+	}
+	if err := s.repo.CreateTaskLog(ctx, taskLog); err != nil {
+		log.Printf("[AI] create task log failed: %v", err)
+	}
+	return taskLog, startTime
+}
+
+func (s *Service) recordTaskEnd(ctx context.Context, taskLog *domainai.TaskLog, output string, taskErr error, startTime time.Time) {
+	if taskLog == nil || taskLog.ID == 0 {
+		return
+	}
+	taskLog.DurationMs = int(time.Since(startTime).Milliseconds())
+	taskLog.OutputText = truncateText(output, 10000)
+	if taskErr != nil {
+		taskLog.Status = domainai.TaskStatusFailed
+		taskLog.ErrorMessage = taskErr.Error()
+	} else {
+		taskLog.Status = domainai.TaskStatusCompleted
+	}
+	if err := s.repo.UpdateTaskLog(ctx, taskLog); err != nil {
+		log.Printf("[AI] update task log failed: %v", err)
+	}
 }
 
 func (s *Service) readPrompt(ctx context.Context, promptKey, defaultPrompt string) string {
@@ -346,4 +428,11 @@ func extractJSON(raw string) string {
 		}
 	}
 	return strings.TrimSpace(trimmed)
+}
+
+func truncateText(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen]
 }

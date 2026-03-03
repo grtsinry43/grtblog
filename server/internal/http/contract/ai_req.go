@@ -95,3 +95,27 @@ type AIGenerateSummaryReq struct {
 type AIGenerateSummaryResp struct {
 	Summary string `json:"summary"`
 }
+
+// ── TaskLog ──
+
+type AITaskLogResp struct {
+	ID            int64     `json:"id"`
+	TaskType      string    `json:"taskType"`
+	ModelName     string    `json:"modelName"`
+	ProviderName  string    `json:"providerName"`
+	Status        string    `json:"status"`
+	InputText     string    `json:"inputText,omitempty"`
+	OutputText    string    `json:"outputText,omitempty"`
+	ErrorMessage  string    `json:"errorMessage,omitempty"`
+	DurationMs    int       `json:"durationMs"`
+	TriggerSource string    `json:"triggerSource"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+type AITaskLogListResp struct {
+	Items []AITaskLogResp `json:"items"`
+	Total int64           `json:"total"`
+	Page  int             `json:"page"`
+	Size  int             `json:"size"`
+}

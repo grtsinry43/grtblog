@@ -69,6 +69,38 @@ export interface RewriteResult {
   content: string
 }
 
+// ── TaskLog ──
+
+export interface AITaskLog {
+  id: number
+  taskType: string
+  modelName: string
+  providerName: string
+  status: string
+  inputText?: string
+  outputText?: string
+  errorMessage?: string
+  durationMs: number
+  triggerSource: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AITaskLogListResp {
+  items: AITaskLog[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface AITaskLogListParams {
+  page?: number
+  pageSize?: number
+  taskType?: string
+  status?: string
+  search?: string
+}
+
 // ── Provider CRUD ──
 
 export function listAIProviders() {
@@ -241,4 +273,20 @@ export async function rewriteContentStream(
       }
     }
   }
+}
+
+// ── TaskLog API ──
+
+export function listAITaskLogs(params: AITaskLogListParams) {
+  const query = new URLSearchParams()
+  if (params.page) query.set('page', String(params.page))
+  if (params.pageSize) query.set('pageSize', String(params.pageSize))
+  if (params.taskType) query.set('taskType', params.taskType)
+  if (params.status) query.set('status', params.status)
+  if (params.search) query.set('search', params.search)
+  return request<AITaskLogListResp>(`/admin/ai/task-logs?${query.toString()}`)
+}
+
+export function getAITaskLog(id: number) {
+  return request<AITaskLog>(`/admin/ai/task-logs/${id}`)
 }

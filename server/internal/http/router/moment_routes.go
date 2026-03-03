@@ -32,12 +32,12 @@ func registerMomentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	authGroup.Put("/:id", momentHandler.UpdateMoment)    // PUT /api/v2/moments/123
 	authGroup.Delete("/:id", momentHandler.DeleteMoment) // DELETE /api/v2/moments/123
 
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
-	adminGroup.Get("/admin/moments/:id", momentHandler.GetMomentAdmin)
-	adminGroup.Get("/admin/moments", momentHandler.ListMomentsAdmin)                  // GET /api/v2/admin/moments
-	adminGroup.Put("/admin/moments/published", momentHandler.BatchSetMomentPublished) // PUT /api/v2/admin/moments/published
-	adminGroup.Put("/admin/moments/top", momentHandler.BatchSetMomentTop)             // PUT /api/v2/admin/moments/top
-	adminGroup.Post("/admin/moments/batch-delete", momentHandler.BatchDeleteMoments)  // POST /api/v2/admin/moments/batch-delete
+	adminGroup := v2.Group("/admin", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup.Get("/moments/:id", momentHandler.GetMomentAdmin)
+	adminGroup.Get("/moments", momentHandler.ListMomentsAdmin)                  // GET /api/v2/admin/moments
+	adminGroup.Put("/moments/published", momentHandler.BatchSetMomentPublished) // PUT /api/v2/admin/moments/published
+	adminGroup.Put("/moments/top", momentHandler.BatchSetMomentTop)             // PUT /api/v2/admin/moments/top
+	adminGroup.Post("/moments/batch-delete", momentHandler.BatchDeleteMoments)  // POST /api/v2/admin/moments/batch-delete
 }
 
 func newMomentHandler(deps Dependencies) *handler.MomentHandler {

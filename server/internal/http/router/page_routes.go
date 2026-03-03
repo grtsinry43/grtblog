@@ -29,10 +29,10 @@ func registerPageAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	authGroup.Put("/:id", pageHandler.UpdatePage)    // PUT /api/v2/pages/123
 	authGroup.Delete("/:id", pageHandler.DeletePage) // DELETE /api/v2/pages/123
 
-	adminGroup := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
-	adminGroup.Get("/admin/pages/:id", pageHandler.GetPageAdmin)
-	adminGroup.Put("/admin/pages/enabled", pageHandler.BatchSetPageEnabled)    // PUT /api/v2/admin/pages/enabled
-	adminGroup.Post("/admin/pages/batch-delete", pageHandler.BatchDeletePages) // POST /api/v2/admin/pages/batch-delete
+	adminGroup := v2.Group("/admin", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	adminGroup.Get("/pages/:id", pageHandler.GetPageAdmin)
+	adminGroup.Put("/pages/enabled", pageHandler.BatchSetPageEnabled)    // PUT /api/v2/admin/pages/enabled
+	adminGroup.Post("/pages/batch-delete", pageHandler.BatchDeletePages) // POST /api/v2/admin/pages/batch-delete
 }
 
 func newPageHandler(deps Dependencies) *handler.PageHandler {

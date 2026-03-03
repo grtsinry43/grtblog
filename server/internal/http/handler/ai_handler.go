@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -241,7 +242,7 @@ func (h *AIHandler) ModerateComment(c *fiber.Ctx) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论内容不能为空")
 	}
 
-	result, err := h.svc.ModerateComment(c.Context(), req.Content)
+	result, err := h.svc.ModerateComment(c.Context(), req.Content, "manual")
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, err.Error(), err)
 	}
@@ -361,6 +362,56 @@ func (h *AIHandler) GenerateSummaryStream(c *fiber.Ctx) error {
 	return nil
 }
 
+// ── TaskLog ──
+
+func (h *AIHandler) ListTaskLogs(c *fiber.Ctx) error {
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "20"))
+
+	opts := domainai.TaskLogListOptions{
+		Page:     page,
+		PageSize: pageSize,
+	}
+	if v := c.Query("taskType"); v != "" {
+		opts.TaskType = &v
+	}
+	if v := c.Query("status"); v != "" {
+		opts.Status = &v
+	}
+	if v := c.Query("search"); v != "" {
+		opts.Search = &v
+	}
+
+	items, total, err := h.svc.ListTaskLogs(c.Context(), opts)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "获取任务日志列表失败", err)
+	}
+
+	respItems := make([]contract.AITaskLogResp, len(items))
+	for i, l := range items {
+		respItems[i] = toTaskLogResp(l)
+	}
+	return response.Success(c, contract.AITaskLogListResp{
+		Items: respItems,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
+	})
+}
+
+func (h *AIHandler) GetTaskLog(c *fiber.Ctx) error {
+	id, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的任务日志 ID")
+	}
+
+	l, err := h.svc.GetTaskLogByID(c.Context(), id)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "获取任务日志失败", err)
+	}
+	return response.Success(c, toTaskLogResp(l))
+}
+
 // ── Helpers ──
 
 func isValidProviderType(t string) bool {
@@ -388,5 +439,22 @@ func toModelResp(m *domainai.Model) contract.AIModelResp {
 		IsActive:   m.IsActive,
 		CreatedAt:  m.CreatedAt,
 		UpdatedAt:  m.UpdatedAt,
+	}
+}
+
+func toTaskLogResp(l *domainai.TaskLog) contract.AITaskLogResp {
+	return contract.AITaskLogResp{
+		ID:            l.ID,
+		TaskType:      l.TaskType,
+		ModelName:     l.ModelName,
+		ProviderName:  l.ProviderName,
+		Status:        l.Status,
+		InputText:     l.InputText,
+		OutputText:    l.OutputText,
+		ErrorMessage:  l.ErrorMessage,
+		DurationMs:    l.DurationMs,
+		TriggerSource: l.TriggerSource,
+		CreatedAt:     l.CreatedAt,
+		UpdatedAt:     l.UpdatedAt,
 	}
 }

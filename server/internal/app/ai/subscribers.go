@@ -51,7 +51,7 @@ func RegisterSubscribers(bus appEvent.Bus, aiSvc *Service, commentUpdater Commen
 		}
 
 		// Call AI moderation
-		result, err := aiSvc.ModerateComment(ctx, payload.Content)
+		result, err := aiSvc.ModerateComment(ctx, payload.Content, "auto")
 		if err != nil {
 			log.Printf("[AI] moderate comment #%d failed: %v", payload.ID, err)
 			return nil // Don't block the event chain; comment stays pending

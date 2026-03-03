@@ -30,3 +30,48 @@ type Model struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
+
+// Task types
+const (
+	TaskTypeCommentModeration = "comment_moderation"
+	TaskTypeTitleGeneration   = "title_generation"
+	TaskTypeContentRewrite    = "content_rewrite"
+	TaskTypeSummaryGeneration = "summary_generation"
+)
+
+// Task statuses
+const (
+	TaskStatusPending   = "pending"
+	TaskStatusRunning   = "running"
+	TaskStatusCompleted = "completed"
+	TaskStatusFailed    = "failed"
+)
+
+// Trigger sources
+const (
+	TriggerManual = "manual"
+	TriggerAuto   = "auto"
+)
+
+type TaskLog struct {
+	ID            int64
+	TaskType      string
+	ModelName     string
+	ProviderName  string
+	Status        string
+	InputText     string
+	OutputText    string
+	ErrorMessage  string
+	DurationMs    int
+	TriggerSource string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+type TaskLogListOptions struct {
+	Page     int
+	PageSize int
+	TaskType *string
+	Status   *string
+	Search   *string
+}

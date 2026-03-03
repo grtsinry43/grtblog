@@ -23,19 +23,19 @@ func registerTaxonomyAdminRoutes(v2 fiber.Router, deps Dependencies) {
 	taxHandler := newTaxonomyHandler(deps)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
-	admin := v2.Group("", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
+	admin := v2.Group("/admin", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo), middleware.RequireAdmin(identityRepo))
 
-	admin.Post("/admin/categories", taxHandler.CreateCategory)
-	admin.Put("/admin/categories/:id", taxHandler.UpdateCategory)
-	admin.Delete("/admin/categories/:id", taxHandler.DeleteCategory)
+	admin.Post("/categories", taxHandler.CreateCategory)
+	admin.Put("/categories/:id", taxHandler.UpdateCategory)
+	admin.Delete("/categories/:id", taxHandler.DeleteCategory)
 
-	admin.Post("/admin/columns", taxHandler.CreateColumn)
-	admin.Put("/admin/columns/:id", taxHandler.UpdateColumn)
-	admin.Delete("/admin/columns/:id", taxHandler.DeleteColumn)
+	admin.Post("/columns", taxHandler.CreateColumn)
+	admin.Put("/columns/:id", taxHandler.UpdateColumn)
+	admin.Delete("/columns/:id", taxHandler.DeleteColumn)
 
-	admin.Post("/admin/tags", taxHandler.CreateTag)
-	admin.Put("/admin/tags/:id", taxHandler.UpdateTag)
-	admin.Delete("/admin/tags/:id", taxHandler.DeleteTag)
+	admin.Post("/tags", taxHandler.CreateTag)
+	admin.Put("/tags/:id", taxHandler.UpdateTag)
+	admin.Delete("/tags/:id", taxHandler.DeleteTag)
 }
 
 func newTaxonomyHandler(deps Dependencies) *handler.TaxonomyHandler {
