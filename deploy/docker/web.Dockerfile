@@ -29,6 +29,19 @@ COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/build /app/build
+
+# Install fonts for OG image rendering (resvg on musl cannot load woff2).
+# Noto Serif SC (OTF) – CJK title & subtitle
+# Google Sans Code (TTF) – tags & site name
+ADD https://github.com/notofonts/noto-cjk/releases/download/Serif2.003/14_NotoSerifSC.zip /tmp/NotoSerifSC.zip
+ADD https://github.com/googlefonts/googlesans-code/releases/download/v6.001/GoogleSansCode-v6.001.zip /tmp/GoogleSansCode.zip
+RUN apk add --no-cache fontconfig && \
+    mkdir -p /usr/share/fonts/og && \
+    unzip -q -j /tmp/NotoSerifSC.zip 'SubsetOTF/SC/NotoSerifSC-Regular.otf' 'SubsetOTF/SC/NotoSerifSC-Bold.otf' -d /usr/share/fonts/og/ && \
+    unzip -q -j /tmp/GoogleSansCode.zip 'variable/*.ttf' -d /usr/share/fonts/og/ && \
+    fc-cache -f && \
+    rm -f /tmp/NotoSerifSC.zip /tmp/GoogleSansCode.zip
+
 COPY deploy/docker/renderer-entrypoint.sh /usr/local/bin/renderer-entrypoint.sh
 RUN chmod +x /usr/local/bin/renderer-entrypoint.sh
 

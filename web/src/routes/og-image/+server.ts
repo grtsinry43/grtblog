@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types';
 import { Resvg } from '@resvg/resvg-js';
-import { createRequire } from 'node:module';
 
 const MAX_TITLE_LENGTH = 60;
 const MAX_SUBTITLE_LENGTH = 120;
@@ -10,23 +9,6 @@ const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
 const MAX_ICON_BYTES = 2 * 1024 * 1024;
 const ICON_FETCH_TIMEOUT_MS = 3000;
-
-const require = createRequire(import.meta.url);
-
-const OG_FONT_MODULE_IDS = [
-	'@fontsource/noto-serif-sc/files/noto-serif-sc-chinese-simplified-400-normal.woff2',
-	'@fontsource/noto-serif-sc/files/noto-serif-sc-chinese-simplified-700-normal.woff2',
-	'@fontsource/google-sans/files/google-sans-latin-400-normal.woff2',
-	'@fontsource/google-sans/files/google-sans-latin-600-normal.woff2'
-] as const;
-
-const OG_FONT_FILES = OG_FONT_MODULE_IDS.map((id) => {
-	try {
-		return require.resolve(id);
-	} catch {
-		return '';
-	}
-}).filter(Boolean);
 
 const SUPPORTED_ICON_MIME_TYPES = new Set([
 	'image/png',
@@ -222,7 +204,7 @@ ${iconClipDef}
   <rect width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" filter="url(#noise)"/>
   <rect x="72" y="68" width="1056" height="494" rx="4" fill="${color.panel}" stroke="${color.border}" stroke-width="1.5"/>
   <line x1="124" y1="94" x2="124" y2="146" stroke="${color.brand}" stroke-opacity="0.55" />
-  <text x="144" y="118" font-size="18" fill="${color.brand}" fill-opacity="0.85" letter-spacing="2" font-family="'Google Sans',system-ui,sans-serif">${escapeXml(tag)}</text>
+  <text x="144" y="118" font-size="18" fill="${color.brand}" fill-opacity="0.85" letter-spacing="2" font-family="'Google Sans Code',system-ui,sans-serif">${escapeXml(tag)}</text>
   <circle cx="124" cy="534" r="3" fill="${color.brand}" fill-opacity="0.65"/>
   <line x1="138" y1="534" x2="312" y2="534" stroke="${color.brand}" stroke-opacity="0.35" />
   ${iconBlock}
@@ -230,7 +212,7 @@ ${iconClipDef}
     ${titleBlocks}
     ${subtitleBlocks}
   </g>
-  <text x="124" y="542" font-size="22" font-weight="600" fill="${color.brand}" font-family="'Google Sans',system-ui,sans-serif">${escapeXml(site)}</text>
+  <text x="124" y="542" font-size="22" font-weight="600" fill="${color.brand}" font-family="'Google Sans Code',system-ui,sans-serif">${escapeXml(site)}</text>
 	</svg>`;
 };
 
@@ -242,8 +224,7 @@ const renderPng = (svg: string): Uint8Array => {
 		},
 		font: {
 			loadSystemFonts: true,
-			defaultFontFamily: 'Noto Serif SC',
-			fontFiles: OG_FONT_FILES
+			defaultFontFamily: 'Noto Serif SC'
 		}
 	});
 	return resvg.render().asPng();
