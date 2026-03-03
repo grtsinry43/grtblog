@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
@@ -17,6 +18,7 @@ import (
 )
 
 const defaultMaxDepth = 3
+const commentContentMaxRunes = 500
 
 type RequestMeta struct {
 	IP        string
@@ -726,8 +728,12 @@ func (s *Service) resolveCreateStatus(ctx context.Context, isAdmin bool, authorI
 }
 
 func (s *Service) ensureContentValid(content string) error {
-	if strings.TrimSpace(content) == "" {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
 		return domaincomment.ErrCommentContentEmpty
+	}
+	if utf8.RuneCountInString(trimmed) > commentContentMaxRunes {
+		return domaincomment.ErrCommentContentTooLong
 	}
 	return nil
 }

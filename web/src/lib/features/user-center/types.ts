@@ -21,4 +21,5 @@ export type OAuthBinding = {
 export type OAuthCallbackReq = {
 	code: string;
 	state: string;
+	redirectUri?: string;
 };

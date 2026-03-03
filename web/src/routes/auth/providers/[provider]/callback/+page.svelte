@@ -37,10 +37,11 @@
 			const meta = consumeOAuthFlowMeta(state);
 			const mode = meta?.mode ?? 'login';
 			returnTo = meta?.returnTo || '/';
+			const redirectUri = `${window.location.origin}/auth/providers/${provider}/callback/`;
 
 			try {
 				if (mode === 'bind') {
-					await bindOAuth(provider, { code, state });
+					await bindOAuth(provider, { code, state, redirectUri });
 					status = '绑定成功，正在返回...';
 					const handled = postResult({
 						type: 'oauth:popup-result',
@@ -53,7 +54,7 @@
 					return;
 				}
 
-				const result = await callbackOAuthProvider(provider, { code, state });
+				const result = await callbackOAuthProvider(provider, { code, state, redirectUri });
 				setToken(result.token);
 				userStore.setUser(result.user);
 				status = '登录成功，正在返回...';

@@ -3,6 +3,7 @@
 		value?: string;
 		placeholder?: string;
 		rows?: number;
+		maxLength?: number;
 		variant?: 'default' | 'underline';
 		resize?: 'none' | 'vertical' | 'horizontal' | 'both';
 		textareaClass?: string;
@@ -14,6 +15,7 @@
 		value = $bindable(''),
 		placeholder = '',
 		rows = 4,
+		maxLength,
 		variant = 'default',
 		resize = 'vertical',
 		textareaClass: textareaClassName = '',
@@ -51,7 +53,14 @@
 </script>
 
 <div class={wrapperClasses}>
-	<textarea bind:value {rows} {placeholder} {oninput} class={textareaClasses}></textarea>
+	<textarea
+		bind:value
+		{rows}
+		maxlength={maxLength}
+		{placeholder}
+		{oninput}
+		class={textareaClasses}
+	></textarea>
 </div>
 
 <style>

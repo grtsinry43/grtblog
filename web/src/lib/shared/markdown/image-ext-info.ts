@@ -5,6 +5,7 @@ export interface ImageExtInfoItem {
 	width?: number;
 	height?: number;
 	color?: string;
+	blur?: string;
 }
 
 export interface ContentExtInfo {

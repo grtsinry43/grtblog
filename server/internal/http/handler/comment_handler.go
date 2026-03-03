@@ -557,6 +557,8 @@ func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论层级过深")
 	case errors.Is(err, domaincomment.ErrCommentContentEmpty):
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论内容不能为空")
+	case errors.Is(err, domaincomment.ErrCommentContentTooLong):
+		return response.NewBizErrorWithMsg(response.ParamsError, "评论内容不能超过500字")
 	case errors.Is(err, domaincomment.ErrCommentAreaClosed):
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论区已关闭")
 	case errors.Is(err, domaincomment.ErrCommentDisabled):

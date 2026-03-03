@@ -136,7 +136,7 @@
 		if (!browser) return;
 		setOAuthState({ loadingKey: provider.key, error: '' });
 		try {
-			const redirectUri = `${window.location.origin}/auth/providers/${provider.key}/callback`;
+			const redirectUri = `${window.location.origin}/auth/providers/${provider.key}/callback/`;
 			const res = await authorizeOAuthProvider(provider.key, redirectUri);
 			saveOAuthFlowMeta(res.state, {
 				mode: 'login',

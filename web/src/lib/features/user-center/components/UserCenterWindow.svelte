@@ -66,7 +66,7 @@
         if (!browser) return;
         bindingLoadingProvider = provider.key;
         try {
-            const redirectUri = `${window.location.origin}/auth/providers/${provider.key}/callback`;
+            const redirectUri = `${window.location.origin}/auth/providers/${provider.key}/callback/`;
             const res = await authorizeOAuthProvider(provider.key, redirectUri);
             saveOAuthFlowMeta(res.state, {
                 mode: 'bind',

@@ -21,6 +21,18 @@
 		class?: string;
 	}>();
 
+	const hasScheme = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value);
+	const isAllowedImageSrc = (value: string) => {
+		const raw = value.trim();
+		if (!raw) return false;
+		if (raw.startsWith('//')) return true;
+		if (hasScheme(raw)) {
+			return /^https?:/i.test(raw);
+		}
+		return true;
+	};
+	const safeSrc = $derived.by(() => (isAllowedImageSrc(src) ? src : ''));
+
 	const extInfoStore = imageExtInfoCtx.selectModelData((data) => data);
 
 	let imgEl = $state<HTMLImageElement | null>(null);
@@ -70,12 +82,12 @@
 
 	$effect(() => {
 		if (!imgEl) return;
-		imgSrc = imgEl.currentSrc || imgEl.src || src;
+		imgSrc = imgEl.currentSrc || imgEl.src || safeSrc;
 		cleanup?.();
 		cleanup = bindImageInteractions(imgEl, {
 			onClick: openZoom,
 			onLoad: () => {
-				imgSrc = imgEl?.currentSrc || imgEl?.src || src;
+				imgSrc = imgEl?.currentSrc || imgEl?.src || safeSrc;
 				clearPlaceholder();
 			}
 		});
@@ -106,17 +118,23 @@
 {/if}
 
 <span class="md-figure my-6 block overflow-hidden">
-	<img
-		bind:this={imgEl}
-		class={`md-img block w-full cursor-zoom-in rounded-sm transition-[filter,transform,opacity] duration-[400ms] ease-in-out ${className}`.trim()}
-		{src}
-		{alt}
-		{loading}
-		{decoding}
-		title={title || undefined}
-		data-loaded="false"
-		use:imageLazy={{ src, blur: imageInfo()?.blur }}
-	/>
+	{#if safeSrc}
+		<img
+			bind:this={imgEl}
+			class={`md-img block w-full cursor-zoom-in rounded-sm transition-[filter,transform,opacity] duration-[400ms] ease-in-out ${className}`.trim()}
+			src={safeSrc}
+			{alt}
+			{loading}
+			{decoding}
+			title={title || undefined}
+			data-loaded="false"
+			use:imageLazy={{ src: safeSrc, blur: imageInfo()?.blur }}
+		/>
+	{:else}
+		<span class="md-caption block rounded-sm border border-ink-200/80 bg-ink-100/60 px-3 py-2 text-xs text-ink-600 dark:border-ink-700/70 dark:bg-ink-800/40 dark:text-ink-300">
+			图片地址不受支持，已拦截显示
+		</span>
+	{/if}
 	{#if title}
 		<span class="md-caption mt-2 block text-sm opacity-70">{title}</span>
 	{/if}

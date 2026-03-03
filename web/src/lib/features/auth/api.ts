@@ -43,7 +43,7 @@ export const authorizeOAuthProvider = async (
 
 export const callbackOAuthProvider = async (
 	provider: string,
-	payload: { code: string; state: string },
+	payload: { code: string; state: string; redirectUri?: string },
 	fetcher?: typeof fetch
 ): Promise<LoginResp> => {
 	const api = getApi(fetcher);

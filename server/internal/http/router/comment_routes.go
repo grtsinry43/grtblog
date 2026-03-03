@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,14 +18,19 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 )
 
+const (
+	commentCreateRateLimitMax = 20
+	commentCreateRateWindow   = time.Minute
+)
+
 func registerCommentPublicRoutes(v2 fiber.Router, deps Dependencies) {
 	commentHandler := newCommentHandler(deps)
 
 	publicGroup := v2.Group("/comments")
 	publicGroup.Get("/areas/:areaId", commentHandler.ListCommentTree)
 	publicGroup.Post("/areas/:areaId/visitor", limiter.New(limiter.Config{
-		Max:        20,
-		Expiration: time.Minute,
+		Max:        commentCreateRateLimitMax,
+		Expiration: commentCreateRateWindow,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			return c.IP()
 		},
@@ -41,7 +47,28 @@ func registerCommentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 
 	authGroup := v2.Group("/comments", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo))
-	authGroup.Post("/areas/:areaId", commentHandler.CreateCommentLogin)
+	authGroup.Post("/areas/:areaId", limiter.New(limiter.Config{
+		Max:        commentCreateRateLimitMax,
+		Expiration: commentCreateRateWindow,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			if claims, ok := middleware.GetClaims(c); ok && claims != nil && claims.UserID > 0 {
+				return "uid:" + strconv.FormatInt(claims.UserID, 10)
+			}
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			userID := int64(0)
+			if claims, ok := middleware.GetClaims(c); ok && claims != nil {
+				userID = claims.UserID
+			}
+			handler.Audit(c, "comments.login.rate_limited", map[string]any{
+				"userId": userID,
+				"ip":     c.IP(),
+				"areaId": c.Params("areaId"),
+			})
+			return response.NewBizErrorWithMsg(response.TooManyRequests, "")
+		},
+	}), commentHandler.CreateCommentLogin)
 }
 
 func newCommentHandler(deps Dependencies) *handler.CommentHandler {

@@ -18,6 +18,7 @@
 
 	let { parentId }: Props = $props();
 
+	const commentContentMaxLength = 500;
 	const queryClient = useQueryClient();
 	let content = $state('');
 	const areaIdStore = commentAreaCtx.selectModelData((data) => data?.areaId ?? 0);
@@ -37,6 +38,22 @@
 		$userStore.userInfo?.nickname || $userStore.userInfo?.username || '已登录用户'
 	);
 	const loginAccount = $derived($userStore.userInfo?.username || '');
+	const contentCount = $derived(Array.from(content).length);
+
+	const truncateToMaxLength = (value: string, maxLength: number) => {
+		const chars = Array.from(value);
+		if (chars.length <= maxLength) {
+			return value;
+		}
+		return chars.slice(0, maxLength).join('');
+	};
+
+	$effect(() => {
+		const limited = truncateToMaxLength(content, commentContentMaxLength);
+		if (limited !== content) {
+			content = limited;
+		}
+	});
 
 	const mutation = createMutation(() => ({
 		mutationFn: async () => {
@@ -75,6 +92,10 @@
 	const handleSubmit = () => {
 		if (!content.trim()) {
 			toast.error('请输入评论内容');
+			return;
+		}
+		if (Array.from(content.trim()).length > commentContentMaxLength) {
+			toast.error(`评论内容不能超过 ${commentContentMaxLength} 字`);
 			return;
 		}
 		mutation.mutate();
@@ -211,6 +232,7 @@
 			bind:value={content}
 			placeholder="在此留下您的思绪..."
 			rows={6}
+			maxLength={commentContentMaxLength}
 			resize="none"
 			textareaClass="text-sm font-sans bg-ink-100 dark:bg-ink-800/40 text-ink-900 dark:text-ink-100 placeholder:text-ink-800/20 dark:placeholder:text-ink-200/20 leading-loose min-h-[140px] p-4"
 		/>
@@ -224,6 +246,7 @@
 				<div class="text-[10px] text-ink-800/40 dark:text-ink-200/40 font-serif tracking-wider">
 					支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span>
 					换行
+					<span class="ml-2 font-mono">{contentCount}/{commentContentMaxLength}</span>
 					{#if $requireModerationStore}
 						<span class="ml-2 text-amber-600 dark:text-amber-300">
 							当前开启审核，评论会先进入审核队列

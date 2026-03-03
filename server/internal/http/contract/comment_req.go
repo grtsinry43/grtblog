@@ -3,13 +3,13 @@ package contract
 import "time"
 
 type CreateCommentLoginReq struct {
-	Content   string `json:"content" validate:"required"`
+	Content   string `json:"content" validate:"required,max=500"`
 	ParentID  *int64 `json:"parentId"`
 	VisitorID string `json:"visitorId"`
 }
 
 type CreateCommentVisitorReq struct {
-	Content   string  `json:"content" validate:"required"`
+	Content   string  `json:"content" validate:"required,max=500"`
 	NickName  *string `json:"nickName" validate:"required,max=255"`
 	Email     *string `json:"email" validate:"required,max=255"`
 	Website   *string `json:"website" validate:"max=255"`
@@ -18,7 +18,7 @@ type CreateCommentVisitorReq struct {
 }
 
 type UpdateCommentReq struct {
-	Content string `json:"content" validate:"required"`
+	Content string `json:"content" validate:"required,max=500"`
 }
 
 type ListAdminCommentsReq struct {
@@ -30,7 +30,7 @@ type ListAdminCommentsReq struct {
 }
 
 type ReplyCommentReq struct {
-	Content string `json:"content" validate:"required"`
+	Content string `json:"content" validate:"required,max=500"`
 }
 
 type UpdateCommentStatusReq struct {
