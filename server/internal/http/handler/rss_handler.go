@@ -8,6 +8,7 @@ import (
 	"github.com/aclr/feeds"
 	"github.com/gofiber/fiber/v2"
 	apprss "github.com/grtsinry43/grtblog-v2/server/internal/app/rss"
+	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 )
 
 type RSSHandler struct {
@@ -86,12 +87,12 @@ func (h *RSSHandler) GetFeed(c *fiber.Ctx) error {
 
 	channel := (&feeds.Rss{Feed: rssFeed}).RssFeed()
 	channel.Language = "zh-CN"
-	channel.Generator = "grtblog-v2/server"
+	channel.Generator = "grtblog v" + buildinfo.Version()
 	output, err := feeds.ToXML(channel)
 	if err != nil {
 		return err
 	}
-	output = appendRSSExtensions(output, c, aggFeed.FollowFeedID, aggFeed.FollowUserID)
+	output = appendRSSExtensions(output, aggFeed.Link, aggFeed.FollowFeedID, aggFeed.FollowUserID)
 
 	c.Set(fiber.HeaderContentType, "application/xml; charset=utf-8")
 	return c.SendString(output)
@@ -117,7 +118,7 @@ func extractRSSClientHint(c *fiber.Ctx) string {
 	return ""
 }
 
-func appendRSSExtensions(raw string, c *fiber.Ctx, feedID string, userID string) string {
+func appendRSSExtensions(raw string, publicBaseURL string, feedID string, userID string) string {
 	result := raw
 	if strings.Contains(result, "<rss ") && !strings.Contains(result, "xmlns:atom=") {
 		result = strings.Replace(
@@ -128,7 +129,7 @@ func appendRSSExtensions(raw string, c *fiber.Ctx, feedID string, userID string)
 		)
 	}
 
-	selfLink := strings.TrimSpace(c.BaseURL() + c.OriginalURL())
+	selfLink := strings.TrimRight(strings.TrimSpace(publicBaseURL), "/") + "/feed"
 	extra := strings.Builder{}
 	if selfLink != "" {
 		extra.WriteString(`<atom:link href="`)
@@ -147,6 +148,10 @@ func appendRSSExtensions(raw string, c *fiber.Ctx, feedID string, userID string)
 	}
 	if extra.Len() == 0 {
 		return result
+	}
+	// Insert atom:link and follow_challenge before the first <item>, not at the end of <channel>
+	if idx := strings.Index(result, "<item>"); idx != -1 {
+		return result[:idx] + extra.String() + result[idx:]
 	}
 	return strings.Replace(result, "</channel>", extra.String()+"</channel>", 1)
 }

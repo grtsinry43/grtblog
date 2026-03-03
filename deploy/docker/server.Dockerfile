@@ -31,15 +31,15 @@ WORKDIR /src/server
 RUN apk add --no-cache ca-certificates git
 
 ARG GOOSE_VERSION=v3.26.0
-ARG APP_VERSION=dev
-ARG BUILD_COMMIT=unknown
+RUN GOBIN=/out go install github.com/pressly/goose/v3/cmd/goose@${GOOSE_VERSION}
 
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 
 COPY server/. .
 
-RUN GOBIN=/out go install github.com/pressly/goose/v3/cmd/goose@${GOOSE_VERSION}
+ARG APP_VERSION=dev
+ARG BUILD_COMMIT=unknown
 
 RUN CGO_ENABLED=0 GOOS=linux \
   go build -trimpath -ldflags="-s -w \

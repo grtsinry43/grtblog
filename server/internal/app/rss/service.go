@@ -114,10 +114,11 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 			if article == nil {
 				continue
 			}
+			articlePath := "/posts/" + article.ShortURL
 			items = append(items, Item{
 				Title:       article.Title,
-				Description: buildRSSDescription(buildURL(baseURL, "/articles/short/"+article.ShortURL), renderHTML(article.Content)),
-				Link:        buildURL(baseURL, "/articles/short/"+article.ShortURL),
+				Description: buildRSSDescription(buildURL(baseURL, articlePath), renderHTML(article.Content)),
+				Link:        buildURL(baseURL, articlePath),
 				GUID:        fmt.Sprintf("article-%d", article.ID),
 				Category:    "article",
 				AuthorName:  s.resolveAuthorByUserID(ctx, article.AuthorID, authorCache).name,
@@ -138,10 +139,16 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 			if moment == nil {
 				continue
 			}
+			momentPath := fmt.Sprintf("/moments/%s/%s/%s/%s",
+				moment.CreatedAt.Format("2006"),
+				moment.CreatedAt.Format("01"),
+				moment.CreatedAt.Format("02"),
+				moment.ShortURL,
+			)
 			items = append(items, Item{
 				Title:       moment.Title,
-				Description: buildRSSDescription(buildURL(baseURL, "/moments/short/"+moment.ShortURL), renderHTML(moment.Content)),
-				Link:        buildURL(baseURL, "/moments/short/"+moment.ShortURL),
+				Description: buildRSSDescription(buildURL(baseURL, momentPath), renderHTML(moment.Content)),
+				Link:        buildURL(baseURL, momentPath),
 				GUID:        fmt.Sprintf("moment-%d", moment.ID),
 				Category:    "moment",
 				AuthorName:  s.resolveAuthorByUserID(ctx, moment.AuthorID, authorCache).name,
@@ -151,10 +158,12 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 		}
 
 		enabled := true
+		notBuiltin := false
 		pages, _, err := s.contentRepo.ListPages(ctx, content.PageListOptionsInternal{
 			Page:     1,
 			PageSize: limit,
 			Enabled:  &enabled,
+			Builtin:  &notBuiltin,
 		})
 		if err != nil {
 			return nil, err
@@ -163,10 +172,11 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 			if page == nil {
 				continue
 			}
+			pagePath := "/" + page.ShortURL
 			items = append(items, Item{
 				Title:       page.Title,
-				Description: buildRSSDescription(buildURL(baseURL, "/pages/short/"+page.ShortURL), renderHTML(page.Content)),
-				Link:        buildURL(baseURL, "/pages/short/"+page.ShortURL),
+				Description: buildRSSDescription(buildURL(baseURL, pagePath), renderHTML(page.Content)),
+				Link:        buildURL(baseURL, pagePath),
 				GUID:        fmt.Sprintf("page-%d", page.ID),
 				Category:    "page",
 				PublishedAt: page.CreatedAt,
