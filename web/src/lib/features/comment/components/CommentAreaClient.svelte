@@ -39,16 +39,18 @@
 
 	let currentPage = $state(1);
 	const pageSize = 10;
+	const viewerVisitorId = $derived.by(() => (browser ? getOrCreateVisitorId() : ''));
+	const viewerKey = $derived.by(() => `${$userStore.userInfo?.id ?? 0}:${viewerVisitorId}`);
 
 	const query = createQuery(() => ({
-		queryKey: ['comments', areaId, currentPage],
+		queryKey: ['comments', areaId, currentPage, viewerKey],
 		queryFn: () =>
 			getCommentTree(
 				undefined,
 				areaId,
 				currentPage,
 				pageSize,
-				browser ? getOrCreateVisitorId() : undefined
+				viewerVisitorId || undefined
 			)
 	}));
 

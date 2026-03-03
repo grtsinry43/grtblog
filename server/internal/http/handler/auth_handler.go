@@ -232,6 +232,9 @@ func (h *AuthHandler) BindOAuth(c *fiber.Ctx) error {
 		if errors.Is(err, identity.ErrOAuthAlreadyBound) {
 			return response.NewBizErrorWithMsg(response.ParamsError, "该第三方账号已绑定其他用户")
 		}
+		if errors.Is(err, auth.ErrInvalidOAuthIdentity) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "OAuth 身份信息无效，请检查 provider 的用户信息映射配置")
+		}
 		return err
 	}
 	Audit(c, "auth.bind_oauth", map[string]any{

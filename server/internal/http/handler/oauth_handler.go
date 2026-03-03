@@ -101,6 +101,9 @@ func (h *OAuthHandler) Callback(c *fiber.Ctx) error {
 		if err == auth.ErrUserDisabled {
 			return response.NewBizErrorWithMsg(response.Unauthorized, "账号已被禁用")
 		}
+		if err == auth.ErrInvalidOAuthIdentity {
+			return response.NewBizErrorWithMsg(response.ParamsError, "OAuth 身份信息无效，请检查 provider 的用户信息映射配置")
+		}
 		return err
 	}
 	return response.Success(c, contract.LoginResp{

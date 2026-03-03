@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ var (
 	ErrUserDisabled          = errors.New("user disabled")
 	ErrPasswordTooWeak       = errors.New("password must be at least 8 characters")
 	ErrAdminOnly             = errors.New("login is restricted to admin users")
+	ErrInvalidOAuthIdentity  = errors.New("oauth provider identity is invalid")
 )
 
 // ExternalProvider 用于未来扩展 OAuth/OIDC, 当前仅定义接口。
@@ -549,6 +551,10 @@ func fetchExternalIdentity(ctx context.Context, cfg *identity.OAuthProvider, tok
 		// 回退使用 AccessToken 哈希避免空 ID
 		id = token.AccessToken
 	}
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, ErrInvalidOAuthIdentity
+	}
 	return &ExternalIdentity{
 		Provider:   cfg.ProviderKey,
 		ProviderID: id,
@@ -584,7 +590,7 @@ func fetchUserInfo(ctx context.Context, endpoint string, token *oauth2.Token, ou
 func firstString(raw map[string]any, keys ...string) string {
 	for _, k := range keys {
 		if v, ok := raw[k]; ok {
-			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+			if s := stringValue(v); s != "" {
 				return s
 			}
 		}
@@ -592,13 +598,61 @@ func firstString(raw map[string]any, keys ...string) string {
 	return ""
 }
 
+func stringValue(v any) string {
+	switch val := v.(type) {
+	case string:
+		return strings.TrimSpace(val)
+	case json.Number:
+		return strings.TrimSpace(val.String())
+	case float64:
+		return strconv.FormatFloat(val, 'f', -1, 64)
+	case float32:
+		return strconv.FormatFloat(float64(val), 'f', -1, 32)
+	case int:
+		return strconv.Itoa(val)
+	case int8:
+		return strconv.FormatInt(int64(val), 10)
+	case int16:
+		return strconv.FormatInt(int64(val), 10)
+	case int32:
+		return strconv.FormatInt(int64(val), 10)
+	case int64:
+		return strconv.FormatInt(val, 10)
+	case uint:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint64:
+		return strconv.FormatUint(val, 10)
+	default:
+		return ""
+	}
+}
+
 // registerOAuthUser 根据外部信息注册本地用户。
 func (s *Service) registerOAuthUser(ctx context.Context, ext *ExternalIdentity) (*identity.User, error) {
 	username := firstNonEmpty(ext.Username, ext.Email, ext.Provider+"_"+ext.ProviderID)
+	username, err := s.nextAvailableOAuthUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	email := strings.TrimSpace(ext.Email)
+	if email != "" {
+		if _, err := s.users.FindByEmail(ctx, email); err == nil {
+			// 邮箱冲突时不复用现有账号，避免 OAuth 身份串号。
+			email = ""
+		} else if !errors.Is(err, identity.ErrUserNotFound) {
+			return nil, err
+		}
+	}
 	user := &identity.User{
 		Username: username,
-		Nickname: ext.Name,
-		Email:    ext.Email,
+		Nickname: firstNonEmpty(ext.Name, username),
+		Email:    email,
 		Avatar:   ext.Avatar,
 		IsActive: true,
 	}
@@ -609,23 +663,68 @@ func (s *Service) registerOAuthUser(ctx context.Context, ext *ExternalIdentity) 
 	}
 	if err := s.users.Create(ctx, user); err != nil {
 		if errors.Is(err, identity.ErrUserExists) {
-			email := strings.TrimSpace(ext.Email)
-			if email != "" {
-				if existed, findErr := s.users.FindByEmail(ctx, email); findErr == nil {
-					return existed, nil
-				} else if !errors.Is(findErr, identity.ErrUserNotFound) {
-					return nil, findErr
-				}
+			retryUsername, findErr := s.nextAvailableOAuthUsername(ctx, username)
+			if findErr != nil {
+				return nil, findErr
 			}
-			if username != "" {
-				if existed, findErr := s.users.FindByUsername(ctx, username); findErr == nil {
-					return existed, nil
-				} else if !errors.Is(findErr, identity.ErrUserNotFound) {
-					return nil, findErr
-				}
+			user.Username = retryUsername
+			user.Email = ""
+			if retryErr := s.users.Create(ctx, user); retryErr == nil {
+				return user, nil
+			} else if !errors.Is(retryErr, identity.ErrUserExists) {
+				return nil, retryErr
 			}
 		}
 		return nil, err
 	}
 	return user, nil
+}
+
+func (s *Service) nextAvailableOAuthUsername(ctx context.Context, seed string) (string, error) {
+	base := strings.TrimSpace(seed)
+	if base == "" {
+		base = "oauth_user"
+	}
+	const maxLen = 45
+	if len(base) > maxLen {
+		base = base[:maxLen]
+	}
+
+	if _, err := s.users.FindByUsername(ctx, base); err == nil {
+		// occupied, continue
+	} else if errors.Is(err, identity.ErrUserNotFound) {
+		return base, nil
+	} else {
+		return "", err
+	}
+
+	for i := 1; i <= 64; i++ {
+		suffix := "_" + strconv.Itoa(i)
+		prefix := base
+		if len(prefix)+len(suffix) > maxLen {
+			prefix = prefix[:maxLen-len(suffix)]
+		}
+		candidate := prefix + suffix
+		if _, err := s.users.FindByUsername(ctx, candidate); err == nil {
+			continue
+		} else if errors.Is(err, identity.ErrUserNotFound) {
+			return candidate, nil
+		} else {
+			return "", err
+		}
+	}
+
+	nonce, err := randomString(8)
+	if err != nil {
+		return "", err
+	}
+	suffix := "_" + strings.ToLower(strings.TrimRight(nonce, "="))
+	if len(suffix) >= maxLen {
+		suffix = suffix[:maxLen-1]
+	}
+	prefix := base
+	if len(prefix)+len(suffix) > maxLen {
+		prefix = prefix[:maxLen-len(suffix)]
+	}
+	return prefix + suffix, nil
 }

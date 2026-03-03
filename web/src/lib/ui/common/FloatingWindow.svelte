@@ -2,8 +2,6 @@
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { draggable } from '$lib/shared/actions/draggable';
 	import { X, Minus, Maximize2, Minimize2 } from 'lucide-svelte';
-	import { scale, fly } from 'svelte/transition';
-	import { backOut, cubicIn, expoOut } from 'svelte/easing';
 	import { tick, type Snippet } from 'svelte';
 
 	let { children } = $props<{ children?: Snippet }>();
@@ -12,7 +10,18 @@
 	let outsidePulse = $state(false);
 	let outsidePulseTimer: ReturnType<typeof setTimeout> | undefined;
 
+	// Keep-alive: once opened, stay mounted (hidden via CSS when closed)
+	let hasBeenOpened = $state(false);
+
 	let isMobile = $state(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+	const isVisible = $derived(windowStore.isOpen && !windowStore.isMinimized);
+
+	$effect(() => {
+		if (isVisible) {
+			hasBeenOpened = true;
+		}
+	});
 
 	const windowStyle = $derived.by(() => {
 		if (isMobile) return '';
@@ -87,23 +96,8 @@
 		}
 	}
 
-	// Custom responsive transition
-	function responsiveIn(node: HTMLElement) {
-		if (isMobile) {
-			return fly(node, { y: 600, duration: 500, easing: expoOut });
-		}
-		return scale(node, { duration: 260, start: 0.92, easing: backOut });
-	}
-
-	function responsiveOut(node: HTMLElement) {
-		if (isMobile) {
-			return fly(node, { y: 600, duration: 400, easing: cubicIn });
-		}
-		return scale(node, { duration: 140, easing: cubicIn });
-	}
-
 	$effect(() => {
-		if (!windowStore.isOpen || windowStore.isMinimized || !windowEl) return;
+		if (!isVisible || !windowEl) return;
 		if (typeof window === 'undefined') return;
 
 		if (windowStore.openVersion !== centeredOpenVersion && !isMobile) {
@@ -137,9 +131,9 @@
 	});
 </script>
 
-{#if windowStore.isOpen && !windowStore.isMinimized}
+{#if hasBeenOpened}
 	<!-- Backdrop for mobile -->
-	{#if isMobile}
+	{#if isVisible && isMobile}
 		<div
 			class="fixed inset-0 z-[998]"
 			onclick={() => windowStore.close()}
@@ -153,12 +147,14 @@
         {isMobile
 			? 'inset-x-0 bottom-0 w-full rounded-t-default border-t border-ink-200/50 dark:border-ink-700/50 shadow-2xl noise-strong'
 			: 'w-[90vw] rounded-default border border-ink-200/50 dark:border-ink-700/50 shadow-float dark:shadow-glass md:min-w-[450px] md:max-w-[92vw] md:resize'}"
+		class:floating-window--hidden={!isVisible}
+		class:floating-window--enter={isVisible}
+		class:floating-window--enter-mobile={isVisible && isMobile}
+		class:floating-window--enter-desktop={isVisible && !isMobile}
 		class:window-expanded={windowStore.isExpanded && !isMobile}
 		class:window-outside-pulse={outsidePulse && !isMobile}
 		style={windowStyle}
 		use:draggable={{ handle: '.window-header', onMove: handleMove }}
-		in:responsiveIn
-		out:responsiveOut
 	>
 		<!-- Paper-like Handle for mobile drawer -->
 		{#if isMobile}
@@ -236,6 +232,18 @@
 
 <style lang="postcss">
 	@reference "$routes/layout.css";
+
+	.floating-window--hidden {
+		display: none !important;
+	}
+
+	.floating-window--enter-desktop {
+		animation: float-window-scale-in 260ms cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+	}
+
+	.floating-window--enter-mobile {
+		animation: float-window-slide-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+	}
 
 	.noise-strong::after {
 		opacity: 0.35 !important;
@@ -328,6 +336,26 @@
 		}
 		100% {
 			transform: scale(1);
+		}
+	}
+
+	@keyframes float-window-scale-in {
+		0% {
+			transform: scale(0.92);
+			opacity: 0;
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+
+	@keyframes float-window-slide-in {
+		0% {
+			transform: translateY(600px);
+		}
+		100% {
+			transform: translateY(0);
 		}
 	}
 </style>

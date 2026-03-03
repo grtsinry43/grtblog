@@ -20,4 +20,6 @@ export type FooterThemeConfig = {
 	designedWithText: string;
 	presenceConnectedText: string;
 	presenceLoadingText: string;
+	siteStartTime: string;
+	uptimeTextTemplate: string;
 };

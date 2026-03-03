@@ -27,6 +27,10 @@
 	import { resolvePresenceView } from '$lib/features/presence/resolve-view';
 	import PresencePagesWindow from '$lib/features/presence/components/PresencePagesWindow.svelte';
 	import ThinkingCommentsWindow from '$lib/features/thinking/components/ThinkingCommentsWindow.svelte';
+	import { getToken } from '$lib/shared/token';
+	import { getProfile } from '$lib/features/auth/api';
+	import { userStore } from '$lib/shared/stores/userStore';
+	import { get } from 'svelte/store';
 
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
@@ -181,6 +185,23 @@
 		presenceStore.start();
 		ownerStatusStore.start();
 		siteHealthStore.start();
+
+		// Auth bootstrap: imperatively check token and fetch profile.
+		// This replaces the old AuthBootstrap component, avoiding the race
+		// condition caused by QueryRoot's multiple async imports.
+		const token = getToken();
+		if (token && !get(userStore).isLogin) {
+			getProfile()
+				.then((profile) => {
+					if (profile && !get(userStore).isLogin) {
+						userStore.setUser(profile);
+					}
+				})
+				.catch(() => {
+					/* token invalid or expired, ignore */
+				});
+		}
+
 		return () => {
 			presenceStore.stop();
 			ownerStatusStore.stop();
@@ -309,6 +330,13 @@
 
 <SearchModal />
 <FloatingWindow>
+	<!-- Login branch: always mounted (hidden when inactive) to preserve QueryRoot/AuthClient state -->
+	<div hidden={windowStore.kind !== 'login'}>
+		<QueryRoot
+			loader={() => import('$lib/features/auth/components/AuthClient.svelte')}
+			fallback={authFallback}
+		/>
+	</div>
 	{#if windowStore.kind === 'tag-contents'}
 		<QueryRoot
 			loader={() => import('$lib/features/tag/components/TagContentsWindow.svelte')}
@@ -330,12 +358,7 @@
 		<QueryRoot
 			loader={() => import('$lib/features/user-center/components/UserCenterWindow.svelte')}
 		/>
-	{:else if windowStore.kind === 'login'}
-		<QueryRoot
-			loader={() => import('$lib/features/auth/components/AuthClient.svelte')}
-			fallback={authFallback}
-		/>
-	{:else}
+	{:else if windowStore.kind !== 'login'}
 		<div class="flex flex-col gap-3"></div>
 	{/if}
 </FloatingWindow>

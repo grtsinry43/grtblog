@@ -39,7 +39,9 @@ const defaultFooterConfig: FooterThemeConfig = {
 	beianGongAnText: '',
 	designedWithText: 'Designed by Grtsinry43 with ❤',
 	presenceConnectedText: '正在有 {count} 位小伙伴看着我的网站呐',
-	presenceLoadingText: '正在同步在线状态...'
+	presenceLoadingText: '正在同步在线状态...',
+	siteStartTime: '2022-01-01T00:00:00+08:00',
+	uptimeTextTemplate: '已运行 {days} 天 {hours} 小时 {minutes} 分 {seconds} 秒'
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -115,6 +117,7 @@ export const resolveFooterThemeConfig = (
 	const brandRaw = isRecord(footerRaw.brand) ? footerRaw.brand : {};
 	const copyrightRaw = isRecord(footerRaw.copyright) ? footerRaw.copyright : {};
 	const presenceRaw = isRecord(footerRaw.presence) ? footerRaw.presence : {};
+	const runtimeRaw = isRecord(footerRaw.runtime) ? footerRaw.runtime : {};
 
 	return {
 		sections: parseSections(footerRaw.sections) ?? defaultFooterConfig.sections,
@@ -157,6 +160,14 @@ export const resolveFooterThemeConfig = (
 		presenceLoadingText:
 			toStringValue(presenceRaw.loadingText) ??
 			toStringValue(footerRaw.presenceLoadingText) ??
-			defaultFooterConfig.presenceLoadingText
+			defaultFooterConfig.presenceLoadingText,
+		siteStartTime:
+			toStringValue(runtimeRaw.siteStartTime) ??
+			toStringValue(footerRaw.siteStartTime) ??
+			defaultFooterConfig.siteStartTime,
+		uptimeTextTemplate:
+			toStringValue(runtimeRaw.uptimeTextTemplate) ??
+			toStringValue(footerRaw.uptimeTextTemplate) ??
+			defaultFooterConfig.uptimeTextTemplate
 	};
 };

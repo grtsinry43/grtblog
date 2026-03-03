@@ -1,10 +1,25 @@
 import { getApi } from '$lib/shared/clients/api';
+import { browser } from '$app/environment';
+import { ofetch, FetchError } from 'ofetch';
 import type {
 	CommentCreateResponse,
 	CommentListResponse,
 	CreateCommentLoginPayload,
 	CreateCommentVisitorPayload
 } from '$lib/features/comment/types';
+import type { ApiResponse } from '$lib/shared/clients/types';
+import { BusinessError } from '$lib/shared/clients/types';
+
+const isAuthError = (error: unknown): boolean => {
+	if (error instanceof BusinessError) {
+		return error.code === 401 || error.code === 40101 || error.code === 403;
+	}
+	if (error instanceof FetchError) {
+		const status = error.response?.status ?? 0;
+		return status === 401 || status === 403;
+	}
+	return false;
+};
 
 export const getCommentTree = async (
 	fetcher: typeof fetch | undefined,
@@ -21,7 +36,20 @@ export const getCommentTree = async (
 	if (visitorId?.trim()) {
 		query.set('visitorId', visitorId.trim());
 	}
-	return api<CommentListResponse>(`/comments/areas/${areaId}?${query.toString()}`);
+	const path = `/comments/areas/${areaId}?${query.toString()}`;
+	try {
+		return await api<CommentListResponse>(path);
+	} catch (error) {
+		// Fallback for cases where auth headers are rejected upstream after login.
+		if (!browser || fetcher || !isAuthError(error)) {
+			throw error;
+		}
+		const envelope = await ofetch<ApiResponse<CommentListResponse>>(`/api/v2${path}`);
+		if (typeof envelope?.code === 'number' && envelope.code === 0) {
+			return envelope.data;
+		}
+		throw error;
+	}
 };
 
 export const createCommentLogin = async (

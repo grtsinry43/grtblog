@@ -3,6 +3,7 @@
     import {resolvePath} from '$lib/shared/utils/resolve-path';
     import {resolveFooterThemeConfig} from '$lib/features/footer/theme';
     import {websiteInfoCtx} from '$lib/features/website-info/context';
+    import {onMount} from 'svelte';
 
     type Props = {
         onlineCount?: number;
@@ -17,9 +18,47 @@
 
     const currentYear = new Date().getFullYear();
     const footerThemeStore = websiteInfoCtx.selectModelData((data) => resolveFooterThemeConfig(data));
+    let nowMs = $state(0);
 
     const formatPresenceText = (template: string, count: number): string =>
         template.replaceAll('{count}', String(count));
+
+    const formatUptimeText = (
+        template: string,
+        parts: { days: number; hours: number; minutes: number; seconds: number; totalSeconds: number }
+    ): string =>
+        template
+            .replaceAll('{days}', String(parts.days))
+            .replaceAll('{hours}', String(parts.hours))
+            .replaceAll('{minutes}', String(parts.minutes))
+            .replaceAll('{seconds}', String(parts.seconds))
+            .replaceAll('{totalSeconds}', String(parts.totalSeconds));
+
+    const uptimeText = $derived.by(() => {
+        if (nowMs <= 0) return '';
+        const startAt = Date.parse($footerThemeStore.siteStartTime);
+        if (!Number.isFinite(startAt)) return '';
+        const totalSeconds = Math.max(0, Math.floor((nowMs - startAt) / 1000));
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return formatUptimeText($footerThemeStore.uptimeTextTemplate, {
+            days,
+            hours,
+            minutes,
+            seconds,
+            totalSeconds
+        });
+    });
+
+    onMount(() => {
+        nowMs = Date.now();
+        const timer = window.setInterval(() => {
+            nowMs = Date.now();
+        }, 1000);
+        return () => window.clearInterval(timer);
+    });
 </script>
 
 <footer
@@ -164,6 +203,10 @@
                 <div class="flex flex-wrap justify-center md:justify-start gap-x-3 mt-1">
                     <span class="hidden md:inline">Powered by <a href="https://grtblog.js.org/"
                                                                  class="text-jade-500 hover:text-jade-600 transition-colors">Grtblog-v2</a></span>
+                    {#if uptimeText}
+                        <span class="hidden md:inline text-ink-200 dark:text-ink-800">|</span>
+                        <span class="hidden md:inline">{uptimeText}</span>
+                    {/if}
                     {#if $footerThemeStore.beianText && $footerThemeStore.beianUrl}
                         <span class="hidden md:inline text-ink-200 dark:text-ink-800">|</span>
                         <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->

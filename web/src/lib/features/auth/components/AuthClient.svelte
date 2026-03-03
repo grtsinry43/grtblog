@@ -9,7 +9,6 @@
 	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import {
 		authorizeOAuthProvider,
-		getProfile,
 		getTurnstileState,
 		listOAuthProviders,
 		login
@@ -21,7 +20,7 @@
 		OAuthProvider
 	} from '$lib/features/auth/types';
 	import { openOAuthPopup, saveOAuthFlowMeta, waitForOAuthPopupResult } from '$lib/features/auth/oauth-flow';
-	import { getToken, setToken } from '$lib/shared/token';
+	import { setToken } from '$lib/shared/token';
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { AuthCtx } from '$lib/features/auth/context';
 	import AuthField from './AuthField.svelte';
@@ -50,7 +49,6 @@
 	const { updateModelData } = AuthCtx.useModelActions();
 	const authModel = AuthCtx.selectModelData((data) => data);
 
-	let token = $state(getToken());
 	let turnstileToken = $state('');
 
 	const websiteName = websiteInfoCtx.selectModelData((data) => data?.website_name || 'grtBlog');
@@ -123,12 +121,6 @@
 		refetchOnWindowFocus: false
 	}));
 
-	const profileQuery = createQuery(() => ({
-		queryKey: ['auth-profile'],
-		enabled: !!token && !$userStore.isLogin,
-		retry: false,
-		queryFn: () => getProfile()
-	}));
 
 	const executeLogin = async (payload: LoginReq) => loginMutation.mutateAsync(payload);
 
@@ -248,13 +240,6 @@
 		}
 	});
 
-	$effect(() => {
-		const profile = profileQuery.data;
-		if (profile && !$userStore.isLogin) {
-			userStore.setUser(profile);
-		}
-	});
-
 	// Sync: when FloatingWindow is closed externally (e.g. user clicks outside),
 	// reset authModalStore without re-triggering windowStore.close().
 	$effect(() => {
@@ -295,7 +280,6 @@
 					},
 					onSuccess: () => {
 						setLoginState({ loading: false });
-						token = getToken();
 						if (loginMutation.data?.user) {
 							userStore.setUser(loginMutation.data.user);
 						}
