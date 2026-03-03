@@ -634,25 +634,18 @@ func stringValue(v any) string {
 }
 
 // registerOAuthUser 根据外部信息注册本地用户。
+// 只保证 username 唯一；email 允许重复，直接使用 OAuth 提供的邮箱。
+// 绝不复用已有账号，始终创建新用户。
 func (s *Service) registerOAuthUser(ctx context.Context, ext *ExternalIdentity) (*identity.User, error) {
 	username := firstNonEmpty(ext.Username, ext.Email, ext.Provider+"_"+ext.ProviderID)
 	username, err := s.nextAvailableOAuthUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}
-	email := strings.TrimSpace(ext.Email)
-	if email != "" {
-		if _, err := s.users.FindByEmail(ctx, email); err == nil {
-			// 邮箱冲突时不复用现有账号，避免 OAuth 身份串号。
-			email = ""
-		} else if !errors.Is(err, identity.ErrUserNotFound) {
-			return nil, err
-		}
-	}
 	user := &identity.User{
 		Username: username,
 		Nickname: firstNonEmpty(ext.Name, username),
-		Email:    email,
+		Email:    strings.TrimSpace(ext.Email),
 		Avatar:   ext.Avatar,
 		IsActive: true,
 	}
@@ -662,13 +655,13 @@ func (s *Service) registerOAuthUser(ctx context.Context, ext *ExternalIdentity) 
 		user.IsAdmin = true
 	}
 	if err := s.users.Create(ctx, user); err != nil {
+		// username 并发冲突时重新生成用户名重试一次
 		if errors.Is(err, identity.ErrUserExists) {
 			retryUsername, findErr := s.nextAvailableOAuthUsername(ctx, username)
 			if findErr != nil {
 				return nil, findErr
 			}
 			user.Username = retryUsername
-			user.Email = ""
 			if retryErr := s.users.Create(ctx, user); retryErr == nil {
 				return user, nil
 			} else if !errors.Is(retryErr, identity.ErrUserExists) {

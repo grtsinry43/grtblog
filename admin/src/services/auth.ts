@@ -102,7 +102,6 @@ export function changePassword(payload: ChangePasswordPayload) {
 export interface OAuthBinding {
   providerKey: string
   providerName: string
-  oauthID: string
   boundAt: string
   expiresAt?: string | null
   providerScope?: string

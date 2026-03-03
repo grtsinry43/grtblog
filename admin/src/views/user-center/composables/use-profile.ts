@@ -5,11 +5,13 @@ import {
   getOAuthBindings,
   updateProfile,
 } from '@/services/auth'
+import { listOAuthProviders } from '@/services/oauth-providers'
 import { uploadFile } from '@/services/uploads'
 import { toRefsUserStore, useUserStore } from '@/stores'
 import { cropper } from 'vue-picture-cropper'
 
 import type { OAuthBinding } from '@/services/auth'
+import type { AdminOAuthProvider } from '@/services/oauth-providers'
 import type { FormInst, FormItemRule } from 'naive-ui'
 
 export function useProfile(message: { error: (m: string) => void; success: (m: string) => void; warning?: (m: string) => void }) {
@@ -20,6 +22,7 @@ export function useProfile(message: { error: (m: string) => void; success: (m: s
   const passwordFormRef = ref<FormInst | null>(null)
   const oauthLoading = ref(false)
   const oauthBindings = ref<OAuthBinding[]>([])
+  const oauthProviders = ref<AdminOAuthProvider[]>([])
 
   const profileForm = reactive({
     nickname: '',
@@ -121,7 +124,12 @@ export function useProfile(message: { error: (m: string) => void; success: (m: s
   async function loadOAuthBindings() {
     oauthLoading.value = true
     try {
-      oauthBindings.value = await getOAuthBindings()
+      const [bindings, providers] = await Promise.all([
+        getOAuthBindings(),
+        listOAuthProviders(),
+      ])
+      oauthBindings.value = bindings
+      oauthProviders.value = providers.filter(p => p.enabled)
     } finally {
       oauthLoading.value = false
     }
@@ -181,6 +189,7 @@ export function useProfile(message: { error: (m: string) => void; success: (m: s
     passwordFormRef,
     oauthLoading,
     oauthBindings,
+    oauthProviders,
     profileForm,
     passwordForm,
     showCropper,

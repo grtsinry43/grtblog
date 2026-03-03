@@ -85,10 +85,10 @@ type UserOAuth struct {
 
 // UserOAuthBinding 描述用户已绑定的外部身份信息（用于展示）。
 type UserOAuthBinding struct {
-	ProviderKey   string
-	ProviderName  string
-	OAuthID       string
-	BoundAt       time.Time
-	ExpiresAt     *time.Time
-	ProviderScope string
+	ProviderKey   string     `json:"providerKey"`
+	ProviderName  string     `json:"providerName"`
+	OAuthID       string     `json:"-"`
+	BoundAt       time.Time  `json:"boundAt"`
+	ExpiresAt     *time.Time `json:"expiresAt"`
+	ProviderScope string     `json:"providerScope"`
 }

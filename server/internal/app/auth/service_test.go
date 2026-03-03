@@ -56,11 +56,6 @@ func (f *fakeIdentityRepo) Create(_ context.Context, user *identity.User) error 
 	if _, ok := f.usersByUsername[user.Username]; ok {
 		return identity.ErrUserExists
 	}
-	if user.Email != "" {
-		if _, ok := f.usersByEmail[user.Email]; ok {
-			return identity.ErrUserExists
-		}
-	}
 	created := *user
 	created.ID = f.nextID
 	f.nextID++
@@ -240,6 +235,38 @@ func TestRegisterOAuthUserDoesNotReuseExistingAdminOnUsernameConflict(t *testing
 	}
 	if user.IsAdmin {
 		t.Fatalf("expected oauth user not admin")
+	}
+}
+
+func TestRegisterOAuthUserAllowsDuplicateEmail(t *testing.T) {
+	repo := newFakeIdentityRepo(&identity.User{
+		ID:       1,
+		Username: "admin",
+		Email:    "admin@example.com",
+		Password: "$2a$10$hashed",
+		IsAdmin:  true,
+		IsActive: true,
+	})
+	svc := &Service{users: repo}
+
+	user, err := svc.registerOAuthUser(context.Background(), &ExternalIdentity{
+		Provider:   "github",
+		ProviderID: "456",
+		Username:   "someone",
+		Email:      "admin@example.com", // 同一邮箱
+		Name:       "Someone",
+	})
+	if err != nil {
+		t.Fatalf("registerOAuthUser returned error: %v", err)
+	}
+	if user.ID == 1 {
+		t.Fatalf("must not reuse admin account, got id=%d", user.ID)
+	}
+	if user.Email != "admin@example.com" {
+		t.Fatalf("expected email to be kept, got %q", user.Email)
+	}
+	if user.IsAdmin {
+		t.Fatalf("expected new oauth user not to be admin")
 	}
 }
 

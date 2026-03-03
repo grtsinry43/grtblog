@@ -12,7 +12,6 @@ export type ChangePasswordReq = {
 export type OAuthBinding = {
 	providerKey: string;
 	providerName: string;
-	oauthID: string;
 	boundAt: string;
 	expiresAt?: string | null;
 	providerScope?: string;

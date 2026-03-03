@@ -81,9 +81,15 @@ func (r *IdentityRepository) FindByEmail(ctx context.Context, email string) (*id
 
 func (r *IdentityRepository) FindByCredential(ctx context.Context, credential string) (*identity.User, error) {
 	var rec model.User
-	if err := r.db.WithContext(ctx).
-		Where("username = ? OR email = ?", credential, credential).
-		First(&rec).Error; err != nil {
+	// 优先精确匹配 username（唯一），避免 email 不唯一时命中错误账号
+	err := r.db.WithContext(ctx).Where("username = ?", credential).First(&rec).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// 回退到 email 匹配，只匹配设置了密码的用户（排除纯 OAuth 账号）
+		err = r.db.WithContext(ctx).
+			Where("email = ? AND password IS NOT NULL AND password <> ''", credential).
+			First(&rec).Error
+	}
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, identity.ErrInvalidCredentials
 		}

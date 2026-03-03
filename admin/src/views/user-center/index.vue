@@ -30,6 +30,7 @@ const {
   passwordFormRef,
   oauthLoading,
   oauthBindings,
+  oauthProviders,
   profileForm,
   passwordForm,
   showCropper,
@@ -128,7 +129,7 @@ const {
             </NTabPane>
 
             <NTabPane name="binding" tab="账号绑定">
-              <OAuthBindings :loading="oauthLoading" :bindings="oauthBindings" />
+              <OAuthBindings :loading="oauthLoading" :bindings="oauthBindings" :providers="oauthProviders" />
             </NTabPane>
           </NTabs>
         </NCard>
