@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 const STORAGE_KEY = 'grtblog:analytics:visitor-id:v1';
-const PREFIX = 'v1';
+const PREFIX = 'v2';
 
 const normalizeVisitorId = (value: string | null | undefined): string | null => {
 	if (!value) return null;

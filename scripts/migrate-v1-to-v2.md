@@ -14,6 +14,8 @@ This migration script is at `scripts/migrate-v1-to-v2.mjs`.
   - `pages`
   - `thinkings`
   - `comments` (article/moment/page comment threads)
+  - `views` for articles/moments/pages (via create payload)
+  - `likes` count for articles/moments/pages (imported as synthetic visitor likes: `v1-like-*`)
 - Other site data:
   - `friend links`
   - `nav menus`
@@ -24,7 +26,7 @@ This migration script is at `scripts/migrate-v1-to-v2.mjs`.
 ## What it does not migrate
 
 - users/accounts (v2 has no public admin-create-user API after initialization)
-- likes/views metrics
+- original like visitor identities, visitor/session analytics details
 - uploads binary files
 - advanced observability/analytics state
 

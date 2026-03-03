@@ -31,9 +31,15 @@ func (s *Service) Create(ctx context.Context, cmd CreateThinkingCmd) (*domainthi
 		return nil, domainthinking.ErrThinkingContentEmpty
 	}
 
+	createdAt := time.Now()
+	if cmd.CreatedAt != nil {
+		createdAt = *cmd.CreatedAt
+	}
+
 	t := &domainthinking.Thinking{
-		Content:  cmd.Content,
-		AuthorID: cmd.AuthorID,
+		Content:   cmd.Content,
+		AuthorID:  cmd.AuthorID,
+		CreatedAt: createdAt,
 	}
 	if err := s.repo.Create(ctx, t); err != nil {
 		return nil, err

@@ -573,7 +573,7 @@ func (r *ContentRepository) CreateArticle(ctx context.Context, article *content.
 
 		metrics := model.ArticleMetrics{
 			ArticleID: articleModel.ID,
-			Views:     0,
+			Views:     article.InitialViews,
 			Likes:     0,
 			Comments:  0,
 		}
@@ -967,7 +967,7 @@ func (r *ContentRepository) CreateMoment(ctx context.Context, moment *content.Mo
 
 		metrics := model.MomentMetrics{
 			MomentID: momentModel.ID,
-			Views:    0,
+			Views:    moment.InitialViews,
 			Likes:    0,
 			Comments: 0,
 		}
@@ -1233,7 +1233,7 @@ func (r *ContentRepository) CreatePage(ctx context.Context, page *content.Page) 
 
 		metrics := model.PageMetrics{
 			PageID:   pageModel.ID,
-			Views:    0,
+			Views:    page.InitialViews,
 			Likes:    0,
 			Comments: 0,
 		}

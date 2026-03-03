@@ -74,6 +74,9 @@ func (s *Service) CreateMoment(ctx context.Context, authorID int64, cmd CreateMo
 		ExtInfo:     cmd.ExtInfo,
 		CreatedAt:   createdAt,
 	}
+	if cmd.Views != nil && *cmd.Views > 0 {
+		moment.InitialViews = *cmd.Views
+	}
 
 	if err := s.repo.CreateMoment(ctx, moment); err != nil {
 		return nil, err

@@ -21,6 +21,10 @@ type TrackLikeResult struct {
 	Affected  bool
 }
 
+type ImportLikeBatchResult struct {
+	Inserted int64
+}
+
 type Service struct {
 	repo domainlike.Repository
 	now  func() time.Time
@@ -68,6 +72,45 @@ func (s *Service) TrackLike(ctx context.Context, cmd TrackLikeCmd, meta RequestM
 	return &TrackLikeResult{
 		VisitorID: visitorID,
 		Affected:  liked,
+	}, nil
+}
+
+func (s *Service) ImportLikeBatch(ctx context.Context, cmd ImportLikeBatchCmd) (*ImportLikeBatchResult, error) {
+	targetType, err := normalizeTargetType(cmd.ContentType)
+	if err != nil {
+		return nil, err
+	}
+	if cmd.ContentID <= 0 {
+		return nil, domainlike.ErrInvalidTargetID
+	}
+
+	exists, err := s.repo.ExistsTarget(ctx, targetType, cmd.ContentID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, domainlike.ErrTargetNotFound
+	}
+
+	entities := make([]*domainlike.ContentLike, 0, len(cmd.VisitorIDs))
+	for _, raw := range cmd.VisitorIDs {
+		visitorID := strings.TrimSpace(raw)
+		if visitorID == "" {
+			continue
+		}
+		entities = append(entities, &domainlike.ContentLike{
+			TargetType: targetType,
+			TargetID:   cmd.ContentID,
+			VisitorID:  &visitorID,
+		})
+	}
+
+	inserted, err := s.repo.CreateBatchIfAbsent(ctx, entities)
+	if err != nil {
+		return nil, err
+	}
+	return &ImportLikeBatchResult{
+		Inserted: inserted,
 	}, nil
 }
 

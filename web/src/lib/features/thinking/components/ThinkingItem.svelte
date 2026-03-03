@@ -4,6 +4,7 @@
 	import { MessageCircle, Eye } from 'lucide-svelte';
 	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
+	import ContentViewTracker from '$lib/features/analytics/components/ContentViewTracker.svelte';
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 
 	let { item } = $props<{ item: ThinkingItem }>();
@@ -69,3 +70,4 @@
 		</div>
 	</div>
 </div>
+<ContentViewTracker contentType="thinking" contentId={item.id} />

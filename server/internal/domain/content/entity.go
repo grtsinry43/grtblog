@@ -73,6 +73,7 @@ type Article struct {
 	IsHot                      bool
 	IsOriginal                 bool
 	ExtInfo                    []byte
+	InitialViews               int64
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
 	DeletedAt                  *time.Time
@@ -94,26 +95,27 @@ type HotArticleMarked struct {
 }
 
 type Moment struct {
-	ID          int64
-	Title       string
-	Summary     string
-	AISummary   *string
-	Content     string
-	ContentHash string
-	AuthorID    int64
-	TOC         []TOCNode
-	Image       *string
-	ColumnID    *int64
-	CommentID   *int64
-	ShortURL    string
-	IsPublished bool
-	IsTop       bool
-	IsHot       bool
-	IsOriginal  bool
-	ExtInfo     []byte
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   *time.Time
+	ID           int64
+	Title        string
+	Summary      string
+	AISummary    *string
+	Content      string
+	ContentHash  string
+	AuthorID     int64
+	TOC          []TOCNode
+	Image        *string
+	ColumnID     *int64
+	CommentID    *int64
+	ShortURL     string
+	IsPublished  bool
+	IsTop        bool
+	IsHot        bool
+	IsOriginal   bool
+	ExtInfo      []byte
+	InitialViews int64
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    *time.Time
 }
 
 type MomentMetrics struct {
@@ -125,21 +127,22 @@ type MomentMetrics struct {
 }
 
 type Page struct {
-	ID          int64
-	Title       string
-	Description *string
-	AISummary   *string
-	ShortURL    string
-	IsEnabled   bool
-	IsBuiltin   bool
-	TOC         []TOCNode
-	Content     string
-	ContentHash string
-	CommentID   *int64
-	ExtInfo     []byte
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   *time.Time
+	ID           int64
+	Title        string
+	Description  *string
+	AISummary    *string
+	ShortURL     string
+	IsEnabled    bool
+	IsBuiltin    bool
+	TOC          []TOCNode
+	Content      string
+	ContentHash  string
+	CommentID    *int64
+	ExtInfo      []byte
+	InitialViews int64
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    *time.Time
 }
 
 type PageMetrics struct {

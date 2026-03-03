@@ -1,9 +1,12 @@
 package thinking
 
+import "time"
+
 type CreateThinkingCmd struct {
 	Content      string
 	AuthorID     int64
 	AllowComment *bool
+	CreatedAt    *time.Time
 }
 
 type UpdateThinkingCmd struct {

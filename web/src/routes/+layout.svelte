@@ -324,6 +324,7 @@
 		<ThinkingCommentsWindow
 			areaId={windowStore.data?.areaId}
 			commentsCount={windowStore.data?.commentsCount ?? 0}
+			thinkingId={Number(windowStore.data?.thinkingId) || 0}
 		/>
 	{:else if windowStore.kind === 'user-center'}
 		<QueryRoot

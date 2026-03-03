@@ -77,6 +77,9 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 		ExtInfo:     mergeExtInfoKeepingFederation(nil, cmd.ExtInfo),
 		CreatedAt:   createdAt,
 	}
+	if cmd.Views != nil && *cmd.Views > 0 {
+		article.InitialViews = *cmd.Views
+	}
 
 	if err := s.repo.CreateArticle(ctx, article); err != nil {
 		return nil, err

@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	ContentTypeArticle = "article"
-	ContentTypeMoment  = "moment"
-	ContentTypePage    = "page"
+	ContentTypeArticle  = "article"
+	ContentTypeMoment   = "moment"
+	ContentTypePage     = "page"
+	ContentTypeThinking = "thinking"
 )
 
 const (
@@ -200,7 +201,7 @@ func (s *Service) TrackOnlineSample(ctx context.Context, current int64) error {
 func (s *Service) normalizeViewTrackInput(in ViewTrackInput) (ViewTrackEvent, error) {
 	ct := strings.ToLower(strings.TrimSpace(in.ContentType))
 	switch ct {
-	case ContentTypeArticle, ContentTypeMoment, ContentTypePage:
+	case ContentTypeArticle, ContentTypeMoment, ContentTypePage, ContentTypeThinking:
 	default:
 		return ViewTrackEvent{}, fmt.Errorf("invalid content type")
 	}
@@ -241,6 +242,10 @@ func (s *Service) ensureContentExists(ctx context.Context, contentType string, c
 		}
 	case ContentTypePage:
 		if err := q.Model(&model.Page{}).Where("id = ? AND is_enabled = ?", contentID, true).Count(&count).Error; err != nil {
+			return err
+		}
+	case ContentTypeThinking:
+		if err := q.Model(&model.Thinking{}).Where("id = ?", contentID).Count(&count).Error; err != nil {
 			return err
 		}
 	default:
@@ -406,6 +411,13 @@ func (s *Service) incrementContentViews(ctx context.Context, contentType string,
 			VALUES (?, 1, 0, 0, NOW())
 			ON CONFLICT (page_id)
 			DO UPDATE SET views = page_metrics.views + 1, updated_at = NOW()
+		`, contentID).Error
+	case ContentTypeThinking:
+		return s.db.WithContext(ctx).Exec(`
+			INSERT INTO thinking_metrics (thinking_id, views, likes, comments, updated_at)
+			VALUES (?, 1, 0, 0, NOW())
+			ON CONFLICT (thinking_id)
+			DO UPDATE SET views = thinking_metrics.views + 1, updated_at = NOW()
 		`, contentID).Error
 	default:
 		return fmt.Errorf("invalid content type")

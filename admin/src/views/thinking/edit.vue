@@ -2,6 +2,7 @@
 import {
   NButton,
   NCard,
+  NDatePicker,
   NForm,
   NFormItem,
   NInput,
@@ -24,6 +25,7 @@ const formRef = ref<FormInst | null>(null)
 const formValue = ref({
   content: '',
   allowComment: true,
+  createdAt: Date.now() as number | null,
 })
 const saving = ref(false)
 
@@ -35,6 +37,7 @@ onMounted(() => {
     getThinking(Number(id.value)).then((res) => {
       formValue.value.content = res.content
       formValue.value.allowComment = res.allowComment
+      formValue.value.createdAt = res.createdAt ? new Date(res.createdAt).getTime() : null
     })
   }
 })
@@ -46,6 +49,7 @@ async function handleSave() {
       await createThinking({
         content: formValue.value.content,
         allowComment: formValue.value.allowComment,
+        createdAt: formValue.value.createdAt ? new Date(formValue.value.createdAt).toISOString() : null,
       })
       message.success('创建成功')
     } else {
@@ -81,6 +85,15 @@ async function handleSave() {
             <span class="text-sm">允许评论</span>
             <NSwitch v-model:value="formValue.allowComment" />
            </div>
+        </NFormItem>
+        <NFormItem v-if="isCreating" label="发布时间">
+          <NDatePicker
+            v-model:value="formValue.createdAt"
+            type="datetime"
+            clearable
+            style="width: 100%"
+            placeholder="默认当前时间"
+          />
         </NFormItem>
       </NForm>
       <template #footer>

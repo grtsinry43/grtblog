@@ -13,6 +13,7 @@ type CreatePageCmd struct {
 	IsBuiltin    bool
 	ExtInfo      []byte
 	CreatedAt    *time.Time
+	Views        *int64 // 可选：迁移时可指定初始阅读量
 }
 
 // UpdatePageCmd 更新页面命令。

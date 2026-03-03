@@ -60,6 +60,9 @@ func (s *Service) CreatePage(ctx context.Context, cmd CreatePageCmd) (*content.P
 		ExtInfo:     cmd.ExtInfo,
 		CreatedAt:   createdAt,
 	}
+	if cmd.Views != nil && *cmd.Views > 0 {
+		page.InitialViews = *cmd.Views
+	}
 
 	if err := s.repo.CreatePage(ctx, page); err != nil {
 		return nil, err

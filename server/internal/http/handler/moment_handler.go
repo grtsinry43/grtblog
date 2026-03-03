@@ -55,6 +55,9 @@ func (h *MomentHandler) CreateMoment(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	if req.Views != nil && *req.Views < 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "views 不能为负数")
+	}
 	extInfo, err := parseExtInfo(req.ExtInfo)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
@@ -74,6 +77,7 @@ func (h *MomentHandler) CreateMoment(c *fiber.Ctx) error {
 		IsOriginal:   req.IsOriginal,
 		ExtInfo:      extInfo,
 		CreatedAt:    req.CreatedAt,
+		Views:        req.Views,
 	}
 	if cmd.AllowComment == nil {
 		defaultAllow := true

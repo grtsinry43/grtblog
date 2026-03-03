@@ -23,6 +23,7 @@ type CreateArticleReq struct {
 	IsOriginal   bool       `json:"isOriginal"`
 	ExtInfo      *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
 	CreatedAt    *time.Time `json:"createdAt,omitempty"` // 可以自定义发布时间
+	Views        *int64     `json:"views,omitempty"`     // 可选：自定义初始阅读量
 }
 
 type createArticleReqJSON struct {
@@ -41,6 +42,7 @@ type createArticleReqJSON struct {
 	IsOriginal   bool     `json:"isOriginal"`
 	ExtInfo      *JSONRaw `json:"extInfo" swaggertype:"object"`
 	CreatedAt    *string  `json:"createdAt"`
+	Views        *int64   `json:"views"`
 }
 
 func (r *CreateArticleReq) UnmarshalJSON(data []byte) error {
@@ -62,6 +64,7 @@ func (r *CreateArticleReq) UnmarshalJSON(data []byte) error {
 	r.AllowComment = aux.AllowComment
 	r.IsOriginal = aux.IsOriginal
 	r.ExtInfo = aux.ExtInfo
+	r.Views = aux.Views
 
 	if aux.CreatedAt == nil {
 		r.CreatedAt = nil

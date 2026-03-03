@@ -30,6 +30,7 @@ export interface ListThinkingsParams {
 export interface CreateThinkingPayload {
   content: string
   allowComment?: boolean
+  createdAt?: string | null
 }
 
 export interface UpdateThinkingPayload {

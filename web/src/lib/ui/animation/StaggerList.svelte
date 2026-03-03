@@ -13,7 +13,7 @@
 		staggerDelay = 100,
 		y = 16,
 		duration = 700,
-		threshold = 0.1,
+		threshold = 0,
 		rootMargin,
 		spring: useSpring = true,
 		class: className = '',

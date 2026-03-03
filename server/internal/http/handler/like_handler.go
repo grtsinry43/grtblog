@@ -59,6 +59,41 @@ func (h *LikeHandler) TrackLike(c *fiber.Ctx) error {
 	})
 }
 
+// ImportLikeBatch godoc
+// @Summary 批量导入点赞（管理端）
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Param request body contract.ImportLikeBatchReq true "批量导入点赞参数"
+// @Success 200 {object} contract.ImportLikeBatchResp
+// @Security JWTAuth
+// @Router /admin/likes/import [post]
+func (h *LikeHandler) ImportLikeBatch(c *fiber.Ctx) error {
+	var req contract.ImportLikeBatchReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if req.ContentID <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "contentId 必须为正整数")
+	}
+	if len(req.VisitorIDs) == 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "visitorIds 不能为空")
+	}
+
+	result, err := h.svc.ImportLikeBatch(c.UserContext(), applike.ImportLikeBatchCmd{
+		ContentType: req.ContentType,
+		ContentID:   req.ContentID,
+		VisitorIDs:  req.VisitorIDs,
+	})
+	if err != nil {
+		return h.mapLikeError(err)
+	}
+
+	return response.Success(c, contract.ImportLikeBatchResp{
+		Inserted: result.Inserted,
+	})
+}
+
 func (h *LikeHandler) mapLikeError(err error) error {
 	switch {
 	case errors.Is(err, domainlike.ErrInvalidTargetType), errors.Is(err, domainlike.ErrInvalidTargetID):

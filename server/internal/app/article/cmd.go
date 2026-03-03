@@ -19,6 +19,7 @@ type CreateArticleCmd struct {
 	IsOriginal   bool
 	ExtInfo      []byte
 	CreatedAt    *time.Time // 可选：因为可能会有自定义发布时间的需求
+	Views        *int64     // 可选：迁移时可指定初始阅读量
 }
 
 // UpdateArticleCmd 更新文章命令。

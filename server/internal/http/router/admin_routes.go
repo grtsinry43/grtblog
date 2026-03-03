@@ -16,6 +16,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/hitokoto"
+	applike "github.com/grtsinry43/grtblog-v2/server/internal/app/like"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
@@ -74,6 +75,10 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Put("/comments/:id/top", commentHandler.SetCommentTop)
 	admin.Delete("/comments/:id", commentHandler.DeleteComment)
 	admin.Put("/comments/areas/:areaId/close", commentHandler.SetCommentAreaClose)
+
+	likeRepo := persistence.NewLikeRepository(deps.DB)
+	likeHandler := handler.NewLikeHandler(applike.NewService(likeRepo))
+	admin.Post("/likes/import", likeHandler.ImportLikeBatch)
 
 	adminUserSvc := adminuser.NewService(identityRepo)
 	adminUserHandler := handler.NewAdminUserHandler(adminUserSvc)

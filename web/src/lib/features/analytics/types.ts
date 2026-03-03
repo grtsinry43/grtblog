@@ -1,5 +1,5 @@
-export type TrackViewContentType = 'article' | 'moment' | 'page';
-export type TrackLikeContentType = TrackViewContentType | 'thinking';
+export type TrackViewContentType = 'article' | 'moment' | 'page' | 'thinking';
+export type TrackLikeContentType = TrackViewContentType;
 
 export type TrackViewPayload = {
 	contentType: TrackViewContentType;

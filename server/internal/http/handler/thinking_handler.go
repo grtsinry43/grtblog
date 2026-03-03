@@ -54,6 +54,7 @@ func (h *ThinkingHandler) CreateThinking(c *fiber.Ctx) error {
 		Content:      req.Content,
 		AuthorID:     claims.UserID,
 		AllowComment: req.AllowComment,
+		CreatedAt:    req.CreatedAt,
 	})
 	if err != nil {
 		return h.mapError(c, err)

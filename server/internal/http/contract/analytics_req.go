@@ -21,3 +21,13 @@ type TrackLikeResp struct {
 	VisitorID string `json:"visitorId"`
 	Affected  bool   `json:"affected"`
 }
+
+type ImportLikeBatchReq struct {
+	ContentType string   `json:"contentType"`
+	ContentID   int64    `json:"contentId"`
+	VisitorIDs  []string `json:"visitorIds"`
+}
+
+type ImportLikeBatchResp struct {
+	Inserted int64 `json:"inserted"`
+}

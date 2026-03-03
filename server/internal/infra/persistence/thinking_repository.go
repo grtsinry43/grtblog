@@ -182,5 +182,6 @@ func mapThinkingToModel(t *thinking.Thinking) model.Thinking {
 		CommentID: t.CommentID,
 		Content:   t.Content,
 		AuthorID:  t.AuthorID,
+		CreatedAt: t.CreatedAt,
 	}
 }

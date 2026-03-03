@@ -17,6 +17,7 @@ type CreatePageReq struct {
 	IsBuiltin    bool       `json:"isBuiltin"`
 	ExtInfo      *JSONRaw   `json:"extInfo,omitempty" swaggertype:"object"`
 	CreatedAt    *time.Time `json:"createdAt,omitempty"`
+	Views        *int64     `json:"views,omitempty"` // 可选：自定义初始阅读量
 }
 
 type createPageReqJSON struct {
@@ -29,6 +30,7 @@ type createPageReqJSON struct {
 	IsBuiltin    bool     `json:"isBuiltin"`
 	ExtInfo      *JSONRaw `json:"extInfo" swaggertype:"object"`
 	CreatedAt    *string  `json:"createdAt"`
+	Views        *int64   `json:"views"`
 }
 
 func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
@@ -44,6 +46,7 @@ func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
 	r.IsEnabled = aux.IsEnabled
 	r.IsBuiltin = aux.IsBuiltin
 	r.ExtInfo = aux.ExtInfo
+	r.Views = aux.Views
 
 	if aux.CreatedAt == nil {
 		r.CreatedAt = nil

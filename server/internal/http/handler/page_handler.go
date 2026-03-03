@@ -20,7 +20,10 @@ type PageHandler struct {
 }
 
 func NewPageHandler(svc *page.Service, commentRepo domaincomment.CommentRepository) *PageHandler {
-	return &PageHandler{svc: svc, commentRepo: commentRepo}
+	return &PageHandler{
+		svc:         svc,
+		commentRepo: commentRepo,
+	}
 }
 
 // CreatePage godoc
@@ -43,6 +46,9 @@ func (h *PageHandler) CreatePage(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
+	if req.Views != nil && *req.Views < 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "views 不能为负数")
+	}
 	extInfo, err := parseExtInfo(req.ExtInfo)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "extInfo格式错误", err)
@@ -58,6 +64,7 @@ func (h *PageHandler) CreatePage(c *fiber.Ctx) error {
 		IsBuiltin:    req.IsBuiltin,
 		ExtInfo:      extInfo,
 		CreatedAt:    req.CreatedAt,
+		Views:        req.Views,
 	}
 	if cmd.AllowComment == nil {
 		defaultAllow := true

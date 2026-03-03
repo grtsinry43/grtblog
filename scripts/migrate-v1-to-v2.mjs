@@ -11,7 +11,8 @@
  *
  * Not migrated by this script:
  * - users/accounts (v2 has no public admin-create-user API after initialization)
- * - likes, views, detailed analytics, uploads binary data
+ * - visitor/session analytics detail, uploads binary data
+ *   (likes are imported as synthetic visitor records: v1-like-*)
  */
 
 const ALL_STEPS = [
@@ -523,6 +524,7 @@ async function syncArticles(ctx, state) {
         const summary = buildSummary(src.summary, src.content);
         const categoryId = mapSourceCategoryId(state, src.categoryId, true);
         const tagIds = await ensureSourceTagsOnTarget(ctx, state, splitCsv(src.tags));
+        const sourceMetrics = extractSourceMetrics(src);
 
         const createPayload = {
           title,
@@ -538,9 +540,10 @@ async function syncArticles(ctx, state) {
           isOriginal: toBoolean(src.isOriginal, true),
           allowComment: true,
           createdAt: toRFC3339OrNull(src.createdAt),
+          views: sourceMetrics?.views ?? null,
         };
         const createBodyRaw = stringifyJsonWithGoInt64(createPayload, {
-          int64Keys: ['categoryId'],
+          int64Keys: ['categoryId', 'views'],
           int64ArrayKeys: ['tagIds'],
         });
 
@@ -576,6 +579,16 @@ async function syncArticles(ctx, state) {
               }),
           );
           incStat(ctx, 'article.updated');
+          if (sourceMetrics?.views !== null && sourceMetrics?.views !== undefined) {
+            incStat(ctx, 'article.views.skipped_existing');
+          }
+          await importContentLikes(ctx, {
+            contentType: 'article',
+            targetID: existing.id,
+            sourceLikes: sourceMetrics?.likes ?? null,
+            sourceKey: buildLikeSourceKey('article', src, shortUrl),
+            label: `import article likes: ${title} (${shortUrl})`,
+          });
           return;
         }
 
@@ -593,6 +606,13 @@ async function syncArticles(ctx, state) {
 
         targetByShortUrl.set(shortUrl, created || { id: tempIdSeed--, shortUrl });
         incStat(ctx, 'article.created');
+        await importContentLikes(ctx, {
+          contentType: 'article',
+          targetID: created?.id,
+          sourceLikes: sourceMetrics?.likes ?? null,
+          sourceKey: buildLikeSourceKey('article', src, shortUrl),
+          label: `import article likes: ${title} (${shortUrl})`,
+        });
       },
       'article.failed',
     );
@@ -651,6 +671,7 @@ async function syncMoments(ctx, state) {
         const summary = buildSummary(src.summary, src.content);
         const columnId = mapSourceCategoryId(state, src.categoryId, false);
         const image = splitCsv(src.img || src.image).filter(Boolean);
+        const sourceMetrics = extractSourceMetrics(src);
 
         const createPayload = {
           title,
@@ -665,9 +686,10 @@ async function syncMoments(ctx, state) {
           isOriginal: toBoolean(src.isOriginal, true),
           allowComment: true,
           createdAt: toRFC3339OrNull(src.createdAt),
+          views: sourceMetrics?.views ?? null,
         };
         const createBodyRaw = stringifyJsonWithGoInt64(createPayload, {
-          int64Keys: ['columnId'],
+          int64Keys: ['columnId', 'views'],
           int64ArrayKeys: ['topicIds'],
         });
 
@@ -702,6 +724,16 @@ async function syncMoments(ctx, state) {
               }),
           );
           incStat(ctx, 'moment.updated');
+          if (sourceMetrics?.views !== null && sourceMetrics?.views !== undefined) {
+            incStat(ctx, 'moment.views.skipped_existing');
+          }
+          await importContentLikes(ctx, {
+            contentType: 'moment',
+            targetID: existing.id,
+            sourceLikes: sourceMetrics?.likes ?? null,
+            sourceKey: buildLikeSourceKey('moment', src, shortUrl),
+            label: `import moment likes: ${title} (${shortUrl})`,
+          });
           return;
         }
 
@@ -719,6 +751,13 @@ async function syncMoments(ctx, state) {
 
         targetByShortUrl.set(shortUrl, created || { id: tempIdSeed--, shortUrl });
         incStat(ctx, 'moment.created');
+        await importContentLikes(ctx, {
+          contentType: 'moment',
+          targetID: created?.id,
+          sourceLikes: sourceMetrics?.likes ?? null,
+          sourceKey: buildLikeSourceKey('moment', src, shortUrl),
+          label: `import moment likes: ${title} (${shortUrl})`,
+        });
       },
       'moment.failed',
     );
@@ -782,6 +821,7 @@ async function syncPages(ctx) {
           incStat(ctx, 'page.skipped_reserved');
           return;
         }
+        const sourceMetrics = extractSourceMetrics(src);
 
         const createPayload = {
           title: title || shortUrl,
@@ -792,6 +832,7 @@ async function syncPages(ctx) {
           isBuiltin,
           allowComment: true,
           createdAt: toRFC3339OrNull(src.createdAt),
+          views: sourceMetrics?.views ?? null,
         };
 
         const updatePayload = {
@@ -817,6 +858,16 @@ async function syncPages(ctx) {
               }),
           );
           incStat(ctx, 'page.updated');
+          if (sourceMetrics?.views !== null && sourceMetrics?.views !== undefined) {
+            incStat(ctx, 'page.views.skipped_existing');
+          }
+          await importContentLikes(ctx, {
+            contentType: 'page',
+            targetID: existing.id,
+            sourceLikes: sourceMetrics?.likes ?? null,
+            sourceKey: buildLikeSourceKey('page', src, shortUrl),
+            label: `import page likes: ${title || shortUrl} (${shortUrl})`,
+          });
           return;
         }
 
@@ -834,6 +885,13 @@ async function syncPages(ctx) {
 
         targetByShortUrl.set(shortUrl, created || { id: tempIdSeed--, shortUrl });
         incStat(ctx, 'page.created');
+        await importContentLikes(ctx, {
+          contentType: 'page',
+          targetID: created?.id,
+          sourceLikes: sourceMetrics?.likes ?? null,
+          sourceKey: buildLikeSourceKey('page', src, shortUrl),
+          label: `import page likes: ${title || shortUrl} (${shortUrl})`,
+        });
       },
       'page.failed',
     );
@@ -887,6 +945,7 @@ async function syncThinkings(ctx) {
               body: {
                 content,
                 allowComment: false,
+                createdAt: toRFC3339OrNull(src.createdAt),
               },
               authRequired: true,
             }),
@@ -898,6 +957,146 @@ async function syncThinkings(ctx) {
       'thinking.failed',
     );
   }
+}
+
+async function importContentLikes(ctx, options = {}) {
+  const contentType = cleanString(options.contentType).toLowerCase();
+  const targetID = normalizePositiveID(options.targetID);
+  const likeCountRaw = parseIntMaybe(options.sourceLikes);
+  const likeCount = likeCountRaw !== null && likeCountRaw > 0 ? likeCountRaw : 0;
+  if (!contentType || !targetID) {
+    incStat(ctx, `${contentType || 'content'}.like_import.skipped_invalid_target`);
+    return;
+  }
+  if (!likeCount) {
+    incStat(ctx, `${contentType}.like_import.skipped_empty`);
+    return;
+  }
+
+  const sourceKey = sanitizeLikeSourceKey(options.sourceKey || `${contentType}-${targetID}`);
+  const chunkSize = 200;
+  let insertedTotal = 0;
+
+  for (let start = 0; start < likeCount; start += chunkSize) {
+    const end = Math.min(start + chunkSize, likeCount);
+    const visitorIds = [];
+    for (let i = start; i < end; i += 1) {
+      visitorIds.push(`v1-like-${contentType}-${sourceKey}-${i + 1}`);
+    }
+    const bodyRaw = stringifyJsonWithGoInt64(
+      {
+        contentType,
+        contentId: targetID,
+        visitorIds,
+      },
+      { int64Keys: ['contentId'] },
+    );
+
+    try {
+      const result = await maybeWrite(
+        ctx,
+        `${options.label || `import ${contentType} likes`} chunk ${start + 1}-${end}/${likeCount}`,
+        async () =>
+          ctx.target.request('/admin/likes/import', {
+            method: 'POST',
+            bodyRaw,
+            authRequired: true,
+          }),
+        () => ({ inserted: end - start }),
+      );
+
+      const inserted = toNumberOr(result?.inserted, end - start);
+      insertedTotal += inserted;
+    } catch (error) {
+      const msg = error?.message || String(error);
+      const label = cleanString(options.label) || `${contentType}:${targetID}`;
+      const warning = `${label} like import failed: ${msg}`;
+      ctx.warnings.push(warning);
+      if (ctx.config.verbose) {
+        console.warn(warning);
+      }
+      incStat(ctx, `${contentType}.like_import.failed`);
+      return;
+    }
+  }
+
+  incStat(ctx, `${contentType}.like_import.inserted`, insertedTotal);
+}
+
+function buildLikeSourceKey(contentType, src, fallback = '') {
+  const raw = toIdString(src?.id) || normalizeShortUrl(src?.shortUrl || src?.refPath || fallback) || slugify(src?.title || fallback || 'item');
+  return sanitizeLikeSourceKey(`${contentType}-${raw}`);
+}
+
+function sanitizeLikeSourceKey(value) {
+  const clean = cleanString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  if (!clean) return 'item';
+  return clean.length > 40 ? clean.slice(0, 40) : clean;
+}
+
+function extractSourceMetrics(src) {
+  if (!src || typeof src !== 'object') return null;
+  const metrics = src.metrics || {};
+  const stat = src.stat || src.stats || src.statistics || {};
+
+  const views = pickFirstNonNegativeInt([
+    src.views,
+    src.view,
+    src.viewCount,
+    src.readCount,
+    src.reads,
+    src.visitCount,
+    src.pv,
+    metrics.views,
+    metrics.view,
+    metrics.viewCount,
+    metrics.readCount,
+    metrics.pv,
+    stat.views,
+    stat.view,
+    stat.viewCount,
+    stat.readCount,
+    stat.reads,
+    stat.pv,
+  ]);
+
+  const likes = pickFirstNonNegativeInt([
+    src.likes,
+    src.like,
+    src.likeCount,
+    src.thumbUp,
+    src.thumbsUp,
+    src.favoriteCount,
+    src.favorites,
+    metrics.likes,
+    metrics.like,
+    metrics.likeCount,
+    stat.likes,
+    stat.like,
+    stat.likeCount,
+  ]);
+
+  if (views === null && likes === null) {
+    return null;
+  }
+  return {
+    views: views ?? 0,
+    likes: likes ?? 0,
+  };
+}
+
+function pickFirstNonNegativeInt(candidates) {
+  for (const item of candidates) {
+    const parsed = parseIntMaybe(item);
+    if (parsed !== null && parsed >= 0) {
+      return parsed;
+    }
+  }
+  return null;
 }
 
 async function syncComments(ctx) {
@@ -2621,6 +2820,13 @@ function toIdString(value) {
     return String(Math.trunc(value));
   }
   return cleanString(value);
+}
+
+function normalizePositiveID(value) {
+  const id = toIdString(value);
+  if (!/^\d+$/.test(id)) return '';
+  if (id === '0') return '';
+  return id;
 }
 
 function nullableString(value) {

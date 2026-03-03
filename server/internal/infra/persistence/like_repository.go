@@ -66,3 +66,37 @@ func (r *LikeRepository) CreateIfAbsent(ctx context.Context, entity *domainlike.
 	entity.CreatedAt = rec.CreatedAt
 	return true, nil
 }
+
+func (r *LikeRepository) CreateBatchIfAbsent(ctx context.Context, entities []*domainlike.ContentLike) (int64, error) {
+	if len(entities) == 0 {
+		return 0, nil
+	}
+
+	recs := make([]model.ContentLike, 0, len(entities))
+	for _, entity := range entities {
+		if entity == nil || entity.VisitorID == nil {
+			continue
+		}
+		rec := model.ContentLike{
+			TargetType: string(entity.TargetType),
+			TargetID:   entity.TargetID,
+			UserID:     entity.UserID,
+			VisitorID:  *entity.VisitorID,
+		}
+		if !entity.CreatedAt.IsZero() {
+			rec.CreatedAt = entity.CreatedAt
+		}
+		recs = append(recs, rec)
+	}
+	if len(recs) == 0 {
+		return 0, nil
+	}
+
+	tx := r.db.WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		CreateInBatches(recs, 500)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return tx.RowsAffected, nil
+}
