@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
+	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
 	import type { CommentNode } from '$lib/features/comment/types';
 	import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
 	import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
@@ -136,7 +136,7 @@
 				{#if comment.isDeleted}
 					<p class="text-ink-400 dark:text-ink-500">该评论已被删除</p>
 				{:else if comment.content}
-					<MarkdownView content={comment.content} />
+					<SafeMarkdownView content={comment.content} />
 				{/if}
 			</div>
 		</div>

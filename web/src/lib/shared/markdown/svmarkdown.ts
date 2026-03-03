@@ -3,7 +3,7 @@ import { markdownComponents as componentDefinitions } from '$lib/shared/markdown
 import MarkdownLink from '$lib/ui/markdown/MarkdownLink.svelte';
 import MarkdownImage from '$lib/ui/markdown/MarkdownImage.svelte';
 import MarkdownCodeBlock from '$lib/ui/markdown/MarkdownCodeBlock.svelte';
-import MarkdownFallback from '$lib/ui/markdown/MarkdownFallback.svelte';
+// import MarkdownFallback from '$lib/ui/markdown/MarkdownFallback.svelte';
 import MarkdownHeading from '$lib/ui/markdown/MarkdownHeading.svelte';
 import MarkdownParagraph from '$lib/ui/markdown/MarkdownParagraph.svelte';
 import MarkdownList from '$lib/ui/markdown/MarkdownList.svelte';
@@ -75,4 +75,41 @@ export const markdownParseOptions: SvmdParseOptions = {
 
 export const markdownRenderOptions: SvmdRenderOptions = {
 	allowDangerousHtml: true
+};
+
+/** Safe subset for user-generated content (comments). */
+export const safeMarkdownComponents: SvmdComponentMap = {
+	h1: MarkdownHeading,
+	h2: MarkdownHeading,
+	h3: MarkdownHeading,
+	h4: MarkdownHeading,
+	h5: MarkdownHeading,
+	h6: MarkdownHeading,
+	p: MarkdownParagraph,
+	ul: MarkdownList,
+	ol: MarkdownList,
+	li: MarkdownListItem,
+	blockquote: MarkdownBlockquote,
+	hr: MarkdownHr,
+	table: MarkdownTable,
+	thead: MarkdownThead,
+	tbody: MarkdownTbody,
+	tr: MarkdownTr,
+	th: MarkdownTh,
+	td: MarkdownTd,
+	a: MarkdownLink,
+	img: MarkdownImage,
+	code: MarkdownCodeBlock,
+};
+
+export const safeMarkdownParseOptions: SvmdParseOptions = {
+	markdownItOptions: {
+		html: false,
+		linkify: true,
+		typographer: true
+	}
+};
+
+export const safeMarkdownRenderOptions: SvmdRenderOptions = {
+	allowDangerousHtml: false
 };
