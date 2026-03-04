@@ -17,8 +17,10 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 )
 
-const defaultMaxDepth = 3
-const commentContentMaxRunes = 500
+const (
+	defaultMaxDepth        = 3
+	commentContentMaxRunes = 500
+)
 
 type RequestMeta struct {
 	IP        string
@@ -166,6 +168,7 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 		Status:   string(commentEntity.Status),
 		At:       time.Now(),
 	})
+	s.publishReplyEventIfNeeded(ctx, commentEntity)
 	return commentEntity, nil
 }
 
@@ -231,6 +234,7 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 		Status:   string(commentEntity.Status),
 		At:       time.Now(),
 	})
+	s.publishReplyEventIfNeeded(ctx, commentEntity)
 	return commentEntity, nil
 }
 
@@ -514,6 +518,31 @@ func shouldSkipReplyNotificationByIdentity(parent *domaincomment.Comment, replie
 		return true
 	}
 	return false
+}
+
+// publishReplyEventIfNeeded publishes a comment.reply event when a newly created
+// comment is a reply (has ParentID) and is immediately approved. Comments that
+// are pending moderation will have the event published later via UpdateCommentStatus.
+func (s *Service) publishReplyEventIfNeeded(ctx context.Context, comment *domaincomment.Comment) {
+	if comment.ParentID == nil {
+		return
+	}
+	if comment.Status != domaincomment.CommentStatusApproved {
+		return
+	}
+	parent, err := s.repo.FindByID(ctx, *comment.ParentID)
+	if err != nil {
+		return
+	}
+	if shouldSkipReplyNotificationByIdentity(parent, comment.AuthorID, comment.Email) {
+		return
+	}
+	payload := s.buildCommentReplyPayload(ctx, parent, comment)
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "comment.reply",
+		At:        time.Now(),
+		Payload:   payload,
+	})
 }
 
 func (s *Service) buildCommentReplyPayload(ctx context.Context, parent *domaincomment.Comment, reply *domaincomment.Comment) map[string]any {

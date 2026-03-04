@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { MomentSummary } from '$lib/features/moment/types';
-	import { ArrowRight } from 'lucide-svelte';
+	import { ArrowRight, Pin } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { buildMomentPath, buildColumnPath } from '$lib/shared/utils/content-path';
 	import { isDifferentDay } from '$lib/shared/utils/date';
@@ -100,9 +100,17 @@
 			<!-- Top Meta -->
 			<div class="flex items-start justify-between mb-4 shrink-0">
 				<div class="flex flex-col gap-1">
-					<span class="font-mono text-[10px] text-ink-400 dark:text-ink-500 tracking-wider">
-						{formattedDate}{#if showUpdated}<span class="text-ink-300 dark:text-ink-600 ml-1">（更新于 {formattedUpdatedDate}）</span>{/if}
-					</span>
+					<div class="flex items-center gap-2">
+						<span class="font-mono text-[10px] text-ink-400 dark:text-ink-500 tracking-wider">
+							{formattedDate}{#if showUpdated}<span class="text-ink-300 dark:text-ink-600 ml-1">（更新于 {formattedUpdatedDate}）</span>{/if}
+						</span>
+						{#if moment.isTop}
+							<span class="inline-flex items-center gap-0.5 text-[9px] font-mono tracking-wider text-jade-600 dark:text-jade-400 bg-jade-500/8 dark:bg-jade-500/15 border border-jade-500/20 rounded-default px-1.5 py-px">
+								<Pin size={9} strokeWidth={2} class="rotate-45" />
+								置顶
+							</span>
+						{/if}
+					</div>
 					<div class="h-px w-8 bg-jade-500/30"></div>
 				</div>
 			</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
-	import { Calendar, Eye, Heart, ExternalLink, Sparkles } from 'lucide-svelte';
+	import { Calendar, Eye, Heart, ExternalLink, Sparkles, Pin } from 'lucide-svelte';
 	import type { PostSummary } from '$lib/features/post/types';
 	import { buildPostPath, buildCategoryPath } from '$lib/shared/utils/content-path';
 	import { isDifferentDay } from '$lib/shared/utils/date';
@@ -35,6 +35,12 @@
 	<h2
 		class="font-serif text-xl sm:text-2xl font-medium text-ink-900 dark:text-ink-100 group-hover:text-jade-600 dark:group-hover:text-jade-400 transition-colors duration-200"
 	>
+		{#if post.isTop}
+			<span class="inline-flex items-center gap-1 mr-2 align-middle text-[11px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400 bg-jade-500/8 dark:bg-jade-500/15 border border-jade-500/20 rounded-default px-1.5 py-0.5 translate-y-[-1px]">
+				<Pin size={11} strokeWidth={2} class="rotate-45" />
+				置顶
+			</span>
+		{/if}
 		{post.title}
 	</h2>
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { PostSummary } from '$lib/features/post/types';
-	import { ArrowRight } from 'lucide-svelte';
+	import { ArrowRight, Pin } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/shared/utils/date';
 	import { buildPostPath } from '$lib/shared/utils/content-path';
 
@@ -37,6 +37,12 @@
 		<h3
 			class="home-item-title line-clamp-1 font-serif text-[15px] font-medium text-ink-900 dark:text-ink-100"
 		>
+			{#if post.isTop}
+				<span class="inline-flex items-center gap-0.5 mr-1.5 align-middle text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400 bg-jade-500/8 dark:bg-jade-500/15 border border-jade-500/20 rounded-default px-1 py-px translate-y-[-1px]">
+					<Pin size={9} strokeWidth={2} class="rotate-45" />
+					置顶
+				</span>
+			{/if}
 			<span class="title-underline">{post.title}</span>
 		</h3>
 
