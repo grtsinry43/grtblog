@@ -248,6 +248,11 @@ func (s *Service) ListArticles(ctx context.Context, options content.ArticleListO
 	return s.repo.ListArticles(ctx, options)
 }
 
+// ListPublicArticles 获取公开文章列表
+func (s *Service) ListPublicArticles(ctx context.Context, options content.ArticleListOptions) ([]*content.Article, int64, error) {
+	return s.repo.ListPublicArticles(ctx, options)
+}
+
 // BatchSetPublished 批量设置文章发布状态。
 func (s *Service) BatchSetPublished(ctx context.Context, cmd BatchSetPublishedCmd) error {
 	ids := normalizeIDs(cmd.IDs)

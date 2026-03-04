@@ -409,12 +409,7 @@ func (h *MomentHandler) GetMomentByShortURL(c *fiber.Ctx) error {
 // @Router /moments [get]
 func (h *MomentHandler) ListMoments(c *fiber.Ctx) error {
 	query := buildMomentListQuery(c)
-
-	// 公共接口只返回已发布
-	published := true
-	query.Published = &published
-
-	return h.listMomentsWithQuery(c, query)
+	return h.listPublicMomentsWithQuery(c, query)
 }
 
 // ListMomentsByColumnShortURL godoc
@@ -442,10 +437,8 @@ func (h *MomentHandler) ListMomentsByColumnShortURL(c *fiber.Ctx) error {
 
 	query := buildMomentListQuery(c)
 	query.ColumnID = &column.ID
-	published := true
-	query.Published = &published
 
-	return h.listMomentsWithQuery(c, query)
+	return h.listPublicMomentsWithQuery(c, query)
 }
 
 // ListMomentsAdmin godoc
@@ -469,6 +462,38 @@ func (h *MomentHandler) ListMomentsAdmin(c *fiber.Ctx) error {
 
 func (h *MomentHandler) listMomentsWithQuery(c *fiber.Ctx, query contract.ListMomentsReq) error {
 	moments, total, err := h.svc.ListMoments(c.Context(), content.MomentListOptionsInternal(query))
+	if err != nil {
+		return err
+	}
+
+	momentResponses := make([]contract.MomentListItemResp, len(moments))
+	for i, item := range moments {
+		resp, err := h.toMomentListItemResp(c.Context(), item)
+		if err != nil {
+			return err
+		}
+		momentResponses[i] = *resp
+	}
+
+	listResponse := contract.MomentListResp{
+		Items: momentResponses,
+		Total: total,
+		Page:  query.Page,
+		Size:  query.PageSize,
+	}
+
+	return response.Success(c, listResponse)
+}
+
+func (h *MomentHandler) listPublicMomentsWithQuery(c *fiber.Ctx, query contract.ListMomentsReq) error {
+	moments, total, err := h.svc.ListPublicMoments(c.Context(), content.MomentListOptions{
+		Page:     query.Page,
+		PageSize: query.PageSize,
+		ColumnID: query.ColumnID,
+		TopicID:  query.TopicID,
+		AuthorID: query.AuthorID,
+		Search:   query.Search,
+	})
 	if err != nil {
 		return err
 	}
@@ -534,12 +559,10 @@ func buildMomentListQuery(c *fiber.Ctx) contract.ListMomentsReq {
 func (h *MomentHandler) ListRecentPublicMoments(c *fiber.Ctx) error {
 	const page = 1
 	const size = 5
-	published := true
 
-	moments, total, err := h.svc.ListMoments(c.Context(), content.MomentListOptionsInternal{
-		Page:      page,
-		PageSize:  size,
-		Published: &published,
+	moments, total, err := h.svc.ListPublicMoments(c.Context(), content.MomentListOptions{
+		Page:     page,
+		PageSize: size,
 	})
 	if err != nil {
 		return err

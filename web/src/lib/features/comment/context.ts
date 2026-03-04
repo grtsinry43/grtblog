@@ -7,6 +7,7 @@ export type CommentAreaModel = {
 	isLoading: boolean;
 	isError: boolean;
 	replyingTo: CommentNode | null;
+	editingComment: CommentNode | null;
 	isLoggedIn: boolean;
 	guestName: string;
 	guestEmail: string;
@@ -27,6 +28,7 @@ export const commentAreaCtx = createModelDataContext<CommentAreaModel>({
 		isLoading: false,
 		isError: false,
 		replyingTo: null,
+		editingComment: null,
 		isLoggedIn: false,
 		guestName: '',
 		guestEmail: '',

@@ -517,6 +517,62 @@ func (h *CommentHandler) DeleteComment(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "评论已删除")
 }
 
+// EditOwnComment godoc
+// @Summary 编辑自己的评论
+// @Tags Comment
+// @Accept json
+// @Produce json
+// @Param id path int true "评论ID"
+// @Param request body contract.UpdateCommentReq true "编辑评论参数"
+// @Success 200 {object} contract.CreateCommentResp
+// @Router /comments/{id} [put]
+func (h *CommentHandler) EditOwnComment(c *fiber.Ctx) error {
+	id, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论ID")
+	}
+	var req contract.UpdateCommentReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	viewerAuthorID := h.resolveViewerAuthorID(c)
+	updated, err := h.svc.EditComment(c.Context(), comment.EditCommentCmd{
+		ID:              id,
+		Content:         req.Content,
+		ViewerAuthorID:  viewerAuthorID,
+		ViewerVisitorID: strings.TrimSpace(req.VisitorID),
+	})
+	if err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage(c, toCreateCommentResp(updated), "评论已更新")
+}
+
+// DeleteOwnComment godoc
+// @Summary 删除自己的评论
+// @Tags Comment
+// @Produce json
+// @Param id path int true "评论ID"
+// @Router /comments/{id} [delete]
+func (h *CommentHandler) DeleteOwnComment(c *fiber.Ctx) error {
+	id, err := parseInt64Param(c, "id")
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的评论ID")
+	}
+	var req contract.DeleteOwnCommentReq
+	// Body is optional for DELETE — visitors send visitorId in body
+	_ = c.BodyParser(&req)
+	viewerAuthorID := h.resolveViewerAuthorID(c)
+	if err := h.svc.DeleteOwnComment(c.Context(), comment.DeleteOwnCommentCmd{
+		ID:              id,
+		ViewerAuthorID:  viewerAuthorID,
+		ViewerVisitorID: strings.TrimSpace(req.VisitorID),
+	}); err != nil {
+		return h.mapCommentError(c, err)
+	}
+	return response.SuccessWithMessage[any](c, nil, "评论已删除")
+}
+
 // SetCommentAreaClose godoc
 // @Summary 关闭/开启评论区（管理端）
 // @Tags CommentAdmin
@@ -571,6 +627,10 @@ func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 		return response.NewBizErrorWithMsg(response.NotFound, "访客不存在")
 	case errors.Is(err, domaincomment.ErrCommentReplyDisabled):
 		return response.NewBizErrorWithMsg(response.ParamsError, "该评论仅支持联邦回复")
+	case errors.Is(err, domaincomment.ErrCommentNotOwner):
+		return response.NewBizErrorWithMsg(response.Unauthorized, "无权操作此评论")
+	case errors.Is(err, domaincomment.ErrCommentAlreadyDeleted):
+		return response.NewBizErrorWithMsg(response.ParamsError, "评论已被删除")
 	default:
 		return err
 	}

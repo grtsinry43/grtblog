@@ -18,7 +18,12 @@ type CreateCommentVisitorReq struct {
 }
 
 type UpdateCommentReq struct {
-	Content string `json:"content" validate:"required,max=500"`
+	Content   string `json:"content" validate:"required,max=500"`
+	VisitorID string `json:"visitorId"`
+}
+
+type DeleteOwnCommentReq struct {
+	VisitorID string `json:"visitorId"`
 }
 
 type ListAdminCommentsReq struct {

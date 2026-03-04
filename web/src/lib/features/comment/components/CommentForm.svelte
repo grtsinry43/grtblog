@@ -4,12 +4,21 @@
 	import { createCommentLogin, createCommentVisitor } from '$lib/features/comment/api';
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
+	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
 	import ClientOnly from '$lib/ui/common/ClientOnly.svelte';
 	import Input from '$lib/ui/primitives/input/Input.svelte';
 	import Textarea from '$lib/ui/primitives/textarea/Textarea.svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
 	import { userStore } from '$lib/shared/stores/userStore';
+	import {
+		buildCommentDraftKey,
+		clearCommentDraft,
+		readCommentDraft,
+		readCommentGuestProfile,
+		writeCommentDraft,
+		writeCommentGuestProfile
+	} from '$lib/features/comment/storage';
 	import CommentEmojiPickerClient from './CommentEmojiPickerClient.svelte';
 
 	interface Props {
@@ -21,6 +30,8 @@
 	const commentContentMaxLength = 500;
 	const queryClient = useQueryClient();
 	let content = $state('');
+	let previewMode = $state(false);
+	let isConfirmingClearDraft = $state(false);
 	const areaIdStore = commentAreaCtx.selectModelData((data) => data?.areaId ?? 0);
 	const guestNameStore = commentAreaCtx.selectModelData((data) => data?.guestName ?? '');
 	const guestEmailStore = commentAreaCtx.selectModelData((data) => data?.guestEmail ?? '');
@@ -39,6 +50,14 @@
 	);
 	const loginAccount = $derived($userStore.userInfo?.username || '');
 	const contentCount = $derived(Array.from(content).length);
+	const hasPreviewContent = $derived(content.trim().length > 0);
+	const isRootForm = $derived(parentId == null);
+	const draftKey = $derived.by(() =>
+		$areaIdStore > 0 ? buildCommentDraftKey($areaIdStore, parentId) : ''
+	);
+
+	let hydratedGuestProfile = $state(false);
+	let restoredDraftKey = $state('');
 
 	const truncateToMaxLength = (value: string, maxLength: number) => {
 		const chars = Array.from(value);
@@ -53,6 +72,48 @@
 		if (limited !== content) {
 			content = limited;
 		}
+	});
+
+	$effect(() => {
+		if (!isRootForm || $userStore.isLogin || hydratedGuestProfile) return;
+		hydratedGuestProfile = true;
+		const profile = readCommentGuestProfile();
+		if (!profile) return;
+		updateModelData((prev) => {
+			if (!prev) return prev;
+			const guestName = prev.guestName || profile.guestName;
+			const guestEmail = prev.guestEmail || profile.guestEmail;
+			const guestSite = prev.guestSite || profile.guestSite;
+			if (
+				guestName === prev.guestName &&
+				guestEmail === prev.guestEmail &&
+				guestSite === prev.guestSite
+			) {
+				return prev;
+			}
+			return { ...prev, guestName, guestEmail, guestSite };
+		});
+	});
+
+	$effect(() => {
+		if (!isRootForm || $userStore.isLogin) return;
+		writeCommentGuestProfile({
+			guestName: $guestNameStore,
+			guestEmail: $guestEmailStore,
+			guestSite: $guestSiteStore
+		});
+	});
+
+	$effect(() => {
+		const key = draftKey;
+		if (!key || key === restoredDraftKey) return;
+		restoredDraftKey = key;
+		content = truncateToMaxLength(readCommentDraft(key), commentContentMaxLength);
+	});
+
+	$effect(() => {
+		if (!draftKey) return;
+		writeCommentDraft(draftKey, content);
 	});
 
 	const mutation = createMutation(() => ({
@@ -78,6 +139,7 @@
 			} else {
 				toast.success('评论发表成功');
 			}
+			clearCommentDraft(draftKey);
 			content = '';
 			if (parentId) {
 				updateModelData((prev) => (prev ? { ...prev, replyingTo: null } : prev));
@@ -107,6 +169,20 @@
 
 	const handlePickEmoji = (emoji: string) => {
 		content = `${content}${emoji}`;
+	};
+
+	const handleClearDraft = () => {
+		clearCommentDraft(draftKey);
+		content = '';
+		isConfirmingClearDraft = false;
+	};
+
+	const handleStartClearDraft = () => {
+		isConfirmingClearDraft = true;
+	};
+
+	const handleCancelClearDraft = () => {
+		isConfirmingClearDraft = false;
 	};
 
 	const updateGuestField = (key: 'guestName' | 'guestEmail' | 'guestSite') => (event: Event) => {
@@ -228,21 +304,86 @@
 			</div>
 		{/if}
 
-		<Textarea
-			bind:value={content}
-			placeholder="在此留下您的思绪..."
-			rows={6}
-			maxLength={commentContentMaxLength}
-			resize="none"
-			textareaClass="text-sm font-sans bg-ink-100 dark:bg-ink-800/40 text-ink-900 dark:text-ink-100 placeholder:text-ink-800/20 dark:placeholder:text-ink-200/20 leading-loose min-h-[140px] p-4"
-		/>
+		<div class="flex items-center gap-2 text-xs">
+			<button
+				type="button"
+				onclick={() => (previewMode = false)}
+				class={`px-2.5 py-1 rounded-sm transition-colors ${
+					previewMode
+						? 'text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'
+						: 'bg-ink-200/60 text-ink-800 dark:bg-ink-700/60 dark:text-ink-100'
+				}`}
+			>
+				编辑
+			</button>
+			<button
+				type="button"
+				onclick={() => (previewMode = true)}
+				class={`px-2.5 py-1 rounded-sm transition-colors ${
+					previewMode
+						? 'bg-ink-200/60 text-ink-800 dark:bg-ink-700/60 dark:text-ink-100'
+						: 'text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'
+				}`}
+			>
+				预览
+			</button>
+		</div>
+
+		{#if previewMode}
+			<div
+				class="min-h-[140px] rounded-sm border border-ink-200/70 bg-ink-50/60 px-4 py-3 text-sm leading-loose text-ink-900 dark:border-ink-700/60 dark:bg-ink-800/30 dark:text-ink-100"
+			>
+				{#if hasPreviewContent}
+					<SafeMarkdownView content={content} />
+				{:else}
+					<div class="text-ink-500 dark:text-ink-400">暂无预览内容</div>
+				{/if}
+			</div>
+		{:else}
+			<Textarea
+				bind:value={content}
+				placeholder="在此留下您的思绪..."
+				rows={6}
+				maxLength={commentContentMaxLength}
+				resize="none"
+				textareaClass="text-sm font-sans bg-ink-100 dark:bg-ink-800/40 text-ink-900 dark:text-ink-100 placeholder:text-ink-800/20 dark:placeholder:text-ink-200/20 leading-loose min-h-[140px] p-4"
+			/>
+		{/if}
 
 		<!-- Footer Actions -->
 		<div class="flex items-end justify-between mt-6 gap-4">
 			<div class="flex flex-col items-start gap-2">
-				<ClientOnly>
-					<CommentEmojiPickerClient onPick={handlePickEmoji} />
-				</ClientOnly>
+					<div class="flex items-center gap-3">
+						<ClientOnly>
+							<CommentEmojiPickerClient onPick={handlePickEmoji} />
+						</ClientOnly>
+						{#if isConfirmingClearDraft}
+							<span class="flex items-center gap-2 text-[10px] font-serif tracking-wider">
+								<button
+									type="button"
+									onclick={handleClearDraft}
+									class="text-red-500 hover:text-red-600 transition-colors"
+								>
+									确认清空
+								</button>
+								<button
+									type="button"
+									onclick={handleCancelClearDraft}
+									class="text-ink-800/40 dark:text-ink-200/40 hover:text-ink-700 dark:hover:text-ink-200 transition-colors"
+								>
+									取消
+								</button>
+							</span>
+						{:else}
+							<button
+								type="button"
+								onclick={handleStartClearDraft}
+								class="text-[10px] text-ink-800/40 dark:text-ink-200/40 hover:text-ink-700 dark:hover:text-ink-200 transition-colors font-serif tracking-wider"
+							>
+								清空草稿
+							</button>
+						{/if}
+					</div>
 				<div class="text-[10px] text-ink-800/40 dark:text-ink-200/40 font-serif tracking-wider">
 					支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span>
 					换行

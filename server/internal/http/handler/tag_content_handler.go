@@ -68,12 +68,11 @@ func (h *TagContentHandler) ListByTagID(c *fiber.Ctx) error {
 		}
 	}
 
-	published := true
-	articles, err := h.listAllTaggedArticles(c.Context(), tagID, &published)
+	articles, err := h.listAllTaggedArticles(c.Context(), tagID)
 	if err != nil {
 		return err
 	}
-	moments, err := h.listAllTaggedMoments(c.Context(), tagID, &published)
+	moments, err := h.listAllTaggedMoments(c.Context(), tagID)
 	if err != nil {
 		return err
 	}
@@ -113,15 +112,14 @@ func (h *TagContentHandler) ListByTagID(c *fiber.Ctx) error {
 	return response.Success(c, resp)
 }
 
-func (h *TagContentHandler) listAllTaggedArticles(ctx context.Context, tagID int64, published *bool) ([]*content.Article, error) {
+func (h *TagContentHandler) listAllTaggedArticles(ctx context.Context, tagID int64) ([]*content.Article, error) {
 	const pageSize = 100
 	var all []*content.Article
 	for page := 1; ; page++ {
-		items, total, err := h.articleHandler.svc.ListArticles(ctx, content.ArticleListOptionsInternal{
-			Page:      page,
-			PageSize:  pageSize,
-			TagID:     &tagID,
-			Published: published,
+		items, total, err := h.articleHandler.svc.ListPublicArticles(ctx, content.ArticleListOptions{
+			Page:     page,
+			PageSize: pageSize,
+			TagID:    &tagID,
 		})
 		if err != nil {
 			return nil, err
@@ -137,15 +135,14 @@ func (h *TagContentHandler) listAllTaggedArticles(ctx context.Context, tagID int
 	return all, nil
 }
 
-func (h *TagContentHandler) listAllTaggedMoments(ctx context.Context, tagID int64, published *bool) ([]*content.Moment, error) {
+func (h *TagContentHandler) listAllTaggedMoments(ctx context.Context, tagID int64) ([]*content.Moment, error) {
 	const pageSize = 100
 	var all []*content.Moment
 	for page := 1; ; page++ {
-		items, total, err := h.momentHandler.svc.ListMoments(ctx, content.MomentListOptionsInternal{
-			Page:      page,
-			PageSize:  pageSize,
-			TopicID:   &tagID,
-			Published: published,
+		items, total, err := h.momentHandler.svc.ListPublicMoments(ctx, content.MomentListOptions{
+			Page:     page,
+			PageSize: pageSize,
+			TopicID:  &tagID,
 		})
 		if err != nil {
 			return nil, err

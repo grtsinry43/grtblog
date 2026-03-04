@@ -105,9 +105,8 @@
 							{formattedDate}{#if showUpdated}<span class="text-ink-300 dark:text-ink-600 ml-1">（更新于 {formattedUpdatedDate}）</span>{/if}
 						</span>
 						{#if moment.isTop}
-							<span class="inline-flex items-center gap-0.5 text-[9px] font-mono tracking-wider text-jade-600 dark:text-jade-400 bg-jade-500/8 dark:bg-jade-500/15 border border-jade-500/20 rounded-default px-1.5 py-px">
+							<span class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400">
 								<Pin size={9} strokeWidth={2} class="rotate-45" />
-								置顶
 							</span>
 						{/if}
 					</div>

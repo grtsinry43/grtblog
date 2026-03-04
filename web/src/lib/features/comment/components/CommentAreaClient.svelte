@@ -25,6 +25,7 @@
 		isLoading: true,
 		isError: false,
 		replyingTo: null,
+		editingComment: null,
 		isLoggedIn: $userStore.isLogin,
 		guestName: '',
 		guestEmail: '',

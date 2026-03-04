@@ -418,12 +418,7 @@ func (h *ArticleHandler) GetArticleByShortURL(c *fiber.Ctx) error {
 // @Router /articles [get]
 func (h *ArticleHandler) ListArticles(c *fiber.Ctx) error {
 	query := buildArticleListQuery(c)
-
-	// 公共接口只返回已发布
-	published := true
-	query.Published = &published
-
-	return h.listArticlesWithQuery(c, query)
+	return h.listPublicArticlesWithQuery(c, query)
 }
 
 // ListArticlesByCategoryShortURL godoc
@@ -451,10 +446,8 @@ func (h *ArticleHandler) ListArticlesByCategoryShortURL(c *fiber.Ctx) error {
 
 	query := buildArticleListQuery(c)
 	query.CategoryID = &category.ID
-	published := true
-	query.Published = &published
 
-	return h.listArticlesWithQuery(c, query)
+	return h.listPublicArticlesWithQuery(c, query)
 }
 
 // ListArticlesAdmin godoc
@@ -478,6 +471,38 @@ func (h *ArticleHandler) ListArticlesAdmin(c *fiber.Ctx) error {
 
 func (h *ArticleHandler) listArticlesWithQuery(c *fiber.Ctx, query contract.ListArticlesReq) error {
 	articles, total, err := h.svc.ListArticles(c.Context(), content.ArticleListOptionsInternal(query))
+	if err != nil {
+		return err
+	}
+
+	articleResponses := make([]contract.ArticleListItemResp, len(articles))
+	for i, art := range articles {
+		resp, err := h.toArticleListItemResp(c.Context(), art)
+		if err != nil {
+			return err
+		}
+		articleResponses[i] = *resp
+	}
+
+	listResponse := contract.ArticleListResp{
+		Items: articleResponses,
+		Total: total,
+		Page:  query.Page,
+		Size:  query.PageSize,
+	}
+
+	return response.Success(c, listResponse)
+}
+
+func (h *ArticleHandler) listPublicArticlesWithQuery(c *fiber.Ctx, query contract.ListArticlesReq) error {
+	articles, total, err := h.svc.ListPublicArticles(c.Context(), content.ArticleListOptions{
+		Page:       query.Page,
+		PageSize:   query.PageSize,
+		CategoryID: query.CategoryID,
+		TagID:      query.TagID,
+		AuthorID:   query.AuthorID,
+		Search:     query.Search,
+	})
 	if err != nil {
 		return err
 	}
@@ -543,12 +568,10 @@ func buildArticleListQuery(c *fiber.Ctx) contract.ListArticlesReq {
 func (h *ArticleHandler) ListRecentPublicArticles(c *fiber.Ctx) error {
 	const page = 1
 	const size = 5
-	published := true
 
-	articles, total, err := h.svc.ListArticles(c.Context(), content.ArticleListOptionsInternal{
-		Page:      page,
-		PageSize:  size,
-		Published: &published,
+	articles, total, err := h.svc.ListPublicArticles(c.Context(), content.ArticleListOptions{
+		Page:     page,
+		PageSize: size,
 	})
 	if err != nil {
 		return err

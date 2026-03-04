@@ -223,6 +223,11 @@ func (s *Service) ListMoments(ctx context.Context, options content.MomentListOpt
 	return s.repo.ListMoments(ctx, options)
 }
 
+// ListPublicMoments 获取公开手记列表
+func (s *Service) ListPublicMoments(ctx context.Context, options content.MomentListOptions) ([]*content.Moment, int64, error) {
+	return s.repo.ListPublicMoments(ctx, options)
+}
+
 // BatchSetPublished 批量设置手记发布状态。
 func (s *Service) BatchSetPublished(ctx context.Context, cmd BatchSetPublishedCmd) error {
 	ids := normalizeIDs(cmd.IDs)

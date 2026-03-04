@@ -1,22 +1,95 @@
 <script lang="ts">
+/* eslint-disable svelte/no-navigation-without-resolve */
 import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
 import type { CommentNode } from '$lib/features/comment/types';
 import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
 import { resolvePath } from '$lib/shared/utils/resolve-path';
-import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
+import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'lucide-svelte';
 	import CommentItem from './CommentItem.svelte';
 	import CommentForm from './CommentForm.svelte';
 	import CommentVerifiedIcon from './CommentVerifiedIcon.svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { fly } from 'svelte/transition';
 	import { Tooltip } from '$lib/ui/primitives';
+	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { editComment, deleteOwnComment } from '$lib/features/comment/api';
+	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
+	import { toast } from 'svelte-sonner';
 
-	let { comment } = $props<{ comment: CommentNode }>();
+	let { comment, floor }: { comment: CommentNode; floor?: string | number } = $props();
 	let relativeTime = $state('');
+	let isEditing = $state(false);
+	let editContent = $state('');
+	let isConfirmingDelete = $state(false);
 
 	const replyingToStore = commentAreaCtx.selectModelData((data) => data?.replyingTo ?? null);
 	const isClosedStore = commentAreaCtx.selectModelData((data) => data?.isClosed ?? false);
+	const areaIdStore = commentAreaCtx.selectModelData((data) => data?.areaId ?? 0);
 	const { updateModelData } = commentAreaCtx.useModelActions();
+	const queryClient = useQueryClient();
+
+	const editMutation = createMutation(() => ({
+		mutationFn: async () => {
+			const visitorId = getOrCreateVisitorId();
+			return await editComment(undefined, comment.id, {
+				content: editContent,
+				visitorId: visitorId || undefined
+			});
+		},
+		onSuccess: () => {
+			toast.success('评论已更新');
+			isEditing = false;
+			queryClient.invalidateQueries({ queryKey: ['comments', $areaIdStore] });
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || '编辑失败');
+		}
+	}));
+
+	const deleteMutation = createMutation(() => ({
+		mutationFn: async () => {
+			const visitorId = getOrCreateVisitorId();
+			await deleteOwnComment(undefined, comment.id, visitorId || undefined);
+		},
+		onSuccess: () => {
+			toast.success('评论已删除');
+			isConfirmingDelete = false;
+			queryClient.invalidateQueries({ queryKey: ['comments', $areaIdStore] });
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || '删除失败');
+			isConfirmingDelete = false;
+		}
+	}));
+
+	const handleStartEdit = () => {
+		editContent = comment.content ?? '';
+		isEditing = true;
+	};
+
+	const handleCancelEdit = () => {
+		isEditing = false;
+	};
+
+	const handleSaveEdit = () => {
+		if (!editContent.trim()) {
+			toast.error('评论内容不能为空');
+			return;
+		}
+		editMutation.mutate();
+	};
+
+	const handleDeleteClick = () => {
+		isConfirmingDelete = true;
+	};
+
+	const handleConfirmDelete = () => {
+		deleteMutation.mutate();
+	};
+
+	const handleCancelDelete = () => {
+		isConfirmingDelete = false;
+	};
 
 	const handleReply = () => {
 		if (comment.isDeleted || !comment.canReply) return;
@@ -62,7 +135,23 @@ import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
 		}
 	};
 
+	const buildChildFloor = (parentFloor: string | number | undefined, childIndex: number) => {
+		if (parentFloor === undefined || parentFloor === null || parentFloor === '') return undefined;
+		return `${parentFloor}-${childIndex + 1}`;
+	};
+
+	const hasBeenEdited = (createdAt?: string | null, updatedAt?: string | null) => {
+		if (!createdAt || !updatedAt) return false;
+		const createdAtMs = new Date(createdAt).getTime();
+		const updatedAtMs = new Date(updatedAt).getTime();
+		if (!Number.isNaN(createdAtMs) && !Number.isNaN(updatedAtMs)) {
+			return createdAtMs !== updatedAtMs;
+		}
+		return createdAt !== updatedAt;
+	};
+
 	const websiteHref = $derived.by(() => normalizeWebsiteUrl(comment.website));
+	const isEdited = $derived.by(() => hasBeenEdited(comment.createdAt, comment.updatedAt));
 
 	$effect(() => {
 		relativeTime = formatRelativeTimeWithSeconds(comment.createdAt);
@@ -136,8 +225,14 @@ import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
 				</span>
 			{/if}
 
-			<span class="text-[10px] text-ink-400 font-mono ml-auto">
+			<span class="text-[10px] text-ink-400 font-mono ml-auto flex items-center gap-1.5">
+				{#if floor}
+					<span class="opacity-0 group-hover:opacity-100 transition-opacity text-ink-300 dark:text-ink-600">#{floor}</span>
+				{/if}
 				{relativeTime}
+				{#if isEdited}
+					<span class="text-ink-300 dark:text-ink-600">（已编辑）</span>
+				{/if}
 			</span>
 		</div>
 
@@ -163,6 +258,31 @@ import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
 			>
 				{#if comment.isDeleted}
 					<p class="text-ink-400 dark:text-ink-500">该评论已被删除</p>
+				{:else if isEditing}
+					<div class="space-y-2">
+						<textarea
+							bind:value={editContent}
+							rows={4}
+							class="w-full bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 rounded-sm p-2 text-sm text-ink-800 dark:text-ink-200 leading-relaxed resize-none outline-none focus:border-jade-500 dark:focus:border-jade-500 transition-colors"
+						></textarea>
+						<div class="flex items-center gap-2 justify-end">
+							<button
+								onclick={handleCancelEdit}
+								class="flex items-center gap-1 text-xs text-ink-400 hover:text-ink-600 dark:hover:text-ink-300 transition-colors px-2 py-1"
+							>
+								<X size={12} />
+								<span>取消</span>
+							</button>
+							<button
+								onclick={handleSaveEdit}
+								disabled={editMutation.isPending}
+								class="flex items-center gap-1 text-xs text-ink-50 bg-ink-900 dark:bg-ink-200 dark:text-ink-900 hover:bg-jade-600 dark:hover:bg-jade-600 dark:hover:text-white px-3 py-1 rounded-sm transition-colors disabled:opacity-50"
+							>
+								<Check size={12} />
+								<span>{editMutation.isPending ? '保存中...' : '保存'}</span>
+							</button>
+						</div>
+					</div>
 				{:else if comment.content}
 					<SafeMarkdownView content={comment.content} />
 				{/if}
@@ -178,6 +298,40 @@ import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
 					<MessageSquare size={14} />
 					<span>回复</span>
 				</button>
+			{/if}
+			{#if comment.isMy && !comment.isDeleted}
+				<button
+					onclick={handleStartEdit}
+					class="flex items-center gap-1.5 text-xs text-ink-400 dark:text-ink-500 opacity-70 hover:opacity-100 transition-opacity font-medium"
+				>
+					<Pencil size={12} />
+					<span>编辑</span>
+				</button>
+				{#if isConfirmingDelete}
+					<span class="flex items-center gap-1.5 text-xs" in:fly={{ x: -10, duration: 150 }}>
+						<button
+							onclick={handleConfirmDelete}
+							disabled={deleteMutation.isPending}
+							class="text-red-500 hover:text-red-600 transition-colors font-medium disabled:opacity-50"
+						>
+							{deleteMutation.isPending ? '删除中...' : '确认删除'}
+						</button>
+						<button
+							onclick={handleCancelDelete}
+							class="text-ink-400 hover:text-ink-600 dark:hover:text-ink-300 transition-colors font-medium"
+						>
+							取消
+						</button>
+					</span>
+				{:else}
+					<button
+						onclick={handleDeleteClick}
+						class="flex items-center gap-1.5 text-xs text-ink-400 dark:text-ink-500 opacity-70 hover:opacity-100 transition-opacity font-medium"
+					>
+						<Trash2 size={12} />
+						<span>删除</span>
+					</button>
+				{/if}
 			{/if}
 			{#if comment.browser || comment.platform || comment.location}
 				<div
@@ -209,8 +363,8 @@ import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
 		<!-- Recursive Children -->
 		{#if comment.children && comment.children.length > 0}
 			<div class="mt-4 space-y-6">
-				{#each comment.children as child (child.id)}
-					<CommentItem comment={child} />
+				{#each comment.children as child, childIndex (child.id)}
+					<CommentItem comment={child} floor={buildChildFloor(floor, childIndex)} />
 				{/each}
 			</div>
 		{/if}

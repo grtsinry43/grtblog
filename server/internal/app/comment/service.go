@@ -682,6 +682,82 @@ func (s *Service) SetCommentTop(ctx context.Context, cmd SetCommentTopCmd) error
 	return s.repo.SetTopStatus(ctx, cmd.ID, cmd.IsTop)
 }
 
+func (s *Service) ensureOwnership(comment *domaincomment.Comment, viewerAuthorID *int64, viewerVisitorID string) error {
+	if viewerAuthorID != nil && comment.AuthorID != nil && *viewerAuthorID == *comment.AuthorID {
+		return nil
+	}
+	visitorID := strings.TrimSpace(viewerVisitorID)
+	if visitorID != "" {
+		if itemVisitorID := strings.TrimSpace(toValue(comment.VisitorID)); itemVisitorID != "" && itemVisitorID == visitorID {
+			return nil
+		}
+	}
+	return domaincomment.ErrCommentNotOwner
+}
+
+func (s *Service) EditComment(ctx context.Context, cmd EditCommentCmd) (*domaincomment.Comment, error) {
+	if err := s.ensureContentValid(cmd.Content); err != nil {
+		return nil, err
+	}
+	commentEntity, err := s.repo.FindByID(ctx, cmd.ID)
+	if err != nil {
+		return nil, err
+	}
+	if commentEntity.DeletedAt != nil {
+		return nil, domaincomment.ErrCommentAlreadyDeleted
+	}
+	if err := s.ensureOwnership(commentEntity, cmd.ViewerAuthorID, cmd.ViewerVisitorID); err != nil {
+		return nil, err
+	}
+
+	commentEntity.Content = strings.TrimSpace(cmd.Content)
+
+	if s.sysCfg != nil && s.sysCfg.CommentSettings(ctx).RequireModeration &&
+		commentEntity.Status == domaincomment.CommentStatusApproved {
+		commentEntity.Status = domaincomment.CommentStatusPending
+	}
+
+	if err := s.repo.Update(ctx, commentEntity); err != nil {
+		return nil, err
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "comment.edited",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":     commentEntity.ID,
+			"AreaID": commentEntity.AreaID,
+			"Status": string(commentEntity.Status),
+		},
+	})
+	return commentEntity, nil
+}
+
+func (s *Service) DeleteOwnComment(ctx context.Context, cmd DeleteOwnCommentCmd) error {
+	commentEntity, err := s.repo.FindByID(ctx, cmd.ID)
+	if err != nil {
+		return err
+	}
+	if commentEntity.DeletedAt != nil {
+		return domaincomment.ErrCommentAlreadyDeleted
+	}
+	if err := s.ensureOwnership(commentEntity, cmd.ViewerAuthorID, cmd.ViewerVisitorID); err != nil {
+		return err
+	}
+	if err := s.repo.Delete(ctx, cmd.ID); err != nil {
+		return err
+	}
+	_ = s.events.Publish(ctx, appEvent.Generic{
+		EventName: "comment.deleted",
+		At:        time.Now(),
+		Payload: map[string]any{
+			"ID":     commentEntity.ID,
+			"AreaID": commentEntity.AreaID,
+			"Status": string(commentEntity.Status),
+		},
+	})
+	return nil
+}
+
 func (s *Service) DeleteComment(ctx context.Context, id int64) error {
 	commentEntity, err := s.repo.FindByID(ctx, id)
 	if err != nil {

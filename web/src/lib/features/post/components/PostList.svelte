@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
-	import { FileText, Sparkles } from 'lucide-svelte';
+	import { FileText } from 'lucide-svelte';
 	import ArticleItem from '$lib/features/post/components/ArticleItem.svelte';
 	import { postListCtx } from '$lib/features/post/context';
 	import { goto } from '$app/navigation';
@@ -133,12 +133,11 @@
 			<div class="relative">
 				<div class="absolute -inset-4 bg-jade-500/10 rounded-full blur-xl animate-pulse"></div>
 				<FileText size={48} class="relative text-ink-300 dark:text-ink-700" />
-				<Sparkles size={20} class="absolute -top-2 -right-2 text-jade-400 animate-bounce" />
 			</div>
 			<div class="space-y-1">
 				<h3 class="font-serif text-lg font-medium text-ink-900 dark:text-ink-100">暂无内容</h3>
 				<p class="text-sm text-ink-500 dark:text-ink-500 max-w-xs mx-auto">
-					似乎还没有发布任何文章，或者是筛选条件过于严格。
+					你似乎来到了一个没有知识的荒原，等待着第一篇文章的诞生。请稍后再来看看，或许很快就会有新的内容出现！
 				</p>
 			</div>
 		</div>

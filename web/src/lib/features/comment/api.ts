@@ -65,6 +65,31 @@ export const createCommentLogin = async (
 	return result ?? null;
 };
 
+export const editComment = async (
+	fetcher: typeof fetch | undefined,
+	commentId: number,
+	payload: { content: string; visitorId?: string }
+): Promise<CommentCreateResponse | null> => {
+	const api = getApi(fetcher);
+	const result = await api<CommentCreateResponse>(`/comments/${commentId}`, {
+		method: 'PUT',
+		body: payload
+	});
+	return result ?? null;
+};
+
+export const deleteOwnComment = async (
+	fetcher: typeof fetch | undefined,
+	commentId: number,
+	visitorId?: string
+): Promise<void> => {
+	const api = getApi(fetcher);
+	await api(`/comments/${commentId}`, {
+		method: 'DELETE',
+		body: visitorId ? { visitorId } : undefined
+	});
+};
+
 export const createCommentVisitor = async (
 	fetcher: typeof fetch | undefined,
 	areaId: number,

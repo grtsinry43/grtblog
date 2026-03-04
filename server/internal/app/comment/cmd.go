@@ -76,6 +76,19 @@ type MarkCommentsViewedCmd struct {
 	IsViewed bool
 }
 
+type EditCommentCmd struct {
+	ID              int64
+	Content         string
+	ViewerAuthorID  *int64
+	ViewerVisitorID string
+}
+
+type DeleteOwnCommentCmd struct {
+	ID              int64
+	ViewerAuthorID  *int64
+	ViewerVisitorID string
+}
+
 type ImportCommentCmd struct {
 	ID                *int64
 	AreaID            int64

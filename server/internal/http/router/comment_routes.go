@@ -28,6 +28,8 @@ func registerCommentPublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 	publicGroup := v2.Group("/comments")
 	publicGroup.Get("/areas/:areaId", commentHandler.ListCommentTree)
+	publicGroup.Put("/:id", commentHandler.EditOwnComment)
+	publicGroup.Delete("/:id", commentHandler.DeleteOwnComment)
 	publicGroup.Post("/areas/:areaId/visitor", limiter.New(limiter.Config{
 		Max:        commentCreateRateLimitMax,
 		Expiration: commentCreateRateWindow,

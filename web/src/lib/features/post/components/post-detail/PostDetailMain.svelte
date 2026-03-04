@@ -3,7 +3,6 @@
 	import { sameToc, sameMetrics } from './selector-equals';
 	import PostDetailAiSummary from './PostDetailAiSummary.svelte';
 	import PostDetailComments from './PostDetailComments.svelte';
-	import PostDetailFooter from './PostDetailFooter.svelte';
 	import PostDetailMarkdown from './PostDetailMarkdown.svelte';
 	import PostDetailTocSidebar from './PostDetailTocSidebar.svelte';
 	import PostDetailLeadIn from './PostDetailLeadIn.svelte';
@@ -51,8 +50,6 @@
 			comments={$metricsStore?.comments ?? 0}
 			tone="jade"
 		/>
-
-		<PostDetailFooter />
 		<PostDetailComments />
 	</main>
 
