@@ -1,9 +1,3 @@
-export interface FederationAdminFriendLinkRequestReq {
-    target_url: string
-    message?: string
-    rss_url?: string
-}
-
 export interface FederationAdminCitationReq {
     target_instance_url: string
     target_post_id: string

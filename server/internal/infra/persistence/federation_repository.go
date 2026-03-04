@@ -135,7 +135,7 @@ func (r *FederatedPostCacheRepository) UpsertBatch(ctx context.Context, posts []
 		recs[i] = mapFederatedPostCacheToModel(&posts[i])
 	}
 	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "url"}},
+		Columns:   []clause.Column{{Name: "friend_link_id"}, {Name: "url"}},
 		UpdateAll: true,
 	}).Create(&recs).Error
 }
@@ -158,6 +158,17 @@ func (r *FederatedPostCacheRepository) ListByInstance(ctx context.Context, insta
 		result[i] = mapFederatedPostCacheToDomain(rec)
 	}
 	return result, nil
+}
+
+func (r *FederatedPostCacheRepository) CountByFriendLink(ctx context.Context, friendLinkID int64) (int, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&model.FederatedPostCache{}).
+		Where("friend_link_id = ?", friendLinkID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return int(count), nil
 }
 
 func (r *FederatedPostCacheRepository) ListRecent(ctx context.Context, limit int) ([]federation.FederatedPostCache, error) {
@@ -509,6 +520,7 @@ func mapFederationInstanceToModel(instance *federation.FederationInstance) model
 func mapFederatedPostCacheToDomain(rec model.FederatedPostCache) federation.FederatedPostCache {
 	return federation.FederatedPostCache{
 		ID:             rec.ID,
+		FriendLinkID:   rec.FriendLinkID,
 		InstanceID:     rec.InstanceID,
 		RemotePostID:   rec.RemotePostID,
 		URL:            rec.URL,
@@ -526,6 +538,7 @@ func mapFederatedPostCacheToDomain(rec model.FederatedPostCache) federation.Fede
 		AllowComment:   rec.AllowComment,
 		ETag:           rec.ETag,
 		LastModified:   rec.LastModified,
+		SourceMethod:   rec.SourceMethod,
 		CachedAt:       rec.CachedAt,
 	}
 }
@@ -533,6 +546,7 @@ func mapFederatedPostCacheToDomain(rec model.FederatedPostCache) federation.Fede
 func mapFederatedPostCacheToModel(post *federation.FederatedPostCache) model.FederatedPostCache {
 	return model.FederatedPostCache{
 		ID:             post.ID,
+		FriendLinkID:   post.FriendLinkID,
 		InstanceID:     post.InstanceID,
 		RemotePostID:   post.RemotePostID,
 		URL:            post.URL,
@@ -550,6 +564,7 @@ func mapFederatedPostCacheToModel(post *federation.FederatedPostCache) model.Fed
 		AllowComment:   post.AllowComment,
 		ETag:           post.ETag,
 		LastModified:   post.LastModified,
+		SourceMethod:   post.SourceMethod,
 		CachedAt:       post.CachedAt,
 	}
 }

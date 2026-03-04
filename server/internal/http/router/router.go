@@ -19,8 +19,8 @@ import (
 	appcomment "github.com/grtsinry43/grtblog-v2/server/internal/app/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
 	appnav "github.com/grtsinry43/grtblog-v2/server/internal/app/navigation"
@@ -171,7 +171,12 @@ func Register(app *fiber.App, deps Dependencies) {
 	}
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedCache)
 	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, fedInstanceRepo)
-	fedDelivery := appfed.NewDeliveryService(fedOutboundRepo, fedOutbound, eventBus)
+	fedDelivery := appfed.NewDeliveryService(
+		fedOutboundRepo,
+		fedOutbound,
+		persistence.NewFriendLinkRepository(deps.DB),
+		eventBus,
+	)
 	appfed.RegisterSubscribers(eventBus, fedDelivery)
 	adminNotifRepo := persistence.NewAdminNotificationRepository(deps.DB)
 	adminNotifSvc := adminnotification.NewService(adminNotifRepo, eventBus)

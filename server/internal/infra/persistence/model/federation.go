@@ -27,7 +27,8 @@ func (FederationInstance) TableName() string { return "federation_instance" }
 
 type FederatedPostCache struct {
 	ID             int64          `gorm:"column:id;primaryKey"`
-	InstanceID     int64          `gorm:"column:instance_id;not null"`
+	FriendLinkID   int64          `gorm:"column:friend_link_id;not null"`
+	InstanceID     *int64         `gorm:"column:instance_id"`
 	RemotePostID   *string        `gorm:"column:remote_post_id;size:255"`
 	URL            string         `gorm:"column:url;size:500;not null"`
 	Title          string         `gorm:"column:title;size:500;not null"`
@@ -44,6 +45,7 @@ type FederatedPostCache struct {
 	AllowComment   bool           `gorm:"column:allow_comment;not null"`
 	ETag           *string        `gorm:"column:etag;size:255"`
 	LastModified   *string        `gorm:"column:last_modified;size:255"`
+	SourceMethod   string         `gorm:"column:source_method;size:20;not null"`
 	CachedAt       time.Time      `gorm:"column:cached_at;autoCreateTime"`
 }
 

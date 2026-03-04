@@ -24,8 +24,7 @@ func NewFriendLinkPublicHandler(svc *friendlink.LinkService, sysCfg *sysconfig.S
 // @Summary 公开获取友链列表
 // @Tags FriendLink
 // @Produce json
-// @Param kind query string false "友链类型 manual/federation"
-// @Param syncMode query string false "同步模式 none/rss/federation"
+// @Param type query string false "友链类型 federation/rss/norss"
 // @Param keyword query string false "关键词"
 // @Success 200 {object} []contract.FriendLinkPublicResp
 // @Router /public/friend-links [get]
@@ -33,8 +32,7 @@ func (h *FriendLinkPublicHandler) ListPublic(c *fiber.Ctx) error {
 	active := true
 	items, _, err := h.svc.List(c.Context(), friendlink.FriendLinkListOptions{
 		IsActive: &active,
-		Kind:     strings.TrimSpace(c.Query("kind")),
-		SyncMode: strings.TrimSpace(c.Query("syncMode")),
+		Type:     strings.TrimSpace(c.Query("type")),
 		Keyword:  strings.TrimSpace(c.Query("keyword")),
 		Page:     1,
 		PageSize: 0,
@@ -50,8 +48,7 @@ func (h *FriendLinkPublicHandler) ListPublic(c *fiber.Ctx) error {
 			Logo:        item.Logo,
 			Description: item.Description,
 			RSSURL:      item.RSSURL,
-			Kind:        item.Kind,
-			SyncMode:    item.SyncMode,
+			Type:        item.Type,
 		}
 	}
 	return response.Success(c, respItems)

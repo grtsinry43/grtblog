@@ -75,8 +75,8 @@ func (h *FriendLinkAdminHandler) ListApplications(c *fiber.Ctx) error {
 // @Tags FriendLinkAdmin
 // @Produce json
 // @Param status query string false "状态 queued/running/success/failed"
-// @Param targetType query string false "目标类型 friend_link/federation_instance"
-// @Param syncMethod query string false "同步方式 timeline/rss"
+// @Param targetType query string false "目标类型 friend_link"
+// @Param syncMethod query string false "同步方式 timeline/rss/rss_fallback"
 // @Param friendLinkId query int64 false "友链ID"
 // @Param instanceId query int64 false "实例ID"
 // @Param keyword query string false "关键词（target/feed/error）"
@@ -223,8 +223,7 @@ func (h *FriendLinkAdminHandler) UpdateApplicationStatus(c *fiber.Ctx) error {
 // @Tags FriendLinkAdmin
 // @Produce json
 // @Param active query bool false "是否启用"
-// @Param kind query string false "友链类型 manual/federation"
-// @Param syncMode query string false "同步模式 none/rss/federation"
+// @Param type query string false "友链类型 federation/rss/norss"
 // @Param keyword query string false "关键词"
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(10)
@@ -253,8 +252,7 @@ func (h *FriendLinkAdminHandler) ListFriendLinks(c *fiber.Ctx) error {
 
 	items, total, err := h.svc.ListFriendLinks(c.Context(), friendlink.FriendLinkListOptions{
 		IsActive: activePtr,
-		Kind:     c.Query("kind"),
-		SyncMode: c.Query("syncMode"),
+		Type:     c.Query("type"),
 		Keyword:  c.Query("keyword"),
 		Page:     page,
 		PageSize: pageSize,
@@ -294,8 +292,7 @@ func (h *FriendLinkAdminHandler) CreateFriendLink(c *fiber.Ctx) error {
 		Logo:         req.Logo,
 		Description:  req.Description,
 		RSSURL:       req.RSSURL,
-		Kind:         req.Kind,
-		SyncMode:     req.SyncMode,
+		Type:         req.Type,
 		InstanceID:   req.InstanceID,
 		SyncInterval: req.SyncInterval,
 		IsActive:     req.IsActive,
@@ -333,8 +330,7 @@ func (h *FriendLinkAdminHandler) UpdateFriendLink(c *fiber.Ctx) error {
 		Logo:         req.Logo,
 		Description:  req.Description,
 		RSSURL:       req.RSSURL,
-		Kind:         req.Kind,
-		SyncMode:     req.SyncMode,
+		Type:         req.Type,
 		InstanceID:   req.InstanceID,
 		SyncInterval: req.SyncInterval,
 		IsActive:     req.IsActive,
@@ -409,8 +405,7 @@ func toFriendLinkResp(item social.FriendLink) contract.FriendLinkResp {
 		Logo:             item.Logo,
 		Description:      item.Description,
 		RSSURL:           item.RSSURL,
-		Kind:             item.Kind,
-		SyncMode:         item.SyncMode,
+		Type:             item.Type,
 		InstanceID:       item.InstanceID,
 		LastSyncAt:       item.LastSyncAt,
 		LastSyncStatus:   item.LastSyncStatus,

@@ -52,7 +52,7 @@ func NewFederationAdminHandler(cfgSvc *sysconfig.Service, contentRepo content.Re
 // @Param request body contract.FederationAdminFriendLinkRequestReq true "友链申请参数"
 // @Success 200 {object} contract.FederationAdminProxyResp
 // @Security BearerAuth
-// @Router /admin/federation/friendlinks/request [post]
+// @Router /admin/friend-links/federation/request [post]
 // @Security JWTAuth
 func (h *FederationAdminHandler) RequestFriendLink(c *fiber.Ctx) error {
 	var req contract.FederationAdminFriendLinkRequestReq
@@ -133,7 +133,7 @@ func (h *FederationAdminHandler) SendCitation(c *fiber.Ctx) error {
 	}
 	delivery, err := h.deliverySvc.DispatchCitation(c.Context(), ev, nil)
 	if err != nil {
-		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
+		return mapFederationDispatchError(err)
 	}
 	_ = h.events.Publish(c.Context(), appEvent.Generic{
 		EventName: "federation.citation.requested",
@@ -198,7 +198,7 @@ func (h *FederationAdminHandler) SendMention(c *fiber.Ctx) error {
 	}
 	delivery, err := h.deliverySvc.DispatchMention(c.Context(), ev, nil)
 	if err != nil {
-		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
+		return mapFederationDispatchError(err)
 	}
 	_ = h.events.Publish(c.Context(), appEvent.Generic{
 		EventName: "federation.mention.requested",
@@ -562,7 +562,7 @@ func (h *FederationAdminHandler) ListInstancePosts(c *fiber.Ctx) error {
 		items[i] = contract.FederationCachedPostResp{
 			ID:            p.ID,
 			RemotePostID:  p.RemotePostID,
-			InstanceID:    p.InstanceID,
+			InstanceID:    int64PtrValue(p.InstanceID),
 			URL:           p.URL,
 			Title:         p.Title,
 			Summary:       p.Summary,
@@ -614,6 +614,24 @@ func (h *FederationAdminHandler) resolveArticle(c *fiber.Ctx, id *int64, shortUR
 		return h.contentRepo.GetArticleByShortURL(c.Context(), strings.TrimSpace(*shortURL))
 	}
 	return nil, content.ErrArticleNotFound
+}
+
+func mapFederationDispatchError(err error) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case errors.Is(err, appfed.ErrTargetFriendLinkNotFederation):
+		return response.NewBizErrorWithMsg(response.ParamsError, appfed.ErrTargetFriendLinkNotFederation.Error())
+	case errors.Is(err, appfed.ErrFederationInstanceNotBound):
+		return response.NewBizErrorWithMsg(response.ParamsError, appfed.ErrFederationInstanceNotBound.Error())
+	case errors.Is(err, appfed.ErrFederationInstanceNotActive):
+		return response.NewBizErrorWithMsg(response.ParamsError, appfed.ErrFederationInstanceNotActive.Error())
+	case errors.Is(err, appfed.ErrTargetInstanceEmpty):
+		return response.NewBizErrorWithMsg(response.ParamsError, appfed.ErrTargetInstanceEmpty.Error())
+	default:
+		return response.NewBizErrorWithCause(response.ServerError, "请求失败", err)
+	}
 }
 
 func mapManifestResp(manifest *fedinfra.Manifest) map[string]any {
@@ -770,6 +788,13 @@ func intPtrValue(v *int) int {
 func stringPtrValue(v *string) string {
 	if v == nil {
 		return ""
+	}
+	return *v
+}
+
+func int64PtrValue(v *int64) int64 {
+	if v == nil {
+		return 0
 	}
 	return *v
 }

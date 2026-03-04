@@ -14,8 +14,7 @@ type FriendLink struct {
 	Logo             string         `gorm:"column:logo;size:255"`
 	Description      string         `gorm:"column:description"`
 	RSSURL           string         `gorm:"column:rss_url;size:255"`
-	Kind             string         `gorm:"column:kind;size:20;not null"`
-	SyncMode         string         `gorm:"column:sync_mode;size:20;not null"`
+	Type             string         `gorm:"column:type;size:20;not null"`
 	InstanceID       *int64         `gorm:"column:instance_id"`
 	LastSyncAt       *time.Time     `gorm:"column:last_sync_at"`
 	LastSyncStatus   *string        `gorm:"column:last_sync_status;size:20"`

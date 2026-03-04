@@ -1842,47 +1842,6 @@
                 }
             }
         },
-        "/admin/federation/friendlinks/request": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    },
-                    {
-                        "JWTAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "FederationAdmin"
-                ],
-                "summary": "后台发起友链申请",
-                "parameters": [
-                    {
-                        "description": "友链申请参数",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/contract.FederationAdminFriendLinkRequestReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/contract.FederationAdminProxyResp"
-                        }
-                    }
-                }
-            }
-        },
         "/admin/federation/import": {
             "post": {
                 "security": [
@@ -2466,14 +2425,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "友链类型 manual/federation",
-                        "name": "kind",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "同步模式 none/rss/federation",
-                        "name": "syncMode",
+                        "description": "友链类型 federation/rss/norss",
+                        "name": "type",
                         "in": "query"
                     },
                     {
@@ -2744,6 +2697,125 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.FriendLinkApplicationResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/friend-links/federation/request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "后台发起友链申请",
+                "parameters": [
+                    {
+                        "description": "友链申请参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationAdminFriendLinkRequestReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationAdminProxyResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/friend-links/sync-jobs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FriendLinkAdmin"
+                ],
+                "summary": "获取友链同步作业列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "状态 queued/running/success/failed",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标类型 friend_link",
+                        "name": "targetType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "同步方式 timeline/rss/rss_fallback",
+                        "name": "syncMethod",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "友链ID",
+                        "name": "friendLinkId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "实例ID",
+                        "name": "instanceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键词（target/feed/error）",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FriendLinkSyncJobListResp"
                         }
                     }
                 }
@@ -3112,6 +3184,44 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handler.AdminHitokotoEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/likes/import": {
+            "post": {
+                "security": [
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "批量导入点赞（管理端）",
+                "parameters": [
+                    {
+                        "description": "批量导入点赞参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.ImportLikeBatchReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ImportLikeBatchResp"
                         }
                     }
                 }
@@ -5768,6 +5878,65 @@
                 }
             }
         },
+        "/comments/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comment"
+                ],
+                "summary": "编辑自己的评论",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "编辑评论参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.UpdateCommentReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.CreateCommentResp"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comment"
+                ],
+                "summary": "删除自己的评论",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/friend-links/applications": {
             "post": {
                 "security": [
@@ -6664,14 +6833,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "友链类型 manual/federation",
-                        "name": "kind",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "同步模式 none/rss/federation",
-                        "name": "syncMode",
+                        "description": "友链类型 federation/rss/norss",
+                        "name": "type",
                         "in": "query"
                     },
                     {
@@ -8998,6 +9161,10 @@
                 "title": {
                     "type": "string",
                     "maxLength": 255
+                },
+                "views": {
+                    "description": "可选：自定义初始阅读量",
+                    "type": "integer"
                 }
             }
         },
@@ -9008,7 +9175,8 @@
             ],
             "properties": {
                 "content": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                 },
                 "parentId": {
                     "type": "integer"
@@ -9107,7 +9275,8 @@
             ],
             "properties": {
                 "content": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                 },
                 "email": {
                     "type": "string",
@@ -9218,6 +9387,10 @@
                     "items": {
                         "type": "integer"
                     }
+                },
+                "views": {
+                    "description": "可选：自定义初始阅读量",
+                    "type": "integer"
                 }
             }
         },
@@ -9272,6 +9445,10 @@
                 "title": {
                     "type": "string",
                     "maxLength": 255
+                },
+                "views": {
+                    "description": "可选：自定义初始阅读量",
+                    "type": "integer"
                 }
             }
         },
@@ -9285,6 +9462,9 @@
                     "type": "boolean"
                 },
                 "content": {
+                    "type": "string"
+                },
+                "createdAt": {
                     "type": "string"
                 }
             }
@@ -10640,9 +10820,6 @@
                 "isActive": {
                     "type": "boolean"
                 },
-                "kind": {
-                    "type": "string"
-                },
                 "logo": {
                     "type": "string"
                 },
@@ -10655,7 +10832,7 @@
                 "syncInterval": {
                     "type": "integer"
                 },
-                "syncMode": {
+                "type": {
                     "type": "string"
                 },
                 "url": {
@@ -10692,9 +10869,6 @@
                 "description": {
                     "type": "string"
                 },
-                "kind": {
-                    "type": "string"
-                },
                 "logo": {
                     "type": "string"
                 },
@@ -10704,7 +10878,7 @@
                 "rssUrl": {
                     "type": "string"
                 },
-                "syncMode": {
+                "type": {
                     "type": "string"
                 },
                 "url": {
@@ -10730,9 +10904,6 @@
                 "isActive": {
                     "type": "boolean"
                 },
-                "kind": {
-                    "type": "string"
-                },
                 "lastSyncAt": {
                     "type": "string"
                 },
@@ -10751,11 +10922,11 @@
                 "syncInterval": {
                     "type": "integer"
                 },
-                "syncMode": {
-                    "type": "string"
-                },
                 "totalPostsCached": {
                     "type": "integer"
+                },
+                "type": {
+                    "type": "string"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -10765,6 +10936,88 @@
                 },
                 "userId": {
                     "type": "integer"
+                }
+            }
+        },
+        "contract.FriendLinkSyncJobListResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.FriendLinkSyncJobResp"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.FriendLinkSyncJobResp": {
+            "type": "object",
+            "properties": {
+                "attemptCount": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "durationMs": {
+                    "type": "integer"
+                },
+                "errorMessage": {
+                    "type": "string"
+                },
+                "feedUrl": {
+                    "type": "string"
+                },
+                "finishedAt": {
+                    "type": "string"
+                },
+                "friendLinkId": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instanceId": {
+                    "type": "integer"
+                },
+                "maxAttempts": {
+                    "type": "integer"
+                },
+                "nextRetryAt": {
+                    "type": "string"
+                },
+                "pulledCount": {
+                    "type": "integer"
+                },
+                "startedAt": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "syncMethod": {
+                    "type": "string"
+                },
+                "targetType": {
+                    "type": "string"
+                },
+                "targetUrl": {
+                    "type": "string"
+                },
+                "triggerSource": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
                 }
             }
         },
@@ -10780,9 +11033,6 @@
                 "isActive": {
                     "type": "boolean"
                 },
-                "kind": {
-                    "type": "string"
-                },
                 "logo": {
                     "type": "string"
                 },
@@ -10795,7 +11045,7 @@
                 "syncInterval": {
                     "type": "integer"
                 },
-                "syncMode": {
+                "type": {
                     "type": "string"
                 },
                 "url": {
@@ -10806,13 +11056,47 @@
                 }
             }
         },
+        "contract.FriendTimelineAuthorResp": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.FriendTimelineItemResp": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/contract.FriendTimelineAuthorResp"
+                },
+                "content_preview": {
+                    "type": "string"
+                },
+                "cover_image": {
+                    "type": "string"
+                },
+                "published_at": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "contract.FriendTimelineListResp": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/contract.FederationPostResp"
+                        "$ref": "#/definitions/contract.FriendTimelineItemResp"
                     }
                 },
                 "page": {
@@ -11011,6 +11295,31 @@
                 },
                 "website": {
                     "type": "string"
+                }
+            }
+        },
+        "contract.ImportLikeBatchReq": {
+            "type": "object",
+            "properties": {
+                "contentId": {
+                    "type": "integer"
+                },
+                "contentType": {
+                    "type": "string"
+                },
+                "visitorIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "contract.ImportLikeBatchResp": {
+            "type": "object",
+            "properties": {
+                "inserted": {
+                    "type": "integer"
                 }
             }
         },
@@ -11641,7 +11950,8 @@
             ],
             "properties": {
                 "content": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                 }
             }
         },
@@ -12347,6 +12657,21 @@
                 "title": {
                     "type": "string",
                     "maxLength": 255
+                }
+            }
+        },
+        "contract.UpdateCommentReq": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "visitorId": {
+                    "type": "string"
                 }
             }
         },

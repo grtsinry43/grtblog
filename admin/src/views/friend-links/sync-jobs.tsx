@@ -42,8 +42,8 @@ export default defineComponent({
         render: (row) => (
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <NTag size="small" bordered={false} type={row.targetType === 'friend_link' ? 'success' : 'info'}>
-                {{ default: () => row.targetType === 'friend_link' ? '友链 RSS' : '联合实例' }}
+              <NTag size="small" bordered={false} type="success">
+                {{ default: () => '友链' }}
               </NTag>
               <span class="text-xs text-neutral-400">#{row.friendLinkId || row.instanceId || '-'}</span>
             </div>
@@ -153,8 +153,7 @@ export default defineComponent({
               placeholder="目标类型"
               clearable
               options={[
-                { label: '友链 RSS', value: 'friend_link' },
-                { label: '联合实例', value: 'federation_instance' },
+                { label: '友链', value: 'friend_link' },
               ]}
               class="w-44"
               onUpdateValue={(v) => {
@@ -169,6 +168,7 @@ export default defineComponent({
               options={[
                 { label: 'Timeline', value: 'timeline' },
                 { label: 'RSS', value: 'rss' },
+                { label: 'RSS Fallback', value: 'rss_fallback' },
               ]}
               class="w-40"
               onUpdateValue={(v) => {

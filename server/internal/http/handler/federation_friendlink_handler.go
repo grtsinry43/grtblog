@@ -176,8 +176,7 @@ func (h *FederationFriendLinkHandler) ensureFriendLink(ctx context.Context, inst
 		URL:              instance.BaseURL,
 		Description:      instance.Description,
 		RSSURL:           toOptionalString(rssURL),
-		Kind:             "federation",
-		SyncMode:         "federation",
+		Type:             social.FriendLinkTypeFederation,
 		InstanceID:       &instance.ID,
 		IsActive:         true,
 		TotalPostsCached: 0,
@@ -202,7 +201,7 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 			URL:               url,
 			Description:       toOptionalString(manifest.Instance.Description),
 			ApplyChannel:      social.FriendLinkApplyChannelFederation,
-			RequestedSyncMode: social.FriendLinkSyncModeFederation,
+			RequestedSyncMode: "federation",
 			RSSURL:            toOptionalString(payload.RSSURL),
 			InstanceURL:       toOptionalString(requesterURL),
 			Manifest:          manifestPayload,
@@ -219,7 +218,7 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 	app.Name = toOptionalString(manifest.Instance.Name)
 	app.Description = toOptionalString(manifest.Instance.Description)
 	app.ApplyChannel = social.FriendLinkApplyChannelFederation
-	app.RequestedSyncMode = social.FriendLinkSyncModeFederation
+	app.RequestedSyncMode = "federation"
 	app.RSSURL = toOptionalString(payload.RSSURL)
 	app.InstanceURL = toOptionalString(requesterURL)
 	app.Manifest = manifestPayload

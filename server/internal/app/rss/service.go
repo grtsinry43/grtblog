@@ -63,6 +63,7 @@ type Item struct {
 	Link        string
 	GUID        string
 	Category    string
+	ImageURL    string
 	AuthorName  string
 	AuthorEmail string
 	PublishedAt time.Time
@@ -115,12 +116,14 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 				continue
 			}
 			articlePath := "/posts/" + article.ShortURL
+			coverURL := resolveMediaURL(baseURL, stringValue(article.Cover))
 			items = append(items, Item{
 				Title:       article.Title,
 				Description: buildRSSDescription(buildURL(baseURL, articlePath), renderHTML(article.Content)),
 				Link:        buildURL(baseURL, articlePath),
 				GUID:        fmt.Sprintf("article-%d", article.ID),
 				Category:    "article",
+				ImageURL:    coverURL,
 				AuthorName:  s.resolveAuthorByUserID(ctx, article.AuthorID, authorCache).name,
 				AuthorEmail: s.resolveAuthorByUserID(ctx, article.AuthorID, authorCache).email,
 				PublishedAt: article.CreatedAt,
@@ -145,12 +148,14 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 				moment.CreatedAt.Format("02"),
 				moment.ShortURL,
 			)
+			coverURL := resolveMediaURL(baseURL, firstCSVValue(moment.Image))
 			items = append(items, Item{
 				Title:       moment.Title,
 				Description: buildRSSDescription(buildURL(baseURL, momentPath), renderHTML(moment.Content)),
 				Link:        buildURL(baseURL, momentPath),
 				GUID:        fmt.Sprintf("moment-%d", moment.ID),
 				Category:    "moment",
+				ImageURL:    coverURL,
 				AuthorName:  s.resolveAuthorByUserID(ctx, moment.AuthorID, authorCache).name,
 				AuthorEmail: s.resolveAuthorByUserID(ctx, moment.AuthorID, authorCache).email,
 				PublishedAt: moment.CreatedAt,
@@ -356,6 +361,27 @@ func firstNonEmpty(values ...string) string {
 		v := strings.TrimSpace(value)
 		if v != "" {
 			return v
+		}
+	}
+	return ""
+}
+
+func stringValue(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return strings.TrimSpace(*v)
+}
+
+func firstCSVValue(v *string) string {
+	if v == nil {
+		return ""
+	}
+	parts := strings.Split(*v, ",")
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item != "" {
+			return item
 		}
 	}
 	return ""

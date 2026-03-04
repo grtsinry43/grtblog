@@ -41,7 +41,10 @@ func ExpandFederationSignals(
 	}
 	for i := range postCache {
 		p := &postCache[i]
-		inst := instanceByID[p.InstanceID]
+		if p.InstanceID == nil {
+			continue
+		}
+		inst := instanceByID[*p.InstanceID]
 		if inst == nil || p.RemotePostID == nil {
 			continue
 		}

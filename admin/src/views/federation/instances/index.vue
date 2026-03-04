@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { h, ref } from 'vue'
-import { NCard, NDataTable, NButton, NTag, NSpace, NInput, NPagination, useMessage, NPopconfirm, NModal, NForm, NFormItem } from 'naive-ui'
+import { NCard, NDataTable, NButton, NTag, NSpace, NInput, NPagination, useMessage, NPopconfirm } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
-import { getFederationInstances, updateFederationInstanceStatus, requestFederationFriendlink } from '@/services/federation-admin'
-import type { FederationInstanceResp, FederationAdminFriendLinkRequestReq } from '@/types/federation'
+import { getFederationInstances, updateFederationInstanceStatus } from '@/services/federation-admin'
+import type { FederationInstanceResp } from '@/types/federation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { ScrollContainer } from '@/components'
 import DetailDrawer from './DetailDrawer.vue'
@@ -94,41 +94,6 @@ function handleToggleStatus(row: FederationInstanceResp) {
   const newStatus = row.status === 'blocked' ? 'active' : 'blocked'
   updateStatus({ id: row.id, status: newStatus })
 }
-
-// Initiate United Modal (Friend Link Request)
-const showCreateModal = ref(false)
-const createForm = ref<FederationAdminFriendLinkRequestReq>({
-  target_url: '',
-  message: '',
-  rss_url: ''
-})
-
-const { mutate: requestFriendLink, isPending: isRequesting } = useMutation({
-  mutationFn: requestFederationFriendlink,
-  onSuccess: () => {
-    message.success('联合申请已发送')
-    showCreateModal.value = false
-    createForm.value = { target_url: '', message: '', rss_url: '' }
-    // Optionally refresh list if the new instance appears immediately
-    queryClient.invalidateQueries({ queryKey: ['federation-instances'] })
-  },
-  onError: (err: any) => {
-    message.error('申请发送失败: ' + (err.message || 'Unknown error'))
-  }
-})
-
-function handleInitiateUnited() {
-  showCreateModal.value = true
-}
-
-function submitCreate() {
-  if (!createForm.value.target_url) {
-    message.warning('请输入目标地址')
-    return
-  }
-  requestFriendLink(createForm.value)
-}
-
 </script>
 
 <template>
@@ -150,8 +115,8 @@ function submitCreate() {
           <NButton secondary type="warning" @click="router.push({ name: 'federationDebug' })">
             联合调试
           </NButton>
-          <NButton type="primary" @click="handleInitiateUnited">
-            发起联合
+          <NButton type="primary" @click="router.push({ name: 'friendLinkList' })">
+            去友链管理
           </NButton>
         </div>
       </div>
@@ -179,31 +144,6 @@ function submitCreate() {
         />
       </div>
     </NCard>
-
-    <NModal
-      v-model:show="showCreateModal"
-      preset="dialog"
-      title="发起联合 (申请友链)"
-      positive-text="发送申请"
-      negative-text="取消"
-      @positive-click="submitCreate"
-      @negative-click="showCreateModal = false"
-      :loading="isRequesting"
-    >
-      <div class="py-4">
-        <NForm label-placement="left" label-width="100">
-          <NFormItem label="目标地址" required>
-            <NInput v-model:value="createForm.target_url" placeholder="https://target.com/friend" />
-          </NFormItem>
-          <NFormItem label="你的 RSS 地址">
-            <NInput v-model:value="createForm.rss_url" placeholder="https://mysite.com/feed (可选)" />
-          </NFormItem>
-          <NFormItem label="留言信息">
-            <NInput v-model:value="createForm.message" type="textarea" placeholder="你好，我想与贵站建立联合..." />
-          </NFormItem>
-        </NForm>
-      </div>
-    </NModal>
 
     <DetailDrawer 
       v-model:show="showDrawer" 

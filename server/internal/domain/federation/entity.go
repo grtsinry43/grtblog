@@ -44,7 +44,8 @@ type FederationInstance struct {
 // FederatedPostCache stores cached remote posts for timeline/recommendations.
 type FederatedPostCache struct {
 	ID             int64
-	InstanceID     int64
+	FriendLinkID   int64
+	InstanceID     *int64
 	RemotePostID   *string
 	URL            string
 	Title          string
@@ -61,6 +62,7 @@ type FederatedPostCache struct {
 	AllowComment   bool
 	ETag           *string
 	LastModified   *string
+	SourceMethod   string
 	CachedAt       time.Time
 }
 

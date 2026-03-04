@@ -129,7 +129,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	resolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
 	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
 	outboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
-	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, deps.EventBus)
+	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
+	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, friendLinkRepo, deps.EventBus)
 	postCacheRepo := persistence.NewFederatedPostCacheRepository(deps.DB)
 	federationAdminHandler := handler.NewFederationAdminHandler(sysCfgSvc, contentRepo, deliverySvc, instanceRepo, postCacheRepo, resolver, deps.EventBus)
 	federationReviewHandler := handler.NewFederationReviewHandler(
@@ -149,7 +150,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		adminnotification.NewService(persistence.NewAdminNotificationRepository(deps.DB), deps.EventBus),
 	)
 	activityPubAdminHandler := handler.NewActivityPubAdminHandler(activityPubSvc)
-	admin.Post("/federation/friendlinks/request", federationAdminHandler.RequestFriendLink)
+	admin.Post("/friend-links/federation/request", federationAdminHandler.RequestFriendLink)
 	admin.Post("/federation/citations/request", federationAdminHandler.SendCitation)
 	admin.Post("/federation/mentions/notify", federationAdminHandler.SendMention)
 	admin.Post("/activitypub/publish", activityPubAdminHandler.Publish)
@@ -175,7 +176,6 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Get("/hitokoto", hitokotoHandler.GetSentence)
 
 	friendLinkAppRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
-	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
 	friendLinkSyncJobRepo := persistence.NewFriendLinkSyncJobRepository(deps.DB)
 	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo, identityRepo, deps.EventBus)
 	friendLinkAdminHandler := handler.NewFriendLinkAdminHandler(friendLinkAdminSvc, friendLinkSyncJobRepo)

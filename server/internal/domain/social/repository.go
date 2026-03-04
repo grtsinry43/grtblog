@@ -58,8 +58,7 @@ type FriendLinkApplicationListOptions struct {
 
 type FriendLinkListOptions struct {
 	IsActive *bool
-	Kind     string
-	SyncMode string
+	Type     string
 	Keyword  string
 	Page     int
 	PageSize int

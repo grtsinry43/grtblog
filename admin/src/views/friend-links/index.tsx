@@ -23,9 +23,22 @@ import { friendLinkService } from '@/services/friend-links'
 import type {
   FriendLink,
   FriendLinkCreateReq,
+  FriendLinkFederationRequestReq,
   FriendLinkUpdateReq,
 } from '@/types/friend-link'
 import type { DataTableColumns } from 'naive-ui'
+
+const typeLabelMap: Record<FriendLink['type'], string> = {
+  federation: '联合',
+  rss: 'RSS',
+  norss: '无 RSS',
+}
+
+const typeTagMap: Record<FriendLink['type'], 'default' | 'info' | 'success'> = {
+  federation: 'info',
+  rss: 'success',
+  norss: 'default',
+}
 
 export default defineComponent({
   name: 'FriendLinkList',
@@ -34,6 +47,7 @@ export default defineComponent({
 
     const linksFilter = reactive({
       keyword: '',
+      type: undefined as FriendLink['type'] | undefined,
     })
 
     const {
@@ -41,7 +55,7 @@ export default defineComponent({
       loading: linksLoading,
       pagination: linksPagination,
       refresh: refreshLinks,
-    } = useTable<FriendLink>(friendLinkService.getFriendLinks, linksFilter)
+    } = useTable<FriendLink>(friendLinkService.getFriendLinks, linksFilter as any)
 
     const showEditModal = ref(false)
     const modalTitle = ref('新建友链')
@@ -53,27 +67,77 @@ export default defineComponent({
       logo: '',
       description: '',
       rssUrl: '',
-      kind: 'manual',
-      syncMode: 'none',
+      type: 'norss',
+      instanceId: undefined,
       isActive: true,
       syncInterval: 60,
     })
+
+    const showRequestModal = ref(false)
+    const requestForm = reactive<FriendLinkFederationRequestReq>({
+      target_url: '',
+      message: '',
+      rss_url: '',
+    })
+    const requestLoading = ref(false)
 
     const rules = {
       name: { required: true, message: '请输入名称', trigger: 'blur' },
       url: { required: true, message: '请输入链接', trigger: 'blur' },
     }
 
+    const normalizeOptional = (value?: string) => {
+      const trimmed = (value || '').trim()
+      return trimmed || undefined
+    }
+
+    const buildPayload = (): FriendLinkCreateReq => {
+      const payload: FriendLinkCreateReq = {
+        name: formModel.name.trim(),
+        url: formModel.url.trim(),
+        logo: normalizeOptional(formModel.logo),
+        description: normalizeOptional(formModel.description),
+        rssUrl: normalizeOptional(formModel.rssUrl),
+        type: formModel.type,
+        instanceId: formModel.instanceId,
+        syncInterval: formModel.syncInterval && formModel.syncInterval > 0 ? formModel.syncInterval : undefined,
+        isActive: formModel.isActive,
+      }
+      if (payload.type !== 'federation') {
+        payload.instanceId = undefined
+      }
+      return payload
+    }
+
+    const toUpdatePayload = (row: FriendLink, isActive = row.isActive): FriendLinkUpdateReq => ({
+      name: row.name,
+      url: row.url,
+      logo: row.logo,
+      description: row.description,
+      rssUrl: row.rssUrl,
+      type: row.type,
+      instanceId: row.instanceId,
+      syncInterval: row.syncInterval,
+      isActive,
+    })
+
+    const resetRequestForm = () => {
+      requestForm.target_url = ''
+      requestForm.message = ''
+      requestForm.rss_url = ''
+    }
+
     const handleSave = async () => {
       editFormRef.value?.validate(async (errors) => {
         if (!errors) {
           try {
+            const payload = buildPayload()
             if (editingId.value) {
-              await friendLinkService.updateFriendLink(editingId.value, formModel as FriendLinkUpdateReq)
+              await friendLinkService.updateFriendLink(editingId.value, payload)
               message.success('更新成功')
             }
             else {
-              await friendLinkService.createFriendLink(formModel)
+              await friendLinkService.createFriendLink(payload)
               message.success('创建成功')
             }
             showEditModal.value = false
@@ -84,6 +148,31 @@ export default defineComponent({
           }
         }
       })
+    }
+
+    const handleFederationRequest = async () => {
+      const targetURL = requestForm.target_url.trim()
+      if (!targetURL) {
+        message.warning('请输入目标地址')
+        return
+      }
+      try {
+        requestLoading.value = true
+        await friendLinkService.requestFederationFriendLink({
+          target_url: targetURL,
+          message: normalizeOptional(requestForm.message),
+          rss_url: normalizeOptional(requestForm.rss_url),
+        })
+        message.success('申请已发送')
+        showRequestModal.value = false
+        resetRequestForm()
+      }
+      catch (e: any) {
+        message.error(e.message || '发送失败')
+      }
+      finally {
+        requestLoading.value = false
+      }
     }
 
     const handleAction = async (id: number, action: 'delete' | 'block') => {
@@ -112,18 +201,28 @@ export default defineComponent({
         logo: '',
         description: '',
         rssUrl: '',
-        kind: 'manual',
-        syncMode: 'none',
+        type: 'norss',
+        instanceId: undefined,
         isActive: true,
         syncInterval: 60,
-      })
+      } satisfies FriendLinkCreateReq)
       showEditModal.value = true
     }
 
     const openEdit = (row: FriendLink) => {
       editingId.value = row.id
       modalTitle.value = '编辑友链'
-      Object.assign(formModel, { ...row })
+      Object.assign(formModel, {
+        name: row.name,
+        url: row.url,
+        logo: row.logo || '',
+        description: row.description || '',
+        rssUrl: row.rssUrl || '',
+        type: row.type,
+        instanceId: row.instanceId,
+        isActive: row.isActive,
+        syncInterval: row.syncInterval,
+      } satisfies FriendLinkCreateReq)
       showEditModal.value = true
     }
 
@@ -153,22 +252,24 @@ export default defineComponent({
       },
       {
         title: '类型',
-        key: 'kind',
-        width: 100,
+        key: 'type',
+        width: 110,
         render: (row) => (
-          <NTag type={row.kind === 'federation' ? 'info' : 'default'} size="small">
-            {{ default: () => (row.kind === 'federation' ? '联邦' : '传统友链') }}
+          <NTag type={typeTagMap[row.type]} size="small">
+            {{ default: () => typeLabelMap[row.type] }}
           </NTag>
         ),
       },
       {
-        title: '同步',
-        key: 'syncMode',
-        width: 80,
+        title: '同步来源',
+        key: 'syncSource',
+        minWidth: 180,
         render: (row) => (
-          <NTag size="small" bordered={false}>
-            {{ default: () => row.syncMode }}
-          </NTag>
+          <span class="text-sm text-neutral-500 truncate">
+            {row.type === 'federation'
+              ? `实例 #${row.instanceId || '-'}`
+              : (row.rssUrl || '-')}
+          </span>
         ),
       },
       {
@@ -181,7 +282,7 @@ export default defineComponent({
             size="small"
             onUpdateValue={async (val: boolean) => {
               try {
-                await friendLinkService.updateFriendLink(row.id, { ...row, isActive: val } as any)
+                await friendLinkService.updateFriendLink(row.id, toUpdatePayload(row, val))
                 row.isActive = val
                 message.success('已更新状态')
               }
@@ -239,11 +340,16 @@ export default defineComponent({
         <NCard title="友链列表" class="h-full">
           {{
             'header-extra': () => (
-              <NButton type="primary" size="small" onClick={openCreate}>
-                新建友链
-              </NButton>
+              <NSpace>
+                <NButton secondary size="small" onClick={() => showRequestModal.value = true}>
+                  发起联合友链申请
+                </NButton>
+                <NButton type="primary" size="small" onClick={openCreate}>
+                  新建友链
+                </NButton>
+              </NSpace>
             ),
-            'default': () => (
+            default: () => (
               <>
                 <div class="mb-4 flex gap-2">
                   <NInput
@@ -257,6 +363,18 @@ export default defineComponent({
                         refreshLinks()
                     }}
                   />
+                  <NSelect
+                    value={linksFilter.type}
+                    clearable
+                    class="w-40"
+                    placeholder="类型"
+                    options={[
+                      { label: '联合', value: 'federation' },
+                      { label: 'RSS', value: 'rss' },
+                      { label: '无 RSS', value: 'norss' },
+                    ]}
+                    onUpdateValue={(v) => linksFilter.type = v as FriendLink['type'] | undefined}
+                  />
                   <NButton secondary onClick={refreshLinks}>
                     搜索
                   </NButton>
@@ -267,7 +385,7 @@ export default defineComponent({
                   data={links.value}
                   loading={linksLoading.value}
                   row-key={(row: FriendLink) => row.id}
-                  scrollX={800}
+                  scrollX={860}
                 />
                 <div class="mt-4 flex justify-end">
                   <NPagination
@@ -301,41 +419,47 @@ export default defineComponent({
                 <NFormItem label="描述" path="description">
                   <NInput value={formModel.description} type="textarea" placeholder="站点简介" onUpdateValue={(v) => formModel.description = v} />
                 </NFormItem>
+                <NFormItem label="类型" path="type">
+                  <NSelect
+                    value={formModel.type}
+                    options={[
+                      { label: '联合', value: 'federation' },
+                      { label: 'RSS', value: 'rss' },
+                      { label: '无 RSS', value: 'norss' },
+                    ]}
+                    onUpdateValue={(v) => {
+                      formModel.type = v as FriendLink['type']
+                      if (formModel.type !== 'federation')
+                        formModel.instanceId = undefined
+                    }}
+                  />
+                </NFormItem>
                 <NFormItem label="RSS" path="rssUrl">
-                  <NInput value={formModel.rssUrl} placeholder="RSS 订阅地址（可选）" onUpdateValue={(v) => formModel.rssUrl = v} />
+                  <NInput
+                    value={formModel.rssUrl}
+                    placeholder={formModel.type === 'rss' ? 'RSS 必填，例如 https://example.com/feed' : 'RSS 订阅地址（可选）'}
+                    onUpdateValue={(v) => formModel.rssUrl = v}
+                  />
                 </NFormItem>
 
-                <div class="grid grid-cols-2 gap-4">
-                  <NFormItem label="类型" path="kind">
-                    <NSelect
-                      value={formModel.kind}
-                      options={[
-                        { label: '传统友链', value: 'manual' },
-                        { label: '联邦', value: 'federation' },
-                      ]}
-                      onUpdateValue={(v) => formModel.kind = v}
+                {formModel.type === 'federation' && (
+                  <NFormItem label="实例ID" path="instanceId">
+                    <NInput
+                      value={formModel.instanceId?.toString() || ''}
+                      allowInput={(v) => !v || /^\d+$/.test(v)}
+                      placeholder="联合实例 ID（必填）"
+                      onUpdateValue={(v) => formModel.instanceId = v ? Number.parseInt(v, 10) : undefined}
                     />
                   </NFormItem>
-                  <NFormItem label="同步" path="syncMode">
-                    <NSelect
-                      value={formModel.syncMode}
-                      options={[
-                        { label: '无', value: 'none' },
-                        { label: 'RSS', value: 'rss' },
-                        { label: '联邦', value: 'federation' },
-                      ]}
-                      onUpdateValue={(v) => formModel.syncMode = v}
-                    />
-                  </NFormItem>
-                </div>
+                )}
 
-                {formModel.syncMode !== 'none' && (
+                {formModel.type !== 'norss' && (
                   <NFormItem label="刷新间隔" path="syncInterval">
                     <NInput
-                      value={formModel.syncInterval?.toString()}
+                      value={formModel.syncInterval?.toString() || ''}
                       allowInput={(v) => !v || /^\d+$/.test(v)}
                       placeholder="单位：分钟"
-                      onUpdateValue={(v) => formModel.syncInterval = v ? parseInt(v) : undefined}
+                      onUpdateValue={(v) => formModel.syncInterval = v ? Number.parseInt(v, 10) : undefined}
                     >
                       {{ suffix: () => '分钟' }}
                     </NInput>
@@ -354,6 +478,34 @@ export default defineComponent({
                 </NButton>
                 <NButton type="primary" loading={linksLoading.value} onClick={handleSave}>
                   保存
+                </NButton>
+              </div>
+            ),
+          }}
+        </NModal>
+
+        <NModal show={showRequestModal.value} preset="card" title="发起联合友链申请" class="max-w-lg" onUpdateShow={(v) => showRequestModal.value = v}>
+          {{
+            default: () => (
+              <NForm label-placement="left" label-width="100">
+                <NFormItem label="目标地址" required>
+                  <NInput value={requestForm.target_url} placeholder="https://target.example.com" onUpdateValue={(v) => requestForm.target_url = v} />
+                </NFormItem>
+                <NFormItem label="本站 RSS">
+                  <NInput value={requestForm.rss_url} placeholder="https://your-site.com/feed（可选）" onUpdateValue={(v) => requestForm.rss_url = v} />
+                </NFormItem>
+                <NFormItem label="留言">
+                  <NInput value={requestForm.message} type="textarea" placeholder="你好，想与贵站建立友链与联合关系" onUpdateValue={(v) => requestForm.message = v} />
+                </NFormItem>
+              </NForm>
+            ),
+            footer: () => (
+              <div class="flex justify-end gap-2">
+                <NButton onClick={() => showRequestModal.value = false}>
+                  取消
+                </NButton>
+                <NButton type="primary" loading={requestLoading.value} onClick={handleFederationRequest}>
+                  发送申请
                 </NButton>
               </div>
             ),

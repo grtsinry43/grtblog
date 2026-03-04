@@ -44,8 +44,7 @@ type ApplicationListOptions struct {
 
 type FriendLinkListOptions struct {
 	IsActive *bool
-	Kind     string
-	SyncMode string
+	Type     string
 	Keyword  string
 	Page     int
 	PageSize int
@@ -57,8 +56,7 @@ type CreateFriendLinkCmd struct {
 	Logo         *string
 	Description  *string
 	RSSURL       *string
-	Kind         string
-	SyncMode     string
+	Type         string
 	InstanceID   *int64
 	SyncInterval *int
 	IsActive     bool
@@ -72,8 +70,7 @@ type UpdateFriendLinkCmd struct {
 	Logo         *string
 	Description  *string
 	RSSURL       *string
-	Kind         string
-	SyncMode     string
+	Type         string
 	InstanceID   *int64
 	SyncInterval *int
 	IsActive     bool
@@ -174,8 +171,7 @@ func (s *AdminService) UpdateApplicationStatus(ctx context.Context, id int64, st
 func (s *AdminService) ListFriendLinks(ctx context.Context, options FriendLinkListOptions) ([]social.FriendLink, int64, error) {
 	return s.linkRepo.List(ctx, social.FriendLinkListOptions{
 		IsActive: options.IsActive,
-		Kind:     strings.TrimSpace(options.Kind),
-		SyncMode: strings.TrimSpace(options.SyncMode),
+		Type:     strings.TrimSpace(options.Type),
 		Keyword:  strings.TrimSpace(options.Keyword),
 		Page:     options.Page,
 		PageSize: options.PageSize,
@@ -193,13 +189,12 @@ func (s *AdminService) CreateFriendLink(ctx context.Context, cmd CreateFriendLin
 	} else if !errors.Is(err, social.ErrFriendLinkNotFound) {
 		return nil, err
 	}
-	kind := strings.TrimSpace(cmd.Kind)
-	if kind == "" {
-		kind = social.FriendLinkKindManual
+	linkType, err := normalizeFriendLinkType(cmd.Type)
+	if err != nil {
+		return nil, err
 	}
-	syncMode := strings.TrimSpace(cmd.SyncMode)
-	if syncMode == "" {
-		syncMode = social.FriendLinkSyncModeNone
+	if err := validateFriendLinkTypeParams(linkType, cmd.RSSURL, cmd.InstanceID); err != nil {
+		return nil, err
 	}
 	link := &social.FriendLink{
 		Name:             name,
@@ -207,8 +202,7 @@ func (s *AdminService) CreateFriendLink(ctx context.Context, cmd CreateFriendLin
 		Logo:             cmd.Logo,
 		Description:      cmd.Description,
 		RSSURL:           cmd.RSSURL,
-		Kind:             kind,
-		SyncMode:         syncMode,
+		Type:             linkType,
 		InstanceID:       cmd.InstanceID,
 		SyncInterval:     cmd.SyncInterval,
 		TotalPostsCached: 0,
@@ -237,14 +231,14 @@ func (s *AdminService) UpdateFriendLink(ctx context.Context, cmd UpdateFriendLin
 	link.Logo = cmd.Logo
 	link.Description = cmd.Description
 	link.RSSURL = cmd.RSSURL
-	link.Kind = strings.TrimSpace(cmd.Kind)
-	if link.Kind == "" {
-		link.Kind = social.FriendLinkKindManual
+	linkType, err := normalizeFriendLinkType(cmd.Type)
+	if err != nil {
+		return nil, err
 	}
-	link.SyncMode = strings.TrimSpace(cmd.SyncMode)
-	if link.SyncMode == "" {
-		link.SyncMode = social.FriendLinkSyncModeNone
+	if err := validateFriendLinkTypeParams(linkType, cmd.RSSURL, cmd.InstanceID); err != nil {
+		return nil, err
 	}
+	link.Type = linkType
 	link.InstanceID = cmd.InstanceID
 	link.SyncInterval = cmd.SyncInterval
 	link.IsActive = cmd.IsActive
@@ -284,13 +278,13 @@ func (s *AdminService) BlockFriendLink(ctx context.Context, id int64) (*social.F
 	if app == nil {
 		status := social.FriendLinkAppStatusBlocked
 		applyChannel := social.FriendLinkApplyChannelAdmin
-		requestedSync := link.SyncMode
-		if strings.TrimSpace(requestedSync) == "" {
-			requestedSync = social.FriendLinkSyncModeNone
-		}
-		if link.Kind == social.FriendLinkKindFederation {
+		requestedSync := "none"
+		switch link.Type {
+		case social.FriendLinkTypeFederation:
+			requestedSync = "federation"
 			applyChannel = social.FriendLinkApplyChannelFederation
-			requestedSync = social.FriendLinkSyncModeFederation
+		case social.FriendLinkTypeRSS:
+			requestedSync = "rss"
 		}
 		app = &social.FriendLinkApplication{
 			Name:              toOptionalString(link.Name),
@@ -314,7 +308,7 @@ func (s *AdminService) BlockFriendLink(ctx context.Context, id int64) (*social.F
 			return nil, err
 		}
 	}
-	if link.Kind == social.FriendLinkKindFederation {
+	if link.Type == social.FriendLinkTypeFederation {
 		_ = s.blockFederationInstance(ctx, link.URL)
 	}
 	s.publishFriendLinkChangedEvent(ctx, "blocked", link)
@@ -330,12 +324,10 @@ func (s *AdminService) ensureFriendLink(ctx context.Context, app *social.FriendL
 	if err != nil && !errors.Is(err, social.ErrFriendLinkNotFound) {
 		return err
 	}
-	kind := social.FriendLinkKindManual
-	syncMode := app.RequestedSyncMode
+	linkType := social.FriendLinkTypeNoRSS
 	var instanceID *int64
 	if app.ApplyChannel == social.FriendLinkApplyChannelFederation {
-		kind = social.FriendLinkKindFederation
-		syncMode = social.FriendLinkSyncModeFederation
+		linkType = social.FriendLinkTypeFederation
 		instance, err := s.instanceRepo.GetByBaseURL(ctx, url)
 		if err != nil {
 			if errors.Is(err, federation.ErrFederationInstanceNotFound) {
@@ -344,6 +336,8 @@ func (s *AdminService) ensureFriendLink(ctx context.Context, app *social.FriendL
 			return err
 		}
 		instanceID = &instance.ID
+	} else if strings.EqualFold(strings.TrimSpace(app.RequestedSyncMode), "rss") || (app.RSSURL != nil && strings.TrimSpace(*app.RSSURL) != "") {
+		linkType = social.FriendLinkTypeRSS
 	}
 	if link == nil {
 		link = &social.FriendLink{
@@ -352,12 +346,14 @@ func (s *AdminService) ensureFriendLink(ctx context.Context, app *social.FriendL
 			Logo:             app.Logo,
 			Description:      app.Description,
 			RSSURL:           app.RSSURL,
-			Kind:             kind,
-			SyncMode:         syncMode,
+			Type:             linkType,
 			InstanceID:       instanceID,
 			TotalPostsCached: 0,
 			UserID:           app.UserID,
 			IsActive:         true,
+		}
+		if err := validateFriendLinkTypeParams(link.Type, link.RSSURL, link.InstanceID); err != nil {
+			return err
 		}
 		return s.linkRepo.Create(ctx, link)
 	}
@@ -365,11 +361,13 @@ func (s *AdminService) ensureFriendLink(ctx context.Context, app *social.FriendL
 	link.Logo = app.Logo
 	link.Description = app.Description
 	link.RSSURL = app.RSSURL
-	link.Kind = kind
-	link.SyncMode = syncMode
+	link.Type = linkType
 	link.InstanceID = instanceID
 	link.UserID = app.UserID
 	link.IsActive = true
+	if err := validateFriendLinkTypeParams(link.Type, link.RSSURL, link.InstanceID); err != nil {
+		return err
+	}
 	return s.linkRepo.Update(ctx, link)
 }
 
@@ -461,4 +459,44 @@ func fallbackName(name *string, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func normalizeFriendLinkType(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "":
+		return social.FriendLinkTypeRSS, nil
+	case social.FriendLinkTypeFederation:
+		return social.FriendLinkTypeFederation, nil
+	case social.FriendLinkTypeRSS:
+		return social.FriendLinkTypeRSS, nil
+	case social.FriendLinkTypeNoRSS:
+		return social.FriendLinkTypeNoRSS, nil
+	default:
+		return "", errors.New("友链类型仅支持 federation/rss/norss")
+	}
+}
+
+func validateFriendLinkTypeParams(linkType string, rssURL *string, instanceID *int64) error {
+	switch linkType {
+	case social.FriendLinkTypeFederation:
+		if instanceID == nil || *instanceID <= 0 {
+			return errors.New("federation 友链必须绑定联合实例")
+		}
+		return nil
+	case social.FriendLinkTypeRSS:
+		if instanceID != nil {
+			return errors.New("rss 友链不能绑定联合实例")
+		}
+		if rssURL == nil || strings.TrimSpace(*rssURL) == "" {
+			return errors.New("rss 友链必须填写 RSS 地址")
+		}
+		return nil
+	case social.FriendLinkTypeNoRSS:
+		if instanceID != nil {
+			return errors.New("norss 友链不能绑定联合实例")
+		}
+		return nil
+	default:
+		return errors.New("无效的友链类型")
+	}
 }

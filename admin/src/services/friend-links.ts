@@ -4,6 +4,8 @@ import type {
     FriendLink,
     FriendLinkApplication,
     FriendLinkCreateReq,
+    FriendLinkFederationRequestReq,
+    FriendLinkFederationRequestResp,
     FriendLinkListAppsParams,
     FriendLinkListSyncJobsParams,
     FriendLinkListParams,
@@ -33,6 +35,14 @@ export const friendLinkService = {
         return request<FriendLink>('/admin/friend-links', {
             method: 'POST',
             body: data,
+        })
+    },
+
+    // 以联合协议发起对外友链申请
+    requestFederationFriendLink: (payload: FriendLinkFederationRequestReq) => {
+        return request<FriendLinkFederationRequestResp>('/admin/friend-links/federation/request', {
+            method: 'POST',
+            body: payload,
         })
     },
 
@@ -92,7 +102,7 @@ export const friendLinkService = {
     updateApplicationStatus: (id: number, status: string) => {
         return request<FriendLinkApplication>(`/admin/friend-links/applications/${id}/status`, {
             method: 'PUT',
-            body: JSON.stringify({ status }),
+            body: { status },
         })
     },
 

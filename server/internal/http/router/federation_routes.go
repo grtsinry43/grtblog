@@ -43,7 +43,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	resolver := federation.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
 	verifier := federation.NewVerifier(resolver, 5*time.Minute)
 	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
-	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, deps.EventBus)
+	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, linkRepo, deps.EventBus)
 
 	wellKnownHandler := handler.NewFederationWellKnownHandler(sysCfgSvc, deps.Config.App)
 	app.Get("/.well-known/blog-federation/manifest.json", wellKnownHandler.Manifest)

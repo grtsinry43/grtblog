@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -38,9 +37,9 @@ func (h *FriendTimelineHandler) ListPublic(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	items := make([]contract.FederationPostResp, len(result.Items))
+	items := make([]contract.FriendTimelineItemResp, len(result.Items))
 	for i := range result.Items {
-		items[i] = mapCachePostToFederationPost(result.Items[i])
+		items[i] = mapCachePostToFriendTimelineItem(result.Items[i])
 	}
 	return response.Success(c, contract.FriendTimelineListResp{
 		Items: items,
@@ -50,34 +49,21 @@ func (h *FriendTimelineHandler) ListPublic(c *fiber.Ctx) error {
 	})
 }
 
-func mapCachePostToFederationPost(item domainfed.FederatedPostCache) contract.FederationPostResp {
-	author := contract.FederationPostAuthorResp{Name: ""}
+func mapCachePostToFriendTimelineItem(item domainfed.FederatedPostCache) contract.FriendTimelineItemResp {
+	author := contract.FriendTimelineAuthorResp{Name: ""}
 	var payload struct {
-		Name   string  `json:"name"`
-		URL    *string `json:"url,omitempty"`
-		Avatar *string `json:"avatar,omitempty"`
+		Name string `json:"name"`
 	}
 	if err := json.Unmarshal(item.Author, &payload); err == nil {
 		author.Name = payload.Name
-		author.URL = payload.URL
-		author.Avatar = payload.Avatar
 	}
-	id := strings.TrimSpace(item.URL)
-	if item.RemotePostID != nil && strings.TrimSpace(*item.RemotePostID) != "" {
-		id = strings.TrimSpace(*item.RemotePostID)
-	}
-	return contract.FederationPostResp{
-		ID:             id,
+	return contract.FriendTimelineItemResp{
 		URL:            item.URL,
 		Title:          item.Title,
 		Summary:        item.Summary,
 		ContentPreview: item.ContentPreview,
 		Author:         author,
 		PublishedAt:    item.PublishedAt,
-		UpdatedAt:      item.UpdatedAt,
 		CoverImage:     item.CoverImage,
-		Language:       item.Language,
-		AllowCitation:  item.AllowCitation,
-		AllowComment:   item.AllowComment,
 	}
 }

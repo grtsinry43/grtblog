@@ -74,3 +74,48 @@ func TestShouldRecordRSSAccessHeaders(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildRSSEnclosure(t *testing.T) {
+	if enclosure := buildRSSEnclosure(""); enclosure != nil {
+		t.Fatalf("expected nil enclosure for empty image url")
+	}
+
+	enclosure := buildRSSEnclosure("https://cdn.example.com/a.png?x=1")
+	if enclosure == nil {
+		t.Fatalf("expected enclosure")
+	}
+	if enclosure.Url != "https://cdn.example.com/a.png?x=1" {
+		t.Fatalf("unexpected enclosure url: %q", enclosure.Url)
+	}
+	if enclosure.Length != "0" {
+		t.Fatalf("unexpected enclosure length: %q", enclosure.Length)
+	}
+	if enclosure.Type != "image/png" {
+		t.Fatalf("unexpected enclosure type: %q", enclosure.Type)
+	}
+}
+
+func TestDetectImageMIMEType(t *testing.T) {
+	cases := []struct {
+		url    string
+		expect string
+	}{
+		{url: "https://cdn.example.com/a.jpg", expect: "image/jpeg"},
+		{url: "https://cdn.example.com/a.jpeg?x=1", expect: "image/jpeg"},
+		{url: "https://cdn.example.com/a.png", expect: "image/png"},
+		{url: "https://cdn.example.com/a.gif", expect: "image/gif"},
+		{url: "https://cdn.example.com/a.webp", expect: "image/webp"},
+		{url: "https://cdn.example.com/a.avif", expect: "image/avif"},
+		{url: "https://cdn.example.com/a.svg", expect: "image/svg+xml"},
+		{url: "https://cdn.example.com/a.bmp", expect: "image/bmp"},
+		{url: "https://cdn.example.com/a.ico", expect: "image/x-icon"},
+		{url: "https://cdn.example.com/image", expect: "image/jpeg"},
+		{url: "", expect: "image/jpeg"},
+	}
+
+	for _, tc := range cases {
+		if got := detectImageMIMEType(tc.url); got != tc.expect {
+			t.Fatalf("detectImageMIMEType(%q)=%q, expect=%q", tc.url, got, tc.expect)
+		}
+	}
+}

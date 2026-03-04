@@ -15,6 +15,7 @@ import (
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	domainfed "github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 )
 
@@ -27,17 +28,25 @@ type CallbackResultCmd struct {
 	ProcessedAt    *time.Time
 }
 
+var (
+	ErrTargetInstanceEmpty            = errors.New("target instance is empty")
+	ErrTargetFriendLinkNotFederation = errors.New("target friend link is not federation type")
+	ErrFederationInstanceNotBound    = errors.New("federation instance not bound")
+	ErrFederationInstanceNotActive   = errors.New("federation instance not active")
+)
+
 type DeliveryService struct {
 	repo     domainfed.OutboundDeliveryRepository
 	outbound *OutboundService
+	linkRepo social.FriendLinkRepository
 	events   appEvent.Bus
 }
 
-func NewDeliveryService(repo domainfed.OutboundDeliveryRepository, outbound *OutboundService, events appEvent.Bus) *DeliveryService {
+func NewDeliveryService(repo domainfed.OutboundDeliveryRepository, outbound *OutboundService, linkRepo social.FriendLinkRepository, events appEvent.Bus) *DeliveryService {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
-	return &DeliveryService{repo: repo, outbound: outbound, events: events}
+	return &DeliveryService{repo: repo, outbound: outbound, linkRepo: linkRepo, events: events}
 }
 
 func (s *DeliveryService) DispatchFriendLink(ctx context.Context, target, message, rssURL string, traceID *string) (*domainfed.OutboundDelivery, error) {
@@ -54,6 +63,9 @@ func (s *DeliveryService) DispatchFriendLink(ctx context.Context, target, messag
 }
 
 func (s *DeliveryService) DispatchCitation(ctx context.Context, ev CitationDetected, traceID *string) (*domainfed.OutboundDelivery, error) {
+	if err := s.ensureFederationTarget(ctx, ev.TargetInstance); err != nil {
+		return nil, err
+	}
 	payload, _ := json.Marshal(ev)
 	articleID := ev.ArticleID
 	delivery := s.newDelivery(domainfed.DeliveryTypeCitation, &articleID, ev.TargetInstance, payload, traceID)
@@ -64,6 +76,9 @@ func (s *DeliveryService) DispatchCitation(ctx context.Context, ev CitationDetec
 }
 
 func (s *DeliveryService) DispatchMention(ctx context.Context, ev MentionDetected, traceID *string) (*domainfed.OutboundDelivery, error) {
+	if err := s.ensureFederationTarget(ctx, ev.TargetInstance); err != nil {
+		return nil, err
+	}
 	payload, _ := json.Marshal(ev)
 	articleID := ev.ArticleID
 	delivery := s.newDelivery(domainfed.DeliveryTypeMention, &articleID, ev.TargetInstance, payload, traceID)
@@ -362,4 +377,54 @@ func canTransition(from, to string) bool {
 		return false
 	}
 	return dst >= src
+}
+
+func (s *DeliveryService) ensureFederationTarget(ctx context.Context, target string) error {
+	if s.linkRepo == nil {
+		return errors.New("friend link repository not configured")
+	}
+	targetHost, targetPort := parseHostPort(target)
+	targetHost = strings.ToLower(strings.TrimSpace(targetHost))
+	targetPort = strings.TrimSpace(targetPort)
+	if targetHost == "" {
+		return ErrTargetInstanceEmpty
+	}
+	active := true
+	links, _, err := s.linkRepo.List(ctx, social.FriendLinkListOptions{
+		IsActive: &active,
+		Type:     social.FriendLinkTypeFederation,
+		Page:     1,
+		PageSize: 0,
+	})
+	if err != nil {
+		return err
+	}
+	for i := range links {
+		linkHost, linkPort := parseHostPort(links[i].URL)
+		linkHost = strings.ToLower(strings.TrimSpace(linkHost))
+		if linkHost == "" || linkHost != targetHost {
+			continue
+		}
+		if targetPort != "" && strings.TrimSpace(linkPort) != targetPort {
+			continue
+		}
+		if links[i].InstanceID == nil || *links[i].InstanceID <= 0 {
+			return ErrFederationInstanceNotBound
+		}
+		if s.outbound == nil || s.outbound.instanceRepo == nil {
+			return errors.New("federation instance repository not configured")
+		}
+		instance, err := s.outbound.instanceRepo.GetByID(ctx, *links[i].InstanceID)
+		if err != nil {
+			if errors.Is(err, domainfed.ErrFederationInstanceNotFound) {
+				return ErrFederationInstanceNotBound
+			}
+			return err
+		}
+		if strings.TrimSpace(strings.ToLower(instance.Status)) != "active" {
+			return ErrFederationInstanceNotActive
+		}
+		return nil
+	}
+	return ErrTargetFriendLinkNotFederation
 }

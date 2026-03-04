@@ -1,7 +1,6 @@
 import { request } from './http'
 import type {
   FederationAdminCitationReq,
-  FederationAdminFriendLinkRequestReq,
   FederationAdminMentionReq,
   FederationActivityPubFollowerListResp,
   FederationActivityPubPublishReq,
@@ -24,13 +23,6 @@ export function checkFederationRemote(targetUrl: string) {
   return request<FederationAdminRemoteCheckResp>('/admin/federation/remote/check', {
     method: 'GET',
     query: { target_url: targetUrl },
-  })
-}
-
-export function requestFederationFriendlink(payload: FederationAdminFriendLinkRequestReq) {
-  return request<FederationAdminProxyResp>('/admin/federation/friendlinks/request', {
-    method: 'POST',
-    body: payload,
   })
 }
 

@@ -5,8 +5,7 @@ export interface FriendLink {
     logo?: string
     description?: string
     rssUrl?: string
-    kind: 'manual' | 'federation'
-    syncMode: 'none' | 'rss' | 'federation'
+    type: 'federation' | 'rss' | 'norss'
     instanceId?: number
     lastSyncAt?: string
     lastSyncStatus?: string
@@ -24,7 +23,7 @@ export interface FriendLinkApplication {
     url: string
     logo?: string
     description?: string
-    applyChannel: 'user' | 'federation'
+    applyChannel: 'user' | 'federation' | 'admin'
     requestedSyncMode: string
     rssUrl?: string
     instanceUrl?: string
@@ -38,8 +37,8 @@ export interface FriendLinkApplication {
 
 export interface FriendLinkSyncJob {
     id: number
-    targetType: 'friend_link' | 'federation_instance'
-    syncMethod: 'timeline' | 'rss'
+    targetType: 'friend_link'
+    syncMethod: 'timeline' | 'rss' | 'rss_fallback'
     friendLinkId?: number
     instanceId?: number
     targetUrl: string
@@ -64,8 +63,7 @@ export interface FriendLinkCreateReq {
     logo?: string
     description?: string
     rssUrl?: string
-    kind?: string
-    syncMode?: string
+    type?: 'federation' | 'rss' | 'norss'
     instanceId?: number
     syncInterval?: number
     isActive: boolean
@@ -96,7 +94,19 @@ export interface FriendLinkListParams {
     page?: number
     pageSize?: number
     active?: boolean
-    kind?: string
-    syncMode?: string
+    type?: 'federation' | 'rss' | 'norss'
     keyword?: string
+}
+
+export interface FriendLinkFederationRequestReq {
+    target_url: string
+    message?: string
+    rss_url?: string
+}
+
+export interface FriendLinkFederationRequestResp {
+    request_id?: string
+    delivery_id?: number
+    status_code: number
+    body: string
 }

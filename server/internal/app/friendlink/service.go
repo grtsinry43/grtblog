@@ -123,7 +123,7 @@ func toOptionalString(val string) *string {
 
 func requestedSyncMode(rssURL string) string {
 	if strings.TrimSpace(rssURL) == "" {
-		return social.FriendLinkSyncModeNone
+		return "none"
 	}
-	return social.FriendLinkSyncModeRSS
+	return "rss"
 }

@@ -26,6 +26,7 @@ type AuthorInfo struct {
 type FederatedPostCacheRepository interface {
 	UpsertBatch(ctx context.Context, posts []FederatedPostCache) error
 	ListByInstance(ctx context.Context, instanceID int64, since *time.Time, limit int) ([]FederatedPostCache, error)
+	CountByFriendLink(ctx context.Context, friendLinkID int64) (int, error)
 	ListRecent(ctx context.Context, limit int) ([]FederatedPostCache, error)
 	ListTimeline(ctx context.Context, page, pageSize int) ([]FederatedPostCache, int64, error)
 	SearchPostsByInstance(ctx context.Context, instanceID int64, keyword string, limit int) ([]FederatedPostCache, error)

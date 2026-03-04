@@ -235,3 +235,58 @@ func TestBuildUsesOGDescriptionFallback(t *testing.T) {
 	}
 }
 
+func TestBuildIncludesItemCoverImage(t *testing.T) {
+	now := time.Date(2026, 2, 6, 12, 0, 0, 0, time.UTC)
+	articleCover := "/uploads/article-cover.jpg"
+	momentImages := "https://cdn.example.com/m1.png, https://cdn.example.com/m2.png"
+
+	svc := NewService(
+		&fakeContentRepo{
+			articles: []*content.Article{{
+				ID:        1,
+				Title:     "A",
+				Content:   "A",
+				ShortURL:  "a",
+				Cover:     &articleCover,
+				CreatedAt: now.Add(-1 * time.Hour),
+			}},
+			moments: []*content.Moment{{
+				ID:        2,
+				Title:     "M",
+				Content:   "M",
+				ShortURL:  "m",
+				Image:     &momentImages,
+				CreatedAt: now,
+			}},
+		},
+		nil,
+		newTestSysCfg(map[string]string{
+			"website_name": "My Site",
+			"public_url":   "https://example.com",
+		}),
+		nil,
+	)
+
+	feed, err := svc.Build(context.Background(), "http://localhost:8080", 10)
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+
+	var articleImage string
+	var momentImage string
+	for _, item := range feed.Items {
+		switch item.Category {
+		case "article":
+			articleImage = item.ImageURL
+		case "moment":
+			momentImage = item.ImageURL
+		}
+	}
+
+	if articleImage != "https://example.com/uploads/article-cover.jpg" {
+		t.Fatalf("unexpected article image url: %q", articleImage)
+	}
+	if momentImage != "https://cdn.example.com/m1.png" {
+		t.Fatalf("unexpected moment image url: %q", momentImage)
+	}
+}

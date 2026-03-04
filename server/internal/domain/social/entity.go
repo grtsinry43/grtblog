@@ -12,8 +12,7 @@ type FriendLink struct {
 	Logo             *string
 	Description      *string
 	RSSURL           *string
-	Kind             string
-	SyncMode         string
+	Type             string
 	InstanceID       *int64
 	LastSyncAt       *time.Time
 	LastSyncStatus   *string
@@ -40,19 +39,13 @@ const (
 )
 
 const (
-	FriendLinkKindManual     = "manual"
-	FriendLinkKindFederation = "federation"
+	FriendLinkTypeFederation = "federation"
+	FriendLinkTypeRSS        = "rss"
+	FriendLinkTypeNoRSS      = "norss"
 )
 
 const (
-	FriendLinkSyncModeNone       = "none"
-	FriendLinkSyncModeRSS        = "rss"
-	FriendLinkSyncModeFederation = "federation"
-)
-
-const (
-	FriendLinkSyncJobTargetFriendLink         = "friend_link"
-	FriendLinkSyncJobTargetFederationInstance = "federation_instance"
+	FriendLinkSyncJobTargetFriendLink = "friend_link"
 )
 
 const (

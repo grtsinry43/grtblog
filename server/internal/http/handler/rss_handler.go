@@ -2,6 +2,8 @@ package handler
 
 import (
 	"encoding/xml"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -74,7 +76,7 @@ func (h *RSSHandler) GetFeed(c *fiber.Ctx) error {
 				Email: item.AuthorEmail,
 			}
 		}
-		rssFeed.Items = append(rssFeed.Items, &feeds.Item{
+		feedItem := &feeds.Item{
 			Title:       item.Title,
 			Link:        &feeds.Link{Href: item.Link},
 			Id:          item.GUID,
@@ -82,7 +84,9 @@ func (h *RSSHandler) GetFeed(c *fiber.Ctx) error {
 			Created:     item.PublishedAt,
 			Updated:     item.PublishedAt,
 			Description: item.Description,
-		})
+		}
+		feedItem.Enclosure = buildRSSEnclosure(item.ImageURL)
+		rssFeed.Items = append(rssFeed.Items, feedItem)
 	}
 
 	channel := (&feeds.Rss{Feed: rssFeed}).RssFeed()
@@ -181,4 +185,48 @@ func xmlEscape(v string) string {
 		return v
 	}
 	return b.String()
+}
+
+func buildRSSEnclosure(imageURL string) *feeds.Enclosure {
+	imageURL = strings.TrimSpace(imageURL)
+	if imageURL == "" {
+		return nil
+	}
+	return &feeds.Enclosure{
+		Url:    imageURL,
+		Length: "0",
+		Type:   detectImageMIMEType(imageURL),
+	}
+}
+
+func detectImageMIMEType(rawURL string) string {
+	trimmed := strings.TrimSpace(rawURL)
+	if trimmed == "" {
+		return "image/jpeg"
+	}
+
+	pathValue := trimmed
+	if parsed, err := url.Parse(trimmed); err == nil && parsed.Path != "" {
+		pathValue = parsed.Path
+	}
+	switch strings.ToLower(path.Ext(pathValue)) {
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	case ".avif":
+		return "image/avif"
+	case ".svg":
+		return "image/svg+xml"
+	case ".bmp":
+		return "image/bmp"
+	case ".ico":
+		return "image/x-icon"
+	default:
+		return "image/jpeg"
+	}
 }

@@ -170,7 +170,12 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	httpStats := metrics.NewHTTPStats(6 * time.Hour)
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
 	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))
-	fedDeliver := appfed.NewDeliveryService(persistence.NewOutboundDeliveryRepository(db), fedOutbound, eventBus)
+	fedDeliver := appfed.NewDeliveryService(
+		persistence.NewOutboundDeliveryRepository(db),
+		fedOutbound,
+		persistence.NewFriendLinkRepository(db),
+		eventBus,
+	)
 	fedSync := appfed.NewSyncWorker(
 		persistence.NewFederationInstanceRepository(db),
 		persistence.NewFederatedPostCacheRepository(db),

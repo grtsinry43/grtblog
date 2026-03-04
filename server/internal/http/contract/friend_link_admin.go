@@ -10,8 +10,7 @@ type FriendLinkResp struct {
 	Logo             *string    `json:"logo,omitempty"`
 	Description      *string    `json:"description,omitempty"`
 	RSSURL           *string    `json:"rssUrl,omitempty"`
-	Kind             string     `json:"kind"`
-	SyncMode         string     `json:"syncMode"`
+	Type             string     `json:"type"`
 	InstanceID       *int64     `json:"instanceId,omitempty"`
 	LastSyncAt       *time.Time `json:"lastSyncAt,omitempty"`
 	LastSyncStatus   *string    `json:"lastSyncStatus,omitempty"`
@@ -38,8 +37,7 @@ type FriendLinkPublicResp struct {
 	Logo        *string `json:"logo,omitempty"`
 	Description *string `json:"description,omitempty"`
 	RSSURL      *string `json:"rssUrl,omitempty"`
-	Kind        string  `json:"kind"`
-	SyncMode    string  `json:"syncMode"`
+	Type        string  `json:"type"`
 }
 
 // FriendLinkPublicListResp 公开友链列表响应。
@@ -101,8 +99,7 @@ type FriendLinkCreateReq struct {
 	Logo         *string `json:"logo,omitempty"`
 	Description  *string `json:"description,omitempty"`
 	RSSURL       *string `json:"rssUrl,omitempty"`
-	Kind         string  `json:"kind,omitempty"`
-	SyncMode     string  `json:"syncMode,omitempty"`
+	Type         string  `json:"type,omitempty"`
 	InstanceID   *int64  `json:"instanceId,omitempty"`
 	SyncInterval *int    `json:"syncInterval,omitempty"`
 	IsActive     bool    `json:"isActive"`
@@ -116,8 +113,7 @@ type FriendLinkUpdateReq struct {
 	Logo         *string `json:"logo,omitempty"`
 	Description  *string `json:"description,omitempty"`
 	RSSURL       *string `json:"rssUrl,omitempty"`
-	Kind         string  `json:"kind,omitempty"`
-	SyncMode     string  `json:"syncMode,omitempty"`
+	Type         string  `json:"type,omitempty"`
 	InstanceID   *int64  `json:"instanceId,omitempty"`
 	SyncInterval *int    `json:"syncInterval,omitempty"`
 	IsActive     bool    `json:"isActive"`

@@ -17,8 +17,7 @@ func NewLinkService(repo social.FriendLinkRepository) *LinkService {
 func (s *LinkService) List(ctx context.Context, options FriendLinkListOptions) ([]social.FriendLink, int64, error) {
 	return s.repo.List(ctx, social.FriendLinkListOptions{
 		IsActive: options.IsActive,
-		Kind:     options.Kind,
-		SyncMode: options.SyncMode,
+		Type:     options.Type,
 		Keyword:  options.Keyword,
 		Page:     options.Page,
 		PageSize: options.PageSize,

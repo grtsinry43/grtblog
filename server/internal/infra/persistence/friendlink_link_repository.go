@@ -83,8 +83,7 @@ func (r *FriendLinkRepository) Update(ctx context.Context, link *social.FriendLi
 			"logo":               rec.Logo,
 			"description":        rec.Description,
 			"rss_url":            rec.RSSURL,
-			"kind":               rec.Kind,
-			"sync_mode":          rec.SyncMode,
+			"type":               rec.Type,
 			"instance_id":        rec.InstanceID,
 			"last_sync_at":       rec.LastSyncAt,
 			"last_sync_status":   rec.LastSyncStatus,
@@ -105,11 +104,8 @@ func (r *FriendLinkRepository) List(ctx context.Context, options social.FriendLi
 	if options.IsActive != nil {
 		query = query.Where("is_active = ?", *options.IsActive)
 	}
-	if strings.TrimSpace(options.Kind) != "" {
-		query = query.Where("kind = ?", options.Kind)
-	}
-	if strings.TrimSpace(options.SyncMode) != "" {
-		query = query.Where("sync_mode = ?", options.SyncMode)
+	if strings.TrimSpace(options.Type) != "" {
+		query = query.Where("type = ?", options.Type)
 	}
 	if strings.TrimSpace(options.Keyword) != "" {
 		search := "%" + strings.TrimSpace(options.Keyword) + "%"
@@ -149,8 +145,7 @@ func mapFriendLinkToDomain(rec model.FriendLink) social.FriendLink {
 		Logo:             stringToPtr(rec.Logo),
 		Description:      stringToPtr(rec.Description),
 		RSSURL:           stringToPtr(rec.RSSURL),
-		Kind:             rec.Kind,
-		SyncMode:         rec.SyncMode,
+		Type:             rec.Type,
 		InstanceID:       rec.InstanceID,
 		LastSyncAt:       rec.LastSyncAt,
 		LastSyncStatus:   rec.LastSyncStatus,
@@ -172,8 +167,7 @@ func mapFriendLinkToModel(link *social.FriendLink) model.FriendLink {
 		Logo:             optionalString(link.Logo),
 		Description:      optionalString(link.Description),
 		RSSURL:           optionalString(link.RSSURL),
-		Kind:             link.Kind,
-		SyncMode:         link.SyncMode,
+		Type:             link.Type,
 		InstanceID:       link.InstanceID,
 		LastSyncAt:       link.LastSyncAt,
 		LastSyncStatus:   link.LastSyncStatus,
