@@ -1,5 +1,7 @@
 # GrtBlog v2
 
+> 目前在修复问题和内测，请耐心等待稳定版发布😭
+
 **现代化博客系统** — 静态先行、实时注水、联合社交
 
 [![Docker Publish](https://github.com/grtsinry43/grtblog-v2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/grtsinry43/grtblog-v2/actions/workflows/docker-publish.yml)
@@ -14,6 +16,12 @@ GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现
 - **丰富内容** — 文章、手记 (Moments)、思考 (Thinking)、友链、时间线，满足多种表达需求
 - **管理后台** — 美观且功能完备的 Vue 3 后台，Markdown 实时预览、评论管理、数据统计
 - **一键部署** — Docker Compose 一键启动，多架构镜像 (amd64/arm64) 自动发布到 GHCR
+
+## 截图
+
+<img width="2560" height="1440" alt="image" src="https://github.com/user-attachments/assets/2ebe417e-5f53-48e2-bc7f-691a95308ccf" />
+<img width="2560" height="1440" alt="image" src="https://github.com/user-attachments/assets/170a42ce-6468-4b24-b9c1-80ecc8ec8672" />
+<img width="2560" height="1440" alt="image" src="https://github.com/user-attachments/assets/e4020255-31e3-4044-8c55-47bfa1624ac3" />
 
 ## 架构
 
