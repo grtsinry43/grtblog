@@ -1,8 +1,9 @@
 <script lang="ts">
-	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
-	import type { CommentNode } from '$lib/features/comment/types';
-	import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
-	import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
+import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
+import type { CommentNode } from '$lib/features/comment/types';
+import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
+import { resolvePath } from '$lib/shared/utils/resolve-path';
+import { MessageSquare, Monitor, MapPin, Pin } from 'lucide-svelte';
 	import CommentItem from './CommentItem.svelte';
 	import CommentForm from './CommentForm.svelte';
 	import CommentVerifiedIcon from './CommentVerifiedIcon.svelte';
@@ -48,6 +49,21 @@
 		}
 	};
 
+	const normalizeWebsiteUrl = (website?: string | null) => {
+		const raw = (website ?? '').trim();
+		if (!raw) return null;
+		const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(raw) ? raw : `https://${raw}`;
+		try {
+			const parsed = new URL(withProtocol);
+			if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+			return parsed.toString();
+		} catch {
+			return null;
+		}
+	};
+
+	const websiteHref = $derived.by(() => normalizeWebsiteUrl(comment.website));
+
 	$effect(() => {
 		relativeTime = formatRelativeTimeWithSeconds(comment.createdAt);
 		const stop = createRelativeTimeTicker(comment.createdAt, (value) => {
@@ -73,9 +89,21 @@
 	<!-- Content -->
 	<div class="flex-1 min-w-0">
 		<div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
-			<span class="font-bold text-sm text-ink-900 dark:text-ink-100">
-				{comment.nickName || 'Guest'}
-			</span>
+			{#if websiteHref}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+				<a
+					href={resolvePath(websiteHref)}
+					target="_blank"
+					rel="noopener noreferrer nofollow ugc"
+					class="font-bold text-sm text-ink-900 dark:text-ink-100 hover:text-jade-600 dark:hover:text-jade-400 underline-offset-2 hover:underline transition-colors"
+				>
+					{comment.nickName || 'Guest'}
+				</a>
+			{:else}
+				<span class="font-bold text-sm text-ink-900 dark:text-ink-100">
+					{comment.nickName || 'Guest'}
+				</span>
+			{/if}
 
 			<div class="flex items-center gap-1.5">
 				{#if comment.isOwner}

@@ -22,10 +22,10 @@ import {
   batchSetMomentTop,
   batchDeleteMoments,
 } from '@/services/moments'
+import { listWebsiteInfo } from '@/services/website-info'
 
 import type { MomentListItem } from '@/services/moments'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
-import { listWebsiteInfo } from '@/services/website-info'
 
 export default defineComponent({
   name: 'NoteList',
@@ -38,6 +38,13 @@ export default defineComponent({
 
     function normalizePublicUrl(value: string) {
       return value.trim().replace(/\/+$/, '')
+    }
+
+    function buildMomentPath(shortUrl: string, createdAt: string) {
+      const matched = createdAt.match(/^(\d{4})-(\d{2})-(\d{2})/)
+      if (!matched) return `/moments/${encodeURIComponent(shortUrl)}`
+      const [, year, month, day] = matched
+      return `/moments/${year}/${month}/${day}/${encodeURIComponent(shortUrl)}`
     }
 
     async function fetchWebsiteInfo() {
@@ -161,7 +168,10 @@ export default defineComponent({
             )}
             <div class="cursor-pointer inline-block" onClick={
               () => {
-                window.open(`${normalizePublicUrl(publicUrl.value)}/moments/${row.shortUrl}`, '_blank')
+                window.open(
+                  `${normalizePublicUrl(publicUrl.value)}${buildMomentPath(row.shortUrl, row.createdAt)}`,
+                  '_blank',
+                )
               }
             }>
               <span class='iconify ph--link-simple size-4 cursor-pointer text-black/50 dark:text-gray-400 ml-2 align-middle' />

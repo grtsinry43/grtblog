@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { PreviewLink20Regular } from '@vicons/fluent'
+import { SaveOutline } from '@vicons/ionicons5'
 import {
   NButton,
+  NPopover,
   NInput,
   NSwitch,
   NDrawer,
@@ -8,29 +11,158 @@ import {
   NForm,
   NFormItem,
 } from 'naive-ui'
-import { onMounted, ref } from 'vue'
-import { PreviewLink20Regular } from '@vicons/fluent'
-import { SaveOutline } from '@vicons/ionicons5'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 // Components
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
+import { listWebsiteInfo } from '@/services/website-info'
 
 // Composables
 import { usePageForm } from './composables/use-page-form'
 
+import type { PageDetail } from '@/services/page'
+
 defineOptions({ name: 'PageEdit' })
 
 // 1. Initialize form logic
-const { form, loading, saving, fetch, save } = usePageForm()
+const { form, saving, fetch, save } = usePageForm()
 
 // 2. View state management
 const showMeta = ref(false)
 const showPreview = ref(false)
+const previewMode = ref<'markdown' | 'page'>('markdown')
+const previewFrameRef = ref<HTMLIFrameElement | null>(null)
+const previewReady = ref(false)
+const publicUrl = ref('')
+const loadedPage = ref<PageDetail | null>(null)
+
+const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
+const PREVIEW_PAGE_TYPE = 'grtblog-preview:page'
+
+const previewUrl = computed(() => {
+  const base = normalizePublicUrl(publicUrl.value)
+  return base ? `${base}/internal/preview/page` : ''
+})
+
+const previewOrigin = computed(() => {
+  if (!previewUrl.value) return '*'
+  try {
+    return new URL(previewUrl.value).origin
+  } catch {
+    return '*'
+  }
+})
+
+function normalizePublicUrl(value: string) {
+  return value.trim().replace(/\/+$/, '')
+}
+
+async function fetchWebsiteInfo() {
+  try {
+    const list = await listWebsiteInfo()
+    const item = list?.find((info) => info.key === 'public_url')
+    publicUrl.value = item?.value?.trim() ?? ''
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+function buildPreviewPayload() {
+  const nowIso = new Date().toISOString()
+  return {
+    id: loadedPage.value?.id ?? 0,
+    title: form.title,
+    description: form.description || null,
+    aiSummary: loadedPage.value?.aiSummary ?? null,
+    content: form.content,
+    contentHash: loadedPage.value?.contentHash ?? '',
+    commentAreaId: loadedPage.value?.commentId ?? null,
+    shortUrl: form.shortUrl,
+    isEnabled: form.isEnabled,
+    isBuiltin: loadedPage.value?.isBuiltin ?? false,
+    metrics: loadedPage.value
+      ? {
+          views: loadedPage.value.views ?? 0,
+          likes: loadedPage.value.likes ?? 0,
+          comments: loadedPage.value.comments ?? 0,
+        }
+      : undefined,
+    createdAt: loadedPage.value?.createdAt ?? nowIso,
+    updatedAt: nowIso,
+  }
+}
+
+function sendPreviewPayload() {
+  if (!showPreview.value || previewMode.value !== 'page') return
+  if (!previewUrl.value || !previewReady.value) return
+  const frame = previewFrameRef.value
+  if (!frame?.contentWindow) return
+  frame.contentWindow.postMessage(
+    { type: PREVIEW_PAGE_TYPE, payload: buildPreviewPayload() },
+    previewOrigin.value,
+  )
+}
+
+let previewTimer: number | null = null
+function schedulePreviewPayload() {
+  if (!showPreview.value || previewMode.value !== 'page') return
+  if (!previewUrl.value) return
+  if (previewTimer) window.clearTimeout(previewTimer)
+  previewTimer = window.setTimeout(() => {
+    previewTimer = null
+    sendPreviewPayload()
+  }, 200)
+}
+
+function handlePreviewMessage(event: MessageEvent) {
+  const frame = previewFrameRef.value
+  if (!frame?.contentWindow || event.source !== frame.contentWindow) return
+  const data = event.data as { type?: string } | null
+  if (!data || data.type !== PREVIEW_READY_TYPE) return
+  previewReady.value = true
+  sendPreviewPayload()
+}
+
+function handlePreviewFrameLoad() {
+  previewReady.value = true
+  sendPreviewPayload()
+}
 
 // 3. Lifecycle
 onMounted(() => {
-  fetch()
+  window.addEventListener('message', handlePreviewMessage)
+  Promise.all([fetch(), fetchWebsiteInfo()]).then(([data]) => {
+    loadedPage.value = data as PageDetail | null
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', handlePreviewMessage)
+  if (previewTimer) window.clearTimeout(previewTimer)
+})
+
+watch(
+  () => [
+    form.title,
+    form.description,
+    form.content,
+    form.shortUrl,
+    form.isEnabled,
+    form.allowComment,
+  ],
+  () => {
+    schedulePreviewPayload()
+  },
+  { deep: true },
+)
+
+watch([showPreview, previewMode, previewUrl], () => {
+  schedulePreviewPayload()
+})
+
+watch(previewUrl, () => {
+  previewReady.value = false
 })
 </script>
 
@@ -110,10 +242,66 @@ onMounted(() => {
           v-if="showPreview"
           class="pane preview-pane relative h-full overflow-auto"
         >
+          <div class="absolute top-3 right-3 z-10">
+            <NPopover
+              trigger="click"
+              placement="bottom-end"
+            >
+              <template #trigger>
+                <NButton
+                  tertiary
+                  type="primary"
+                  circle
+                  size="small"
+                  class="shadow-sm"
+                >
+                  <template #icon><div class="iconify text-lg ph--dots-three-vertical" /></template>
+                </NButton>
+              </template>
+              <div class="flex flex-col gap-1 p-1">
+                <NButton
+                  :type="previewMode === 'markdown' ? 'primary' : 'default'"
+                  quaternary
+                  size="small"
+                  class="w-full justify-start px-2"
+                  @click="previewMode = 'markdown'"
+                  >Markdown 预览</NButton
+                >
+                <NButton
+                  :type="previewMode === 'page' ? 'primary' : 'default'"
+                  quaternary
+                  size="small"
+                  class="w-full justify-start px-2"
+                  @click="previewMode = 'page'"
+                  >网页预览</NButton
+                >
+              </div>
+            </NPopover>
+          </div>
+
           <MarkdownPreview
+            v-if="previewMode === 'markdown'"
             :source="form.content"
             class="p-4 sm:p-8"
           />
+          <div
+            v-else
+            class="h-full w-full"
+          >
+            <iframe
+              v-if="previewUrl"
+              :src="previewUrl"
+              ref="previewFrameRef"
+              class="h-full w-full border-0"
+              @load="handlePreviewFrameLoad"
+            />
+            <div
+              v-else
+              class="flex h-full items-center justify-center text-sm opacity-60"
+            >
+              请先在站点设置中配置 public_url
+            </div>
+          </div>
         </div>
       </div>
     </main>

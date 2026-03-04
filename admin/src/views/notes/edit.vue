@@ -19,25 +19,29 @@ import {
   useMessage,
   NAutoComplete,
 } from 'naive-ui'
-import { computed, onMounted, ref, toRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, toRef } from 'vue'
 
-import { generateTitle, generateSummaryStream } from '@/services/ai'
+import MultiImageInput from '@/components/image-picker/MultiImageInput.vue'
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
-import MultiImageInput from '@/components/image-picker/MultiImageInput.vue'
+import { generateTitle, generateSummaryStream } from '@/services/ai'
+import { listWebsiteInfo } from '@/services/website-info'
+import { useEditorStats } from '@/views/articles/composables/use-editor-stats'
 
 import { useMomentForm } from './composables/use-moment-form'
 import { useMomentTaxonomySelect } from './composables/use-moment-taxonomy-select'
-import { useEditorStats } from '@/views/articles/composables/use-editor-stats'
+
+import type { MomentDetail } from '@/services/moments'
 
 defineOptions({ name: 'NoteEdit' })
 
 const message = useMessage()
 
-const { form, loading, saving, imageProcessing, isCreating, fetch, save } = useMomentForm()
+const { form, saving, imageProcessing, isCreating, fetch, save } = useMomentForm()
 
 const {
   columnOptions,
+  topicOptions,
   dynamicTopics,
   topicSearchValue,
   autoCompleteOptions,
@@ -54,6 +58,13 @@ const { cursorPos, selectionStats, statsIdle, markActivity, handleCursorChange, 
 const showMeta = ref(false)
 const showPreview = ref(false)
 const previewMode = ref<'markdown' | 'page'>('markdown')
+const previewFrameRef = ref<HTMLIFrameElement | null>(null)
+const previewReady = ref(false)
+const publicUrl = ref('')
+const loadedMoment = ref<MomentDetail | null>(null)
+
+const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
+const PREVIEW_MOMENT_TYPE = 'grtblog-preview:moment'
 
 const aiGenerating = ref(false)
 async function handleAIGenerate() {
@@ -119,15 +130,151 @@ const actionLabel = computed(() => {
 })
 const actionIcon = computed(() => (form.isPublished ? PaperPlaneOutline : SaveOutline))
 const previewUrl = computed(() => {
-  const slug = form.shortUrl?.trim()
-  return slug ? `/moments/${slug}` : ''
+  const base = normalizePublicUrl(publicUrl.value)
+  return base ? `${base}/internal/preview/moment` : ''
 })
 
+const previewOrigin = computed(() => {
+  if (!previewUrl.value) return '*'
+  try {
+    return new URL(previewUrl.value).origin
+  } catch {
+    return '*'
+  }
+})
+
+function normalizePublicUrl(value: string) {
+  return value.trim().replace(/\/+$/, '')
+}
+
+async function fetchWebsiteInfo() {
+  try {
+    const list = await listWebsiteInfo()
+    const item = list?.find((info) => info.key === 'public_url')
+    publicUrl.value = item?.value?.trim() ?? ''
+  } catch (err) {
+    message.error(err instanceof Error ? err.message : '加载站点地址失败')
+  }
+}
+
+function splitImages(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function buildPreviewPayload() {
+  const nowIso = new Date().toISOString()
+  const selectedColumn = columnOptions.value.find((option) => option.value === form.columnId)
+  return {
+    id: loadedMoment.value?.id ?? 0,
+    title: form.title,
+    summary: form.summary,
+    aiSummary: form.aiSummary ?? null,
+    content: form.content,
+    contentHash: loadedMoment.value?.contentHash ?? '',
+    shortUrl: form.shortUrl,
+    image: splitImages(form.image),
+    columnId: form.columnId,
+    columnName: selectedColumn?.label ? String(selectedColumn.label) : undefined,
+    commentAreaId: null,
+    toc: undefined,
+    topics: form.topicIds.map((id, index) => {
+      const topicOption = topicOptions.value.find((option) => option.value === id)
+      const dynamicName = dynamicTopics.value[index]
+      const name = (topicOption?.label ? String(topicOption.label) : dynamicName || '').trim()
+      return { id, name: name || `话题 ${id}` }
+    }),
+    metrics: loadedMoment.value ? { views: 0, likes: 0, comments: 0 } : undefined,
+    isPublished: form.isPublished,
+    isTop: form.isTop,
+    isHot: loadedMoment.value?.isHot ?? false,
+    isOriginal: form.isOriginal,
+    createdAt: loadedMoment.value?.createdAt ?? nowIso,
+    updatedAt: nowIso,
+    authorId: loadedMoment.value?.authorId ?? 0,
+  }
+}
+
+function sendPreviewPayload() {
+  if (!showPreview.value || previewMode.value !== 'page') return
+  if (!previewUrl.value || !previewReady.value) return
+  const frame = previewFrameRef.value
+  if (!frame?.contentWindow) return
+  frame.contentWindow.postMessage(
+    { type: PREVIEW_MOMENT_TYPE, payload: buildPreviewPayload() },
+    previewOrigin.value,
+  )
+}
+
+let previewTimer: number | null = null
+function schedulePreviewPayload() {
+  if (!showPreview.value || previewMode.value !== 'page') return
+  if (!previewUrl.value) return
+  if (previewTimer) window.clearTimeout(previewTimer)
+  previewTimer = window.setTimeout(() => {
+    previewTimer = null
+    sendPreviewPayload()
+  }, 200)
+}
+
+function handlePreviewMessage(event: MessageEvent) {
+  const frame = previewFrameRef.value
+  if (!frame?.contentWindow || event.source !== frame.contentWindow) return
+  const data = event.data as { type?: string } | null
+  if (!data || data.type !== PREVIEW_READY_TYPE) return
+  previewReady.value = true
+  sendPreviewPayload()
+}
+
+function handlePreviewFrameLoad() {
+  previewReady.value = true
+  sendPreviewPayload()
+}
+
 onMounted(async () => {
-  const data = await fetch()
+  window.addEventListener('message', handlePreviewMessage)
+
+  const [data] = await Promise.all([fetch(), fetchWebsiteInfo()])
+  loadedMoment.value = data as MomentDetail | null
   if (data?.topics) {
     setInitialTopics(data.topics)
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', handlePreviewMessage)
+  if (previewTimer) window.clearTimeout(previewTimer)
+})
+
+watch(
+  () => [
+    form.title,
+    form.summary,
+    form.aiSummary,
+    form.content,
+    form.image,
+    form.shortUrl,
+    form.columnId,
+    form.topicIds,
+    form.isPublished,
+    form.isTop,
+    form.isOriginal,
+    form.allowComment,
+  ],
+  () => {
+    schedulePreviewPayload()
+  },
+  { deep: true },
+)
+
+watch([showPreview, previewMode, previewUrl], () => {
+  schedulePreviewPayload()
+})
+
+watch(previewUrl, () => {
+  previewReady.value = false
 })
 </script>
 
@@ -330,13 +477,15 @@ onMounted(async () => {
             <iframe
               v-if="previewUrl"
               :src="previewUrl"
+              ref="previewFrameRef"
               class="h-full w-full border-0"
+              @load="handlePreviewFrameLoad"
             />
             <div
               v-else
               class="flex h-full items-center justify-center text-sm opacity-60"
             >
-              请先填写 slug
+              请先在站点设置中配置 public_url
             </div>
           </div>
         </div>
