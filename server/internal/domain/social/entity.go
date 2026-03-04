@@ -50,6 +50,23 @@ const (
 	FriendLinkSyncModeFederation = "federation"
 )
 
+const (
+	FriendLinkSyncJobTargetFriendLink         = "friend_link"
+	FriendLinkSyncJobTargetFederationInstance = "federation_instance"
+)
+
+const (
+	FriendLinkSyncJobMethodTimeline = "timeline"
+	FriendLinkSyncJobMethodRSS      = "rss"
+)
+
+const (
+	FriendLinkSyncJobStatusQueued  = "queued"
+	FriendLinkSyncJobStatusRunning = "running"
+	FriendLinkSyncJobStatusSuccess = "success"
+	FriendLinkSyncJobStatusFailed  = "failed"
+)
+
 type FriendLinkApplication struct {
 	ID                int64
 	Name              *string
@@ -68,6 +85,28 @@ type FriendLinkApplication struct {
 	Status            string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+}
+
+type FriendLinkSyncJob struct {
+	ID            int64
+	TargetType    string
+	SyncMethod    string
+	FriendLinkID  *int64
+	InstanceID    *int64
+	TargetURL     string
+	FeedURL       *string
+	Status        string
+	AttemptCount  int
+	MaxAttempts   int
+	NextRetryAt   *time.Time
+	StartedAt     *time.Time
+	FinishedAt    *time.Time
+	DurationMS    *int64
+	PulledCount   int
+	ErrorMessage  *string
+	TriggerSource string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type GlobalNotification struct {

@@ -19,15 +19,23 @@ type SyncWorker struct {
 	instanceRepo domainfed.FederationInstanceRepository
 	cacheRepo    domainfed.FederatedPostCacheRepository
 	linkRepo     social.FriendLinkRepository
+	syncJobRepo  social.FriendLinkSyncJobRepository
 	resolver     *fedinfra.Resolver
 	client       *http.Client
 }
 
-func NewSyncWorker(instanceRepo domainfed.FederationInstanceRepository, cacheRepo domainfed.FederatedPostCacheRepository, linkRepo social.FriendLinkRepository, resolver *fedinfra.Resolver) *SyncWorker {
+func NewSyncWorker(
+	instanceRepo domainfed.FederationInstanceRepository,
+	cacheRepo domainfed.FederatedPostCacheRepository,
+	linkRepo social.FriendLinkRepository,
+	syncJobRepo social.FriendLinkSyncJobRepository,
+	resolver *fedinfra.Resolver,
+) *SyncWorker {
 	return &SyncWorker{
 		instanceRepo: instanceRepo,
 		cacheRepo:    cacheRepo,
 		linkRepo:     linkRepo,
+		syncJobRepo:  syncJobRepo,
 		resolver:     resolver,
 		client:       &http.Client{Timeout: 10 * time.Second},
 	}
@@ -54,28 +62,43 @@ func (w *SyncWorker) SyncOnce(ctx context.Context) {
 	if w == nil || w.instanceRepo == nil || w.cacheRepo == nil || w.resolver == nil {
 		return
 	}
+	if w.syncJobRepo == nil {
+		w.syncOnceDirect(ctx)
+		return
+	}
+	now := time.Now().UTC()
+	_ = w.enqueueInstanceJobs(ctx)
+	_ = w.enqueueRSSFriendLinkJobs(ctx, now)
+	_ = w.processSyncJobs(ctx, now, 200)
+}
+
+func (w *SyncWorker) syncOnceDirect(ctx context.Context) {
 	instances, err := w.instanceRepo.ListActive(ctx)
 	if err != nil {
 		return
 	}
 	for _, instance := range instances {
-		_ = w.syncInstance(ctx, instance)
+		_, _, _ = w.syncInstance(ctx, instance)
 	}
-	_ = w.syncRSSFriendLinks(ctx)
+	_ = w.syncRSSFriendLinks(ctx, time.Now().UTC())
 }
 
-func (w *SyncWorker) syncInstance(ctx context.Context, instance domainfed.FederationInstance) error {
+func (w *SyncWorker) syncInstance(ctx context.Context, instance domainfed.FederationInstance) (int, string, error) {
 	baseURL := strings.TrimRight(instance.BaseURL, "/")
 	if baseURL == "" {
-		return nil
+		return 0, social.FriendLinkSyncJobMethodTimeline, nil
 	}
 	endpoints, err := w.resolver.FetchEndpoints(ctx, baseURL)
 	if err == nil && endpoints != nil {
 		if posts, err := w.fetchTimelinePosts(ctx, instance.ID, endpoints); err == nil && len(posts) > 0 {
-			return w.cacheRepo.UpsertBatch(ctx, posts)
+			if err := w.cacheRepo.UpsertBatch(ctx, posts); err != nil {
+				return 0, social.FriendLinkSyncJobMethodTimeline, err
+			}
+			return len(posts), social.FriendLinkSyncJobMethodTimeline, nil
 		}
 	}
-	return w.syncFromRSS(ctx, instance.ID, baseURL)
+	count, err := w.syncFromRSS(ctx, instance.ID, baseURL)
+	return count, social.FriendLinkSyncJobMethodRSS, err
 }
 
 func (w *SyncWorker) fetchTimelinePosts(ctx context.Context, instanceID int64, endpoints *fedinfra.EndpointsDoc) ([]domainfed.FederatedPostCache, error) {
@@ -166,44 +189,47 @@ func (w *SyncWorker) fetchTimelinePosts(ctx context.Context, instanceID int64, e
 	return posts, nil
 }
 
-func (w *SyncWorker) syncFromRSS(ctx context.Context, instanceID int64, baseURL string) error {
+func (w *SyncWorker) syncFromRSS(ctx context.Context, instanceID int64, baseURL string) (int, error) {
 	manifest, err := w.resolver.FetchManifest(ctx, baseURL)
 	if err != nil || manifest == nil || len(manifest.RSSFeeds) == 0 {
-		return err
+		return 0, err
 	}
 	feedURL := strings.TrimSpace(manifest.RSSFeeds[0].URL)
 	if feedURL == "" {
-		return nil
+		return 0, nil
 	}
 	return w.syncFromFeedURL(ctx, instanceID, feedURL)
 }
 
-func (w *SyncWorker) syncFromFeedURL(ctx context.Context, instanceID int64, feedURL string) error {
+func (w *SyncWorker) syncFromFeedURL(ctx context.Context, instanceID int64, feedURL string) (int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, feedURL, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	resp, err := w.client.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("rss status %d", resp.StatusCode)
+		return 0, fmt.Errorf("rss status %d", resp.StatusCode)
 	}
 	parser := gofeed.NewParser()
 	feed, err := parser.Parse(resp.Body)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	posts := parseFeedItems(feed, instanceID)
 	if len(posts) == 0 {
-		return nil
+		return 0, nil
 	}
-	return w.cacheRepo.UpsertBatch(ctx, posts)
+	if err := w.cacheRepo.UpsertBatch(ctx, posts); err != nil {
+		return 0, err
+	}
+	return len(posts), nil
 }
 
-func (w *SyncWorker) syncRSSFriendLinks(ctx context.Context) error {
+func (w *SyncWorker) syncRSSFriendLinks(ctx context.Context, now time.Time) error {
 	if w.linkRepo == nil || w.instanceRepo == nil {
 		return nil
 	}
@@ -224,11 +250,14 @@ func (w *SyncWorker) syncRSSFriendLinks(ctx context.Context) error {
 			if rssURL == "" {
 				continue
 			}
+			if !shouldSyncRSSFriendLink(links[i], now, 30*time.Minute) {
+				continue
+			}
 			instance, err := w.ensureRSSInstance(ctx, &links[i])
 			if err != nil || instance == nil {
 				continue
 			}
-			if err := w.syncFromFeedURL(ctx, instance.ID, rssURL); err == nil {
+			if _, err := w.syncFromFeedURL(ctx, instance.ID, rssURL); err == nil {
 				now := time.Now().UTC()
 				ok := "ok"
 				links[i].LastSyncAt = &now
@@ -236,6 +265,10 @@ func (w *SyncWorker) syncRSSFriendLinks(ctx context.Context) error {
 				if posts, err := w.cacheRepo.ListByInstance(ctx, instance.ID, nil, 0); err == nil {
 					links[i].TotalPostsCached = len(posts)
 				}
+				_ = w.linkRepo.Update(ctx, &links[i])
+			} else {
+				failed := "failed"
+				links[i].LastSyncStatus = &failed
 				_ = w.linkRepo.Update(ctx, &links[i])
 			}
 		}
@@ -245,6 +278,191 @@ func (w *SyncWorker) syncRSSFriendLinks(ctx context.Context) error {
 		page++
 	}
 	return nil
+}
+
+func (w *SyncWorker) enqueueInstanceJobs(ctx context.Context) error {
+	if w.syncJobRepo == nil || w.instanceRepo == nil {
+		return nil
+	}
+	instances, err := w.instanceRepo.ListActive(ctx)
+	if err != nil {
+		return err
+	}
+	for i := range instances {
+		targetURL := strings.TrimSpace(instances[i].BaseURL)
+		if targetURL == "" {
+			continue
+		}
+		instanceID := instances[i].ID
+		job := &social.FriendLinkSyncJob{
+			TargetType:    social.FriendLinkSyncJobTargetFederationInstance,
+			SyncMethod:    social.FriendLinkSyncJobMethodTimeline,
+			InstanceID:    &instanceID,
+			TargetURL:     targetURL,
+			Status:        social.FriendLinkSyncJobStatusQueued,
+			MaxAttempts:   1,
+			TriggerSource: "scheduler",
+		}
+		_ = w.syncJobRepo.Create(ctx, job)
+	}
+	return nil
+}
+
+func (w *SyncWorker) enqueueRSSFriendLinkJobs(ctx context.Context, now time.Time) error {
+	if w.syncJobRepo == nil || w.linkRepo == nil {
+		return nil
+	}
+	page := 1
+	pageSize := 100
+	for {
+		links, total, err := w.linkRepo.List(ctx, social.FriendLinkListOptions{
+			IsActive: ptrBool(true),
+			SyncMode: social.FriendLinkSyncModeRSS,
+			Page:     page,
+			PageSize: pageSize,
+		})
+		if err != nil {
+			return err
+		}
+		for i := range links {
+			rssURL := strings.TrimSpace(optionalStr(links[i].RSSURL))
+			if rssURL == "" {
+				continue
+			}
+			if !shouldSyncRSSFriendLink(links[i], now, 30*time.Minute) {
+				continue
+			}
+			friendLinkID := links[i].ID
+			job := &social.FriendLinkSyncJob{
+				TargetType:    social.FriendLinkSyncJobTargetFriendLink,
+				SyncMethod:    social.FriendLinkSyncJobMethodRSS,
+				FriendLinkID:  &friendLinkID,
+				InstanceID:    links[i].InstanceID,
+				TargetURL:     strings.TrimSpace(links[i].URL),
+				FeedURL:       links[i].RSSURL,
+				Status:        social.FriendLinkSyncJobStatusQueued,
+				MaxAttempts:   1,
+				TriggerSource: "scheduler",
+			}
+			_ = w.syncJobRepo.Create(ctx, job)
+		}
+		if int64(page*pageSize) >= total || len(links) == 0 {
+			break
+		}
+		page++
+	}
+	return nil
+}
+
+func (w *SyncWorker) processSyncJobs(ctx context.Context, now time.Time, limit int) error {
+	if w.syncJobRepo == nil {
+		return nil
+	}
+	jobs, err := w.syncJobRepo.ListProcessable(ctx, now, limit)
+	if err != nil {
+		return err
+	}
+	for i := range jobs {
+		_ = w.runSyncJob(ctx, &jobs[i])
+	}
+	return nil
+}
+
+func (w *SyncWorker) runSyncJob(ctx context.Context, job *social.FriendLinkSyncJob) error {
+	if job == nil || w.syncJobRepo == nil {
+		return nil
+	}
+	startedAt := time.Now().UTC()
+	job.Status = social.FriendLinkSyncJobStatusRunning
+	job.AttemptCount++
+	job.StartedAt = &startedAt
+	job.FinishedAt = nil
+	job.DurationMS = nil
+	job.ErrorMessage = nil
+	_ = w.syncJobRepo.Update(ctx, job)
+
+	pulledCount, method, runErr := w.executeSyncJob(ctx, job)
+	finishedAt := time.Now().UTC()
+	durationMS := finishedAt.Sub(startedAt).Milliseconds()
+
+	job.SyncMethod = method
+	job.PulledCount = pulledCount
+	job.FinishedAt = &finishedAt
+	job.DurationMS = &durationMS
+	if runErr != nil {
+		job.Status = social.FriendLinkSyncJobStatusFailed
+		job.ErrorMessage = toSyncJobErrorMessage(runErr)
+	} else {
+		job.Status = social.FriendLinkSyncJobStatusSuccess
+		job.ErrorMessage = nil
+	}
+	return w.syncJobRepo.Update(ctx, job)
+}
+
+func (w *SyncWorker) executeSyncJob(ctx context.Context, job *social.FriendLinkSyncJob) (int, string, error) {
+	if job == nil {
+		return 0, social.FriendLinkSyncJobMethodRSS, nil
+	}
+	switch job.TargetType {
+	case social.FriendLinkSyncJobTargetFederationInstance:
+		var instance *domainfed.FederationInstance
+		var err error
+		if job.InstanceID != nil && *job.InstanceID > 0 {
+			instance, err = w.instanceRepo.GetByID(ctx, *job.InstanceID)
+		} else {
+			instance, err = w.instanceRepo.GetByBaseURL(ctx, strings.TrimSpace(job.TargetURL))
+		}
+		if err != nil {
+			return 0, social.FriendLinkSyncJobMethodTimeline, err
+		}
+		return w.syncInstance(ctx, *instance)
+	case social.FriendLinkSyncJobTargetFriendLink:
+		var link *social.FriendLink
+		var err error
+		if job.FriendLinkID != nil && *job.FriendLinkID > 0 {
+			link, err = w.linkRepo.GetByID(ctx, *job.FriendLinkID)
+		} else {
+			link, err = w.linkRepo.FindByURL(ctx, strings.TrimSpace(job.TargetURL))
+		}
+		if err != nil {
+			return 0, social.FriendLinkSyncJobMethodRSS, err
+		}
+		if !link.IsActive {
+			return 0, social.FriendLinkSyncJobMethodRSS, fmt.Errorf("friend link is inactive")
+		}
+		rssURL := strings.TrimSpace(optionalStr(link.RSSURL))
+		if rssURL == "" {
+			return 0, social.FriendLinkSyncJobMethodRSS, fmt.Errorf("rss url is empty")
+		}
+		instance, err := w.ensureRSSInstance(ctx, link)
+		if err != nil || instance == nil {
+			if err == nil {
+				err = fmt.Errorf("rss instance not resolved")
+			}
+			failed := "failed"
+			link.LastSyncStatus = &failed
+			_ = w.linkRepo.Update(ctx, link)
+			return 0, social.FriendLinkSyncJobMethodRSS, err
+		}
+		count, err := w.syncFromFeedURL(ctx, instance.ID, rssURL)
+		if err != nil {
+			failed := "failed"
+			link.LastSyncStatus = &failed
+			_ = w.linkRepo.Update(ctx, link)
+			return 0, social.FriendLinkSyncJobMethodRSS, err
+		}
+		now := time.Now().UTC()
+		ok := "ok"
+		link.LastSyncAt = &now
+		link.LastSyncStatus = &ok
+		if posts, err := w.cacheRepo.ListByInstance(ctx, instance.ID, nil, 0); err == nil {
+			link.TotalPostsCached = len(posts)
+		}
+		_ = w.linkRepo.Update(ctx, link)
+		return count, social.FriendLinkSyncJobMethodRSS, nil
+	default:
+		return 0, social.FriendLinkSyncJobMethodRSS, fmt.Errorf("unsupported sync target type: %s", strings.TrimSpace(job.TargetType))
+	}
 }
 
 func (w *SyncWorker) ensureRSSInstance(ctx context.Context, link *social.FriendLink) (*domainfed.FederationInstance, error) {
@@ -343,6 +561,36 @@ func parseFeedItems(feed *gofeed.Feed, instanceID int64) []domainfed.FederatedPo
 		})
 	}
 	return posts
+}
+
+func shouldSyncRSSFriendLink(link social.FriendLink, now time.Time, fallbackInterval time.Duration) bool {
+	interval := fallbackInterval
+	if link.SyncInterval != nil && *link.SyncInterval > 0 {
+		interval = time.Duration(*link.SyncInterval) * time.Minute
+	}
+	if interval <= 0 {
+		interval = 30 * time.Minute
+	}
+	if link.LastSyncAt == nil {
+		return true
+	}
+	next := link.LastSyncAt.Add(interval)
+	return !next.After(now)
+}
+
+func toSyncJobErrorMessage(err error) *string {
+	if err == nil {
+		return nil
+	}
+	msg := strings.TrimSpace(err.Error())
+	if msg == "" {
+		return nil
+	}
+	const maxLen = 2000
+	if len(msg) > maxLen {
+		msg = msg[:maxLen]
+	}
+	return &msg
 }
 
 func optionalStr(v *string) string {

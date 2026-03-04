@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -14,11 +15,12 @@ import (
 )
 
 type FriendLinkAdminHandler struct {
-	svc *friendlink.AdminService
+	svc         *friendlink.AdminService
+	syncJobRepo social.FriendLinkSyncJobRepository
 }
 
-func NewFriendLinkAdminHandler(svc *friendlink.AdminService) *FriendLinkAdminHandler {
-	return &FriendLinkAdminHandler{svc: svc}
+func NewFriendLinkAdminHandler(svc *friendlink.AdminService, syncJobRepo social.FriendLinkSyncJobRepository) *FriendLinkAdminHandler {
+	return &FriendLinkAdminHandler{svc: svc, syncJobRepo: syncJobRepo}
 }
 
 // ListApplications godoc
@@ -61,6 +63,65 @@ func (h *FriendLinkAdminHandler) ListApplications(c *fiber.Ctx) error {
 		respItems[i] = contract.ToFriendLinkApplicationResp(item)
 	}
 	return response.Success(c, contract.FriendLinkApplicationListResp{
+		Items: respItems,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
+	})
+}
+
+// ListSyncJobs godoc
+// @Summary 获取友链同步作业列表
+// @Tags FriendLinkAdmin
+// @Produce json
+// @Param status query string false "状态 queued/running/success/failed"
+// @Param targetType query string false "目标类型 friend_link/federation_instance"
+// @Param syncMethod query string false "同步方式 timeline/rss"
+// @Param friendLinkId query int64 false "友链ID"
+// @Param instanceId query int64 false "实例ID"
+// @Param keyword query string false "关键词（target/feed/error）"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} contract.FriendLinkSyncJobListResp
+// @Security BearerAuth
+// @Router /admin/friend-links/sync-jobs [get]
+func (h *FriendLinkAdminHandler) ListSyncJobs(c *fiber.Ctx) error {
+	if h.syncJobRepo == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "同步作业服务未初始化")
+	}
+	page := parseIntQuery(c, "page", 1)
+	pageSize := parseIntQuery(c, "pageSize", 10)
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	friendLinkID := parseOptionalInt64Query(c, "friendLinkId")
+	instanceID := parseOptionalInt64Query(c, "instanceId")
+
+	items, total, err := h.syncJobRepo.List(c.Context(), social.FriendLinkSyncJobListOptions{
+		Status:       strings.TrimSpace(c.Query("status")),
+		TargetType:   strings.TrimSpace(c.Query("targetType")),
+		SyncMethod:   strings.TrimSpace(c.Query("syncMethod")),
+		FriendLinkID: friendLinkID,
+		InstanceID:   instanceID,
+		Keyword:      strings.TrimSpace(c.Query("keyword")),
+		Page:         page,
+		PageSize:     pageSize,
+	})
+	if err != nil {
+		return err
+	}
+	respItems := make([]contract.FriendLinkSyncJobResp, len(items))
+	for i := range items {
+		respItems[i] = toFriendLinkSyncJobResp(items[i])
+	}
+	return response.Success(c, contract.FriendLinkSyncJobListResp{
 		Items: respItems,
 		Total: total,
 		Page:  page,
@@ -360,4 +421,48 @@ func toFriendLinkResp(item social.FriendLink) contract.FriendLinkResp {
 		CreatedAt:        item.CreatedAt,
 		UpdatedAt:        item.UpdatedAt,
 	}
+}
+
+func toFriendLinkSyncJobResp(item social.FriendLinkSyncJob) contract.FriendLinkSyncJobResp {
+	return contract.FriendLinkSyncJobResp{
+		ID:            item.ID,
+		TargetType:    item.TargetType,
+		SyncMethod:    item.SyncMethod,
+		FriendLinkID:  item.FriendLinkID,
+		InstanceID:    item.InstanceID,
+		TargetURL:     item.TargetURL,
+		FeedURL:       item.FeedURL,
+		Status:        item.Status,
+		AttemptCount:  item.AttemptCount,
+		MaxAttempts:   item.MaxAttempts,
+		NextRetryAt:   formatTimePtr(item.NextRetryAt),
+		StartedAt:     formatTimePtr(item.StartedAt),
+		FinishedAt:    formatTimePtr(item.FinishedAt),
+		DurationMS:    item.DurationMS,
+		PulledCount:   item.PulledCount,
+		ErrorMessage:  item.ErrorMessage,
+		TriggerSource: item.TriggerSource,
+		CreatedAt:     item.CreatedAt.Format(response.TimeLayout),
+		UpdatedAt:     item.UpdatedAt.Format(response.TimeLayout),
+	}
+}
+
+func parseOptionalInt64Query(c *fiber.Ctx, key string) *int64 {
+	raw := strings.TrimSpace(c.Query(key))
+	if raw == "" {
+		return nil
+	}
+	val, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || val <= 0 {
+		return nil
+	}
+	return &val
+}
+
+func formatTimePtr(val *time.Time) *string {
+	if val == nil {
+		return nil
+	}
+	out := val.Format(response.TimeLayout)
+	return &out
 }

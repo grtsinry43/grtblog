@@ -52,6 +52,30 @@ type FriendLinkApplication struct {
 
 func (FriendLinkApplication) TableName() string { return "friend_link_applications" }
 
+type FriendLinkSyncJob struct {
+	ID            int64      `gorm:"column:id;primaryKey"`
+	TargetType    string     `gorm:"column:target_type;size:30;not null"`
+	SyncMethod    string     `gorm:"column:sync_method;size:20;not null"`
+	FriendLinkID  *int64     `gorm:"column:friend_link_id"`
+	InstanceID    *int64     `gorm:"column:instance_id"`
+	TargetURL     string     `gorm:"column:target_url;size:500;not null"`
+	FeedURL       *string    `gorm:"column:feed_url;size:500"`
+	Status        string     `gorm:"column:status;size:20;not null"`
+	AttemptCount  int        `gorm:"column:attempt_count;not null"`
+	MaxAttempts   int        `gorm:"column:max_attempts;not null"`
+	NextRetryAt   *time.Time `gorm:"column:next_retry_at"`
+	StartedAt     *time.Time `gorm:"column:started_at"`
+	FinishedAt    *time.Time `gorm:"column:finished_at"`
+	DurationMS    *int64     `gorm:"column:duration_ms"`
+	PulledCount   int        `gorm:"column:pulled_count;not null"`
+	ErrorMessage  *string    `gorm:"column:error_message;type:text"`
+	TriggerSource string     `gorm:"column:trigger_source;size:40;not null"`
+	CreatedAt     time.Time  `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt     time.Time  `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (FriendLinkSyncJob) TableName() string { return "friend_link_sync_job" }
+
 type GlobalNotification struct {
 	ID         int64     `gorm:"column:id;primaryKey"`
 	Content    string    `gorm:"column:content;type:text;not null"`

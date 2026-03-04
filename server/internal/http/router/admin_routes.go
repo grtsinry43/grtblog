@@ -176,8 +176,9 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	friendLinkAppRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
+	friendLinkSyncJobRepo := persistence.NewFriendLinkSyncJobRepository(deps.DB)
 	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo, identityRepo, deps.EventBus)
-	friendLinkAdminHandler := handler.NewFriendLinkAdminHandler(friendLinkAdminSvc)
+	friendLinkAdminHandler := handler.NewFriendLinkAdminHandler(friendLinkAdminSvc, friendLinkSyncJobRepo)
 	admin.Get("/friend-links/applications", friendLinkAdminHandler.ListApplications)
 	admin.Put("/friend-links/applications/:id/approve", friendLinkAdminHandler.ApproveApplication)
 	admin.Put("/friend-links/applications/:id/reject", friendLinkAdminHandler.RejectApplication)
@@ -188,6 +189,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Put("/friend-links/:id", friendLinkAdminHandler.UpdateFriendLink)
 	admin.Put("/friend-links/:id/block", friendLinkAdminHandler.BlockFriendLink)
 	admin.Delete("/friend-links/:id", friendLinkAdminHandler.DeleteFriendLink)
+	admin.Get("/friend-links/sync-jobs", friendLinkAdminHandler.ListSyncJobs)
 
 	globalNotificationRepo := persistence.NewGlobalNotificationRepository(deps.DB)
 	globalNotificationSvc := globalnotification.NewService(globalNotificationRepo, deps.EventBus)

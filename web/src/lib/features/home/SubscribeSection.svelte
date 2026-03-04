@@ -32,6 +32,7 @@
 
 				<a
 					href={resolve('/feed', {})}
+					data-sveltekit-preload-data="off"
 					class="px-5 py-2.5 text-xs font-medium bg-jade-50/50 dark:bg-jade-500/5 border border-jade-200/60 dark:border-jade-800/60 text-jade-700 dark:text-jade-300 rounded-default hover:border-jade-500/50 hover:text-jade-600 transition-all flex items-center gap-2 group"
 				>
 					<Rss size={13} class="group-hover:text-amber-500 transition-colors" />

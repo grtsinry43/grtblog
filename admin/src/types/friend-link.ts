@@ -36,6 +36,28 @@ export interface FriendLinkApplication {
     updatedAt: string
 }
 
+export interface FriendLinkSyncJob {
+    id: number
+    targetType: 'friend_link' | 'federation_instance'
+    syncMethod: 'timeline' | 'rss'
+    friendLinkId?: number
+    instanceId?: number
+    targetUrl: string
+    feedUrl?: string
+    status: 'queued' | 'running' | 'success' | 'failed'
+    attemptCount: number
+    maxAttempts: number
+    nextRetryAt?: string
+    startedAt?: string
+    finishedAt?: string
+    durationMs?: number
+    pulledCount: number
+    errorMessage?: string
+    triggerSource: string
+    createdAt: string
+    updatedAt: string
+}
+
 export interface FriendLinkCreateReq {
     name: string
     url: string
@@ -56,6 +78,17 @@ export interface FriendLinkListAppsParams {
     pageSize?: number
     status?: string
     channel?: string
+    keyword?: string
+}
+
+export interface FriendLinkListSyncJobsParams {
+    page?: number
+    pageSize?: number
+    status?: string
+    targetType?: string
+    syncMethod?: string
+    friendLinkId?: number
+    instanceId?: number
     keyword?: string
 }
 

@@ -175,6 +175,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		persistence.NewFederationInstanceRepository(db),
 		persistence.NewFederatedPostCacheRepository(db),
 		persistence.NewFriendLinkRepository(db),
+		persistence.NewFriendLinkSyncJobRepository(db),
 		fedResolver,
 	)
 

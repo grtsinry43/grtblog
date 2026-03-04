@@ -350,6 +350,28 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         },
         component: 'friend-links/index',
       },
+      {
+        path: 'applications',
+        name: 'friendLinkApplications',
+        label: '申请审核',
+        icon: 'iconify ph--checks',
+        meta: {
+          componentName: 'FriendLinkApplications',
+          showTab: true,
+        },
+        component: 'friend-links/applications',
+      },
+      {
+        path: 'sync-jobs',
+        name: 'friendLinkSyncJobs',
+        label: '同步任务',
+        icon: 'iconify ph--clock-counter-clockwise',
+        meta: {
+          componentName: 'FriendLinkSyncJobs',
+          showTab: true,
+        },
+        component: 'friend-links/sync-jobs',
+      },
     ],
   },
   {

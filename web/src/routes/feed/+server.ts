@@ -19,7 +19,11 @@ const FORWARDED_HEADER_NAMES = [
 	'if-none-match',
 	'if-modified-since',
 	'user-agent',
-	'referer'
+	'referer',
+	'purpose',
+	'sec-purpose',
+	'x-purpose',
+	'x-moz'
 ] as const;
 
 function resolveInternalApiBaseURL(): string {

@@ -1,12 +1,15 @@
+import { request } from './http'
+
 import type {
     FriendLink,
     FriendLinkApplication,
     FriendLinkCreateReq,
     FriendLinkListAppsParams,
+    FriendLinkListSyncJobsParams,
     FriendLinkListParams,
+    FriendLinkSyncJob,
     FriendLinkUpdateReq,
 } from '@/types/friend-link'
-import { request } from './http'
 
 export interface ListResponse<T> {
     items: T[]
@@ -51,6 +54,14 @@ export const friendLinkService = {
     // 获取申请列表
     getApplications: (params: FriendLinkListAppsParams) => {
         return request<ListResponse<FriendLinkApplication>>('/admin/friend-links/applications', {
+            method: 'GET',
+            query: params,
+        })
+    },
+
+    // 获取同步作业列表
+    getSyncJobs: (params: FriendLinkListSyncJobsParams) => {
+        return request<ListResponse<FriendLinkSyncJob>>('/admin/friend-links/sync-jobs', {
             method: 'GET',
             query: params,
         })

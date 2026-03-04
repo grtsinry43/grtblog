@@ -28,7 +28,7 @@ func NewRSSHandler(svc *apprss.Service, accessSvc *apprss.AccessAnalyticsService
 // @Success 200 {string} string "rss xml"
 // @Router /public/rss.xml [get]
 func (h *RSSHandler) GetFeed(c *fiber.Ctx) error {
-	if h.accessSvc != nil {
+	if h.accessSvc != nil && shouldRecordRSSAccess(c) {
 		_ = h.accessSvc.RecordAccess(c.Context(), apprss.AccessMeta{
 			Path:       c.Path(),
 			IP:         c.IP(),
@@ -116,6 +116,25 @@ func extractRSSClientHint(c *fiber.Ctx) string {
 		}
 	}
 	return ""
+}
+
+func shouldRecordRSSAccess(c *fiber.Ctx) bool {
+	return shouldRecordRSSAccessHeaders(c.Get)
+}
+
+func shouldRecordRSSAccessHeaders(getHeader func(string, ...string) string) bool {
+	return !isPrefetchPurpose(getHeader("Purpose")) &&
+		!isPrefetchPurpose(getHeader("Sec-Purpose")) &&
+		!isPrefetchPurpose(getHeader("X-Purpose")) &&
+		!isPrefetchPurpose(getHeader("X-Moz"))
+}
+
+func isPrefetchPurpose(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return false
+	}
+	return strings.Contains(value, "prefetch")
 }
 
 func appendRSSExtensions(raw string, publicBaseURL string, feedID string, userID string) string {

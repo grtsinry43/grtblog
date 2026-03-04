@@ -63,6 +63,37 @@ type FriendLinkApplicationStatusReq struct {
 	Status string `json:"status"`
 }
 
+// FriendLinkSyncJobResp 友链/联合同步作业响应。
+type FriendLinkSyncJobResp struct {
+	ID            int64   `json:"id"`
+	TargetType    string  `json:"targetType"`
+	SyncMethod    string  `json:"syncMethod"`
+	FriendLinkID  *int64  `json:"friendLinkId,omitempty"`
+	InstanceID    *int64  `json:"instanceId,omitempty"`
+	TargetURL     string  `json:"targetUrl"`
+	FeedURL       *string `json:"feedUrl,omitempty"`
+	Status        string  `json:"status"`
+	AttemptCount  int     `json:"attemptCount"`
+	MaxAttempts   int     `json:"maxAttempts"`
+	NextRetryAt   *string `json:"nextRetryAt,omitempty"`
+	StartedAt     *string `json:"startedAt,omitempty"`
+	FinishedAt    *string `json:"finishedAt,omitempty"`
+	DurationMS    *int64  `json:"durationMs,omitempty"`
+	PulledCount   int     `json:"pulledCount"`
+	ErrorMessage  *string `json:"errorMessage,omitempty"`
+	TriggerSource string  `json:"triggerSource"`
+	CreatedAt     string  `json:"createdAt"`
+	UpdatedAt     string  `json:"updatedAt"`
+}
+
+// FriendLinkSyncJobListResp 同步作业列表响应。
+type FriendLinkSyncJobListResp struct {
+	Items []FriendLinkSyncJobResp `json:"items"`
+	Total int64                   `json:"total"`
+	Page  int                     `json:"page"`
+	Size  int                     `json:"size"`
+}
+
 // FriendLinkCreateReq 管理端创建友链请求。
 type FriendLinkCreateReq struct {
 	Name         string  `json:"name"`

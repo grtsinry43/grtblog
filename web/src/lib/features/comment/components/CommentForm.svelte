@@ -150,8 +150,10 @@
 			toast.error(error instanceof Error ? error.message : '发表失败');
 		}
 	}));
+	const isSubmitting = $derived(mutation.isPending);
 
 	const handleSubmit = () => {
+		if (mutation.isPending) return;
 		if (!content.trim()) {
 			toast.error('请输入评论内容');
 			return;
@@ -398,10 +400,11 @@
 
 			<button
 				onclick={handleSubmit}
-				class="flex items-center gap-2 text-xs font-serif tracking-widest text-ink-50 bg-ink-900 dark:bg-ink-200 dark:text-ink-900 hover:bg-jade-600 dark:hover:bg-jade-600 dark:hover:text-white px-8 py-2.5 rounded-default transition-all shadow-sm hover:shadow-md outline-none"
+				disabled={isSubmitting}
+				class="flex items-center gap-2 text-xs font-serif tracking-widest text-ink-50 bg-ink-900 dark:bg-ink-200 dark:text-ink-900 hover:bg-jade-600 dark:hover:bg-jade-600 dark:hover:text-white px-8 py-2.5 rounded-default transition-all shadow-sm hover:shadow-md outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-ink-900 dark:disabled:hover:bg-ink-200 dark:disabled:hover:text-ink-900"
 			>
-				<span>投递</span>
-				<Send size={12} strokeWidth={2} />
+				<span>{isSubmitting ? '投递中...' : '投递'}</span>
+				<Send size={12} strokeWidth={2} class={isSubmitting ? 'animate-pulse' : ''} />
 			</button>
 		</div>
 	</div>

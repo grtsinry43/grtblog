@@ -34,6 +34,12 @@
             .replaceAll('{seconds}', String(parts.seconds))
             .replaceAll('{totalSeconds}', String(parts.totalSeconds));
 
+    const preloadDataAttr = (href: string): 'off' | undefined => {
+        if (!href || /^(https?:|mailto:)/i.test(href)) return undefined;
+        const path = href.split(/[?#]/, 1)[0];
+        return path === '/feed' || path === '/rss.xml' ? 'off' : undefined;
+    };
+
     const uptimeText = $derived.by(() => {
         if (nowMs <= 0) return '';
         const startAt = Date.parse($footerThemeStore.siteStartTime);
@@ -79,6 +85,7 @@
                         {#each section.links as link (link.name)}
                             <a
                                     href={/^(https?:|mailto:)/i.test(link.href) ? link.href : resolvePath(link.href)}
+                                    data-sveltekit-preload-data={preloadDataAttr(link.href)}
                                     class="text-sm text-ink-500 hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
                             >
                                 {link.name}
@@ -142,6 +149,7 @@
                             <li>
                                 <a
                                         href={/^(https?:|mailto:)/i.test(link.href) ? link.href : resolvePath(link.href)}
+                                        data-sveltekit-preload-data={preloadDataAttr(link.href)}
                                         class="text-sm text-ink-500 hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
                                 >
                                     {link.name}

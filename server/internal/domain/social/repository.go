@@ -24,6 +24,13 @@ type FriendLinkRepository interface {
 	List(ctx context.Context, options FriendLinkListOptions) ([]FriendLink, int64, error)
 }
 
+type FriendLinkSyncJobRepository interface {
+	Create(ctx context.Context, job *FriendLinkSyncJob) error
+	Update(ctx context.Context, job *FriendLinkSyncJob) error
+	List(ctx context.Context, options FriendLinkSyncJobListOptions) ([]FriendLinkSyncJob, int64, error)
+	ListProcessable(ctx context.Context, now time.Time, limit int) ([]FriendLinkSyncJob, error)
+}
+
 type GlobalNotificationRepository interface {
 	GetByID(ctx context.Context, id int64) (*GlobalNotification, error)
 	Create(ctx context.Context, notification *GlobalNotification) error
@@ -56,6 +63,17 @@ type FriendLinkListOptions struct {
 	Keyword  string
 	Page     int
 	PageSize int
+}
+
+type FriendLinkSyncJobListOptions struct {
+	Status       string
+	TargetType   string
+	SyncMethod   string
+	FriendLinkID *int64
+	InstanceID   *int64
+	Keyword      string
+	Page         int
+	PageSize     int
 }
 
 type GlobalNotificationListOptions struct {
