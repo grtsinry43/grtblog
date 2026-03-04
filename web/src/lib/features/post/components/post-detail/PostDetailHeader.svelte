@@ -3,6 +3,7 @@
 	import { postDetailCtx } from '$lib/features/post/context';
 	import { sameMetrics } from './selector-equals';
 	import { formatDateCN, isDifferentDay } from '$lib/shared/utils/date';
+	import { calculateReadingTime, formatReadingTime } from '$lib/shared/utils/reading-time';
 	import { ArrowLeft, Calendar, Clock } from 'lucide-svelte';
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/ui/primitives/button/Button.svelte';
@@ -15,6 +16,7 @@
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
 	const createdAtStore = postDetailCtx.selectModelData((data) => data?.createdAt ?? '');
 	const updatedAtStore = postDetailCtx.selectModelData((data) => data?.updatedAt ?? '');
+	const contentStore = postDetailCtx.selectModelData((data) => data?.content ?? '');
 	const showUpdated = $derived(isDifferentDay($createdAtStore, $updatedAtStore));
 	const isHotStore = postDetailCtx.selectModelData((data) => data?.isHot ?? false);
 	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
@@ -29,6 +31,7 @@
 		const categoryName = ($categoryNameStore || '').trim();
 		return categoryName || '未分类';
 	});
+	const readingTime = $derived(calculateReadingTime($contentStore));
 
 	function goBack() {
 		history.back();
@@ -94,7 +97,7 @@
 					<Calendar size={12} />
 					{formatDateCN($createdAtStore)}{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN($updatedAtStore)}）</span>{/if}
 				</span>
-				<span class="flex items-center gap-1.5"><Clock size={12} /> 12 分钟阅读</span>
+				<span class="flex items-center gap-1.5"><Clock size={12} /> {formatReadingTime(readingTime)}</span>
 				<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>
 				<span aria-hidden="true" class="opacity-40">·</span>
 				<ContentLikeButton

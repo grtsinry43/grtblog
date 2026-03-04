@@ -75,6 +75,8 @@ func (w *SyncWorker) SyncOnce(ctx context.Context) {
 	now := time.Now().UTC()
 	_ = w.enqueueFriendLinkJobs(ctx, now)
 	_ = w.processSyncJobs(ctx, now, 200)
+	// Clean up old posts: keep only the 10 most recent posts per friend link
+	_ = w.cacheRepo.CleanupOldPosts(ctx, 10)
 }
 
 func (w *SyncWorker) syncOnceDirect(ctx context.Context, now time.Time) {
@@ -96,6 +98,8 @@ func (w *SyncWorker) syncOnceDirect(ctx context.Context, now time.Time) {
 		count, _, runErr := w.syncFriendLink(ctx, &links[i])
 		_ = w.applyLinkSyncResult(ctx, &links[i], count, runErr)
 	}
+	// Clean up old posts: keep only the 10 most recent posts per friend link
+	_ = w.cacheRepo.CleanupOldPosts(ctx, 10)
 }
 
 func (w *SyncWorker) syncFriendLink(ctx context.Context, link *social.FriendLink) (int, string, error) {

@@ -42,6 +42,8 @@ type FederationPostResp struct {
 	Summary        string                   `json:"summary"`
 	ContentPreview *string                  `json:"content_preview,omitempty"`
 	Author         FederationPostAuthorResp `json:"author"`
+	InstanceName   string                   `json:"instance_name"`
+	InstanceURL    string                   `json:"instance_url"`
 	PublishedAt    time.Time                `json:"published_at"`
 	UpdatedAt      *time.Time               `json:"updated_at,omitempty"`
 	CoverImage     *string                  `json:"cover_image,omitempty"`

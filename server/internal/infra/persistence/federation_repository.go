@@ -203,17 +203,32 @@ func (r *FederatedPostCacheRepository) ListTimeline(ctx context.Context, page, p
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	var recs []model.FederatedPostCache
-	if err := query.
-		Order("published_at DESC, id DESC").
+
+	// Join with friend_link to get site name and URL
+	type postWithFriendLink struct {
+		model.FederatedPostCache
+		FriendLinkName *string `gorm:"column:friend_link_name"`
+		FriendLinkURL  string  `gorm:"column:friend_link_url"`
+	}
+
+	var recs []postWithFriendLink
+	if err := r.db.WithContext(ctx).
+		Table("federated_post_cache").
+		Select("federated_post_cache.*, friend_link.name as friend_link_name, friend_link.url as friend_link_url").
+		Joins("LEFT JOIN friend_link ON friend_link.id = federated_post_cache.friend_link_id").
+		Order("federated_post_cache.published_at DESC, federated_post_cache.id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&recs).Error; err != nil {
 		return nil, 0, err
 	}
+
 	result := make([]federation.FederatedPostCache, len(recs))
 	for i, rec := range recs {
-		result[i] = mapFederatedPostCacheToDomain(rec)
+		post := mapFederatedPostCacheToDomain(rec.FederatedPostCache)
+		post.FriendLinkName = rec.FriendLinkName
+		post.FriendLinkURL = rec.FriendLinkURL
+		result[i] = post
 	}
 	return result, total, nil
 }
@@ -281,6 +296,25 @@ func (r *FederatedPostCacheRepository) SearchAuthors(ctx context.Context, keywor
 		}
 	}
 	return result, nil
+}
+
+func (r *FederatedPostCacheRepository) CleanupOldPosts(ctx context.Context, keepPerFriendLink int) error {
+	if keepPerFriendLink <= 0 {
+		keepPerFriendLink = 10
+	}
+	// Use a CTE to identify posts to keep (top N per friend link), then delete others
+	sql := `
+		WITH ranked_posts AS (
+			SELECT id,
+				   ROW_NUMBER() OVER (PARTITION BY friend_link_id ORDER BY published_at DESC, id DESC) AS rn
+			FROM federated_post_cache
+		)
+		DELETE FROM federated_post_cache
+		WHERE id IN (
+			SELECT id FROM ranked_posts WHERE rn > ?
+		)
+	`
+	return r.db.WithContext(ctx).Exec(sql, keepPerFriendLink).Error
 }
 
 // FederatedCitationRepository stores citation workflows.

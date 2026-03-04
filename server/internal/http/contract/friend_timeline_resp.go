@@ -12,6 +12,8 @@ type FriendTimelineItemResp struct {
 	Summary        string                   `json:"summary"`
 	ContentPreview *string                  `json:"content_preview,omitempty"`
 	Author         FriendTimelineAuthorResp `json:"author"`
+	SiteName       string                   `json:"site_name"`
+	SiteURL        string                   `json:"site_url"`
 	PublishedAt    time.Time                `json:"published_at"`
 	CoverImage     *string                  `json:"cover_image,omitempty"`
 }

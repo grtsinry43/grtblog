@@ -31,6 +31,7 @@ type FederatedPostCacheRepository interface {
 	ListTimeline(ctx context.Context, page, pageSize int) ([]FederatedPostCache, int64, error)
 	SearchPostsByInstance(ctx context.Context, instanceID int64, keyword string, limit int) ([]FederatedPostCache, error)
 	SearchAuthors(ctx context.Context, keyword string, limit int) ([]AuthorInfo, error)
+	CleanupOldPosts(ctx context.Context, keepPerFriendLink int) error
 }
 
 // FederatedCitationRepository stores citation workflows.

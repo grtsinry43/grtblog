@@ -64,6 +64,9 @@ type FederatedPostCache struct {
 	LastModified   *string
 	SourceMethod   string
 	CachedAt       time.Time
+	// Friend link info (populated when joined with friend_link)
+	FriendLinkName *string
+	FriendLinkURL  string
 }
 
 // FederatedCitation tracks cross-site citation requests.

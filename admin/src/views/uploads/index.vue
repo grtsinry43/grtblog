@@ -12,6 +12,7 @@ import {
   useMessage,
 } from 'naive-ui'
 
+import { ScrollContainer } from '@/components'
 import { useFileList } from './composables/use-file-list'
 import FileTable from './components/FileTable.vue'
 import FileUploader from './components/FileUploader.vue'
@@ -51,7 +52,7 @@ const {
 </script>
 
 <template>
-  <div class="uploads-container">
+  <ScrollContainer wrapper-class="p-4">
     <NCard title="文件管理" :bordered="false">
       <template #header-extra>
         <FileUploader
@@ -152,14 +153,10 @@ const {
         <NImage :src="previewImageUrl" />
       </div>
     </NModal>
-  </div>
+  </ScrollContainer>
 </template>
 
 <style scoped>
-.uploads-container {
-  padding: 16px;
-  height: 100%;
-}
 
 .upload-area {
   margin-bottom: 24px;

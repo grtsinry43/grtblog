@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -57,12 +58,21 @@ func mapCachePostToFriendTimelineItem(item domainfed.FederatedPostCache) contrac
 	if err := json.Unmarshal(item.Author, &payload); err == nil {
 		author.Name = payload.Name
 	}
+
+	// Get site name, fallback to URL if name is not set
+	siteName := item.FriendLinkURL
+	if item.FriendLinkName != nil && strings.TrimSpace(*item.FriendLinkName) != "" {
+		siteName = strings.TrimSpace(*item.FriendLinkName)
+	}
+
 	return contract.FriendTimelineItemResp{
 		URL:            item.URL,
 		Title:          item.Title,
 		Summary:        item.Summary,
 		ContentPreview: item.ContentPreview,
 		Author:         author,
+		SiteName:       siteName,
+		SiteURL:        item.FriendLinkURL,
 		PublishedAt:    item.PublishedAt,
 		CoverImage:     item.CoverImage,
 	}

@@ -2,6 +2,7 @@
 	import type { PageDetail } from '$lib/features/page/types';
 	import { Calendar, Clock } from 'lucide-svelte';
 	import { formatDateCN } from '$lib/shared/utils/date';
+	import { calculateReadingTime, formatReadingTime } from '$lib/shared/utils/reading-time';
 	import Badge from '$lib/ui/primitives/badge/Badge.svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 
@@ -10,6 +11,7 @@
 	}
 
 	let { page }: Props = $props();
+	const readingTime = $derived(calculateReadingTime(page.content));
 </script>
 
 <header class="max-w-4xl space-y-6">
@@ -32,7 +34,7 @@
 				<Calendar size={12} />
 				{formatDateCN(page.createdAt)}
 			</span>
-			<span class="flex items-center gap-1.5"><Clock size={12} /> 8 分钟阅读</span>
+			<span class="flex items-center gap-1.5"><Clock size={12} /> {formatReadingTime(readingTime)}</span>
 			<span class="flex items-center gap-1.5">浏览 {page.metrics?.views ?? 0}</span>
 			<span aria-hidden="true" class="opacity-40">·</span>
 			<ContentLikeButton
