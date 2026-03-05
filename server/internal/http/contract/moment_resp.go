@@ -4,30 +4,32 @@ import "time"
 
 // MomentResp 手记响应。
 type MomentResp struct {
-	ID           int64        `json:"id"`
-	Title        string       `json:"title"`
-	Summary      string       `json:"summary"`
-	AISummary    *string      `json:"aiSummary,omitempty"`
-	TOC          []TOCNode    `json:"toc,omitempty"`
-	Content      string       `json:"content"`
-	ContentHash  string       `json:"contentHash"`
-	AuthorID     int64        `json:"authorId"`
-	Image        []string     `json:"image,omitempty"`
-	ColumnID       *int64  `json:"columnId,omitempty"`
-	ColumnName     string  `json:"columnName,omitempty"`
-	ColumnShortURL string  `json:"columnShortUrl,omitempty"`
-	CommentID      *int64  `json:"commentAreaId,omitempty"`
-	ShortURL     string       `json:"shortUrl"`
-	IsPublished  bool         `json:"isPublished"`
-	IsTop        bool         `json:"isTop"`
-	IsHot        bool         `json:"isHot"`
-	AllowComment bool         `json:"allowComment"`
-	IsOriginal   bool         `json:"isOriginal"`
-	ExtInfo      *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
-	Topics       []TagResp    `json:"topics,omitempty"`
-	Metrics      *MetricsResp `json:"metrics,omitempty"`
-	CreatedAt    time.Time    `json:"createdAt"`
-	UpdatedAt    time.Time    `json:"updatedAt"`
+	ID                         int64        `json:"id"`
+	Title                      string       `json:"title"`
+	Summary                    string       `json:"summary"`
+	AISummary                  *string      `json:"aiSummary,omitempty"`
+	TOC                        []TOCNode    `json:"toc,omitempty"`
+	Content                    string       `json:"content"`
+	ContentHash                string       `json:"contentHash"`
+	AuthorID                   int64        `json:"authorId"`
+	Image                      []string     `json:"image,omitempty"`
+	ActivityPubObjectID        *string      `json:"activityPubObjectId,omitempty"`
+	ActivityPubLastPublishedAt *time.Time   `json:"activityPubLastPublishedAt,omitempty"`
+	ColumnID                   *int64       `json:"columnId,omitempty"`
+	ColumnName                 string       `json:"columnName,omitempty"`
+	ColumnShortURL             string       `json:"columnShortUrl,omitempty"`
+	CommentID                  *int64       `json:"commentAreaId,omitempty"`
+	ShortURL                   string       `json:"shortUrl"`
+	IsPublished                bool         `json:"isPublished"`
+	IsTop                      bool         `json:"isTop"`
+	IsHot                      bool         `json:"isHot"`
+	AllowComment               bool         `json:"allowComment"`
+	IsOriginal                 bool         `json:"isOriginal"`
+	ExtInfo                    *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
+	Topics                     []TagResp    `json:"topics,omitempty"`
+	Metrics                    *MetricsResp `json:"metrics,omitempty"`
+	CreatedAt                  time.Time    `json:"createdAt"`
+	UpdatedAt                  time.Time    `json:"updatedAt"`
 }
 
 // MomentListItemResp 手记列表项响应。

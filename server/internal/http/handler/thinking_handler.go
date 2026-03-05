@@ -264,12 +264,14 @@ func (h *ThinkingHandler) mapError(c *fiber.Ctx, err error) error {
 
 func (h *ThinkingHandler) toThinkingResp(ctx context.Context, t *domainthinking.Thinking) (*contract.ThinkingResp, error) {
 	resp := &contract.ThinkingResp{
-		ID:           t.ID,
-		CommentID:    t.CommentID,
-		Content:      t.Content,
-		AuthorID:     t.AuthorID,
-		IsHot:        false,
-		AllowComment: h.allowCommentByAreaID(ctx, t.CommentID),
+		ID:                         t.ID,
+		CommentID:                  t.CommentID,
+		Content:                    t.Content,
+		AuthorID:                   t.AuthorID,
+		ActivityPubObjectID:        t.ActivityPubObjectID,
+		ActivityPubLastPublishedAt: t.ActivityPubLastPublishedAt,
+		IsHot:                      false,
+		AllowComment:               h.allowCommentByAreaID(ctx, t.CommentID),
 		Metrics: contract.ThinkingMetrics{
 			Views:    t.Metrics.Views,
 			Likes:    t.Metrics.Likes,

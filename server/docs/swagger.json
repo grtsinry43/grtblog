@@ -10588,6 +10588,12 @@
                 "id": {
                     "type": "string"
                 },
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_url": {
+                    "type": "string"
+                },
                 "language": {
                     "type": "string"
                 },
@@ -11077,6 +11083,12 @@
                     "type": "string"
                 },
                 "published_at": {
+                    "type": "string"
+                },
+                "site_name": {
+                    "type": "string"
+                },
+                "site_url": {
                     "type": "string"
                 },
                 "summary": {

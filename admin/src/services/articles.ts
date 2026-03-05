@@ -46,6 +46,8 @@ export interface ArticleDetail {
   contentHash: string
   authorId: number
   cover?: string | null
+  activityPubObjectId?: string | null
+  activityPubLastPublishedAt?: string | null
   categoryId?: number | null
   shortUrl: string
   isPublished: boolean

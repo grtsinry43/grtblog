@@ -257,6 +257,14 @@ const resolvePageMeta = (pathname: string, search: string, routeData: UnknownRec
 		};
 	}
 
+	if (pathname === '/friends-timeline' || pathname.startsWith('/friends-timeline/page/')) {
+		const page = parsePageFromPath(pathname) ?? getPaginationPage(routeData);
+		return {
+			pageTitle: resolveListPageTitle('朋友圈', page),
+			description: '聚合了友情链接中朋友们的最新文章与动态，感受网络邻居们的思考与生活。'
+		};
+	}
+
 	if (pathname === '/tags') {
 		return {
 			pageTitle: '标签档案馆',

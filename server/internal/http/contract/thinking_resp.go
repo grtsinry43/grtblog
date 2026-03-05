@@ -3,17 +3,19 @@ package contract
 import "time"
 
 type ThinkingResp struct {
-	ID           int64           `json:"id"`
-	CommentID    int64           `json:"commentId"`
-	Content      string          `json:"content"`
-	AuthorID     int64           `json:"authorId"`
-	IsHot        bool            `json:"isHot"`
-	AllowComment bool            `json:"allowComment"`
-	AuthorName   string          `json:"authorName,omitempty"`
-	Avatar       string          `json:"avatar,omitempty"`
-	Metrics      ThinkingMetrics `json:"metrics"`
-	CreatedAt    time.Time       `json:"createdAt"`
-	UpdatedAt    time.Time       `json:"updatedAt"`
+	ID                         int64           `json:"id"`
+	CommentID                  int64           `json:"commentId"`
+	Content                    string          `json:"content"`
+	AuthorID                   int64           `json:"authorId"`
+	ActivityPubObjectID        *string         `json:"activityPubObjectId,omitempty"`
+	ActivityPubLastPublishedAt *time.Time      `json:"activityPubLastPublishedAt,omitempty"`
+	IsHot                      bool            `json:"isHot"`
+	AllowComment               bool            `json:"allowComment"`
+	AuthorName                 string          `json:"authorName,omitempty"`
+	Avatar                     string          `json:"avatar,omitempty"`
+	Metrics                    ThinkingMetrics `json:"metrics"`
+	CreatedAt                  time.Time       `json:"createdAt"`
+	UpdatedAt                  time.Time       `json:"updatedAt"`
 }
 
 type ThinkingMetrics struct {

@@ -45,6 +45,8 @@ export interface MomentDetail {
   contentHash: string
   authorId: number
   image?: string[]
+  activityPubObjectId?: string | null
+  activityPubLastPublishedAt?: string | null
   columnId?: number | null
   shortUrl: string
   isPublished: boolean

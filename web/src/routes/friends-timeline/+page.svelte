@@ -13,10 +13,6 @@
 	}));
 </script>
 
-<svelte:head>
-	<title>朋友圈 | GrtBlog</title>
-</svelte:head>
-
 <div class="max-w-5xl mx-auto py-10">
 	<PageHeader
 		title="朋友圈"

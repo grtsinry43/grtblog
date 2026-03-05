@@ -25,6 +25,7 @@ import MultiImageInput from '@/components/image-picker/MultiImageInput.vue'
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
 import { generateTitle, generateSummaryStream } from '@/services/ai'
+import { publishFederationActivityPub } from '@/services/federation-admin'
 import { listWebsiteInfo } from '@/services/website-info'
 import { useEditorStats } from '@/views/articles/composables/use-editor-stats'
 
@@ -62,6 +63,7 @@ const previewFrameRef = ref<HTMLIFrameElement | null>(null)
 const previewReady = ref(false)
 const publicUrl = ref('')
 const loadedMoment = ref<MomentDetail | null>(null)
+const apPublishing = ref(false)
 
 const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
 const PREVIEW_MOMENT_TYPE = 'grtblog-preview:moment'
@@ -145,6 +147,48 @@ const previewOrigin = computed(() => {
 
 function normalizePublicUrl(value: string) {
   return value.trim().replace(/\/+$/, '')
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return '-'
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) return '-'
+  return new Date(timestamp).toLocaleString()
+}
+
+const apStatusText = computed(() => {
+  if (isCreating.value) return '未创建'
+  return loadedMoment.value?.activityPubObjectId ? '已发布' : '未发布'
+})
+
+const apLastPublishedAtText = computed(() =>
+  formatDateTime(loadedMoment.value?.activityPubLastPublishedAt ?? null),
+)
+
+const canRepublishToActivityPub = computed(
+  () => !isCreating.value && !!loadedMoment.value?.id && form.isPublished,
+)
+
+async function handleRepublishActivityPub() {
+  if (!loadedMoment.value?.id) return
+  if (!form.isPublished) {
+    message.warning('请先设为发布并保存，再手动补发')
+    return
+  }
+  apPublishing.value = true
+  try {
+    const resp = await publishFederationActivityPub({
+      source_type: 'moment',
+      source_id: loadedMoment.value.id,
+    })
+    loadedMoment.value.activityPubObjectId = resp.object_id || loadedMoment.value.activityPubObjectId
+    loadedMoment.value.activityPubLastPublishedAt = resp.published_at
+    message.success(`补发完成：成功 ${resp.success_count}，失败 ${resp.failure_count}`)
+  } catch (err) {
+    message.error(err instanceof Error ? err.message : '补发失败')
+  } finally {
+    apPublishing.value = false
+  }
 }
 
 async function fetchWebsiteInfo() {
@@ -692,6 +736,29 @@ watch(previewUrl, () => {
                   v-model:value="form.isOriginal"
                   size="small"
                 />
+              </div>
+              <div class="col-span-2 rounded-lg px-4 py-3">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0 space-y-1">
+                    <div class="text-sm">ActivityPub：{{ apStatusText }}</div>
+                    <div class="text-xs opacity-70">最近发布：{{ apLastPublishedAtText }}</div>
+                    <div
+                      v-if="loadedMoment?.activityPubObjectId"
+                      class="break-all text-xs opacity-70"
+                    >
+                      {{ loadedMoment.activityPubObjectId }}
+                    </div>
+                  </div>
+                  <NButton
+                    size="small"
+                    secondary
+                    :loading="apPublishing"
+                    :disabled="!canRepublishToActivityPub || apPublishing"
+                    @click="handleRepublishActivityPub"
+                  >
+                    手动补发
+                  </NButton>
+                </div>
               </div>
             </div>
           </div>

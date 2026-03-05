@@ -20,7 +20,10 @@ export interface ThinkingListResponse {
   size: number
 }
 
-export interface ThinkingDetail extends ThinkingListItem { }
+export interface ThinkingDetail extends ThinkingListItem {
+  activityPubObjectId?: string | null
+  activityPubLastPublishedAt?: string | null
+}
 
 export interface ListThinkingsParams {
   page?: number
