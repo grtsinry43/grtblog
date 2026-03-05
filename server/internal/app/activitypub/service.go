@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	htmltemplate "html/template"
 	"io"
 	"net/http"
 	"net/url"
@@ -25,8 +26,8 @@ import (
 	"code.superseriousbusiness.org/httpsig"
 	"github.com/google/uuid"
 
-	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainap "github.com/grtsinry43/grtblog-v2/server/internal/domain/activitypub"
 	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
@@ -54,9 +55,10 @@ type Service struct {
 }
 
 type PublishCmd struct {
-	SourceType string
-	SourceID   int64
-	Summary    string
+	SourceType    string
+	SourceID      int64
+	Summary       string
+	TriggerSource string
 }
 
 type PublishResult struct {
@@ -65,6 +67,11 @@ type PublishResult struct {
 	SuccessCount  int
 	FailureCount  int
 	FailedTargets []string
+}
+
+type sendResult struct {
+	HTTPStatus int
+	Error      error
 }
 
 type ActorDocument struct {
@@ -391,7 +398,7 @@ func (s *Service) OutboxCollection(ctx context.Context, baseURL string, page, pa
 }
 
 func (s *Service) ObjectDocument(ctx context.Context, baseURL string, objectToken string) (map[string]any, error) {
-	baseURL, _, err := s.ResolveBaseURL(ctx, baseURL)
+	baseURL, settings, err := s.ResolveBaseURL(ctx, baseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +415,7 @@ func (s *Service) ObjectDocument(ctx context.Context, baseURL string, objectToke
 	if err != nil || sourceID <= 0 {
 		return nil, errors.New("invalid object source id")
 	}
-	object, err := s.buildObjectForSource(ctx, baseURL, sourceType, sourceID, "", false)
+	object, err := s.buildObjectForSource(ctx, baseURL, sourceType, sourceID, "", settings.PublishTemplate, false)
 	if err != nil {
 		return nil, err
 	}
@@ -420,6 +427,109 @@ func (s *Service) ListFollowers(ctx context.Context, page, pageSize int) ([]doma
 		return nil, 0, nil
 	}
 	return s.followers.List(ctx, "", page, pageSize)
+}
+
+func (s *Service) ListOutbox(ctx context.Context, opts domainap.OutboxListOptions) ([]domainap.OutboxItem, int64, error) {
+	if s.outbox == nil {
+		return nil, 0, errors.New("activitypub outbox repository not configured")
+	}
+	return s.outbox.ListWithOptions(ctx, opts)
+}
+
+func (s *Service) GetOutbox(ctx context.Context, id int64) (*domainap.OutboxItem, error) {
+	if s.outbox == nil {
+		return nil, errors.New("activitypub outbox repository not configured")
+	}
+	if id <= 0 {
+		return nil, domainap.ErrOutboxItemNotFound
+	}
+	return s.outbox.GetByID(ctx, id)
+}
+
+func (s *Service) RetryFailedDeliveries(ctx context.Context, baseURL string, id int64) (*domainap.OutboxItem, error) {
+	if s.outbox == nil {
+		return nil, errors.New("activitypub outbox repository not configured")
+	}
+	if id <= 0 {
+		return nil, domainap.ErrOutboxItemNotFound
+	}
+	baseURL, settings, err := s.ResolveBaseURL(ctx, baseURL)
+	if err != nil {
+		return nil, err
+	}
+	if !settings.AllowOutbound {
+		return nil, errors.New("activitypub outbound disabled")
+	}
+	item, err := s.outbox.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if item.Status != domainap.OutboxStatusFailed && item.Status != domainap.OutboxStatusPartial {
+		return nil, domainap.ErrOutboxItemNotRetryable
+	}
+	started := time.Now().UTC()
+	item.Status = domainap.OutboxStatusSending
+	item.StartedAt = &started
+	_ = s.outbox.UpdateDeliveryResult(ctx, item)
+
+	raw := []byte(item.Activity)
+	failedTargets := 0
+	successCount := 0
+	failureCount := 0
+	for i := range item.Deliveries {
+		detail := &item.Deliveries[i]
+		if detail.Status != "failed" {
+			if detail.Status == "success" {
+				successCount++
+			} else {
+				failureCount++
+			}
+			continue
+		}
+		failedTargets++
+		if strings.TrimSpace(detail.Inbox) == "" {
+			failureCount++
+			continue
+		}
+		res := s.sendActivityWithResult(ctx, settings, baseURL, detail.Inbox, raw)
+		if res.HTTPStatus > 0 {
+			httpStatus := res.HTTPStatus
+			detail.HTTPStatus = &httpStatus
+		}
+		nowAt := time.Now().UTC()
+		detail.DeliveredAt = &nowAt
+		if res.Error != nil {
+			detail.Error = res.Error.Error()
+			detail.Status = "failed"
+			failureCount++
+			continue
+		}
+		detail.Status = "success"
+		detail.Error = ""
+		successCount++
+	}
+	if failedTargets == 0 {
+		return nil, domainap.ErrOutboxItemNotRetryable
+	}
+	finished := time.Now().UTC()
+	duration := finished.Sub(started).Milliseconds()
+	item.SuccessCount = successCount
+	item.FailureCount = failureCount
+	item.TotalTargets = len(item.Deliveries)
+	item.StartedAt = &started
+	item.FinishedAt = &finished
+	item.DurationMs = &duration
+	if item.TotalTargets == 0 || item.SuccessCount == item.TotalTargets {
+		item.Status = domainap.OutboxStatusCompleted
+	} else if item.SuccessCount > 0 {
+		item.Status = domainap.OutboxStatusPartial
+	} else {
+		item.Status = domainap.OutboxStatusFailed
+	}
+	if err := s.outbox.UpdateDeliveryResult(ctx, item); err != nil {
+		return nil, err
+	}
+	return item, nil
 }
 
 func (s *Service) Publish(ctx context.Context, baseURL string, cmd PublishCmd) (*PublishResult, error) {
@@ -448,7 +558,7 @@ func (s *Service) Publish(ctx context.Context, baseURL string, cmd PublishCmd) (
 		return nil, errors.New("source type is not allowed by activitypub.publishTypes")
 	}
 	now := time.Now().UTC()
-	object, err := s.buildObjectForSource(ctx, baseURL, sourceType, cmd.SourceID, cmd.Summary, true)
+	object, err := s.buildObjectForSource(ctx, baseURL, sourceType, cmd.SourceID, cmd.Summary, settings.PublishTemplate, true)
 	if err != nil {
 		return nil, err
 	}
@@ -478,16 +588,23 @@ func (s *Service) Publish(ctx context.Context, baseURL string, cmd PublishCmd) (
 	if err != nil {
 		return nil, err
 	}
+	triggerSource := strings.TrimSpace(cmd.TriggerSource)
+	if triggerSource == "" {
+		triggerSource = "auto"
+	}
 
 	outboxItem := &domainap.OutboxItem{
-		ActivityID:  activityID,
-		ObjectID:    objectID,
-		SourceType:  sourceType,
-		SourceID:    cmd.SourceID,
-		SourceURL:   sourceURL,
-		Summary:     strings.TrimSpace(stripHTML(contentHTML)),
-		Activity:    raw,
-		PublishedAt: now,
+		ActivityID:    activityID,
+		ObjectID:      objectID,
+		SourceType:    sourceType,
+		SourceID:      cmd.SourceID,
+		SourceURL:     sourceURL,
+		Summary:       strings.TrimSpace(stripHTML(contentHTML)),
+		Activity:      raw,
+		Status:        domainap.OutboxStatusQueued,
+		TriggerSource: triggerSource,
+		Deliveries:    make([]domainap.DeliveryDetail, 0),
+		PublishedAt:   now,
 	}
 	if err := s.outbox.Create(ctx, outboxItem); err != nil {
 		return nil, err
@@ -500,23 +617,76 @@ func (s *Service) Publish(ctx context.Context, baseURL string, cmd PublishCmd) (
 
 	result := &PublishResult{Item: *outboxItem, Deliveries: len(followers)}
 	if len(followers) == 0 {
+		outboxItem.TotalTargets = 0
+		outboxItem.SuccessCount = 0
+		outboxItem.FailureCount = 0
+		outboxItem.Status = domainap.OutboxStatusCompleted
+		finished := time.Now().UTC()
+		outboxItem.StartedAt = &finished
+		outboxItem.FinishedAt = &finished
+		zero := int64(0)
+		outboxItem.DurationMs = &zero
+		_ = s.outbox.UpdateDeliveryResult(ctx, outboxItem)
+		result.Item = *outboxItem
 		return result, nil
 	}
 
+	started := time.Now().UTC()
+	outboxItem.StartedAt = &started
+	outboxItem.Status = domainap.OutboxStatusSending
+	_ = s.outbox.UpdateDeliveryResult(ctx, outboxItem)
+
+	details := make([]domainap.DeliveryDetail, 0, len(followers))
 	for _, follower := range followers {
 		target := strings.TrimSpace(firstNonEmpty(ptrValue(follower.SharedInboxURL), follower.InboxURL))
+		detail := domainap.DeliveryDetail{Inbox: target, ActorID: follower.ActorID, Status: "failed"}
 		if target == "" {
+			detail.Error = "missing inbox target"
 			result.FailureCount++
 			result.FailedTargets = append(result.FailedTargets, follower.ActorID)
+			details = append(details, detail)
 			continue
 		}
-		if err := s.sendActivity(ctx, settings, baseURL, target, raw); err != nil {
+		sendRes := s.sendActivityWithResult(ctx, settings, baseURL, target, raw)
+		if sendRes.HTTPStatus > 0 {
+			httpStatus := sendRes.HTTPStatus
+			detail.HTTPStatus = &httpStatus
+		}
+		nowAt := time.Now().UTC()
+		detail.DeliveredAt = &nowAt
+		if sendRes.Error != nil {
+			detail.Error = sendRes.Error.Error()
 			result.FailureCount++
 			result.FailedTargets = append(result.FailedTargets, target)
+			details = append(details, detail)
 			continue
 		}
+		detail.Status = "success"
+		detail.Error = ""
 		result.SuccessCount++
+		details = append(details, detail)
 	}
+
+	finished := time.Now().UTC()
+	duration := finished.Sub(started).Milliseconds()
+	outboxItem.Deliveries = details
+	outboxItem.TotalTargets = len(followers)
+	outboxItem.SuccessCount = result.SuccessCount
+	outboxItem.FailureCount = result.FailureCount
+	outboxItem.StartedAt = &started
+	outboxItem.FinishedAt = &finished
+	outboxItem.DurationMs = &duration
+	if outboxItem.TotalTargets == 0 || outboxItem.SuccessCount == outboxItem.TotalTargets {
+		outboxItem.Status = domainap.OutboxStatusCompleted
+	} else if outboxItem.SuccessCount > 0 {
+		outboxItem.Status = domainap.OutboxStatusPartial
+	} else {
+		outboxItem.Status = domainap.OutboxStatusFailed
+	}
+	if err := s.outbox.UpdateDeliveryResult(ctx, outboxItem); err != nil {
+		return nil, err
+	}
+	result.Item = *outboxItem
 	return result, nil
 }
 
@@ -928,15 +1098,20 @@ func (s *Service) fetchRemoteActor(ctx context.Context, actorID string) (*remote
 }
 
 func (s *Service) sendActivity(ctx context.Context, settings sysconfig.ActivityPubSettings, baseURL string, targetURL string, payload []byte) error {
+	result := s.sendActivityWithResult(ctx, settings, baseURL, targetURL, payload)
+	return result.Error
+}
+
+func (s *Service) sendActivityWithResult(ctx context.Context, settings sysconfig.ActivityPubSettings, baseURL string, targetURL string, payload []byte) sendResult {
 	if err := fedinfra.ValidateRemoteURL(ctx, targetURL); err != nil {
-		return err
+		return sendResult{Error: err}
 	}
 	if strings.TrimSpace(settings.PrivateKey) == "" {
-		return errors.New("private key not configured")
+		return sendResult{Error: errors.New("private key not configured")}
 	}
 	privateKey, err := parsePrivateKey(settings.PrivateKey)
 	if err != nil {
-		return err
+		return sendResult{Error: err}
 	}
 	algorithm := strings.TrimSpace(settings.SignatureAlg)
 	if algorithm == "" {
@@ -944,31 +1119,31 @@ func (s *Service) sendActivity(ctx context.Context, settings sysconfig.ActivityP
 	}
 	signer, err := fedinfra.NewSigner(algorithm)
 	if err != nil {
-		return err
+		return sendResult{Error: err}
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSpace(targetURL), bytes.NewReader(payload))
 	if err != nil {
-		return err
+		return sendResult{Error: err}
 	}
 	req.Header.Set("Accept", "application/activity+json, application/ld+json")
 	req.Header.Set("Content-Type", "application/activity+json")
 	keyID := actorKeyID(baseURL)
 	if err := signer.SignRequest(req, payload, keyID, privateKey); err != nil {
-		return err
+		return sendResult{Error: err}
 	}
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return err
+		return sendResult{Error: err}
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-		return fmt.Errorf("deliver activity failed: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(raw)))
+		return sendResult{HTTPStatus: resp.StatusCode, Error: fmt.Errorf("deliver activity failed: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(raw)))}
 	}
-	return nil
+	return sendResult{HTTPStatus: resp.StatusCode}
 }
 
-func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sourceType string, sourceID int64, summaryOverride string, persist bool) (map[string]any, error) {
+func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sourceType string, sourceID int64, summaryOverride string, publishTemplate string, persist bool) (map[string]any, error) {
 	now := time.Now().UTC().Format(time.RFC3339)
 	switch sourceType {
 	case "article":
@@ -999,7 +1174,7 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 			"id":        objectID,
 			"type":      "Note",
 			"url":       sourceURL,
-			"content":   renderFederatedHTML(article.Title, summary, sourceURL),
+			"content":   renderFederatedHTML(publishTemplate, article.Title, summary, sourceURL, sourceType),
 			"name":      strings.TrimSpace(article.Title),
 			"published": now,
 		}, nil
@@ -1011,13 +1186,14 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 		if moment == nil || !moment.IsPublished {
 			return nil, errors.New("moment is not published")
 		}
-		sourceURL := strings.TrimRight(baseURL, "/") + "/timeline?moment=" + moment.ShortURL
+		sourceURL := strings.TrimRight(baseURL, "/") + "/moments/" +
+			moment.CreatedAt.UTC().Format("2006/01/02") + "/" + moment.ShortURL
 		summary := strings.TrimSpace(firstNonEmpty(summaryOverride, moment.Summary))
 		return map[string]any{
 			"id":        buildObjectID(baseURL, sourceType, moment.ID),
 			"type":      "Note",
 			"url":       sourceURL,
-			"content":   renderFederatedHTML(moment.Title, summary, sourceURL),
+			"content":   renderFederatedHTML(publishTemplate, moment.Title, summary, sourceURL, sourceType),
 			"name":      strings.TrimSpace(moment.Title),
 			"published": now,
 		}, nil
@@ -1029,13 +1205,13 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 		if err != nil {
 			return nil, err
 		}
-		sourceURL := strings.TrimRight(baseURL, "/") + "/timeline?thinking=" + strconv.FormatInt(item.ID, 10)
+		sourceURL := strings.TrimRight(baseURL, "/") + "/thinkings#thinking-" + strconv.FormatInt(item.ID, 10)
 		summary := strings.TrimSpace(firstNonEmpty(summaryOverride, stripHTML(item.Content)))
 		return map[string]any{
 			"id":        buildObjectID(baseURL, sourceType, item.ID),
 			"type":      "Note",
 			"url":       sourceURL,
-			"content":   renderFederatedHTML("思考", summary, sourceURL),
+			"content":   renderFederatedHTML(publishTemplate, "思考", summary, sourceURL, sourceType),
 			"name":      "思考",
 			"published": now,
 		}, nil
@@ -1099,21 +1275,39 @@ func parsePrivateKey(pemData string) (crypto.PrivateKey, error) {
 	return nil, errors.New("unsupported private key format")
 }
 
-func renderFederatedHTML(title, summary, sourceURL string) string {
-	title = html.EscapeString(strings.TrimSpace(title))
-	summary = html.EscapeString(strings.TrimSpace(summary))
-	link := html.EscapeString(strings.TrimSpace(sourceURL))
-	parts := make([]string, 0, 3)
-	if title != "" {
-		parts = append(parts, "<p><strong>"+title+"</strong></p>")
+func renderFederatedHTML(rawTemplate, title, summary, sourceURL, sourceType string) string {
+	tplText := strings.TrimSpace(rawTemplate)
+	if tplText == "" {
+		tplText = `<p><strong>{{ .Title }}</strong></p>{{ if .Summary }}<p>{{ .Summary }}</p>{{ end }}{{ if .URL }}<p><a href="{{ .URL }}" rel="nofollow noopener noreferrer">阅读全文</a></p>{{ end }}`
 	}
-	if summary != "" {
-		parts = append(parts, "<p>"+summary+"</p>")
+	tpl, err := htmltemplate.New("activitypub.publish").Option("missingkey=error").Parse(tplText)
+	if err != nil {
+		return ""
 	}
-	if link != "" {
-		parts = append(parts, `<p><a href="`+link+`" rel="nofollow noopener noreferrer">阅读全文</a></p>`)
+	var buf bytes.Buffer
+	err = tpl.Execute(&buf, map[string]string{
+		"Title":       strings.TrimSpace(title),
+		"Summary":     strings.TrimSpace(summary),
+		"URL":         strings.TrimSpace(sourceURL),
+		"ContentType": activityPubContentTypeLabel(sourceType),
+	})
+	if err != nil {
+		return ""
 	}
-	return strings.Join(parts, "")
+	return strings.TrimSpace(buf.String())
+}
+
+func activityPubContentTypeLabel(sourceType string) string {
+	switch strings.ToLower(strings.TrimSpace(sourceType)) {
+	case "article":
+		return "文章"
+	case "moment":
+		return "手记"
+	case "thinking":
+		return "思考"
+	default:
+		return ""
+	}
 }
 
 func stripHTML(raw string) string {
@@ -1315,4 +1509,3 @@ func sameURL(a, b string) bool {
 	}
 	return strings.EqualFold(a, b)
 }
-

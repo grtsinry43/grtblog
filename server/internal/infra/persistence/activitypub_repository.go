@@ -135,10 +135,21 @@ func (r *ActivityPubOutboxRepository) Create(ctx context.Context, item *domainap
 	if len(rec.Activity) == 0 {
 		rec.Activity = datatypes.JSON([]byte("{}"))
 	}
+	if strings.TrimSpace(rec.Status) == "" {
+		rec.Status = domainap.OutboxStatusQueued
+	}
+	if strings.TrimSpace(rec.TriggerSource) == "" {
+		rec.TriggerSource = "auto"
+	}
+	if len(rec.Deliveries) == 0 {
+		rec.Deliveries = datatypes.JSON([]byte("[]"))
+	}
 	if err := r.db.WithContext(ctx).Create(&rec).Error; err != nil {
 		return err
 	}
 	item.ID = rec.ID
+	item.Status = rec.Status
+	item.TriggerSource = rec.TriggerSource
 	item.PublishedAt = rec.PublishedAt
 	item.CreatedAt = rec.CreatedAt
 	item.UpdatedAt = rec.UpdatedAt
@@ -146,23 +157,54 @@ func (r *ActivityPubOutboxRepository) Create(ctx context.Context, item *domainap
 }
 
 func (r *ActivityPubOutboxRepository) List(ctx context.Context, page, pageSize int) ([]domainap.OutboxItem, int64, error) {
+	return r.ListWithOptions(ctx, domainap.OutboxListOptions{Page: page, PageSize: pageSize})
+}
+
+func (r *ActivityPubOutboxRepository) GetByID(ctx context.Context, id int64) (*domainap.OutboxItem, error) {
+	var rec model.ActivityPubOutboxItem
+	err := r.db.WithContext(ctx).Where("id = ?", id).Take(&rec).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainap.ErrOutboxItemNotFound
+		}
+		return nil, err
+	}
+	item := mapActivityPubOutboxToDomain(rec)
+	return &item, nil
+}
+
+func (r *ActivityPubOutboxRepository) ListWithOptions(ctx context.Context, opts domainap.OutboxListOptions) ([]domainap.OutboxItem, int64, error) {
+	page := opts.Page
 	if page <= 0 {
 		page = 1
 	}
-	if pageSize <= 0 {
-		pageSize = 20
+	size := opts.PageSize
+	if size <= 0 {
+		size = 20
 	}
-	if pageSize > 100 {
-		pageSize = 100
+	if size > 100 {
+		size = 100
 	}
+
 	query := r.db.WithContext(ctx).Model(&model.ActivityPubOutboxItem{})
+	if status := strings.TrimSpace(opts.Status); status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if sourceType := strings.TrimSpace(opts.SourceType); sourceType != "" {
+		query = query.Where("source_type = ?", sourceType)
+	}
+	if keyword := strings.TrimSpace(opts.Search); keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where("summary ILIKE ? OR activity_id ILIKE ? OR object_id ILIKE ?", like, like, like)
+	}
+
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 	var recs []model.ActivityPubOutboxItem
-	offset := (page - 1) * pageSize
-	if err := query.Order("published_at DESC").Offset(offset).Limit(pageSize).Find(&recs).Error; err != nil {
+	offset := (page - 1) * size
+	if err := query.Order("published_at DESC").Offset(offset).Limit(size).Find(&recs).Error; err != nil {
 		return nil, 0, err
 	}
 	items := make([]domainap.OutboxItem, len(recs))
@@ -170,6 +212,28 @@ func (r *ActivityPubOutboxRepository) List(ctx context.Context, page, pageSize i
 		items[i] = mapActivityPubOutboxToDomain(rec)
 	}
 	return items, total, nil
+}
+
+func (r *ActivityPubOutboxRepository) UpdateDeliveryResult(ctx context.Context, item *domainap.OutboxItem) error {
+	if item == nil || item.ID <= 0 {
+		return nil
+	}
+	deliveries, err := json.Marshal(item.Deliveries)
+	if err != nil {
+		return err
+	}
+	updates := map[string]any{
+		"status":         strings.TrimSpace(item.Status),
+		"trigger_source": strings.TrimSpace(item.TriggerSource),
+		"total_targets":  item.TotalTargets,
+		"success_count":  item.SuccessCount,
+		"failure_count":  item.FailureCount,
+		"deliveries":     datatypes.JSON(deliveries),
+		"started_at":     item.StartedAt,
+		"finished_at":    item.FinishedAt,
+		"duration_ms":    item.DurationMs,
+	}
+	return r.db.WithContext(ctx).Model(&model.ActivityPubOutboxItem{}).Where("id = ?", item.ID).Updates(updates).Error
 }
 
 func mapFollowerToModel(item *domainap.Follower) model.ActivityPubFollower {
@@ -209,35 +273,71 @@ func mapFollowerToDomain(rec model.ActivityPubFollower) domainap.Follower {
 }
 
 func mapActivityPubOutboxToModel(item *domainap.OutboxItem) model.ActivityPubOutboxItem {
+	deliveries, _ := json.Marshal(item.Deliveries)
+	if len(deliveries) == 0 {
+		deliveries = []byte("[]")
+	}
+	status := strings.TrimSpace(item.Status)
+	if status == "" {
+		status = domainap.OutboxStatusQueued
+	}
+	triggerSource := strings.TrimSpace(item.TriggerSource)
+	if triggerSource == "" {
+		triggerSource = "auto"
+	}
 	return model.ActivityPubOutboxItem{
-		ID:          item.ID,
-		ActivityID:  strings.TrimSpace(item.ActivityID),
-		ObjectID:    strings.TrimSpace(item.ObjectID),
-		SourceType:  strings.TrimSpace(item.SourceType),
-		SourceID:    item.SourceID,
-		SourceURL:   strings.TrimSpace(item.SourceURL),
-		Summary:     strings.TrimSpace(item.Summary),
-		Activity:    datatypes.JSON(item.Activity),
-		PublishedAt: item.PublishedAt,
-		CreatedAt:   item.CreatedAt,
-		UpdatedAt:   item.UpdatedAt,
+		ID:            item.ID,
+		ActivityID:    strings.TrimSpace(item.ActivityID),
+		ObjectID:      strings.TrimSpace(item.ObjectID),
+		SourceType:    strings.TrimSpace(item.SourceType),
+		SourceID:      item.SourceID,
+		SourceURL:     strings.TrimSpace(item.SourceURL),
+		Summary:       strings.TrimSpace(item.Summary),
+		Activity:      datatypes.JSON(item.Activity),
+		Status:        status,
+		TriggerSource: triggerSource,
+		TotalTargets:  item.TotalTargets,
+		SuccessCount:  item.SuccessCount,
+		FailureCount:  item.FailureCount,
+		Deliveries:    datatypes.JSON(deliveries),
+		StartedAt:     item.StartedAt,
+		FinishedAt:    item.FinishedAt,
+		DurationMs:    item.DurationMs,
+		PublishedAt:   item.PublishedAt,
+		CreatedAt:     item.CreatedAt,
+		UpdatedAt:     item.UpdatedAt,
 	}
 }
 
 func mapActivityPubOutboxToDomain(rec model.ActivityPubOutboxItem) domainap.OutboxItem {
-	return domainap.OutboxItem{
-		ID:          rec.ID,
-		ActivityID:  rec.ActivityID,
-		ObjectID:    rec.ObjectID,
-		SourceType:  rec.SourceType,
-		SourceID:    rec.SourceID,
-		SourceURL:   rec.SourceURL,
-		Summary:     rec.Summary,
-		Activity:    json.RawMessage(rec.Activity),
-		PublishedAt: rec.PublishedAt,
-		CreatedAt:   rec.CreatedAt,
-		UpdatedAt:   rec.UpdatedAt,
+	item := domainap.OutboxItem{
+		ID:            rec.ID,
+		ActivityID:    rec.ActivityID,
+		ObjectID:      rec.ObjectID,
+		SourceType:    rec.SourceType,
+		SourceID:      rec.SourceID,
+		SourceURL:     rec.SourceURL,
+		Summary:       rec.Summary,
+		Activity:      json.RawMessage(rec.Activity),
+		Status:        rec.Status,
+		TriggerSource: rec.TriggerSource,
+		TotalTargets:  rec.TotalTargets,
+		SuccessCount:  rec.SuccessCount,
+		FailureCount:  rec.FailureCount,
+		StartedAt:     rec.StartedAt,
+		FinishedAt:    rec.FinishedAt,
+		DurationMs:    rec.DurationMs,
+		PublishedAt:   rec.PublishedAt,
+		CreatedAt:     rec.CreatedAt,
+		UpdatedAt:     rec.UpdatedAt,
 	}
+	if len(rec.Deliveries) > 0 {
+		_ = json.Unmarshal(rec.Deliveries, &item.Deliveries)
+	}
+	if item.Deliveries == nil {
+		item.Deliveries = make([]domainap.DeliveryDetail, 0)
+	}
+	return item
 }
 
 func firstNonEmpty(values ...string) string {

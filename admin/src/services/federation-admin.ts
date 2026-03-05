@@ -7,6 +7,9 @@ import type {
   FederationActivityPubPublishResp,
   FederationAdminProxyResp,
   FederationAdminRemoteCheckResp,
+  ActivityPubOutboxItemResp,
+  ActivityPubOutboxListReq,
+  ActivityPubOutboxListResp,
   FederationAuthorListResp,
   FederationCachedPostListResp,
   FederationInstanceDetailResp,
@@ -127,5 +130,25 @@ export function listFederationInstancePosts(instanceId: number, query?: string, 
   return request<FederationCachedPostListResp>(`/admin/federation/instances/${instanceId}/posts`, {
     method: 'GET',
     query: { q: query || '', limit },
+  })
+}
+
+
+export function listActivityPubOutbox(query: ActivityPubOutboxListReq) {
+  return request<ActivityPubOutboxListResp>('/admin/activitypub/outbox', {
+    method: 'GET',
+    query: query as any,
+  })
+}
+
+export function getActivityPubOutboxDetail(id: number | string) {
+  return request<ActivityPubOutboxItemResp>(`/admin/activitypub/outbox/${id}`, {
+    method: 'GET',
+  })
+}
+
+export function retryActivityPubOutbox(id: number | string) {
+  return request<ActivityPubOutboxItemResp>(`/admin/activitypub/outbox/${id}/retry`, {
+    method: 'POST',
   })
 }

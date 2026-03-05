@@ -76,6 +76,7 @@ type ActivityPubSettings struct {
 	AcceptInboundComment   bool
 	MentionToAdmin         bool
 	PublishTypes           json.RawMessage
+	PublishTemplate        string
 	FediverseReplyTemplate string
 }
 
@@ -96,6 +97,7 @@ func (s *Service) ActivityPubSettings(ctx context.Context) (ActivityPubSettings,
 		"activitypub.acceptInboundComment",
 		"activitypub.mentionToAdmin",
 		"activitypub.publishTypes",
+		"activitypub.publishTemplate",
 		"activitypub.fediverseReplyTemplate",
 	}
 	items, err := s.repo.List(ctx, keys)
@@ -124,6 +126,7 @@ func (s *Service) ActivityPubSettings(ctx context.Context) (ActivityPubSettings,
 		AcceptInboundComment:   cfgParseBool(lookup["activitypub.acceptInboundComment"], true),
 		MentionToAdmin:         cfgParseBool(lookup["activitypub.mentionToAdmin"], true),
 		PublishTypes:           cfgParseJSON(lookup["activitypub.publishTypes"], json.RawMessage(`["article","moment","thinking"]`)),
+		PublishTemplate:        cfgParseString(lookup["activitypub.publishTemplate"], defaultActivityPubPublishTemplate),
 		FediverseReplyTemplate: cfgParseString(lookup["activitypub.fediverseReplyTemplate"], ""),
 	}, nil
 }

@@ -747,6 +747,13 @@ func (s *Service) UpdateConfigs(ctx context.Context, items []UpdateItem) ([]doma
 				}
 			}
 			if !(targetSensitive && isEmpty) {
+				if err := s.validateCustomValue(key, targetValueType, parsed); err != nil {
+					return nil, &UpdateValidationError{
+						Key:     key,
+						Message: "value 无效",
+						Cause:   err,
+					}
+				}
 				next.Value = parsed
 				valueSet = true
 				if !exists || parsed != current.Value {
@@ -829,6 +836,18 @@ func (s *Service) UpdateConfigs(ctx context.Context, items []UpdateItem) ([]doma
 		s.ensureKeyPairs(ctx, updatedKeys)
 	}
 	return s.repo.List(ctx, nil)
+}
+
+func (s *Service) validateCustomValue(key string, valueType string, value string) error {
+	if key == activityPubPublishTemplateKey {
+		if valueType != valueTypeString {
+			return fmt.Errorf("must be string type")
+		}
+		if err := validateActivityPubPublishTemplate(value); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var (

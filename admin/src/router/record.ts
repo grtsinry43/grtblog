@@ -404,6 +404,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
         component: 'federation/outbound/index',
       },
       {
+        path: 'activitypub-outbox',
+        name: 'activityPubOutbox',
+        label: 'ActivityPub 出站',
+        icon: 'iconify ph--broadcast',
+        meta: {
+          componentName: 'ActivityPubOutbox',
+          showTab: true,
+        },
+        component: 'federation/activitypub-outbox/index',
+      },
+      {
         path: 'reviews',
         name: 'federationReviews',
         label: '审核队列',

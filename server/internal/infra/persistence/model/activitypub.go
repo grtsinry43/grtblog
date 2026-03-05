@@ -23,17 +23,26 @@ type ActivityPubFollower struct {
 func (ActivityPubFollower) TableName() string { return "activitypub_follower" }
 
 type ActivityPubOutboxItem struct {
-	ID          int64          `gorm:"column:id;primaryKey"`
-	ActivityID  string         `gorm:"column:activity_id;size:500;not null"`
-	ObjectID    string         `gorm:"column:object_id;size:500;not null"`
-	SourceType  string         `gorm:"column:source_type;size:20;not null"`
-	SourceID    int64          `gorm:"column:source_id;not null"`
-	SourceURL   string         `gorm:"column:source_url;size:500;not null"`
-	Summary     string         `gorm:"column:summary;type:text;not null"`
-	Activity    datatypes.JSON `gorm:"column:activity;type:jsonb;not null"`
-	PublishedAt time.Time      `gorm:"column:published_at;autoCreateTime"`
-	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	ID            int64          `gorm:"column:id;primaryKey"`
+	ActivityID    string         `gorm:"column:activity_id;size:500;not null"`
+	ObjectID      string         `gorm:"column:object_id;size:500;not null"`
+	SourceType    string         `gorm:"column:source_type;size:20;not null"`
+	SourceID      int64          `gorm:"column:source_id;not null"`
+	SourceURL     string         `gorm:"column:source_url;size:500;not null"`
+	Summary       string         `gorm:"column:summary;type:text;not null"`
+	Activity      datatypes.JSON `gorm:"column:activity;type:jsonb;not null"`
+	Status        string         `gorm:"column:status;size:20;not null"`
+	TriggerSource string         `gorm:"column:trigger_source;size:20;not null"`
+	TotalTargets  int            `gorm:"column:total_targets;not null"`
+	SuccessCount  int            `gorm:"column:success_count;not null"`
+	FailureCount  int            `gorm:"column:failure_count;not null"`
+	Deliveries    datatypes.JSON `gorm:"column:deliveries;type:jsonb;not null"`
+	StartedAt     *time.Time     `gorm:"column:started_at"`
+	FinishedAt    *time.Time     `gorm:"column:finished_at"`
+	DurationMs    *int64         `gorm:"column:duration_ms"`
+	PublishedAt   time.Time      `gorm:"column:published_at;autoCreateTime"`
+	CreatedAt     time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (ActivityPubOutboxItem) TableName() string { return "activitypub_outbox_item" }
