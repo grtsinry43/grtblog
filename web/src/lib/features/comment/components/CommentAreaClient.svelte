@@ -46,13 +46,7 @@
 	const query = createQuery(() => ({
 		queryKey: ['comments', areaId, currentPage, viewerKey],
 		queryFn: () =>
-			getCommentTree(
-				undefined,
-				areaId,
-				currentPage,
-				pageSize,
-				viewerVisitorId || undefined
-			)
+			getCommentTree(undefined, areaId, currentPage, pageSize, viewerVisitorId || undefined)
 	}));
 
 	commentAreaCtx.mountModelData(() => createInitialModel());
@@ -85,8 +79,10 @@
 	const totalPages = $derived(Math.ceil(($commentAreaModel?.total ?? 0) / pageSize));
 	const normalizedObjectUrl = $derived((fediverseObjectUrl ?? '').trim());
 	const showFediverseSection = $derived(normalizedObjectUrl.length > 0);
+	const fediverseInstanceDomainStorageKey = 'comment:fediverse-instance-domain';
 	let copied = $state(false);
 	let instanceDomain = $state('');
+	let instanceDomainHydrated = $state(false);
 
 	const handlePageChange = (page: number) => {
 		if (page < 1 || page > totalPages) return;
@@ -110,7 +106,10 @@
 
 	const openOnInstance = () => {
 		if (!browser || !normalizedObjectUrl) return;
-		const domain = instanceDomain.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+		const domain = instanceDomain
+			.trim()
+			.replace(/^https?:\/\//, '')
+			.replace(/\/+$/, '');
 		if (!domain) return;
 		window.open(
 			`https://${domain}/authorize_interaction?uri=${encodeURIComponent(normalizedObjectUrl)}`,
@@ -118,6 +117,25 @@
 			'noopener,noreferrer'
 		);
 	};
+
+	$effect(() => {
+		if (!browser || instanceDomainHydrated) return;
+		const stored = localStorage.getItem(fediverseInstanceDomainStorageKey);
+		if (stored) {
+			instanceDomain = stored.trim();
+		}
+		instanceDomainHydrated = true;
+	});
+
+	$effect(() => {
+		if (!browser || !instanceDomainHydrated) return;
+		const trimmedDomain = instanceDomain.trim();
+		if (!trimmedDomain) {
+			localStorage.removeItem(fediverseInstanceDomainStorageKey);
+			return;
+		}
+		localStorage.setItem(fediverseInstanceDomainStorageKey, trimmedDomain);
+	});
 </script>
 
 <div class="mt-16 pt-10 border-t border-ink-100 dark:border-ink-800/50" id="comments">
@@ -163,39 +181,8 @@
 		</div>
 	</div>
 
-	<CommentList />
-
-	{#if totalPages > 1}
-		<div class="flex items-center justify-center gap-2 mt-8 mb-12">
-			<button
-				class="p-2 rounded-lg text-ink-500 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-				disabled={currentPage === 1}
-				onclick={() => handlePageChange(currentPage - 1)}
-				aria-label="上一页"
-			>
-				<ChevronLeft size={16} />
-			</button>
-
-			<div class="flex items-center gap-1 font-mono text-xs text-ink-600 dark:text-ink-400">
-				<span>{currentPage}</span>
-				<span class="text-ink-300 dark:text-ink-700">/</span>
-				<span>{totalPages}</span>
-			</div>
-
-			<button
-				class="p-2 rounded-lg text-ink-500 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-				disabled={currentPage === totalPages}
-				onclick={() => handlePageChange(currentPage + 1)}
-				aria-label="下一页"
-			>
-				<ChevronRight size={16} />
-			</button>
-		</div>
-	{/if}
-
 	{#if showFediverseSection}
-		<!-- Fediverse Section (Collapsible) -->
-		<div class="mb-20 mt-12">
+		<div class="mb-14 -mt-6">
 			<details class="group">
 				<summary
 					class="flex items-center gap-2 text-xs text-ink-800/50 dark:text-ink-200/50 hover:text-jade-600 dark:hover:text-jade-400 transition-colors font-serif tracking-wider cursor-pointer list-none outline-none"
@@ -206,12 +193,10 @@
 						class="i-lucide-chevron-down w-3 h-3 text-ink-400 group-open:rotate-180 transition-transform"
 					></div>
 				</summary>
-
 				<div
 					class="mt-4 p-5 bg-ink-50 dark:bg-[#252525] border border-ink-200 dark:border-ink-200/50 rounded-default animate-in slide-in-from-top-2 duration-300"
 				>
 					<div class="space-y-3">
-						<!-- AP Object URL (copyable) -->
 						<div>
 							<label
 								for="fediverse-object-url"
@@ -237,11 +222,10 @@
 								</button>
 							</div>
 							<div class="text-[10px] text-ink-400 dark:text-ink-500 mt-1">
-								复制此地址，在你的实例中搜索即可找到这篇文章。
+								复制此地址，在你的实例中搜索即可找到这篇内容。
 							</div>
 						</div>
 
-						<!-- Instance domain input + jump button -->
 						<div>
 							<label
 								for="fediverse-instance-domain"
@@ -269,6 +253,36 @@
 					</div>
 				</div>
 			</details>
+		</div>
+	{/if}
+
+	<CommentList />
+
+	{#if totalPages > 1}
+		<div class="flex items-center justify-center gap-2 mt-8 mb-12">
+			<button
+				class="p-2 rounded-lg text-ink-500 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				disabled={currentPage === 1}
+				onclick={() => handlePageChange(currentPage - 1)}
+				aria-label="上一页"
+			>
+				<ChevronLeft size={16} />
+			</button>
+
+			<div class="flex items-center gap-1 font-mono text-xs text-ink-600 dark:text-ink-400">
+				<span>{currentPage}</span>
+				<span class="text-ink-300 dark:text-ink-700">/</span>
+				<span>{totalPages}</span>
+			</div>
+
+			<button
+				class="p-2 rounded-lg text-ink-500 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				disabled={currentPage === totalPages}
+				onclick={() => handlePageChange(currentPage + 1)}
+				aria-label="下一页"
+			>
+				<ChevronRight size={16} />
+			</button>
 		</div>
 	{/if}
 </div>

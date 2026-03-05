@@ -451,6 +451,9 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 	if err != nil {
 		return nil, err
 	}
+	if parent.IsFederated {
+		return nil, domaincomment.ErrCommentReplyDisabled
+	}
 	if err := s.ensureParentValid(ctx, parent.AreaID, parent.ID); err != nil {
 		return nil, err
 	}

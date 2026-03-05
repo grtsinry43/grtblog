@@ -187,10 +187,12 @@ func (s *stringList) UnmarshalJSON(raw []byte) error {
 }
 
 type remoteActor struct {
-	ID                string `json:"id"`
-	PreferredUsername string `json:"preferredUsername"`
-	Name              string `json:"name"`
-	Inbox             string `json:"inbox"`
+	ID                string          `json:"id"`
+	PreferredUsername string          `json:"preferredUsername"`
+	Name              string          `json:"name"`
+	Icon              *remoteMediaRef `json:"icon"`
+	Image             *remoteMediaRef `json:"image"`
+	Inbox             string          `json:"inbox"`
 	Endpoints         struct {
 		SharedInbox string `json:"sharedInbox"`
 	} `json:"endpoints"`
@@ -198,6 +200,15 @@ type remoteActor struct {
 		ID           string `json:"id"`
 		PublicKeyPEM string `json:"publicKeyPem"`
 	} `json:"publicKey"`
+}
+
+type remoteMediaRef struct {
+	Type string `json:"type"`
+	URL  string `json:"url"`
+}
+
+type commentTarget struct {
+	AreaID int64
 }
 
 func NewService(
@@ -842,18 +853,23 @@ func (s *Service) handleCreateAsComment(ctx context.Context, baseURL string, act
 		}
 	}
 
-	article, parent, err := s.resolveCommentTarget(ctx, baseURL, inReplyTo)
-	if err != nil || article == nil || article.CommentID == nil {
+	target, parent, err := s.resolveCommentTarget(ctx, baseURL, inReplyTo)
+	if err != nil || target == nil {
 		return nil
 	}
 
 	nick := extractDisplayNameFromActor(actorID)
+	avatar := ""
 	if remote, err := s.fetchRemoteActor(ctx, actorID); err == nil && remote != nil {
 		if strings.TrimSpace(remote.PreferredUsername) != "" {
 			nick = strings.TrimSpace(remote.PreferredUsername)
 		}
 		if strings.TrimSpace(remote.Name) != "" && nick == "" {
 			nick = strings.TrimSpace(remote.Name)
+		}
+		avatarURL := remote.avatarURL()
+		if avatarURL != "" {
+			avatar = avatarURL
 		}
 	}
 	if nick == "" {
@@ -865,13 +881,14 @@ func (s *Service) handleCreateAsComment(ctx context.Context, baseURL string, act
 	}
 
 	entity := &domaincomment.Comment{
-		AreaID:            *article.CommentID,
+		AreaID:            target.AreaID,
 		Content:           contentText,
 		AuthorID:          nil,
 		VisitorID:         strPtr(actorID),
 		NickName:          strPtr(nick),
 		Email:             nil,
 		Website:           strPtr(strings.TrimSpace(actorID)),
+		Avatar:            strPtr(strings.TrimSpace(avatar)),
 		IsOwner:           false,
 		IsFriend:          false,
 		IsAuthor:          false,
@@ -891,29 +908,40 @@ func (s *Service) handleCreateAsComment(ctx context.Context, baseURL string, act
 	return s.commentRepo.Create(ctx, entity)
 }
 
-func (s *Service) resolveCommentTarget(ctx context.Context, baseURL string, inReplyTo string) (*content.Article, *domaincomment.Comment, error) {
+func (s *Service) resolveCommentTarget(ctx context.Context, baseURL string, inReplyTo string) (*commentTarget, *domaincomment.Comment, error) {
 	if s.commentRepo != nil {
 		if parent, err := s.commentRepo.FindByFederatedObjectID(ctx, inReplyTo); err == nil && parent != nil {
 			area, err := s.commentRepo.GetAreaByID(ctx, parent.AreaID)
-			if err != nil || area == nil || area.Type != "article" || area.ContentID == nil {
+			if err != nil || area == nil {
 				return nil, nil, err
 			}
-			article, err := s.contentRepo.GetArticleByID(ctx, *area.ContentID)
-			return article, parent, err
+			return &commentTarget{AreaID: area.ID}, parent, nil
 		}
 	}
 
 	if article, err := s.contentRepo.GetArticleByActivityPubObjectID(ctx, inReplyTo); err == nil {
-		return article, nil, nil
+		if article != nil && article.CommentID != nil {
+			return &commentTarget{AreaID: *article.CommentID}, nil, nil
+		}
+	}
+	if moment, err := s.contentRepo.GetMomentByActivityPubObjectID(ctx, inReplyTo); err == nil {
+		if moment != nil && moment.CommentID != nil {
+			return &commentTarget{AreaID: *moment.CommentID}, nil, nil
+		}
+	}
+	if s.thinkingRepo != nil {
+		if item, err := s.thinkingRepo.FindByActivityPubObjectID(ctx, inReplyTo); err == nil && item != nil {
+			return &commentTarget{AreaID: item.CommentID}, nil, nil
+		}
 	}
 
-	if article := s.resolveArticleByLocalURL(ctx, baseURL, inReplyTo); article != nil {
-		return article, nil, nil
+	if target := s.resolveContentByLocalURL(ctx, baseURL, inReplyTo); target != nil {
+		return target, nil, nil
 	}
 	return nil, nil, nil
 }
 
-func (s *Service) resolveArticleByLocalURL(ctx context.Context, baseURL, raw string) *content.Article {
+func (s *Service) resolveContentByLocalURL(ctx context.Context, baseURL, raw string) *commentTarget {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
 		return nil
@@ -936,7 +964,44 @@ func (s *Service) resolveArticleByLocalURL(ctx context.Context, baseURL, raw str
 		if err != nil {
 			return nil
 		}
-		return item
+		if item.CommentID == nil {
+			return nil
+		}
+		return &commentTarget{AreaID: *item.CommentID}
+	}
+	if strings.HasPrefix(path, "/moments/") {
+		slug := strings.TrimPrefix(path, "/moments/")
+		parts := strings.Split(strings.Trim(slug, "/"), "/")
+		if len(parts) == 0 {
+			return nil
+		}
+		shortURL := strings.TrimSpace(parts[len(parts)-1])
+		if shortURL == "" {
+			return nil
+		}
+		item, err := s.contentRepo.GetMomentByShortURL(ctx, shortURL)
+		if err != nil || item == nil || item.CommentID == nil {
+			return nil
+		}
+		return &commentTarget{AreaID: *item.CommentID}
+	}
+	if strings.HasPrefix(path, "/thinkings") {
+		fragment := strings.TrimSpace(u.Fragment)
+		if strings.HasPrefix(fragment, "thinking-") {
+			rawID := strings.TrimPrefix(fragment, "thinking-")
+			id, err := strconv.ParseInt(rawID, 10, 64)
+			if err != nil {
+				return nil
+			}
+			if s.thinkingRepo == nil {
+				return nil
+			}
+			item, err := s.thinkingRepo.FindByID(ctx, id)
+			if err != nil || item == nil {
+				return nil
+			}
+			return &commentTarget{AreaID: item.CommentID}
+		}
 	}
 	if strings.HasPrefix(path, "/ap/objects/article-") {
 		rawID := strings.TrimPrefix(path, "/ap/objects/article-")
@@ -948,9 +1013,53 @@ func (s *Service) resolveArticleByLocalURL(ctx context.Context, baseURL, raw str
 		if err != nil {
 			return nil
 		}
-		return item
+		if item.CommentID == nil {
+			return nil
+		}
+		return &commentTarget{AreaID: *item.CommentID}
+	}
+	if strings.HasPrefix(path, "/ap/objects/moment-") {
+		rawID := strings.TrimPrefix(path, "/ap/objects/moment-")
+		id, err := strconv.ParseInt(rawID, 10, 64)
+		if err != nil {
+			return nil
+		}
+		item, err := s.contentRepo.GetMomentByID(ctx, id)
+		if err != nil || item == nil || item.CommentID == nil {
+			return nil
+		}
+		return &commentTarget{AreaID: *item.CommentID}
+	}
+	if strings.HasPrefix(path, "/ap/objects/thinking-") {
+		rawID := strings.TrimPrefix(path, "/ap/objects/thinking-")
+		id, err := strconv.ParseInt(rawID, 10, 64)
+		if err != nil || s.thinkingRepo == nil {
+			return nil
+		}
+		item, err := s.thinkingRepo.FindByID(ctx, id)
+		if err != nil || item == nil {
+			return nil
+		}
+		return &commentTarget{AreaID: item.CommentID}
 	}
 	return nil
+}
+
+func (a *remoteActor) avatarURL() string {
+	if a == nil {
+		return ""
+	}
+	if a.Icon != nil {
+		if url := strings.TrimSpace(a.Icon.URL); url != "" {
+			return url
+		}
+	}
+	if a.Image != nil {
+		if url := strings.TrimSpace(a.Image.URL); url != "" {
+			return url
+		}
+	}
+	return ""
 }
 
 func (s *Service) notifyAdminsMention(ctx context.Context, actorID string, note noteObject) error {
