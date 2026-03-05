@@ -549,6 +549,7 @@ func (r *ContentRepository) CreateArticle(ctx context.Context, article *content.
 		IsHot:                      article.IsHot,
 		IsOriginal:                 article.IsOriginal,
 		ExtInfo:                    article.ExtInfo,
+		ContentUpdatedAt:           article.ContentUpdatedAt,
 		CreatedAt:                  article.CreatedAt,
 	}
 
@@ -659,6 +660,7 @@ func (r *ContentRepository) UpdateArticle(ctx context.Context, article *content.
 		"is_hot":                        article.IsHot,
 		"is_original":                   article.IsOriginal,
 		"ext_info":                      article.ExtInfo,
+		"content_updated_at":            article.ContentUpdatedAt,
 		"updated_at":                    now,
 	}
 	if err := r.db.WithContext(ctx).
@@ -928,22 +930,23 @@ func (r *ContentRepository) CreateMoment(ctx context.Context, moment *content.Mo
 	}
 
 	momentModel := &model.Moment{
-		Title:       moment.Title,
-		Summary:     moment.Summary,
-		AISummary:   moment.AISummary,
-		TOC:         tocBytes,
-		Content:     moment.Content,
-		ContentHash: moment.ContentHash,
-		AuthorID:    moment.AuthorID,
-		Image:       moment.Image,
-		ColumnID:    moment.ColumnID,
-		ShortURL:    moment.ShortURL,
-		IsPublished: moment.IsPublished,
-		IsTop:       moment.IsTop,
-		IsHot:       moment.IsHot,
-		IsOriginal:  moment.IsOriginal,
-		ExtInfo:     moment.ExtInfo,
-		CreatedAt:   moment.CreatedAt,
+		Title:            moment.Title,
+		Summary:          moment.Summary,
+		AISummary:        moment.AISummary,
+		TOC:              tocBytes,
+		Content:          moment.Content,
+		ContentHash:      moment.ContentHash,
+		AuthorID:         moment.AuthorID,
+		Image:            moment.Image,
+		ColumnID:         moment.ColumnID,
+		ShortURL:         moment.ShortURL,
+		IsPublished:      moment.IsPublished,
+		IsTop:            moment.IsTop,
+		IsHot:            moment.IsHot,
+		IsOriginal:       moment.IsOriginal,
+		ExtInfo:          moment.ExtInfo,
+		ContentUpdatedAt: moment.ContentUpdatedAt,
+		CreatedAt:        moment.CreatedAt,
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -1051,6 +1054,7 @@ func (r *ContentRepository) UpdateMoment(ctx context.Context, moment *content.Mo
 		"is_hot":                       moment.IsHot,
 		"is_original":                  moment.IsOriginal,
 		"ext_info":                     moment.ExtInfo,
+		"content_updated_at":           moment.ContentUpdatedAt,
 		"updated_at":                   now,
 	}
 	if err := r.db.WithContext(ctx).
@@ -1217,17 +1221,18 @@ func (r *ContentRepository) CreatePage(ctx context.Context, page *content.Page) 
 	}
 
 	pageModel := &model.Page{
-		Title:       page.Title,
-		Description: optionalString(page.Description),
-		AISummary:   optionalString(page.AISummary),
-		TOC:         tocBytes,
-		Content:     page.Content,
-		ContentHash: page.ContentHash,
-		ShortURL:    page.ShortURL,
-		IsEnabled:   page.IsEnabled,
-		IsBuiltin:   page.IsBuiltin,
-		ExtInfo:     page.ExtInfo,
-		CreatedAt:   page.CreatedAt,
+		Title:            page.Title,
+		Description:      optionalString(page.Description),
+		AISummary:        optionalString(page.AISummary),
+		TOC:              tocBytes,
+		Content:          page.Content,
+		ContentHash:      page.ContentHash,
+		ShortURL:         page.ShortURL,
+		IsEnabled:        page.IsEnabled,
+		IsBuiltin:        page.IsBuiltin,
+		ExtInfo:          page.ExtInfo,
+		ContentUpdatedAt: page.ContentUpdatedAt,
+		CreatedAt:        page.CreatedAt,
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -1303,17 +1308,18 @@ func (r *ContentRepository) UpdatePage(ctx context.Context, page *content.Page) 
 
 	now := time.Now()
 	updates := map[string]any{
-		"title":        page.Title,
-		"description":  optionalString(page.Description),
-		"ai_summary":   optionalString(page.AISummary),
-		"toc":          tocBytes,
-		"content":      page.Content,
-		"content_hash": page.ContentHash,
-		"short_url":    page.ShortURL,
-		"is_enabled":   page.IsEnabled,
-		"is_builtin":   page.IsBuiltin,
-		"ext_info":     page.ExtInfo,
-		"updated_at":   now,
+		"title":              page.Title,
+		"description":        optionalString(page.Description),
+		"ai_summary":         optionalString(page.AISummary),
+		"toc":                tocBytes,
+		"content":            page.Content,
+		"content_hash":       page.ContentHash,
+		"short_url":          page.ShortURL,
+		"is_enabled":         page.IsEnabled,
+		"is_builtin":         page.IsBuiltin,
+		"ext_info":           page.ExtInfo,
+		"content_updated_at": page.ContentUpdatedAt,
+		"updated_at":         now,
 	}
 	if err := r.db.WithContext(ctx).
 		Model(&model.Page{}).
@@ -1457,6 +1463,7 @@ func (r *ContentRepository) modelToArticle(am *model.Article) *content.Article {
 		IsHot:                      am.IsHot,
 		IsOriginal:                 am.IsOriginal,
 		ExtInfo:                    am.ExtInfo,
+		ContentUpdatedAt:           am.ContentUpdatedAt,
 		CreatedAt:                  am.CreatedAt,
 		UpdatedAt:                  am.UpdatedAt,
 		DeletedAt:                  timeToTimePtr(am.DeletedAt.Time),
@@ -1490,6 +1497,7 @@ func (r *ContentRepository) modelToMoment(mm *model.Moment) *content.Moment {
 		IsHot:                      mm.IsHot,
 		IsOriginal:                 mm.IsOriginal,
 		ExtInfo:                    mm.ExtInfo,
+		ContentUpdatedAt:           mm.ContentUpdatedAt,
 		CreatedAt:                  mm.CreatedAt,
 		UpdatedAt:                  mm.UpdatedAt,
 		DeletedAt:                  timeToTimePtr(mm.DeletedAt.Time),
@@ -1504,21 +1512,22 @@ func (r *ContentRepository) modelToPage(pm *model.Page) *content.Page {
 	}
 
 	return &content.Page{
-		ID:          pm.ID,
-		Title:       pm.Title,
-		Description: stringToPtr(pm.Description),
-		AISummary:   stringToPtr(pm.AISummary),
-		TOC:         toc,
-		Content:     pm.Content,
-		ContentHash: pm.ContentHash,
-		CommentID:   pm.CommentID,
-		ShortURL:    pm.ShortURL,
-		IsEnabled:   pm.IsEnabled,
-		IsBuiltin:   pm.IsBuiltin,
-		ExtInfo:     pm.ExtInfo,
-		CreatedAt:   pm.CreatedAt,
-		UpdatedAt:   pm.UpdatedAt,
-		DeletedAt:   timeToTimePtr(pm.DeletedAt.Time),
+		ID:               pm.ID,
+		Title:            pm.Title,
+		Description:      stringToPtr(pm.Description),
+		AISummary:        stringToPtr(pm.AISummary),
+		TOC:              toc,
+		Content:          pm.Content,
+		ContentHash:      pm.ContentHash,
+		CommentID:        pm.CommentID,
+		ShortURL:         pm.ShortURL,
+		IsEnabled:        pm.IsEnabled,
+		IsBuiltin:        pm.IsBuiltin,
+		ExtInfo:          pm.ExtInfo,
+		ContentUpdatedAt: pm.ContentUpdatedAt,
+		CreatedAt:        pm.CreatedAt,
+		UpdatedAt:        pm.UpdatedAt,
+		DeletedAt:        timeToTimePtr(pm.DeletedAt.Time),
 	}
 }
 

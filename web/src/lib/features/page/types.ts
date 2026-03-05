@@ -13,6 +13,7 @@ export type PageSummary = {
 	commentAreaId?: number | null;
 	isEnabled: boolean;
 	isBuiltin: boolean;
+	contentUpdatedAt: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -34,6 +35,7 @@ export type PageDetail = {
 		likes: number;
 		comments: number;
 	};
+	contentUpdatedAt: string;
 	createdAt: string;
 	updatedAt: string;
 };

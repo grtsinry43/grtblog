@@ -30,17 +30,18 @@ type ListThinkingResp struct {
 }
 
 type ThinkingListItemResp struct {
-	ID           int64     `json:"id"`
-	CommentID    int64     `json:"commentId"`
-	Content      string    `json:"content"`
-	AuthorID     int64     `json:"authorId"`
-	IsHot        bool      `json:"isHot"`
-	AllowComment bool      `json:"allowComment"`
-	AuthorName   string    `json:"authorName,omitempty"`
-	Avatar       string    `json:"avatar,omitempty"`
-	Views        int64     `json:"views"`
-	Likes        int       `json:"likes"`
-	Comments     int       `json:"comments"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID                  int64     `json:"id"`
+	CommentID           int64     `json:"commentId"`
+	Content             string    `json:"content"`
+	AuthorID            int64     `json:"authorId"`
+	ActivityPubObjectID *string   `json:"activityPubObjectId,omitempty"`
+	IsHot               bool      `json:"isHot"`
+	AllowComment        bool      `json:"allowComment"`
+	AuthorName          string    `json:"authorName,omitempty"`
+	Avatar              string    `json:"avatar,omitempty"`
+	Views               int64     `json:"views"`
+	Likes               int       `json:"likes"`
+	Comments            int       `json:"comments"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
 }

@@ -38,6 +38,7 @@ type Comment struct {
 	FederatedObjectID *string
 	CanReply          bool
 	Status            string
+	IsEdited          bool
 	AreaType          *string
 	AreaName          *string
 	AreaTitle         *string

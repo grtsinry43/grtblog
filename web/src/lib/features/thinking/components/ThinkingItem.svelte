@@ -18,7 +18,8 @@
 			{
 				areaId: item.commentId,
 				commentsCount: item.comments ?? 0,
-				thinkingId: item.id
+				thinkingId: item.id,
+				activityPubObjectId: item.activityPubObjectId ?? null
 			},
 			'thinking-comments'
 		);

@@ -19,7 +19,7 @@
 	let { moment, dateStr, dateNo, onActiveAnchorChange, onContentRootChange }: Props =
 		$props();
 
-	const showUpdated = $derived(isDifferentDay(moment.createdAt, moment.updatedAt));
+	const showUpdated = $derived(isDifferentDay(moment.createdAt, moment.contentUpdatedAt));
 </script>
 
 <div
@@ -41,7 +41,7 @@
 					<span class="font-serif text-cinnabar-500">手记</span>
 					<span>—</span>
 					<span>{dateStr}</span>
-					{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN(moment.updatedAt)}）</span>{/if}
+					{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN(moment.contentUpdatedAt)}）</span>{/if}
 				</div>
 				<div class="shrink-0 text-ink-800/40 dark:text-ink-200/40">
 					<Sun size={18} stroke-width={1.5} />
@@ -102,6 +102,7 @@
 		<DetailCommentSection
 			commentAreaId={moment.commentAreaId}
 			commentsCount={moment.metrics?.comments ?? 0}
+			fediverseObjectUrl={moment.activityPubObjectId}
 			containerClass="mt-16 pt-10 border-t border-ink-200/50 dark:border-ink-700/30"
 			fallbackText="Loading comments..."
 			fallbackSize="w-6 h-6"

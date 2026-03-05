@@ -353,6 +353,7 @@
 			areaId={windowStore.data?.areaId}
 			commentsCount={windowStore.data?.commentsCount ?? 0}
 			thinkingId={Number(windowStore.data?.thinkingId) || 0}
+			activityPubObjectId={windowStore.data?.activityPubObjectId ?? null}
 		/>
 	{:else if windowStore.kind === 'user-center'}
 		<QueryRoot

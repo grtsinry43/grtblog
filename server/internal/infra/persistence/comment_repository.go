@@ -412,6 +412,7 @@ func (r *CommentRepository) Update(ctx context.Context, commentEntity *comment.C
 			"is_author":  rec.IsAuthor,
 			"is_viewed":  rec.IsViewed,
 			"is_top":     rec.IsTop,
+			"is_edited":  rec.IsEdited,
 			"status":     rec.Status,
 			"updated_at": time.Now(),
 		}).Error
@@ -1396,6 +1397,7 @@ func mapCommentToDomain(rec model.Comment) comment.Comment {
 		FederatedObjectID: toPtr(rec.FederatedObjectID),
 		CanReply:          canReply,
 		Status:            status,
+		IsEdited:          rec.IsEdited,
 		ParentID:          rec.ParentID,
 		CreatedAt:         rec.CreatedAt,
 		UpdatedAt:         rec.UpdatedAt,
@@ -1436,6 +1438,7 @@ func mapCommentToModel(entity *comment.Comment) model.Comment {
 		FederatedObjectID: toValue(entity.FederatedObjectID),
 		AllowLocalReply:   allowLocalReply,
 		Status:            status,
+		IsEdited:          entity.IsEdited,
 		ParentID:          entity.ParentID,
 		CreatedAt:         entity.CreatedAt,
 		UpdatedAt:         entity.UpdatedAt,

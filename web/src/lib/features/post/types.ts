@@ -21,6 +21,7 @@ export type PostSummary = {
 	isTop: boolean;
 	isHot: boolean;
 	isOriginal: boolean;
+	contentUpdatedAt: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -64,6 +65,7 @@ export type PostDetail = {
 	isHot: boolean;
 	isOriginal: boolean;
 	relatedMoments?: PostRelatedMoment[];
+	contentUpdatedAt: string;
 	createdAt: string;
 	updatedAt: string;
 };

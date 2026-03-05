@@ -34,6 +34,7 @@ export type CommentCreateResponse = {
 	federatedActor?: string | null;
 	canReply: boolean;
 	status: string;
+	isEdited: boolean;
 	parentId?: number | null;
 	createdAt: string;
 	updatedAt: string;
@@ -44,6 +45,7 @@ export type CommentCreateResponse = {
 export type CommentNode = {
 	id: number;
 	areaId: number;
+	floor?: string;
 	content: string | null;
 	nickName?: string | null;
 	location?: string | null;
@@ -62,6 +64,7 @@ export type CommentNode = {
 	federatedActor?: string | null;
 	canReply: boolean;
 	status: string;
+	isEdited: boolean;
 	parentId?: number | null;
 	createdAt: string;
 	updatedAt: string;

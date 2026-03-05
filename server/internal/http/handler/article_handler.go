@@ -782,18 +782,19 @@ func (h *ArticleHandler) toArticleListItemResp(ctx context.Context, article *con
 	}
 
 	resp := contract.ArticleListItemResp{
-		ID:           article.ID,
-		Title:        article.Title,
-		ShortURL:     article.ShortURL,
-		Summary:      article.Summary,
-		IsTop:        article.IsTop,
-		IsHot:        article.IsHot,
-		AllowComment: h.allowCommentByAreaID(ctx, article.CommentID),
-		IsOriginal:   article.IsOriginal,
-		IsPublished:  article.IsPublished,
-		CreatedAt:    article.CreatedAt,
-		UpdatedAt:    article.UpdatedAt,
-		Tags:         []string{},
+		ID:               article.ID,
+		Title:            article.Title,
+		ShortURL:         article.ShortURL,
+		Summary:          article.Summary,
+		IsTop:            article.IsTop,
+		IsHot:            article.IsHot,
+		AllowComment:     h.allowCommentByAreaID(ctx, article.CommentID),
+		IsOriginal:       article.IsOriginal,
+		IsPublished:      article.IsPublished,
+		ContentUpdatedAt: article.ContentUpdatedAt,
+		CreatedAt:        article.CreatedAt,
+		UpdatedAt:        article.UpdatedAt,
+		Tags:             []string{},
 	}
 	resp.CommentID = article.CommentID
 
@@ -878,12 +879,9 @@ func (h *ArticleHandler) buildFediverseReplyLinks(ctx context.Context, article *
 		objectURL = strings.TrimSpace(*article.ActivityPubObjectID)
 	}
 	if objectURL == "" {
-		objectURL = baseURL + "/ap/objects/article-" + strconv.FormatInt(article.ID, 10)
+		return nil, nil
 	}
-	var objectPtr *string
-	if strings.TrimSpace(objectURL) != "" {
-		objectPtr = &objectURL
-	}
+	objectPtr := &objectURL
 
 	replyTemplate := strings.TrimSpace(settings.FediverseReplyTemplate)
 	if replyTemplate == "" {

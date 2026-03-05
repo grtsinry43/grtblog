@@ -73,6 +73,7 @@ type Article struct {
 	IsHot                      bool
 	IsOriginal                 bool
 	ExtInfo                    []byte
+	ContentUpdatedAt           time.Time
 	InitialViews               int64
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -114,6 +115,7 @@ type Moment struct {
 	IsHot                      bool
 	IsOriginal                 bool
 	ExtInfo                    []byte
+	ContentUpdatedAt           time.Time
 	InitialViews               int64
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -140,11 +142,12 @@ type Page struct {
 	Content      string
 	ContentHash  string
 	CommentID    *int64
-	ExtInfo      []byte
-	InitialViews int64
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    *time.Time
+	ExtInfo          []byte
+	ContentUpdatedAt time.Time
+	InitialViews     int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        *time.Time
 }
 
 type PageMetrics struct {

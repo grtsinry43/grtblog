@@ -31,6 +31,7 @@ type ArticleResp struct {
 	ExtInfo                    *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
 	Tags                       []TagResp    `json:"tags,omitempty"`
 	Metrics                    *MetricsResp `json:"metrics,omitempty"`
+	ContentUpdatedAt           time.Time    `json:"contentUpdatedAt"`
 	CreatedAt                  time.Time    `json:"createdAt"`
 	UpdatedAt                  time.Time    `json:"updatedAt"`
 }
@@ -76,6 +77,7 @@ type ArticleListItemResp struct {
 	AllowComment     bool      `json:"allowComment"`
 	IsOriginal       bool      `json:"isOriginal"`
 	IsPublished      bool      `json:"isPublished"`
+	ContentUpdatedAt time.Time `json:"contentUpdatedAt"`
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 }

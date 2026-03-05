@@ -3,6 +3,7 @@ export type ThinkingItem = {
 	commentId: number;
 	content: string;
 	authorId: number;
+	activityPubObjectId?: string | null;
 	authorName?: string;
 	avatar?: string;
 	views: number;

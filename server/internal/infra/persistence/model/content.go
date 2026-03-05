@@ -75,6 +75,7 @@ type Article struct {
 	IsHot                      bool           `gorm:"column:is_hot"`
 	IsOriginal                 bool           `gorm:"column:is_original"`
 	ExtInfo                    []byte         `gorm:"column:ext_info;type:jsonb"`
+	ContentUpdatedAt           time.Time      `gorm:"column:content_updated_at"`
 	CreatedAt                  time.Time      `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt                  time.Time      `gorm:"column:updated_at;autoUpdateTime"`
 	DeletedAt                  gorm.DeletedAt `gorm:"column:deleted_at;index"`
@@ -112,6 +113,7 @@ type Moment struct {
 	IsHot                      bool           `gorm:"column:is_hot"`
 	IsOriginal                 bool           `gorm:"column:is_original"`
 	ExtInfo                    []byte         `gorm:"column:ext_info;type:jsonb"`
+	ContentUpdatedAt           time.Time      `gorm:"column:content_updated_at"`
 	CreatedAt                  time.Time      `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt                  time.Time      `gorm:"column:updated_at;autoUpdateTime"`
 	DeletedAt                  gorm.DeletedAt `gorm:"column:deleted_at;index"`
@@ -141,10 +143,11 @@ type Page struct {
 	Content     string         `gorm:"column:content;type:text;not null"`
 	ContentHash string         `gorm:"column:content_hash;size:32;not null"`
 	CommentID   *int64         `gorm:"column:comment_id"`
-	ExtInfo     []byte         `gorm:"column:ext_info;type:jsonb"`
-	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime"`
-	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	ExtInfo          []byte         `gorm:"column:ext_info;type:jsonb"`
+	ContentUpdatedAt time.Time      `gorm:"column:content_updated_at"`
+	CreatedAt        time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt        time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt        gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (Page) TableName() string { return "page" }

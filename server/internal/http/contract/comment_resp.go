@@ -23,6 +23,7 @@ type CreateCommentResp struct {
 	FederatedActor    *string    `json:"federatedActor"`
 	CanReply          bool       `json:"canReply"`
 	Status            string     `json:"status"`
+	IsEdited          bool       `json:"isEdited"`
 	ParentID          *int64     `json:"parentId"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
@@ -33,6 +34,7 @@ type CreateCommentResp struct {
 type CommentNodeResp struct {
 	ID                int64             `json:"id"`
 	AreaID            int64             `json:"areaId"`
+	Floor             string            `json:"floor,omitempty"`
 	Content           *string           `json:"content"`
 	NickName          *string           `json:"nickName"`
 	Avatar            *string           `json:"avatar"`
@@ -51,6 +53,7 @@ type CommentNodeResp struct {
 	FederatedActor    *string           `json:"federatedActor"`
 	CanReply          bool              `json:"canReply"`
 	Status            string            `json:"status"`
+	IsEdited          bool              `json:"isEdited"`
 	ParentID          *int64            `json:"parentId"`
 	CreatedAt         time.Time         `json:"createdAt"`
 	UpdatedAt         time.Time         `json:"updatedAt"`
@@ -96,6 +99,7 @@ type AdminCommentResp struct {
 	FederatedActor    *string    `json:"federatedActor"`
 	CanReply          bool       `json:"canReply"`
 	Status            string     `json:"status"`
+	IsEdited          bool       `json:"isEdited"`
 	ParentID          *string    `json:"parentId"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`

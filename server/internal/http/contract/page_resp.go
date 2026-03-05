@@ -19,8 +19,9 @@ type PageResp struct {
 	AllowComment bool         `json:"allowComment"`
 	ExtInfo      *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
 	Metrics      *MetricsResp `json:"metrics,omitempty"`
-	CreatedAt    time.Time    `json:"createdAt"`
-	UpdatedAt    time.Time    `json:"updatedAt"`
+	ContentUpdatedAt time.Time    `json:"contentUpdatedAt"`
+	CreatedAt        time.Time    `json:"createdAt"`
+	UpdatedAt        time.Time    `json:"updatedAt"`
 }
 
 // PageListItemResp 页面列表项响应。
@@ -37,8 +38,9 @@ type PageListItemResp struct {
 	IsBuiltin    bool      `json:"isBuiltin"`
 	IsHot        bool      `json:"isHot"`
 	AllowComment bool      `json:"allowComment"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ContentUpdatedAt time.Time `json:"contentUpdatedAt"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 // PageListResp 页面列表响应。

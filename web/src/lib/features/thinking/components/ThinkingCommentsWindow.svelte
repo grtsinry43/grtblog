@@ -7,9 +7,10 @@
 		areaId?: number | null;
 		commentsCount?: number;
 		thinkingId?: number;
+		activityPubObjectId?: string | null;
 	};
 
-	let { areaId = null, commentsCount = 0, thinkingId = 0 }: Props = $props();
+	let { areaId = null, commentsCount = 0, thinkingId = 0, activityPubObjectId = null }: Props = $props();
 
 	// When the comment area fetches fresh data, propagate the updated total
 	// back to the thinking list so the comment count in ThinkingItem stays current.
@@ -39,6 +40,7 @@
 	<DetailCommentSection
 		commentAreaId={areaId}
 		commentsCount={commentsCount}
+		fediverseObjectUrl={activityPubObjectId}
 		containerClass="thinking-comments-window"
 		fallbackText="评论区正在加载中..."
 		fallbackSize="w-6 h-6"

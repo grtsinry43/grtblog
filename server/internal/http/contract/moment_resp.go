@@ -28,6 +28,7 @@ type MomentResp struct {
 	ExtInfo                    *JSONRaw     `json:"extInfo,omitempty" swaggertype:"object"`
 	Topics                     []TagResp    `json:"topics,omitempty"`
 	Metrics                    *MetricsResp `json:"metrics,omitempty"`
+	ContentUpdatedAt           time.Time    `json:"contentUpdatedAt"`
 	CreatedAt                  time.Time    `json:"createdAt"`
 	UpdatedAt                  time.Time    `json:"updatedAt"`
 }
@@ -52,9 +53,10 @@ type MomentListItemResp struct {
 	IsHot          bool      `json:"isHot"`
 	AllowComment   bool      `json:"allowComment"`
 	IsOriginal     bool      `json:"isOriginal"`
-	IsPublished    bool      `json:"isPublished"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+	IsPublished      bool      `json:"isPublished"`
+	ContentUpdatedAt time.Time `json:"contentUpdatedAt"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 // MomentListResp 手记列表响应。

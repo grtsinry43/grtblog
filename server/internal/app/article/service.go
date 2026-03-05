@@ -59,23 +59,24 @@ func (s *Service) CreateArticle(ctx context.Context, authorID int64, cmd CreateA
 	summary := contentutil.BuildSummary(cmd.Summary, cmd.Content)
 
 	article := &content.Article{
-		Title:       cmd.Title,
-		Summary:     summary,
-		AISummary:   cmd.AISummary,
-		LeadIn:      cmd.LeadIn,
-		TOC:         toc,
-		Content:     cmd.Content,
-		ContentHash: content.ArticleContentHash(cmd.Title, cmd.LeadIn, cmd.Content),
-		AuthorID:    authorID,
-		Cover:       cmd.Cover,
-		CategoryID:  cmd.CategoryID,
-		ShortURL:    shortURL,
-		IsPublished: cmd.IsPublished,
-		IsTop:       cmd.IsTop,
-		IsHot:       false,
-		IsOriginal:  cmd.IsOriginal,
-		ExtInfo:     mergeExtInfoKeepingFederation(nil, cmd.ExtInfo),
-		CreatedAt:   createdAt,
+		Title:            cmd.Title,
+		Summary:          summary,
+		AISummary:        cmd.AISummary,
+		LeadIn:           cmd.LeadIn,
+		TOC:              toc,
+		Content:          cmd.Content,
+		ContentHash:      content.ArticleContentHash(cmd.Title, cmd.LeadIn, cmd.Content),
+		AuthorID:         authorID,
+		Cover:            cmd.Cover,
+		CategoryID:       cmd.CategoryID,
+		ShortURL:         shortURL,
+		IsPublished:      cmd.IsPublished,
+		IsTop:            cmd.IsTop,
+		IsHot:            false,
+		IsOriginal:       cmd.IsOriginal,
+		ExtInfo:          mergeExtInfoKeepingFederation(nil, cmd.ExtInfo),
+		ContentUpdatedAt: createdAt,
+		CreatedAt:        createdAt,
 	}
 	if cmd.Views != nil && *cmd.Views > 0 {
 		article.InitialViews = *cmd.Views
@@ -154,6 +155,9 @@ func (s *Service) UpdateArticle(ctx context.Context, cmd UpdateArticleCmd) (*con
 	existing.TOC = toc
 	existing.Content = cmd.Content
 	existing.ContentHash = content.ArticleContentHash(cmd.Title, cmd.LeadIn, cmd.Content)
+	if prevContentHash != existing.ContentHash {
+		existing.ContentUpdatedAt = time.Now()
+	}
 	existing.Cover = cmd.Cover
 	existing.CategoryID = cmd.CategoryID
 	shortURL := strings.TrimSpace(cmd.ShortURL)

@@ -48,17 +48,18 @@ func (s *Service) CreatePage(ctx context.Context, cmd CreatePageCmd) (*content.P
 	toc := contentutil.GenerateTOC(cmd.Content)
 
 	page := &content.Page{
-		Title:       cmd.Title,
-		Description: description,
-		AISummary:   nil,
-		TOC:         toc,
-		Content:     cmd.Content,
-		ContentHash: content.PageContentHash(cmd.Title, description, cmd.Content),
-		ShortURL:    shortURL,
-		IsEnabled:   cmd.IsEnabled,
-		IsBuiltin:   cmd.IsBuiltin,
-		ExtInfo:     cmd.ExtInfo,
-		CreatedAt:   createdAt,
+		Title:            cmd.Title,
+		Description:      description,
+		AISummary:        nil,
+		TOC:              toc,
+		Content:          cmd.Content,
+		ContentHash:      content.PageContentHash(cmd.Title, description, cmd.Content),
+		ShortURL:         shortURL,
+		IsEnabled:        cmd.IsEnabled,
+		IsBuiltin:        cmd.IsBuiltin,
+		ExtInfo:          cmd.ExtInfo,
+		ContentUpdatedAt: createdAt,
+		CreatedAt:        createdAt,
 	}
 	if cmd.Views != nil && *cmd.Views > 0 {
 		page.InitialViews = *cmd.Views
@@ -89,6 +90,7 @@ func (s *Service) UpdatePage(ctx context.Context, cmd UpdatePageCmd) (*content.P
 	if err != nil {
 		return nil, err
 	}
+	prevContentHash := existing.ContentHash
 
 	description := trimPtr(cmd.Description)
 	toc := contentutil.GenerateTOC(cmd.Content)
@@ -98,6 +100,9 @@ func (s *Service) UpdatePage(ctx context.Context, cmd UpdatePageCmd) (*content.P
 	existing.TOC = toc
 	existing.Content = cmd.Content
 	existing.ContentHash = content.PageContentHash(cmd.Title, description, cmd.Content)
+	if prevContentHash != existing.ContentHash {
+		existing.ContentUpdatedAt = time.Now()
+	}
 	shortURL := strings.TrimSpace(cmd.ShortURL)
 	if shortURL == "" {
 		shortURL = existing.ShortURL

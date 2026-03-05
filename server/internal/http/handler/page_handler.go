@@ -477,20 +477,21 @@ func (h *PageHandler) toPageResp(ctx context.Context, pageItem *content.Page) (*
 	}
 
 	resp := contract.PageResp{
-		ID:           pageItem.ID,
-		Title:        pageItem.Title,
-		Description:  pageItem.Description,
-		AISummary:    pageItem.AISummary,
-		TOC:          mapPageTOCNodes(pageItem.TOC),
-		Content:      pageItem.Content,
-		ContentHash:  pageItem.ContentHash,
-		CommentID:    pageItem.CommentID,
-		ShortURL:     pageItem.ShortURL,
-		IsEnabled:    pageItem.IsEnabled,
-		IsBuiltin:    pageItem.IsBuiltin,
-		IsHot:        false,
-		AllowComment: h.allowCommentByAreaID(ctx, pageItem.CommentID),
-		ExtInfo:      jsonRawFromBytes(pageItem.ExtInfo),
+		ID:               pageItem.ID,
+		Title:            pageItem.Title,
+		Description:      pageItem.Description,
+		AISummary:        pageItem.AISummary,
+		TOC:              mapPageTOCNodes(pageItem.TOC),
+		Content:          pageItem.Content,
+		ContentHash:      pageItem.ContentHash,
+		CommentID:        pageItem.CommentID,
+		ShortURL:         pageItem.ShortURL,
+		IsEnabled:        pageItem.IsEnabled,
+		IsBuiltin:        pageItem.IsBuiltin,
+		IsHot:            false,
+		AllowComment:     h.allowCommentByAreaID(ctx, pageItem.CommentID),
+		ExtInfo:          jsonRawFromBytes(pageItem.ExtInfo),
+		ContentUpdatedAt: pageItem.ContentUpdatedAt,
 		Metrics: &contract.MetricsResp{
 			Views:    0,
 			Likes:    0,
@@ -516,16 +517,17 @@ func (h *PageHandler) toPageListItemResp(ctx context.Context, pageItem *content.
 	}
 
 	resp := contract.PageListItemResp{
-		ID:           pageItem.ID,
-		Title:        pageItem.Title,
-		ShortURL:     pageItem.ShortURL,
-		Description:  pageItem.Description,
-		IsEnabled:    pageItem.IsEnabled,
-		IsBuiltin:    pageItem.IsBuiltin,
-		IsHot:        false,
-		AllowComment: h.allowCommentByAreaID(ctx, pageItem.CommentID),
-		CreatedAt:    pageItem.CreatedAt,
-		UpdatedAt:    pageItem.UpdatedAt,
+		ID:               pageItem.ID,
+		Title:            pageItem.Title,
+		ShortURL:         pageItem.ShortURL,
+		Description:      pageItem.Description,
+		IsEnabled:        pageItem.IsEnabled,
+		IsBuiltin:        pageItem.IsBuiltin,
+		IsHot:            false,
+		AllowComment:     h.allowCommentByAreaID(ctx, pageItem.CommentID),
+		ContentUpdatedAt: pageItem.ContentUpdatedAt,
+		CreatedAt:        pageItem.CreatedAt,
+		UpdatedAt:        pageItem.UpdatedAt,
 	}
 	resp.CommentID = pageItem.CommentID
 

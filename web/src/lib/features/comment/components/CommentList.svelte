@@ -6,8 +6,6 @@
 	const commentsStore = commentAreaCtx.selectModelData((data) => data?.comments ?? []);
 	const isLoadingStore = commentAreaCtx.selectModelData((data) => data?.isLoading ?? false);
 	const isErrorStore = commentAreaCtx.selectModelData((data) => data?.isError ?? false);
-	const pageStore = commentAreaCtx.selectModelData((data) => data?.page ?? 1);
-	const sizeStore = commentAreaCtx.selectModelData((data) => data?.size ?? 10);
 </script>
 
 <div class="space-y-8 mt-12 mb-20">
@@ -19,8 +17,8 @@
 		<div class="text-center py-10 text-sm text-red-500">加载评论失败</div>
 	{:else if $commentsStore && $commentsStore.length > 0}
 		<div class="space-y-6">
-			{#each $commentsStore as comment, i (comment.id)}
-				<CommentItem {comment} floor={($pageStore - 1) * $sizeStore + i + 1} />
+			{#each $commentsStore as comment (comment.id)}
+				<CommentItem {comment} floor={comment.floor} />
 			{/each}
 		</div>
 	{:else}

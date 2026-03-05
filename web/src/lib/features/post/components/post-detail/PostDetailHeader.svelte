@@ -15,9 +15,9 @@
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
 	const createdAtStore = postDetailCtx.selectModelData((data) => data?.createdAt ?? '');
-	const updatedAtStore = postDetailCtx.selectModelData((data) => data?.updatedAt ?? '');
+	const contentUpdatedAtStore = postDetailCtx.selectModelData((data) => data?.contentUpdatedAt ?? '');
 	const contentStore = postDetailCtx.selectModelData((data) => data?.content ?? '');
-	const showUpdated = $derived(isDifferentDay($createdAtStore, $updatedAtStore));
+	const showUpdated = $derived(isDifferentDay($createdAtStore, $contentUpdatedAtStore));
 	const isHotStore = postDetailCtx.selectModelData((data) => data?.isHot ?? false);
 	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
 		equals: sameMetrics
@@ -95,7 +95,7 @@
 				{/if}
 				<span class="flex items-center gap-1.5">
 					<Calendar size={12} />
-					{formatDateCN($createdAtStore)}{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN($updatedAtStore)}）</span>{/if}
+					{formatDateCN($createdAtStore)}{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN($contentUpdatedAtStore)}）</span>{/if}
 				</span>
 				<span class="flex items-center gap-1.5"><Clock size={12} /> {formatReadingTime(readingTime)}</span>
 				<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>

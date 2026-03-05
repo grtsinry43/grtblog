@@ -20,6 +20,7 @@ export type MomentSummary = {
 	isTop: boolean;
 	isHot: boolean;
 	isOriginal: boolean;
+	contentUpdatedAt: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -48,6 +49,7 @@ export type MomentDetail = {
 	columnName?: string;
 	columnShortUrl?: string;
 	commentAreaId?: number | null;
+	activityPubObjectId?: string | null;
 	isPublished: boolean;
 	topics?: TopicTag[];
 	metrics?: {
@@ -59,6 +61,7 @@ export type MomentDetail = {
 	isHot: boolean;
 	isOriginal: boolean;
 	relatedPosts?: MomentRelatedPost[];
+	contentUpdatedAt: string;
 	createdAt: string;
 	updatedAt: string;
 };

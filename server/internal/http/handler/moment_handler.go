@@ -741,6 +741,7 @@ func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Mo
 		AllowComment:               h.allowCommentByAreaID(ctx, momentItem.CommentID),
 		IsOriginal:                 momentItem.IsOriginal,
 		ExtInfo:                    jsonRawFromBytes(momentItem.ExtInfo),
+		ContentUpdatedAt:           momentItem.ContentUpdatedAt,
 		CreatedAt:                  momentItem.CreatedAt,
 		UpdatedAt:                  momentItem.UpdatedAt,
 	}
@@ -787,19 +788,20 @@ func (h *MomentHandler) toMomentListItemResp(ctx context.Context, momentItem *co
 	}
 
 	resp := contract.MomentListItemResp{
-		ID:           momentItem.ID,
-		Title:        momentItem.Title,
-		ShortURL:     momentItem.ShortURL,
-		Summary:      momentItem.Summary,
-		IsTop:        momentItem.IsTop,
-		IsHot:        momentItem.IsHot,
-		AllowComment: h.allowCommentByAreaID(ctx, momentItem.CommentID),
-		IsOriginal:   momentItem.IsOriginal,
-		IsPublished:  momentItem.IsPublished,
-		CreatedAt:    momentItem.CreatedAt,
-		UpdatedAt:    momentItem.UpdatedAt,
-		Topics:       []string{},
-		Image:        splitImages(momentItem.Image),
+		ID:               momentItem.ID,
+		Title:            momentItem.Title,
+		ShortURL:         momentItem.ShortURL,
+		Summary:          momentItem.Summary,
+		IsTop:            momentItem.IsTop,
+		IsHot:            momentItem.IsHot,
+		AllowComment:     h.allowCommentByAreaID(ctx, momentItem.CommentID),
+		IsOriginal:       momentItem.IsOriginal,
+		IsPublished:      momentItem.IsPublished,
+		ContentUpdatedAt: momentItem.ContentUpdatedAt,
+		CreatedAt:        momentItem.CreatedAt,
+		UpdatedAt:        momentItem.UpdatedAt,
+		Topics:           []string{},
+		Image:            splitImages(momentItem.Image),
 	}
 	resp.CommentID = momentItem.CommentID
 

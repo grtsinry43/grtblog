@@ -57,22 +57,23 @@ func (s *Service) CreateMoment(ctx context.Context, authorID int64, cmd CreateMo
 	summary := contentutil.BuildSummary(cmd.Summary, cmd.Content)
 
 	moment := &content.Moment{
-		Title:       cmd.Title,
-		Summary:     summary,
-		AISummary:   cmd.AISummary,
-		TOC:         toc,
-		Content:     cmd.Content,
-		ContentHash: content.MomentContentHash(cmd.Title, summary, cmd.Content),
-		AuthorID:    authorID,
-		Image:       cmd.Image,
-		ColumnID:    cmd.ColumnID,
-		ShortURL:    shortURL,
-		IsPublished: cmd.IsPublished,
-		IsTop:       cmd.IsTop,
-		IsHot:       false,
-		IsOriginal:  cmd.IsOriginal,
-		ExtInfo:     cmd.ExtInfo,
-		CreatedAt:   createdAt,
+		Title:            cmd.Title,
+		Summary:          summary,
+		AISummary:        cmd.AISummary,
+		TOC:              toc,
+		Content:          cmd.Content,
+		ContentHash:      content.MomentContentHash(cmd.Title, summary, cmd.Content),
+		AuthorID:         authorID,
+		Image:            cmd.Image,
+		ColumnID:         cmd.ColumnID,
+		ShortURL:         shortURL,
+		IsPublished:      cmd.IsPublished,
+		IsTop:            cmd.IsTop,
+		IsHot:            false,
+		IsOriginal:       cmd.IsOriginal,
+		ExtInfo:          cmd.ExtInfo,
+		ContentUpdatedAt: createdAt,
+		CreatedAt:        createdAt,
 	}
 	if cmd.Views != nil && *cmd.Views > 0 {
 		moment.InitialViews = *cmd.Views
@@ -120,6 +121,7 @@ func (s *Service) UpdateMoment(ctx context.Context, cmd UpdateMomentCmd) (*conte
 		return nil, err
 	}
 	prevPublished := existing.IsPublished
+	prevContentHash := existing.ContentHash
 
 	if cmd.ColumnID != nil {
 		if _, err := s.repo.GetColumnByID(ctx, *cmd.ColumnID); err != nil {
@@ -139,6 +141,9 @@ func (s *Service) UpdateMoment(ctx context.Context, cmd UpdateMomentCmd) (*conte
 	existing.TOC = toc
 	existing.Content = cmd.Content
 	existing.ContentHash = content.MomentContentHash(cmd.Title, summary, cmd.Content)
+	if prevContentHash != existing.ContentHash {
+		existing.ContentUpdatedAt = time.Now()
+	}
 	existing.Image = cmd.Image
 	existing.ColumnID = cmd.ColumnID
 	shortURL := strings.TrimSpace(cmd.ShortURL)

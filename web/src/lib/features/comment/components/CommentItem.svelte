@@ -142,23 +142,7 @@ import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'l
 		}
 	};
 
-	const buildChildFloor = (parentFloor: string | number | undefined, childIndex: number) => {
-		if (parentFloor === undefined || parentFloor === null || parentFloor === '') return undefined;
-		return `${parentFloor}-${childIndex + 1}`;
-	};
-
-	const hasBeenEdited = (createdAt?: string | null, updatedAt?: string | null) => {
-		if (!createdAt || !updatedAt) return false;
-		const createdAtMs = new Date(createdAt).getTime();
-		const updatedAtMs = new Date(updatedAt).getTime();
-		if (!Number.isNaN(createdAtMs) && !Number.isNaN(updatedAtMs)) {
-			return createdAtMs !== updatedAtMs;
-		}
-		return createdAt !== updatedAt;
-	};
-
 	const websiteHref = $derived.by(() => normalizeWebsiteUrl(comment.website));
-	const isEdited = $derived.by(() => hasBeenEdited(comment.createdAt, comment.updatedAt));
 
 	$effect(() => {
 		relativeTime = formatRelativeTimeWithSeconds(comment.createdAt);
@@ -237,7 +221,7 @@ import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'l
 					<span class="opacity-0 group-hover:opacity-100 transition-opacity text-ink-300 dark:text-ink-600">#{floor}</span>
 				{/if}
 				{relativeTime}
-				{#if isEdited}
+				{#if comment.isEdited}
 					<span class="text-ink-300 dark:text-ink-600">（已编辑）</span>
 				{/if}
 			</span>
@@ -370,8 +354,8 @@ import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'l
 		<!-- Recursive Children -->
 		{#if comment.children && comment.children.length > 0}
 			<div class="mt-4 space-y-6">
-				{#each comment.children as child, childIndex (child.id)}
-					<CommentItem comment={child} floor={buildChildFloor(floor, childIndex)} />
+				{#each comment.children as child (child.id)}
+					<CommentItem comment={child} floor={child.floor} />
 				{/each}
 			</div>
 		{/if}

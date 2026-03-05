@@ -18,12 +18,12 @@
 		() =>
 			`${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
 	);
-	const updatedDateObj = $derived.by(() => new Date(moment.updatedAt));
+	const contentUpdatedDateObj = $derived.by(() => new Date(moment.contentUpdatedAt));
 	const formattedUpdatedDate = $derived.by(
 		() =>
-			`${String(updatedDateObj.getMonth() + 1).padStart(2, '0')}.${String(updatedDateObj.getDate()).padStart(2, '0')}`
+			`${String(contentUpdatedDateObj.getMonth() + 1).padStart(2, '0')}.${String(contentUpdatedDateObj.getDate()).padStart(2, '0')}`
 	);
-	const showUpdated = $derived(isDifferentDay(moment.createdAt, moment.updatedAt));
+	const showUpdated = $derived(isDifferentDay(moment.createdAt, moment.contentUpdatedAt));
 	const columnLabel = $derived.by(() => {
 		const name = (moment.columnName || '').trim();
 		return name || '未分类手记';

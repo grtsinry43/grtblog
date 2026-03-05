@@ -17,7 +17,7 @@
 		return `${year}/${month}/${day}`;
 	};
 
-	const showUpdated = $derived(isDifferentDay(post.createdAt, post.updatedAt));
+	const showUpdated = $derived(isDifferentDay(post.createdAt, post.contentUpdatedAt));
 
 	const handleCategoryClick = (e: MouseEvent) => {
 		e.preventDefault();
@@ -56,7 +56,7 @@
 		<div class="flex items-center gap-1.5">
 			<Calendar size={14} strokeWidth={1.5} />
 			<span>{formatDate(post.createdAt)}</span>
-			{#if showUpdated}<span class="text-ink-300 dark:text-ink-600">（更新于 {formatDate(post.updatedAt)}）</span>{/if}
+			{#if showUpdated}<span class="text-ink-300 dark:text-ink-600">（更新于 {formatDate(post.contentUpdatedAt)}）</span>{/if}
 		</div>
 
 		<!-- Category -->

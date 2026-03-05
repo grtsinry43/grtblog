@@ -43,6 +43,7 @@ type Comment struct {
 	FederatedObjectID string         `gorm:"column:federated_object_id;size:500"`
 	AllowLocalReply   bool           `gorm:"column:allow_local_reply;not null"`
 	Status            string         `gorm:"column:status;size:20;not null"`
+	IsEdited          bool           `gorm:"column:is_edited"`
 	ParentID          *int64         `gorm:"column:parent_id"`
 	CreatedAt         time.Time      `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt         time.Time      `gorm:"column:updated_at;autoUpdateTime"`

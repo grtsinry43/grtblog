@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -78,6 +79,7 @@ func NewService(
 type CommentNode struct {
 	Comment  *domaincomment.Comment
 	Children []*CommentNode
+	Floor    string
 }
 
 type PublicCommentPage struct {
@@ -332,6 +334,7 @@ func (s *Service) ListPublicComments(ctx context.Context, cmd ListPublicComments
 	s.populateCommentOwnership(items, cmd.ViewerAuthorID, cmd.ViewerVisitorID)
 	s.populateCommentAvatars(ctx, items)
 	tree := buildCommentTree(items)
+	assignFloors(tree)
 	total := len(tree)
 	start := (page - 1) * size
 	if start >= total {
@@ -713,7 +716,11 @@ func (s *Service) EditComment(ctx context.Context, cmd EditCommentCmd) (*domainc
 		return nil, err
 	}
 
-	commentEntity.Content = strings.TrimSpace(cmd.Content)
+	newContent := strings.TrimSpace(cmd.Content)
+	if newContent != commentEntity.Content {
+		commentEntity.IsEdited = true
+	}
+	commentEntity.Content = newContent
 
 	if s.sysCfg != nil && s.sysCfg.CommentSettings(ctx).RequireModeration &&
 		commentEntity.Status == domaincomment.CommentStatusApproved {
@@ -953,6 +960,60 @@ func buildCommentTree(items []*domaincomment.Comment) []*CommentNode {
 		roots = append(roots, node)
 	}
 	return roots
+}
+
+// assignFloors assigns chronological floor numbers to the comment tree.
+// Root comments get sequential floors (1, 2, 3…) based on creation time.
+// Children are reordered chronologically and get sub-floors (e.g. 1-1, 1-2).
+// After assignment, roots are sorted back to display order (pinned first, newest first).
+func assignFloors(roots []*CommentNode) {
+	if len(roots) == 0 {
+		return
+	}
+
+	// Sort roots chronologically (oldest first) to assign floor numbers.
+	sort.SliceStable(roots, func(i, j int) bool {
+		ci, cj := roots[i].Comment, roots[j].Comment
+		if !ci.CreatedAt.Equal(cj.CreatedAt) {
+			return ci.CreatedAt.Before(cj.CreatedAt)
+		}
+		return ci.ID < cj.ID
+	})
+
+	for i, root := range roots {
+		root.Floor = fmt.Sprintf("%d", i+1)
+		assignChildFloors(root)
+	}
+
+	// Sort back to display order: pinned first, then newest first.
+	sort.SliceStable(roots, func(i, j int) bool {
+		ci, cj := roots[i].Comment, roots[j].Comment
+		if ci.IsTop != cj.IsTop {
+			return ci.IsTop
+		}
+		if !ci.CreatedAt.Equal(cj.CreatedAt) {
+			return ci.CreatedAt.After(cj.CreatedAt)
+		}
+		return ci.ID > cj.ID
+	})
+}
+
+func assignChildFloors(node *CommentNode) {
+	if len(node.Children) == 0 {
+		return
+	}
+	// Sort children chronologically (oldest first).
+	sort.SliceStable(node.Children, func(i, j int) bool {
+		ci, cj := node.Children[i].Comment, node.Children[j].Comment
+		if !ci.CreatedAt.Equal(cj.CreatedAt) {
+			return ci.CreatedAt.Before(cj.CreatedAt)
+		}
+		return ci.ID < cj.ID
+	})
+	for i, child := range node.Children {
+		child.Floor = fmt.Sprintf("%s-%d", node.Floor, i+1)
+		assignChildFloors(child)
+	}
 }
 
 type commentAuthorSnapshot struct {

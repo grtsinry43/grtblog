@@ -296,17 +296,18 @@ func (h *ThinkingHandler) toThinkingResp(ctx context.Context, t *domainthinking.
 
 func (h *ThinkingHandler) toThinkingListItemResp(ctx context.Context, t *domainthinking.Thinking) (*contract.ThinkingListItemResp, error) {
 	resp := &contract.ThinkingListItemResp{
-		ID:           t.ID,
-		CommentID:    t.CommentID,
-		Content:      t.Content,
-		AuthorID:     t.AuthorID,
-		IsHot:        false,
-		AllowComment: h.allowCommentByAreaID(ctx, t.CommentID),
-		Views:        t.Metrics.Views,
-		Likes:        t.Metrics.Likes,
-		Comments:     t.Metrics.Comments,
-		CreatedAt:    t.CreatedAt,
-		UpdatedAt:    t.UpdatedAt,
+		ID:                  t.ID,
+		CommentID:           t.CommentID,
+		Content:             t.Content,
+		AuthorID:            t.AuthorID,
+		ActivityPubObjectID: t.ActivityPubObjectID,
+		IsHot:               false,
+		AllowComment:        h.allowCommentByAreaID(ctx, t.CommentID),
+		Views:               t.Metrics.Views,
+		Likes:               t.Metrics.Likes,
+		Comments:            t.Metrics.Comments,
+		CreatedAt:           t.CreatedAt,
+		UpdatedAt:           t.UpdatedAt,
 	}
 	if h.userRepo != nil {
 		user, err := h.userRepo.FindByID(ctx, t.AuthorID)

@@ -80,10 +80,20 @@ type ActorDocument struct {
 	Type              string         `json:"type"`
 	PreferredUsername string         `json:"preferredUsername"`
 	Name              string         `json:"name,omitempty"`
+	Summary           string         `json:"summary,omitempty"`
+	URL               string         `json:"url,omitempty"`
+	Icon              *actorImageRef `json:"icon,omitempty"`
+	Image             *actorImageRef `json:"image,omitempty"`
 	Inbox             string         `json:"inbox"`
 	Outbox            string         `json:"outbox"`
 	Followers         string         `json:"followers"`
 	PublicKey         actorPublicKey `json:"publicKey"`
+}
+
+type actorImageRef struct {
+	Type      string `json:"type"`
+	MediaType string `json:"mediaType,omitempty"`
+	URL       string `json:"url"`
 }
 
 type actorPublicKey struct {
@@ -187,28 +197,36 @@ func (s *stringList) UnmarshalJSON(raw []byte) error {
 }
 
 type remoteActor struct {
-	ID                string          `json:"id"`
-	PreferredUsername string          `json:"preferredUsername"`
-	Name              string          `json:"name"`
-	Icon              *remoteMediaRef `json:"icon"`
-	Image             *remoteMediaRef `json:"image"`
-	Inbox             string          `json:"inbox"`
+	ID                string
+	PreferredUsername string
+	Name              string
+	Icon              *remoteMediaRef
+	Image             *remoteMediaRef
+	Inbox             string
 	Endpoints         struct {
-		SharedInbox string `json:"sharedInbox"`
-	} `json:"endpoints"`
+		SharedInbox string
+	}
 	PublicKey struct {
-		ID           string `json:"id"`
-		PublicKeyPEM string `json:"publicKeyPem"`
-	} `json:"publicKey"`
+		ID           string
+		PublicKeyPEM string
+	}
 }
 
 type remoteMediaRef struct {
-	Type string `json:"type"`
-	URL  string `json:"url"`
+	Type      string
+	MediaType string
+	URL       string
 }
 
 type commentTarget struct {
 	AreaID int64
+}
+
+type localActorProfile struct {
+	Summary  string
+	URL      string
+	IconURL  string
+	ImageURL string
 }
 
 func NewService(
@@ -265,6 +283,7 @@ func (s *Service) ActorDocument(ctx context.Context, baseURL string) (*ActorDocu
 	if name == "" {
 		name = "grtblog"
 	}
+	profile := s.resolveLocalActorProfile(ctx, baseURL)
 	pubKey := strings.TrimSpace(settings.PublicKey)
 	if pubKey == "" {
 		return nil, errors.New("public key not configured")
@@ -275,6 +294,10 @@ func (s *Service) ActorDocument(ctx context.Context, baseURL string) (*ActorDocu
 		Type:              "Person",
 		PreferredUsername: preferredUsername(settings),
 		Name:              name,
+		Summary:           profile.Summary,
+		URL:               profile.URL,
+		Icon:              buildActorImageRef(profile.IconURL),
+		Image:             buildActorImageRef(profile.ImageURL),
 		Inbox:             inboxURL(baseURL),
 		Outbox:            outboxURL(baseURL),
 		Followers:         followersURL(baseURL),
@@ -1045,6 +1068,255 @@ func (s *Service) resolveContentByLocalURL(ctx context.Context, baseURL, raw str
 	return nil
 }
 
+func (s *Service) resolveLocalActorProfile(ctx context.Context, baseURL string) localActorProfile {
+	profile := localActorProfile{
+		URL: strings.TrimRight(baseURL, "/") + "/",
+	}
+	if s.cfgSvc == nil {
+		return profile
+	}
+
+	siteInfo, err := s.cfgSvc.WebsiteInfo(ctx)
+	if err == nil {
+		profile.URL = firstNonEmpty(
+			resolveRelativeURL(baseURL, strings.TrimSpace(siteInfo["public_url"])),
+			profile.URL,
+		)
+		profile.Summary = firstNonEmpty(
+			strings.TrimSpace(siteInfo["description"]),
+			strings.TrimSpace(siteInfo["og_description"]),
+		)
+		profile.IconURL = firstNonEmpty(
+			resolveRelativeURL(baseURL, strings.TrimSpace(siteInfo["og_image"])),
+			resolveRelativeURL(baseURL, strings.TrimSpace(siteInfo["favicon"])),
+		)
+		profile.ImageURL = resolveRelativeURL(baseURL, strings.TrimSpace(siteInfo["og_image"]))
+	}
+
+	themeRaw, err := s.cfgSvc.ThemeExtendInfo(ctx)
+	if err == nil {
+		avatarURL, description := parseThemeHeroProfile(themeRaw)
+		if description != "" {
+			profile.Summary = description
+		}
+		if avatarURL != "" {
+			profile.IconURL = resolveRelativeURL(baseURL, avatarURL)
+		}
+	}
+	if profile.ImageURL == "" {
+		profile.ImageURL = profile.IconURL
+	}
+	return profile
+}
+
+func parseThemeHeroProfile(raw json.RawMessage) (avatarURL, description string) {
+	if len(raw) == 0 {
+		return "", ""
+	}
+	var root map[string]any
+	if err := json.Unmarshal(raw, &root); err != nil {
+		return "", ""
+	}
+	container := root
+	if home, ok := asMap(root["home"]); ok {
+		container = home
+	}
+	hero, ok := asMap(container["hero"])
+	if !ok {
+		return "", ""
+	}
+	return firstNonEmpty(valueAsString(hero["avatarUrl"])), firstNonEmpty(valueAsString(hero["description"]))
+}
+
+func resolveRelativeURL(baseURL, raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if parsed, err := url.Parse(raw); err == nil {
+		if parsed.Scheme != "" {
+			return parsed.String()
+		}
+		base, baseErr := url.Parse(strings.TrimRight(baseURL, "/") + "/")
+		if baseErr != nil {
+			return raw
+		}
+		return base.ResolveReference(parsed).String()
+	}
+	return raw
+}
+
+func buildActorImageRef(rawURL string) *actorImageRef {
+	url := strings.TrimSpace(rawURL)
+	if url == "" {
+		return nil
+	}
+	return &actorImageRef{
+		Type:      "Image",
+		MediaType: detectImageMIMEType(url),
+		URL:       url,
+	}
+}
+
+func detectImageMIMEType(url string) string {
+	lower := strings.ToLower(strings.TrimSpace(url))
+	if lower == "" {
+		return "image/jpeg"
+	}
+	if idx := strings.Index(lower, "?"); idx >= 0 {
+		lower = lower[:idx]
+	}
+	switch {
+	case strings.HasSuffix(lower, ".jpg"), strings.HasSuffix(lower, ".jpeg"):
+		return "image/jpeg"
+	case strings.HasSuffix(lower, ".png"):
+		return "image/png"
+	case strings.HasSuffix(lower, ".gif"):
+		return "image/gif"
+	case strings.HasSuffix(lower, ".webp"):
+		return "image/webp"
+	case strings.HasSuffix(lower, ".avif"):
+		return "image/avif"
+	case strings.HasSuffix(lower, ".svg"):
+		return "image/svg+xml"
+	case strings.HasSuffix(lower, ".bmp"):
+		return "image/bmp"
+	case strings.HasSuffix(lower, ".ico"):
+		return "image/x-icon"
+	default:
+		return "image/jpeg"
+	}
+}
+
+func (a *remoteActor) UnmarshalJSON(raw []byte) error {
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return err
+	}
+	a.ID = parseStringLike(payload["id"])
+	a.PreferredUsername = parseStringLike(payload["preferredUsername"])
+	a.Name = parseStringLike(payload["name"])
+	a.Inbox = parseURLLike(payload["inbox"])
+	a.Icon = parseRemoteMediaRef(payload["icon"])
+	a.Image = parseRemoteMediaRef(payload["image"])
+	if endpoints, ok := asMap(payload["endpoints"]); ok {
+		a.Endpoints.SharedInbox = parseURLLike(endpoints["sharedInbox"])
+	}
+	if pubKey, ok := asMap(payload["publicKey"]); ok {
+		a.PublicKey.ID = parseStringLike(pubKey["id"])
+		a.PublicKey.PublicKeyPEM = parseStringLike(pubKey["publicKeyPem"])
+	}
+	return nil
+}
+
+func parseRemoteMediaRef(raw any) *remoteMediaRef {
+	switch t := raw.(type) {
+	case nil:
+		return nil
+	case string:
+		url := parseURLLike(t)
+		if url == "" {
+			return nil
+		}
+		return &remoteMediaRef{Type: "Image", URL: url}
+	case []any:
+		for _, item := range t {
+			if parsed := parseRemoteMediaRef(item); parsed != nil && parsed.URL != "" {
+				return parsed
+			}
+		}
+		return nil
+	case map[string]any:
+		ref := &remoteMediaRef{
+			Type:      parseStringLike(t["type"]),
+			MediaType: parseStringLike(t["mediaType"]),
+			URL:       parseURLLike(t["url"]),
+		}
+		if ref.URL == "" {
+			ref.URL = parseURLLike(t["href"])
+		}
+		if ref.URL == "" {
+			ref.URL = parseURLLike(t["id"])
+		}
+		if ref.Type == "" {
+			ref.Type = "Image"
+		}
+		if ref.URL == "" {
+			return nil
+		}
+		return ref
+	default:
+		return nil
+	}
+}
+
+func parseURLLike(raw any) string {
+	switch t := raw.(type) {
+	case nil:
+		return ""
+	case string:
+		return strings.TrimSpace(t)
+	case []any:
+		for _, item := range t {
+			if out := parseURLLike(item); out != "" {
+				return out
+			}
+		}
+		return ""
+	case map[string]any:
+		if out := parseURLLike(t["url"]); out != "" {
+			return out
+		}
+		if out := parseURLLike(t["href"]); out != "" {
+			return out
+		}
+		if out := parseURLLike(t["id"]); out != "" {
+			return out
+		}
+		if out := parseURLLike(t["@id"]); out != "" {
+			return out
+		}
+		return ""
+	default:
+		return ""
+	}
+}
+
+func parseStringLike(raw any) string {
+	switch t := raw.(type) {
+	case nil:
+		return ""
+	case string:
+		return strings.TrimSpace(t)
+	case []any:
+		for _, item := range t {
+			if out := parseStringLike(item); out != "" {
+				return out
+			}
+		}
+		return ""
+	case map[string]any:
+		for _, key := range []string{"@value", "value", "name", "summary", "preferredUsername", "id"} {
+			if out := parseStringLike(t[key]); out != "" {
+				return out
+			}
+		}
+		for _, value := range t {
+			if out := parseStringLike(value); out != "" {
+				return out
+			}
+		}
+		return ""
+	default:
+		return ""
+	}
+}
+
+func asMap(raw any) (map[string]any, bool) {
+	out, ok := raw.(map[string]any)
+	return out, ok
+}
+
 func (a *remoteActor) avatarURL() string {
 	if a == nil {
 		return ""
@@ -1187,7 +1459,8 @@ func (s *Service) fetchRemoteActor(ctx context.Context, actorID string) (*remote
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "application/activity+json, application/ld+json")
+	req.Header.Set("Accept", `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams", application/ld+json`)
+	req.Header.Set("User-Agent", "grtblog-activitypub/2")
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, err
