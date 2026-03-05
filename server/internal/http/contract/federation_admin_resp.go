@@ -129,3 +129,42 @@ type FederationActivityPubFollowerListResp struct {
 	Page  int                                 `json:"page"`
 	Size  int                                 `json:"size"`
 }
+
+type ActivityPubDeliveryDetailResp struct {
+	Inbox       string  `json:"inbox"`
+	ActorID     string  `json:"actor_id,omitempty"`
+	Status      string  `json:"status"`
+	HTTPStatus  *int    `json:"http_status,omitempty"`
+	Error       string  `json:"error,omitempty"`
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+}
+
+type ActivityPubOutboxItemResp struct {
+	ID            int64                           `json:"id"`
+	ActivityID    string                          `json:"activity_id"`
+	ObjectID      string                          `json:"object_id"`
+	SourceType    string                          `json:"source_type"`
+	SourceID      int64                           `json:"source_id"`
+	SourceURL     string                          `json:"source_url"`
+	Summary       string                          `json:"summary"`
+	Activity      string                          `json:"activity,omitempty"`
+	Status        string                          `json:"status"`
+	TriggerSource string                          `json:"trigger_source"`
+	TotalTargets  int                             `json:"total_targets"`
+	SuccessCount  int                             `json:"success_count"`
+	FailureCount  int                             `json:"failure_count"`
+	Deliveries    []ActivityPubDeliveryDetailResp `json:"deliveries,omitempty"`
+	StartedAt     *string                         `json:"started_at,omitempty"`
+	FinishedAt    *string                         `json:"finished_at,omitempty"`
+	DurationMs    *int64                          `json:"duration_ms,omitempty"`
+	PublishedAt   string                          `json:"published_at"`
+	CreatedAt     string                          `json:"created_at"`
+	UpdatedAt     string                          `json:"updated_at"`
+}
+
+type ActivityPubOutboxListResp struct {
+	Items []ActivityPubOutboxItemResp `json:"items"`
+	Total int64                       `json:"total"`
+	Page  int                         `json:"page"`
+	Size  int                         `json:"size"`
+}

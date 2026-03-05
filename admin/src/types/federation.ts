@@ -190,3 +190,50 @@ export interface FederationAuthorResp {
 export interface FederationAuthorListResp {
     items: FederationAuthorResp[]
 }
+
+export interface ActivityPubDeliveryDetailResp {
+  inbox: string
+  actor_id?: string
+  status: 'success' | 'failed' | string
+  http_status?: number
+  error?: string
+  delivered_at?: string
+}
+
+export interface ActivityPubOutboxItemResp {
+  id: number
+  activity_id: string
+  object_id: string
+  source_type: string
+  source_id: number
+  source_url: string
+  summary: string
+  activity?: string
+  status: 'queued' | 'sending' | 'completed' | 'partial' | 'failed' | string
+  trigger_source: 'auto' | 'manual' | string
+  total_targets: number
+  success_count: number
+  failure_count: number
+  deliveries?: ActivityPubDeliveryDetailResp[]
+  started_at?: string
+  finished_at?: string
+  duration_ms?: number
+  published_at: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ActivityPubOutboxListResp {
+  items: ActivityPubOutboxItemResp[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface ActivityPubOutboxListReq {
+  page?: number
+  pageSize?: number
+  status?: string
+  sourceType?: string
+  search?: string
+}

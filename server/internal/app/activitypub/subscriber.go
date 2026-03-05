@@ -30,8 +30,9 @@ func RegisterSubscribers(bus appEvent.Bus, svc *Service) {
 				return nil
 			}
 			_, err := svc.Publish(ctx, "", PublishCmd{
-				SourceType: sourceType,
-				SourceID:   sourceID,
+				SourceType:    sourceType,
+				SourceID:      sourceID,
+				TriggerSource: "auto",
 			})
 			if err == nil || isSkippableAutoPublishError(err) {
 				return nil

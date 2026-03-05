@@ -12,4 +12,7 @@ type FollowerRepository interface {
 type OutboxRepository interface {
 	Create(ctx context.Context, item *OutboxItem) error
 	List(ctx context.Context, page, pageSize int) ([]OutboxItem, int64, error)
+	GetByID(ctx context.Context, id int64) (*OutboxItem, error)
+	ListWithOptions(ctx context.Context, opts OutboxListOptions) ([]OutboxItem, int64, error)
+	UpdateDeliveryResult(ctx context.Context, item *OutboxItem) error
 }
