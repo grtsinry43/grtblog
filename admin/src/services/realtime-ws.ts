@@ -2,6 +2,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v2').replace(/\
 
 type ConnectionListener = (connected: boolean) => void
 type MessageListener = (payload: unknown) => void
+type AuthFailureListener = () => void
 
 class AdminRealtimeWSCore {
   private socket: WebSocket | null = null
@@ -19,6 +20,7 @@ class AdminRealtimeWSCore {
 
   private connectionListeners = new Set<ConnectionListener>()
   private messageListeners = new Set<MessageListener>()
+  private authFailureListeners = new Set<AuthFailureListener>()
 
   start() {
     if (this.started) return
@@ -80,6 +82,13 @@ class AdminRealtimeWSCore {
     }
   }
 
+  onAuthFailure(listener: AuthFailureListener): () => void {
+    this.authFailureListeners.add(listener)
+    return () => {
+      this.authFailureListeners.delete(listener)
+    }
+  }
+
   private handleVisibilityChange = () => {
     if (!this.started) return
     if (document.hidden) {
@@ -115,6 +124,12 @@ class AdminRealtimeWSCore {
 
   private connect() {
     if (!this.started) return
+
+    if (this.jwtToken && this.isTokenExpired()) {
+      this.emitAuthFailure()
+      return
+    }
+
     const socket = this.createSocket()
     this.socket = socket
 
@@ -198,6 +213,12 @@ class AdminRealtimeWSCore {
 
   private scheduleReconnect() {
     if (this.reconnectTimer != null || !this.started) return
+
+    if (this.jwtToken && this.isTokenExpired()) {
+      this.emitAuthFailure()
+      return
+    }
+
     const delay = Math.min(1000 * 2 ** Math.min(this.reconnectAttempts, 4), 15_000)
     this.reconnectAttempts += 1
     this.reconnectTimer = window.setTimeout(() => {
@@ -227,6 +248,28 @@ class AdminRealtimeWSCore {
     this.connected = connected
     for (const listener of this.connectionListeners) {
       listener(connected)
+    }
+  }
+
+  private isTokenExpired(): boolean {
+    if (!this.jwtToken) return false
+    try {
+      const parts = this.jwtToken.split('.')
+      if (parts.length < 2 || !parts[1]) return true
+      const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+      const payload = JSON.parse(atob(padded))
+      if (typeof payload.exp !== 'number') return false
+      return payload.exp * 1000 < Date.now()
+    } catch {
+      return true
+    }
+  }
+
+  private emitAuthFailure() {
+    this.stop()
+    for (const listener of this.authFailureListeners) {
+      listener()
     }
   }
 }

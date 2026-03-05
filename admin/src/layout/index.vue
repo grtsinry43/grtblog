@@ -11,7 +11,8 @@ import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey, layoutInjectionKey } from '@/injection'
 import { adminRealtimeWSCore } from '@/services/realtime-ws'
 import { getSystemUpdateCheck } from '@/services/system'
-import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore, useHealthStore } from '@/stores'
+import router from '@/router'
+import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore, useHealthStore, useUserStore } from '@/stores'
 
 import type { OwnerStatusPayload } from '@/services/owner-status'
 import type { HealthWSPayload } from '@/services/health'
@@ -34,6 +35,7 @@ const {
   backgroundImage,
 } = toRefsPreferencesStore()
 const { token, user } = toRefsUserStore()
+const userStore = useUserStore()
 const realtimeStore = useRealtimeStore()
 const healthStore = useHealthStore()
 const queryClient = useQueryClient()
@@ -109,6 +111,11 @@ const stopRealtimeMessageListener = adminRealtimeWSCore.onMessage((payload) => {
   queryClient.setQueryData(['owner-status', 'user-dropdown'], ownerStatus)
 })
 
+const stopAuthFailureListener = adminRealtimeWSCore.onAuthFailure(() => {
+  const currentPath = router.currentRoute.value?.fullPath
+  userStore.cleanup(currentPath)
+})
+
 watch(isMaxSm, (isMaxSm) => {
   if (isMaxSm) {
     preferences.value.sidebarMenu.collapsed = false
@@ -136,6 +143,7 @@ watch(
 onUnmounted(() => {
   stopRealtimeConnectionListener()
   stopRealtimeMessageListener()
+  stopAuthFailureListener()
   adminRealtimeWSCore.stop()
   realtimeStore.setRealtimeWsConnected(false)
   healthStore.stopPolling()

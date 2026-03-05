@@ -121,7 +121,9 @@ func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 		}
 		return c.Next()
 	})
-	v2.Get("/ws/realtime", websocket.New(wsHandler.HandleRealtime))
+	v2.Get("/ws/realtime", websocket.New(wsHandler.HandleRealtime, websocket.Config{
+		Subprotocols: []string{"grtblog.jwt"},
+	}))
 
 	v2.Use("/ws/presence", func(c *fiber.Ctx) error {
 		_, err := wsAcquire(c)
