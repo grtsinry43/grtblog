@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	domainfed "github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
@@ -28,6 +29,7 @@ type SyncWorker struct {
 	syncJobRepo  social.FriendLinkSyncJobRepository
 	resolver     *fedinfra.Resolver
 	client       *http.Client
+	eventBus     appEvent.Bus
 }
 
 func NewSyncWorker(
@@ -36,7 +38,11 @@ func NewSyncWorker(
 	linkRepo social.FriendLinkRepository,
 	syncJobRepo social.FriendLinkSyncJobRepository,
 	resolver *fedinfra.Resolver,
+	eventBus appEvent.Bus,
 ) *SyncWorker {
+	if eventBus == nil {
+		eventBus = appEvent.NopBus{}
+	}
 	return &SyncWorker{
 		instanceRepo: instanceRepo,
 		cacheRepo:    cacheRepo,
@@ -44,6 +50,7 @@ func NewSyncWorker(
 		syncJobRepo:  syncJobRepo,
 		resolver:     resolver,
 		client:       &http.Client{Timeout: 10 * time.Second},
+		eventBus:     eventBus,
 	}
 }
 
@@ -77,6 +84,7 @@ func (w *SyncWorker) SyncOnce(ctx context.Context) {
 	_ = w.processSyncJobs(ctx, now, 200)
 	// Clean up old posts: keep only the 10 most recent posts per friend link
 	_ = w.cacheRepo.CleanupOldPosts(ctx, 10)
+	_ = w.eventBus.Publish(ctx, FederatedPostsCached{At: time.Now().UTC()})
 }
 
 func (w *SyncWorker) syncOnceDirect(ctx context.Context, now time.Time) {
@@ -100,6 +108,7 @@ func (w *SyncWorker) syncOnceDirect(ctx context.Context, now time.Time) {
 	}
 	// Clean up old posts: keep only the 10 most recent posts per friend link
 	_ = w.cacheRepo.CleanupOldPosts(ctx, 10)
+	_ = w.eventBus.Publish(ctx, FederatedPostsCached{At: time.Now().UTC()})
 }
 
 func (w *SyncWorker) syncFriendLink(ctx context.Context, link *social.FriendLink) (int, string, error) {

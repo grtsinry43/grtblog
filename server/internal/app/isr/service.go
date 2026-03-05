@@ -230,6 +230,11 @@ func (s *Service) DiscoverRoutes(ctx context.Context) ([]string, error) {
 	}
 	routes = append(routes, momentRoutes...)
 
+	routes = append(routes, "/friends-timeline")
+	for p := 1; p <= defaultTrackedPages; p++ {
+		routes = append(routes, fmt.Sprintf("/friends-timeline/page/%d", p))
+	}
+
 	return normalizeURLs(routes), nil
 }
 

@@ -182,6 +182,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		persistence.NewFriendLinkRepository(db),
 		persistence.NewFriendLinkSyncJobRepository(db),
 		fedResolver,
+		eventBus,
 	)
 
 	// Health state machine.

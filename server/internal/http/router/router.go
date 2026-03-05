@@ -154,6 +154,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	isr.RegisterPageSubscribers(eventBus, isrSvc)
 	isr.RegisterThinkingSubscribers(eventBus, isrSvc)
 	isr.RegisterFriendLinkSubscribers(eventBus, isrSvc)
+	isr.RegisterFriendTimelineSubscribers(eventBus, isrSvc)
 	isr.RegisterLayoutSubscribers(eventBus, isrSvc)
 	isr.RegisterTagContentCacheSubscribers(eventBus, deps.Redis, deps.Config.Redis.Prefix)
 	deps.Observability = observability.NewService(deps.DB, deps.Redis, deps.Config.Redis.Prefix, eventBus, deps.HTTPStats, wsManager, htmlSnapshotSvc, isrSvc)

@@ -54,3 +54,11 @@ func (e DeliveryStatusChanged) Name() string { return "federation.delivery.statu
 func (e DeliveryStatusChanged) OccurredAt() time.Time {
 	return e.At
 }
+
+type FederatedPostsCached struct {
+	PostCount int
+	At        time.Time
+}
+
+func (e FederatedPostsCached) Name() string        { return "federation.posts.cached" }
+func (e FederatedPostsCached) OccurredAt() time.Time { return e.At }

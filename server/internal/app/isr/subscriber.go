@@ -8,6 +8,7 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/moment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/page"
 	"github.com/redis/go-redis/v9"
@@ -174,6 +175,24 @@ func RegisterFriendLinkSubscribers(bus appEvent.Bus, service *Service) {
 	register("friendlink.application.rejected")
 	register("friendlink.application.blocked")
 	register("friendlink.link.changed")
+}
+
+func RegisterFriendTimelineSubscribers(bus appEvent.Bus, service *Service) {
+	if bus == nil || service == nil {
+		return
+	}
+
+	bus.Subscribe(federation.FederatedPostsCached{}.Name(), handlerFunc(func(ctx context.Context, _ appEvent.Event) error {
+		deps := []string{
+			"friend-timeline:list:page:1",
+			"friend-timeline:list:page:2",
+			"friend-timeline:list:page:3",
+		}
+		urls := []string{
+			"/friends-timeline",
+		}
+		return service.Invalidate(ctx, deps, urls)
+	}))
 }
 
 func RegisterLayoutSubscribers(bus appEvent.Bus, service *Service) {
