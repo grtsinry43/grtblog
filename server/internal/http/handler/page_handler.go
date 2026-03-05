@@ -211,6 +211,9 @@ func (h *PageHandler) GetPage(c *fiber.Ctx) error {
 
 	pageItem, err := h.svc.GetPageByID(c.Context(), id)
 	if err != nil {
+		if errors.Is(err, content.ErrPageNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
+		}
 		return err
 	}
 	if !pageItem.IsEnabled {
@@ -241,6 +244,9 @@ func (h *PageHandler) GetPageAdmin(c *fiber.Ctx) error {
 	}
 	pageItem, err := h.svc.GetPageByID(c.Context(), id)
 	if err != nil {
+		if errors.Is(err, content.ErrPageNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
+		}
 		return err
 	}
 	pageResponse, err := h.toPageResp(c.Context(), pageItem)
@@ -265,6 +271,9 @@ func (h *PageHandler) GetPageByShortURL(c *fiber.Ctx) error {
 
 	pageItem, err := h.svc.GetPageByShortURL(c.Context(), shortURL)
 	if err != nil {
+		if errors.Is(err, content.ErrPageNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
+		}
 		return err
 	}
 	if !pageItem.IsEnabled {

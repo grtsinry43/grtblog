@@ -277,6 +277,9 @@ func (h *MomentHandler) GetMoment(c *fiber.Ctx) error {
 
 	momentItem, err := h.svc.GetMomentByID(c.Context(), id)
 	if err != nil {
+		if errors.Is(err, content.ErrMomentNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
+		}
 		return err
 	}
 	if !momentItem.IsPublished {
@@ -307,6 +310,9 @@ func (h *MomentHandler) GetMomentAdmin(c *fiber.Ctx) error {
 	}
 	momentItem, err := h.svc.GetMomentByID(c.Context(), id)
 	if err != nil {
+		if errors.Is(err, content.ErrMomentNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
+		}
 		return err
 	}
 	momentResponse, err := h.toMomentResp(c.Context(), momentItem)
@@ -382,6 +388,9 @@ func (h *MomentHandler) GetMomentByShortURL(c *fiber.Ctx) error {
 
 	momentItem, err := h.svc.GetMomentByShortURL(c.Context(), shortURL)
 	if err != nil {
+		if errors.Is(err, content.ErrMomentNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
+		}
 		return err
 	}
 	if !momentItem.IsPublished {

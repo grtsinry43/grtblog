@@ -421,6 +421,15 @@ func (s *Service) RunWorker(ctx context.Context, maxJobs int, tick time.Duration
 	}
 }
 
+// RenderErrorPage delegates to the htmlsnapshot renderer to capture the
+// SvelteKit 404 error page as a static file for nginx fallback.
+func (s *Service) RenderErrorPage(ctx context.Context) error {
+	if s.renderer == nil {
+		return nil
+	}
+	return s.renderer.RenderErrorPage(ctx)
+}
+
 func (s *Service) discoverArticleRoutes(ctx context.Context) (int64, []string, error) {
 	paths := make([]string, 0, 256)
 	page := 1

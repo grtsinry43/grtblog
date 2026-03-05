@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -28,6 +29,9 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/router"
 	infraevent "github.com/grtsinry43/grtblog-v2/server/internal/infra/event"
@@ -108,6 +112,12 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 					// 其他 HTTP 错误，统一当作 SERVER_ERROR 或自定义映射
 					return response.ErrorFromBiz[any](c, response.ServerError)
 				}
+			}
+
+			// 2.5 领域层常见 sentinel errors → 404
+			if isNotFoundSentinel(err) {
+				logRequestError(c, "not_found", fmt.Sprintf("err=%v", err))
+				return response.ErrorWithMsg[any](c, response.NotFound, err.Error())
 			}
 
 			// 3. 其他未识别错误，统一视为服务器内部错误
@@ -312,22 +322,27 @@ func (s *Server) runISRBootstrapIfNeeded() {
 		snapshot, snapErr := s.isrSvc.Snapshot(ctx, 5, 5)
 		if snapErr != nil {
 			log.Printf("[isr] bootstrap skipped reason=%s", reason)
+		} else {
+			log.Printf("[isr] bootstrap skipped reason=%s urlKeys=%d depKeys=%d queueDepth=%d", reason, snapshot.URLKeyCount, snapshot.DepKeyCount, snapshot.QueueDepth)
+		}
+	} else {
+		log.Printf("[isr] bootstrap start reason=%s version=%s", reason, s.version)
+		report, err := s.isrSvc.Bootstrap(ctx)
+		if err != nil {
+			log.Printf("[isr] bootstrap failed: %v", err)
 			return
 		}
-		log.Printf("[isr] bootstrap skipped reason=%s urlKeys=%d depKeys=%d queueDepth=%d", reason, snapshot.URLKeyCount, snapshot.DepKeyCount, snapshot.QueueDepth)
-		return
+		if err := s.isrSvc.MarkBootstrapVersion(ctx, s.version); err != nil {
+			log.Printf("[isr] bootstrap version mark failed: %v", err)
+		}
+		log.Printf("[isr] bootstrap done routes=%d rendered=%d failed=%d durationMs=%d", report.TotalRoutes, report.RenderedCount, len(report.Failed), report.DurationMS)
 	}
 
-	log.Printf("[isr] bootstrap start reason=%s version=%s", reason, s.version)
-	report, err := s.isrSvc.Bootstrap(ctx)
-	if err != nil {
-		log.Printf("[isr] bootstrap failed: %v", err)
-		return
+	// 无论是否需要全量 bootstrap，都尝试预渲染 404 错误页面，
+	// 这样当 renderer 挂掉时 nginx 仍能返回与前端风格一致的 404 页面。
+	if err := s.isrSvc.RenderErrorPage(ctx); err != nil {
+		log.Printf("[isr] error page render failed: %v", err)
 	}
-	if err := s.isrSvc.MarkBootstrapVersion(ctx, s.version); err != nil {
-		log.Printf("[isr] bootstrap version mark failed: %v", err)
-	}
-	log.Printf("[isr] bootstrap done routes=%d rendered=%d failed=%d durationMs=%d", report.TotalRoutes, report.RenderedCount, len(report.Failed), report.DurationMS)
 }
 
 // Shutdown gracefully stops Fiber and background workers.
@@ -382,6 +397,29 @@ func logRequestError(c *fiber.Ctx, kind string, detail string) {
 		reqID = "-"
 	}
 	log.Printf("[error] req=%s %s %s kind=%s %s", reqID, c.Method(), c.Path(), kind, detail)
+}
+
+// notFoundSentinels 集中注册所有领域层 "not found" sentinel errors，
+// 作为全局 ErrorHandler 的安全网，确保即使 handler 忘记映射也不会返回 500。
+var notFoundSentinels = []error{
+	content.ErrArticleNotFound,
+	content.ErrPageNotFound,
+	content.ErrMomentNotFound,
+	content.ErrCategoryNotFound,
+	content.ErrTagNotFound,
+	content.ErrColumnNotFound,
+	comment.ErrCommentNotFound,
+	comment.ErrCommentAreaNotFound,
+	social.ErrFriendLinkNotFound,
+}
+
+func isNotFoundSentinel(err error) bool {
+	for _, sentinel := range notFoundSentinels {
+		if errors.Is(err, sentinel) {
+			return true
+		}
+	}
+	return false
 }
 
 func initLogging() *os.File {

@@ -1,4 +1,4 @@
-import { getApi } from '$lib/shared/clients/api';
+import { getApi, fetchOrNull } from '$lib/shared/clients/api';
 import type {
 	MomentDetail,
 	MomentLatestCheckResponse,
@@ -45,8 +45,7 @@ export const getMomentDetail = async (
 	shortUrl: string
 ): Promise<MomentDetail | null> => {
 	const api = getApi(fetcher);
-	const result = await api<MomentDetail>(`/moments/short/${shortUrl}`);
-	return result ?? null;
+	return fetchOrNull(() => api<MomentDetail>(`/moments/short/${shortUrl}`));
 };
 
 export const checkMomentLatest = async (

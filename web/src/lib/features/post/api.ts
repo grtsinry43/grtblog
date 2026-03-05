@@ -1,4 +1,4 @@
-import { getApi } from '$lib/shared/clients/api';
+import { getApi, fetchOrNull } from '$lib/shared/clients/api';
 import type {
 	PostDetail,
 	PostLatestCheckResponse,
@@ -29,8 +29,7 @@ export const getPostDetail = async (
 	shortUrl: string
 ): Promise<PostDetail | null> => {
 	const api = getApi(fetcher);
-	const result = await api<PostDetail>(`/articles/short/${shortUrl}`);
-	return result ?? null;
+	return fetchOrNull(() => api<PostDetail>(`/articles/short/${shortUrl}`));
 };
 
 export const checkPostLatest = async (

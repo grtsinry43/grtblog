@@ -307,6 +307,47 @@ func (s *Service) renderURLDetailed(ctx context.Context, rawURLPath string, trac
 	return finalize(nil)
 }
 
+// RenderErrorPage fetches a non-existent path from the renderer to capture
+// its rendered 404 error page, then saves the HTML to storage/html/404.html.
+// This allows nginx to serve the same styled page when the renderer is down.
+func (s *Service) RenderErrorPage(ctx context.Context) error {
+	errorPageURL := s.baseURL + "/___error_page_render___"
+
+	reqCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, errorPageURL, nil)
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("fetch error page: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// SvelteKit renders a styled 404 page with status 404 — that's exactly what we want.
+	if resp.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("unexpected status %d (expected 404)", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read body: %w", err)
+	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		return fmt.Errorf("empty response body")
+	}
+
+	outPath := filepath.Join("storage", "html", "404.html")
+	if err := writeFileAtomically(outPath, body); err != nil {
+		return fmt.Errorf("write 404.html: %w", err)
+	}
+	log.Printf("[html-snapshot] error page cached path=%s", outPath)
+	return nil
+}
+
 func NormalizeURLPath(rawURLPath string) (string, error) {
 	candidate := strings.TrimSpace(rawURLPath)
 	if candidate == "" {

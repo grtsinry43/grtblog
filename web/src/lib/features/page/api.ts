@@ -1,4 +1,4 @@
-import { getApi } from '$lib/shared/clients/api';
+import { getApi, fetchOrNull } from '$lib/shared/clients/api';
 import type {
 	PageDetail,
 	PageLatestCheckResponse,
@@ -28,8 +28,7 @@ export const getPageDetail = async (
 	shortUrl: string
 ): Promise<PageDetail | null> => {
 	const api = getApi(fetcher);
-	const result = await api<PageDetail>(`/pages/short/${shortUrl}`);
-	return result ?? null;
+	return fetchOrNull(() => api<PageDetail>(`/pages/short/${shortUrl}`));
 };
 
 export const checkPageLatest = async (

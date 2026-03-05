@@ -1,9 +1,27 @@
-import { ofetch } from 'ofetch';
+import { ofetch, FetchError } from 'ofetch';
 import type { FetchOptions } from 'ofetch';
 import { browser } from '$app/environment';
 import { getToken } from '$lib/shared/token';
 import { type ApiResponse, BusinessError } from '$lib/shared/clients/types';
 import { authModalStore } from '$lib/shared/stores/authModalStore';
+
+/**
+ * 执行 API 调用，当后端返回 404 时返回 null 而非抛出异常。
+ * 同时处理 BusinessError（onResponse 抛出）和 FetchError（ofetch 原生错误）两种情况。
+ */
+export async function fetchOrNull<T>(fn: () => Promise<T>): Promise<T | null> {
+	try {
+		return await fn();
+	} catch (e) {
+		if (e instanceof BusinessError && e.code === 404) {
+			return null;
+		}
+		if (e instanceof FetchError && e.response?.status === 404) {
+			return null;
+		}
+		throw e;
+	}
+}
 
 const defaults: FetchOptions = {
 	baseURL: '/api/v2',

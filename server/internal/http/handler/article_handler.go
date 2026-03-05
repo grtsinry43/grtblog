@@ -281,6 +281,9 @@ func (h *ArticleHandler) GetArticle(c *fiber.Ctx) error {
 
 	article, err := h.svc.GetArticleByID(c.Context(), id)
 	if err != nil {
+		if errors.Is(err, content.ErrArticleNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
+		}
 		return err
 	}
 	if !article.IsPublished {
@@ -311,6 +314,9 @@ func (h *ArticleHandler) GetArticleAdmin(c *fiber.Ctx) error {
 	}
 	article, err := h.svc.GetArticleByID(c.Context(), id)
 	if err != nil {
+		if errors.Is(err, content.ErrArticleNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
+		}
 		return err
 	}
 	articleResponse, err := h.toArticleResp(c.Context(), article)
@@ -386,6 +392,9 @@ func (h *ArticleHandler) GetArticleByShortURL(c *fiber.Ctx) error {
 
 	art, err := h.svc.GetArticleByShortURL(c.Context(), shortURL)
 	if err != nil {
+		if errors.Is(err, content.ErrArticleNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
+		}
 		return err
 	}
 	if !art.IsPublished {
