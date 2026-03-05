@@ -61,6 +61,13 @@
 
 	const currentMonthData = $derived.by(() => {
 		const m = months.find((m) => m.x >= focusedX) || months[months.length - 1];
+		if (!m) {
+			return {
+				name: '',
+				stats: { posts: 0, moments: 0, thinkings: 0 },
+				yearStats: { posts: 0, moments: 0, thinkings: 0 }
+			};
+		}
 		return {
 			name: [
 				'JANUARY',
@@ -84,6 +91,11 @@
 
 <svelte:window bind:innerHeight bind:innerWidth bind:scrollY />
 
+{#if items.length === 0}
+	<div class="flex h-[60vh] items-center justify-center">
+		<p class="text-ink-400 dark:text-ink-600 font-mono text-sm">No timeline data yet.</p>
+	</div>
+{:else}
 <div bind:this={containerRef} class="relative w-full" style="height: {verticalHeight}px;">
 	<div class="sticky top-0 h-screen w-full overflow-hidden bg-ink-50 dark:bg-ink-950">
 		<!-- Ambient Background -->
@@ -264,6 +276,7 @@
 		</div>
 	</div>
 </div>
+{/if}
 
 <style lang="postcss">
 	@reference "$routes/layout.css";
