@@ -286,6 +286,9 @@
 							{/if}
 							· {formatOwnerTime(ownerStatus.timestamp)}
 						</div>
+						{#if ownerStatus.extend}
+							<p class="mt-1 text-[11px] leading-4 text-ink-500 dark:text-ink-400">{ownerStatus.extend}</p>
+						{/if}
 					</div>
 
 					<div class="flex flex-col gap-1">
