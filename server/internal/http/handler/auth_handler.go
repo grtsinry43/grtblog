@@ -58,6 +58,9 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		if errors.Is(err, auth.ErrRegisterClosed) {
 			return response.NewBizErrorWithMsg(response.ParamsError, "仅允许初始化管理员账号，普通用户请使用 OAuth 登录")
 		}
+		if errors.Is(err, auth.ErrPasswordTooWeak) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "密码至少需要 8 位")
+		}
 		if errors.Is(err, identity.ErrInvalidCredentials) {
 			return response.NewBizErrorWithMsg(response.ParamsError, "用户名、邮箱和密码不能为空，且邮箱格式必须正确")
 		}
@@ -184,6 +187,9 @@ func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
 	}
 	cmd.UserID = claims.UserID
 	if err := h.svc.ChangePassword(c.Context(), cmd); err != nil {
+		if errors.Is(err, auth.ErrPasswordTooWeak) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "密码至少需要 8 位")
+		}
 		if errors.Is(err, identity.ErrInvalidCredentials) {
 			return response.NewBizError(response.InvalidCredential)
 		}

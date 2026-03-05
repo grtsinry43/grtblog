@@ -345,9 +345,9 @@ onMounted(() => {
 
           <!-- Right: Form -->
           <div
-            class="flex flex-1 flex-col items-center justify-center bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
+            class="flex flex-1 overflow-y-auto bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
           >
-            <div class="w-full max-w-[360px]">
+            <div class="mx-auto flex min-h-full w-full max-w-[360px] flex-col justify-center py-4">
               <div class="mb-10">
                 <div class="mb-6 flex items-center justify-between">
                   <div
@@ -585,9 +585,9 @@ onMounted(() => {
 
           <!-- Right: Result -->
           <div
-            class="flex flex-1 flex-col items-center justify-center bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
+            class="flex flex-1 overflow-y-auto bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
           >
-            <div class="w-full max-w-[420px]">
+            <div class="mx-auto flex min-h-full w-full max-w-[420px] flex-col justify-center py-4">
               <NCard
                 size="large"
                 bordered
