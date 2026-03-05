@@ -572,26 +572,101 @@ func (s *Service) queryTagTop(ctx context.Context, limit int) ([]DistributionIte
 }
 
 func (s *Service) querySourceTopFromRedis(ctx context.Context, days, topN int) ([]DistributionItem, []DistributionItem, []DistributionItem, error) {
-	if s.redis == nil {
-		return nil, nil, nil, nil
-	}
 	if days <= 0 {
 		days = 7
 	}
 	platformMap := map[string]int64{}
 	browserMap := map[string]int64{}
 	locationMap := map[string]int64{}
-	for i := 0; i < days; i++ {
-		dateKey := s.now().UTC().AddDate(0, 0, -i).Format("20060102")
-		platformKey := fmt.Sprintf("%sanalytics:source:platform:%s", s.prefix, dateKey)
-		browserKey := fmt.Sprintf("%sanalytics:source:browser:%s", s.prefix, dateKey)
-		locationKey := fmt.Sprintf("%sanalytics:source:location:%s", s.prefix, dateKey)
+	if s.redis != nil {
+		for i := 0; i < days; i++ {
+			dateKey := s.now().UTC().AddDate(0, 0, -i).Format("20060102")
+			platformKey := fmt.Sprintf("%sanalytics:source:platform:%s", s.prefix, dateKey)
+			browserKey := fmt.Sprintf("%sanalytics:source:browser:%s", s.prefix, dateKey)
+			locationKey := fmt.Sprintf("%sanalytics:source:location:%s", s.prefix, dateKey)
 
-		mergeRedisHash(ctx, s.redis, platformKey, platformMap)
-		mergeRedisHash(ctx, s.redis, browserKey, browserMap)
-		mergeRedisHash(ctx, s.redis, locationKey, locationMap)
+			mergeRedisHash(ctx, s.redis, platformKey, platformMap)
+			mergeRedisHash(ctx, s.redis, browserKey, browserMap)
+			mergeRedisHash(ctx, s.redis, locationKey, locationMap)
+		}
 	}
-	return topMap(platformMap, topN), topMap(browserMap, topN), topMap(locationMap, topN), nil
+	platformTop := topMap(platformMap, topN)
+	browserTop := topMap(browserMap, topN)
+	locationTop := topMap(locationMap, topN)
+	if len(platformTop) > 0 && len(browserTop) > 0 && len(locationTop) > 0 {
+		return platformTop, browserTop, locationTop, nil
+	}
+
+	dbPlatformTop, dbBrowserTop, dbLocationTop, err := s.querySourceTopFromDB(ctx, days, topN)
+	if err != nil {
+		// Keep dashboard available even if source fallback query fails.
+		return platformTop, browserTop, locationTop, nil
+	}
+	if len(platformTop) == 0 {
+		platformTop = dbPlatformTop
+	}
+	if len(browserTop) == 0 {
+		browserTop = dbBrowserTop
+	}
+	if len(locationTop) == 0 {
+		locationTop = dbLocationTop
+	}
+	return platformTop, browserTop, locationTop, nil
+}
+
+func (s *Service) querySourceTopFromDB(ctx context.Context, days, topN int) ([]DistributionItem, []DistributionItem, []DistributionItem, error) {
+	start := s.now().UTC().AddDate(0, 0, -(days - 1)).Truncate(24 * time.Hour)
+	platformTop, err := s.querySourceDimensionFromDB(ctx, start, "platform", topN)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	browserTop, err := s.querySourceDimensionFromDB(ctx, start, "browser", topN)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	locationTop, err := s.querySourceDimensionFromDB(ctx, start, "location", topN)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return platformTop, browserTop, locationTop, nil
+}
+
+func (s *Service) querySourceDimensionFromDB(ctx context.Context, start time.Time, column string, topN int) ([]DistributionItem, error) {
+	switch column {
+	case "platform", "browser", "location":
+	default:
+		return nil, fmt.Errorf("invalid source dimension: %s", column)
+	}
+
+	type row struct {
+		Name  string `gorm:"column:name"`
+		Count int64  `gorm:"column:count"`
+	}
+	sql := fmt.Sprintf(`
+		SELECT COALESCE(NULLIF(TRIM(%s), ''), 'Unknown') AS name, COALESCE(SUM(view_count), 0) AS count
+		FROM analytics_visitor_view
+		WHERE last_view_at >= ?
+		GROUP BY name
+		ORDER BY count DESC, name ASC
+	`, column)
+
+	var rows []row
+	query := s.db.WithContext(ctx).Raw(sql, start)
+	if topN > 0 {
+		query = s.db.WithContext(ctx).Raw(sql+" LIMIT ?", start, topN)
+	}
+	if err := query.Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	items := make([]DistributionItem, 0, len(rows))
+	for _, r := range rows {
+		name := strings.TrimSpace(r.Name)
+		if name == "" || r.Count <= 0 {
+			continue
+		}
+		items = append(items, DistributionItem{Name: name, Count: r.Count})
+	}
+	return items, nil
 }
 
 func (s *Service) queryTopArticles(ctx context.Context, limit int) ([]HotContentItem, error) {

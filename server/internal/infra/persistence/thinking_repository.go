@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/contentutil"
 	"gorm.io/gorm"
@@ -31,6 +32,22 @@ func (r *ThinkingRepository) FindByID(ctx context.Context, id int64) (*thinking.
 			return nil, thinking.ErrThinkingNotFound
 		}
 		return nil, err
+	}
+	return mapModelToThinking(&m), nil
+}
+
+func (r *ThinkingRepository) FindByActivityPubObjectID(ctx context.Context, objectID string) (*thinking.Thinking, error) {
+	objectID = strings.TrimSpace(objectID)
+	if objectID == "" {
+		return nil, thinking.ErrThinkingNotFound
+	}
+	var m model.Thinking
+	result := r.db.WithContext(ctx).Preload("Metrics").Where("activitypub_object_id = ?", objectID).Limit(1).Find(&m)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, thinking.ErrThinkingNotFound
 	}
 	return mapModelToThinking(&m), nil
 }
@@ -100,11 +117,18 @@ func (r *ThinkingRepository) Create(ctx context.Context, t *thinking.Thinking) e
 }
 
 func (r *ThinkingRepository) Update(ctx context.Context, t *thinking.Thinking) error {
+	updates := map[string]interface{}{
+		"content": t.Content,
+	}
+	if t.ActivityPubObjectID != nil {
+		updates["activitypub_object_id"] = t.ActivityPubObjectID
+	}
+	if t.ActivityPubLastPublishedAt != nil {
+		updates["activitypub_last_published_at"] = t.ActivityPubLastPublishedAt
+	}
 	return r.db.WithContext(ctx).Model(&model.Thinking{}).
 		Where("id = ?", t.ID).
-		Updates(map[string]interface{}{
-			"content": t.Content,
-		}).Error
+		Updates(updates).Error
 }
 
 func (r *ThinkingRepository) Delete(ctx context.Context, id int64) error {
@@ -160,12 +184,14 @@ func (r *ThinkingRepository) DecComment(ctx context.Context, id int64) error {
 
 func mapModelToThinking(m *model.Thinking) *thinking.Thinking {
 	return &thinking.Thinking{
-		ID:        m.ID,
-		CommentID: m.CommentID,
-		Content:   m.Content,
-		AuthorID:  m.AuthorID,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
+		ID:                         m.ID,
+		CommentID:                  m.CommentID,
+		Content:                    m.Content,
+		AuthorID:                   m.AuthorID,
+		ActivityPubObjectID:        m.ActivityPubObjectID,
+		ActivityPubLastPublishedAt: m.ActivityPubLastPublishedAt,
+		CreatedAt:                  m.CreatedAt,
+		UpdatedAt:                  m.UpdatedAt,
 		Metrics: thinking.ThinkingMetrics{
 			ThinkingID: m.Metrics.ThinkingID,
 			Views:      m.Metrics.Views,
@@ -178,10 +204,12 @@ func mapModelToThinking(m *model.Thinking) *thinking.Thinking {
 
 func mapThinkingToModel(t *thinking.Thinking) model.Thinking {
 	return model.Thinking{
-		ID:        t.ID,
-		CommentID: t.CommentID,
-		Content:   t.Content,
-		AuthorID:  t.AuthorID,
-		CreatedAt: t.CreatedAt,
+		ID:                         t.ID,
+		CommentID:                  t.CommentID,
+		Content:                    t.Content,
+		AuthorID:                   t.AuthorID,
+		ActivityPubObjectID:        t.ActivityPubObjectID,
+		ActivityPubLastPublishedAt: t.ActivityPubLastPublishedAt,
+		CreatedAt:                  t.CreatedAt,
 	}
 }

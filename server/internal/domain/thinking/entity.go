@@ -11,11 +11,13 @@ type ThinkingMetrics struct {
 }
 
 type Thinking struct {
-	ID        int64
-	CommentID int64
-	Content   string
-	AuthorID  int64
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Metrics   ThinkingMetrics
+	ID                         int64
+	CommentID                  int64
+	Content                    string
+	AuthorID                   int64
+	ActivityPubObjectID        *string
+	ActivityPubLastPublishedAt *time.Time
+	CreatedAt                  time.Time
+	UpdatedAt                  time.Time
+	Metrics                    ThinkingMetrics
 }

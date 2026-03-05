@@ -4,15 +4,15 @@
 
 	const commentAreaIdStore = postDetailCtx.selectModelData((data) => data?.commentAreaId ?? null);
 	const commentsCountStore = postDetailCtx.selectModelData((data) => data?.metrics?.comments ?? 0);
-	const fediverseReplyUrlStore = postDetailCtx.selectModelData(
-		(data) => data?.fediverseReplyUrl ?? null
+	const fediverseObjectUrlStore = postDetailCtx.selectModelData(
+		(data) => data?.fediverseObjectUrl ?? null
 	);
 </script>
 
 <DetailCommentSection
 	commentAreaId={$commentAreaIdStore}
 	commentsCount={$commentsCountStore}
-	fediverseReplyUrl={$fediverseReplyUrlStore}
+	fediverseObjectUrl={$fediverseObjectUrlStore}
 	fallbackText="评论区在赶来的路上..."
 	fallbackSize="w-8 h-8"
 />

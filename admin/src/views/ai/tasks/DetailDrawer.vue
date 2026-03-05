@@ -42,6 +42,7 @@ function statusTagType(status?: string) {
   switch (status) {
     case 'completed': return 'success'
     case 'failed': return 'error'
+    case 'interrupted': return 'warning'
     case 'running': return 'warning'
     case 'pending': return 'info'
     default: return 'default'
@@ -54,6 +55,7 @@ function statusLabel(status?: string) {
     case 'running': return '运行中'
     case 'completed': return '已完成'
     case 'failed': return '失败'
+    case 'interrupted': return '已中断'
     default: return status ?? '-'
   }
 }

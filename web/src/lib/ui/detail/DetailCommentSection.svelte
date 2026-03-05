@@ -5,7 +5,7 @@
 	interface Props {
 		commentAreaId?: number | null;
 		commentsCount?: number;
-		fediverseReplyUrl?: string | null;
+		fediverseObjectUrl?: string | null;
 		containerClass?: string;
 		fallbackText?: string;
 		fallbackSize?: string;
@@ -15,7 +15,7 @@
 	let {
 		commentAreaId = null,
 		commentsCount = 0,
-		fediverseReplyUrl = null,
+		fediverseObjectUrl = null,
 		containerClass = '',
 		fallbackText = '评论区在赶来的路上...',
 		fallbackSize = 'w-8 h-8',
@@ -35,7 +35,7 @@
 			loaderProps={{
 				areaId: commentAreaId,
 				commentsCount,
-				fediverseReplyUrl
+				fediverseObjectUrl
 			}}
 			fallback={commentFallback}
 		/>

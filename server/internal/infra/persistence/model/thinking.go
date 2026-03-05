@@ -5,13 +5,15 @@ import (
 )
 
 type Thinking struct {
-	ID        int64           `gorm:"column:id;primaryKey;autoIncrement"`
-	CommentID int64           `gorm:"column:comment_id;not null"`
-	Content   string          `gorm:"column:content;type:text;not null"`
-	AuthorID  int64           `gorm:"column:author_id"`
-	CreatedAt time.Time       `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time       `gorm:"column:updated_at;autoUpdateTime"`
-	Metrics   ThinkingMetrics `gorm:"foreignKey:ThinkingID;references:ID"`
+	ID                         int64           `gorm:"column:id;primaryKey;autoIncrement"`
+	CommentID                  int64           `gorm:"column:comment_id;not null"`
+	Content                    string          `gorm:"column:content;type:text;not null"`
+	AuthorID                   int64           `gorm:"column:author_id"`
+	ActivityPubObjectID        *string         `gorm:"column:activitypub_object_id;size:500"`
+	ActivityPubLastPublishedAt *time.Time      `gorm:"column:activitypub_last_published_at"`
+	CreatedAt                  time.Time       `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt                  time.Time       `gorm:"column:updated_at;autoUpdateTime"`
+	Metrics                    ThinkingMetrics `gorm:"foreignKey:ThinkingID;references:ID"`
 }
 
 func (Thinking) TableName() string { return "thinking" }

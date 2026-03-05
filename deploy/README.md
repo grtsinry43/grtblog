@@ -112,6 +112,76 @@ Admin panel URL: `http://localhost:${NGINX_PORT:-80}/admin/`
 - `/docs` -> 不在生产 Nginx 代理；仅开发阶段直连后端使用
 - other paths -> `nginx try_files` static-first, fallback to `renderer` (adapter-node)
 
+## 5) Outer reverse proxy (recommended)
+
+内层 Nginx 监听 `NGINX_PORT`（默认 80），通常还需要一个最外层反代来处理 HTTPS 证书和域名。以下是推荐的 Nginx 配置示例：
+
+```nginx
+server {
+    listen 80;
+    server_name blog.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name blog.example.com;
+
+    ssl_certificate     /path/to/fullchain.pem;
+    ssl_certificate_key /path/to/privkey.pem;
+
+    # ---------- 基础设置 ----------
+    client_max_body_size 200M;          # 与内层保持一致
+
+    # ---------- 透传真实 IP ----------
+    # 内层 nginx 通过 X-Real-IP 识别客户端 IP，务必在此设置
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # ---------- WebSocket (通知推送) ----------
+    location /api/v2/ws/ {
+        proxy_pass http://127.0.0.1:8080;   # 内层 nginx 端口
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400s;
+    }
+
+    # ---------- SSE 流式接口 (AI) ----------
+    location ~ ^/api/v2/admin/ai/.+/stream$ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        add_header X-Accel-Buffering no;
+    }
+
+    # ---------- 默认转发 ----------
+    location / {
+        proxy_pass http://127.0.0.1:8080;   # 内层 nginx 端口
+    }
+}
+```
+
+**关键注意事项：**
+
+| 项目 | 说明 |
+|---|---|
+| `X-Real-IP` | 必须设置，内层 nginx 通过 `map $http_x_real_ip` 取真实客户端 IP，用于评论、日志等 |
+| WebSocket | `/api/v2/ws/` 需要 `Upgrade` + `Connection` 头透传，否则实时通知无法工作 |
+| SSE 流式 | AI 重写/摘要生成接口使用 SSE，外层必须关闭 `proxy_buffering`，否则流式响应会被缓冲 |
+| `client_max_body_size` | 内层限制 200M，外层应 ≥ 200M，否则大文件上传会被外层拦截 |
+| ActivityPub | `/.well-known/`、`/ap/`、`/nodeinfo/` 等联合路径无需特殊处理，普通转发即可 |
+| Host 头 | 必须透传 `$host`，后端依赖它生成 ActivityPub Actor URL 和 RSS 链接 |
+
+> 如果使用 Caddy，上述配置可以简化为 `reverse_proxy localhost:8080`，Caddy 默认行为已满足大部分需求，但仍需单独配置 WebSocket 和 SSE 路径的超时时间。
+
 ## Notes
 
 - Nginx 使用 Docker 内置 DNS (`resolver 127.0.0.11 valid=10s`) 代替 `upstream` 块，容器重建后最多 10s 自动恢复。

@@ -95,27 +95,29 @@ type HotArticleMarked struct {
 }
 
 type Moment struct {
-	ID           int64
-	Title        string
-	Summary      string
-	AISummary    *string
-	Content      string
-	ContentHash  string
-	AuthorID     int64
-	TOC          []TOCNode
-	Image        *string
-	ColumnID     *int64
-	CommentID    *int64
-	ShortURL     string
-	IsPublished  bool
-	IsTop        bool
-	IsHot        bool
-	IsOriginal   bool
-	ExtInfo      []byte
-	InitialViews int64
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    *time.Time
+	ID                         int64
+	Title                      string
+	Summary                    string
+	AISummary                  *string
+	Content                    string
+	ContentHash                string
+	AuthorID                   int64
+	TOC                        []TOCNode
+	Image                      *string
+	ColumnID                   *int64
+	CommentID                  *int64
+	ShortURL                   string
+	ActivityPubObjectID        *string
+	ActivityPubLastPublishedAt *time.Time
+	IsPublished                bool
+	IsTop                      bool
+	IsHot                      bool
+	IsOriginal                 bool
+	ExtInfo                    []byte
+	InitialViews               int64
+	CreatedAt                  time.Time
+	UpdatedAt                  time.Time
+	DeletedAt                  *time.Time
 }
 
 type MomentMetrics struct {

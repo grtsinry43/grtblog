@@ -4,6 +4,7 @@ import "context"
 
 type ThinkingRepository interface {
 	FindByID(ctx context.Context, id int64) (*Thinking, error)
+	FindByActivityPubObjectID(ctx context.Context, objectID string) (*Thinking, error)
 	List(ctx context.Context, limit, offset int) ([]*Thinking, int64, error)
 	Create(ctx context.Context, thinking *Thinking) error
 	Update(ctx context.Context, thinking *Thinking) error

@@ -302,6 +302,7 @@ func (h *AIHandler) RewriteContentStream(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/event-stream")
 	c.Set("Cache-Control", "no-cache")
 	c.Set("Connection", "keep-alive")
+	c.Set("X-Accel-Buffering", "no")
 
 	// 创建独立 context：SetBodyStreamWriter 的回调在单独 goroutine 中运行，
 	// fasthttp.RequestCtx 作为 context.Context 在该 goroutine 中不可用（Done() 会 panic）。
@@ -339,6 +340,7 @@ func (h *AIHandler) GenerateSummaryStream(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/event-stream")
 	c.Set("Cache-Control", "no-cache")
 	c.Set("Connection", "keep-alive")
+	c.Set("X-Accel-Buffering", "no")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 

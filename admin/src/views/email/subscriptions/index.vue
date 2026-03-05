@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { useQuery } from '@tanstack/vue-query'
-import { NButton, NCard, NDataTable, NForm, NFormItem, NGrid, NGi, NInput, NSelect, NSpace, NTag } from 'naive-ui'
-import { h, reactive, ref, computed } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { NButton, NCard, NDataTable, NForm, NFormItem, NGrid, NGi, NInput, NPopconfirm, NSelect, NTag, useMessage } from 'naive-ui'
+import { h, reactive, computed } from 'vue'
 
 import { ScrollContainer } from '@/components'
-import { listEmailSubscriptions } from '@/services/email'
-import { useThemeVars } from 'naive-ui'
+import { batchUpdateEmailSubscriptionStatus, listEmailSubscriptions } from '@/services/email'
 
 import type { EmailSubscription } from '@/services/email'
 import type { DataTableColumns } from 'naive-ui'
 
-const themeVars = useThemeVars()
+const message = useMessage()
+const queryClient = useQueryClient()
 
 const params = reactive({
   page: 1,
@@ -22,15 +22,58 @@ const params = reactive({
 
 const statusOptions = [
   { label: '全部状态', value: undefined },
-  { label: '待验证', value: 'pending' },
-  { label: '已验证', value: 'verified' },
+  { label: '已订阅', value: 'active' },
   { label: '已退订', value: 'unsubscribed' },
+  { label: '已拉黑', value: 'blocked' },
 ]
 
 const { data, isLoading, refetch } = useQuery({
   queryKey: ['emailSubscriptions', params],
   queryFn: () => listEmailSubscriptions(params),
 })
+
+const updateStatusMutation = useMutation({
+  mutationFn: ({ id, status }: { id: number; status: string }) =>
+    batchUpdateEmailSubscriptionStatus({ ids: [id], status }),
+  onSuccess: async (_, vars) => {
+    message.success(vars.status === 'blocked' ? '已拉黑订阅用户' : '已解除拉黑')
+    await queryClient.invalidateQueries({ queryKey: ['emailSubscriptions'] })
+  },
+  onError: (err: unknown) => {
+    message.error(err instanceof Error ? err.message : '状态更新失败')
+  },
+})
+
+function toStatusLabel(status: string) {
+  switch (status) {
+    case 'active':
+      return '已订阅'
+    case 'blocked':
+      return '已拉黑'
+    case 'unsubscribed':
+      return '已退订'
+    default:
+      return status
+  }
+}
+
+function toStatusTagType(status: string): 'default' | 'success' | 'warning' | 'error' {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'blocked':
+      return 'error'
+    case 'unsubscribed':
+      return 'warning'
+    default:
+      return 'default'
+  }
+}
+
+function toggleBlocked(row: EmailSubscription) {
+  const nextStatus = row.status === 'blocked' ? 'active' : 'blocked'
+  updateStatusMutation.mutate({ id: row.id, status: nextStatus })
+}
 
 const columns: DataTableColumns<EmailSubscription> = [
   {
@@ -54,19 +97,11 @@ const columns: DataTableColumns<EmailSubscription> = [
     key: 'status',
     width: 120,
     render: (row) => {
-      let type: 'default' | 'success' | 'warning' | 'error' = 'default'
-      let label: string = row.status
-      if (row.status === 'verified') {
-        type = 'success'
-        label = '已验证'
-      } else if (row.status === 'pending') {
-        type = 'warning'
-        label = '待验证'
-      } else if (row.status === 'unsubscribed') {
-        type = 'error'
-        label = '已退订'
-      }
-      return h(NTag, { type, size: 'small', bordered: false }, { default: () => label })
+      return h(
+        NTag,
+        { type: toStatusTagType(row.status), size: 'small', bordered: false },
+        { default: () => toStatusLabel(row.status) },
+      )
     },
   },
   {
@@ -80,6 +115,32 @@ const columns: DataTableColumns<EmailSubscription> = [
     key: 'createdAt',
     width: 180,
     render: (row) => new Date(row.createdAt).toLocaleString(),
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    width: 120,
+    render: (row) =>
+      h(
+        NPopconfirm,
+        {
+          onPositiveClick: () => toggleBlocked(row),
+        },
+        {
+          trigger: () =>
+            h(
+              NButton,
+              {
+                size: 'small',
+                type: row.status === 'blocked' ? 'success' : 'error',
+                ghost: true,
+                loading: updateStatusMutation.isPending.value,
+              },
+              { default: () => (row.status === 'blocked' ? '解除拉黑' : '拉黑') },
+            ),
+          default: () => (row.status === 'blocked' ? '确认解除拉黑该订阅用户？' : '确认拉黑该订阅用户？'),
+        },
+      ),
   },
 ]
 

@@ -31,6 +31,7 @@ function statusTagType(status: string) {
   switch (status) {
     case 'completed': return 'success'
     case 'failed': return 'error'
+    case 'interrupted': return 'warning'
     case 'running': return 'warning'
     case 'pending': return 'info'
     default: return 'default'
@@ -43,6 +44,7 @@ function statusLabel(status: string) {
     case 'running': return '运行中'
     case 'completed': return '已完成'
     case 'failed': return '失败'
+    case 'interrupted': return '已中断'
     default: return status
   }
 }
@@ -154,6 +156,7 @@ const statusOptions = [
   { label: '运行中', value: 'running' },
   { label: '已完成', value: 'completed' },
   { label: '失败', value: 'failed' },
+  { label: '已中断', value: 'interrupted' },
 ] as any
 </script>
 

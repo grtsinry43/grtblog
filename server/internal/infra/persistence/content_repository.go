@@ -1010,6 +1010,22 @@ func (r *ContentRepository) GetMomentByShortURL(ctx context.Context, shortURL st
 	return r.modelToMoment(&momentModel), nil
 }
 
+func (r *ContentRepository) GetMomentByActivityPubObjectID(ctx context.Context, objectID string) (*content.Moment, error) {
+	objectID = strings.TrimSpace(objectID)
+	if objectID == "" {
+		return nil, content.ErrMomentNotFound
+	}
+	var momentModel model.Moment
+	result := r.db.WithContext(ctx).Where("activitypub_object_id = ?", objectID).Limit(1).Find(&momentModel)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, content.ErrMomentNotFound
+	}
+	return r.modelToMoment(&momentModel), nil
+}
+
 // UpdateMoment 更新手记
 func (r *ContentRepository) UpdateMoment(ctx context.Context, moment *content.Moment) error {
 	tocBytes, err := tocToBytes(moment.TOC)
@@ -1019,21 +1035,23 @@ func (r *ContentRepository) UpdateMoment(ctx context.Context, moment *content.Mo
 
 	now := time.Now()
 	updates := map[string]any{
-		"title":        moment.Title,
-		"summary":      moment.Summary,
-		"ai_summary":   moment.AISummary,
-		"toc":          tocBytes,
-		"content":      moment.Content,
-		"content_hash": moment.ContentHash,
-		"column_id":    moment.ColumnID,
-		"img":          moment.Image,
-		"short_url":    moment.ShortURL,
-		"is_published": moment.IsPublished,
-		"is_top":       moment.IsTop,
-		"is_hot":       moment.IsHot,
-		"is_original":  moment.IsOriginal,
-		"ext_info":     moment.ExtInfo,
-		"updated_at":   now,
+		"title":                        moment.Title,
+		"summary":                      moment.Summary,
+		"ai_summary":                   moment.AISummary,
+		"toc":                          tocBytes,
+		"content":                      moment.Content,
+		"content_hash":                 moment.ContentHash,
+		"column_id":                    moment.ColumnID,
+		"img":                          moment.Image,
+		"short_url":                    moment.ShortURL,
+		"activitypub_object_id":        moment.ActivityPubObjectID,
+		"activitypub_last_published_at": moment.ActivityPubLastPublishedAt,
+		"is_published":                 moment.IsPublished,
+		"is_top":                       moment.IsTop,
+		"is_hot":                       moment.IsHot,
+		"is_original":                  moment.IsOriginal,
+		"ext_info":                     moment.ExtInfo,
+		"updated_at":                   now,
 	}
 	if err := r.db.WithContext(ctx).
 		Model(&model.Moment{}).
@@ -1453,26 +1471,28 @@ func (r *ContentRepository) modelToMoment(mm *model.Moment) *content.Moment {
 	}
 
 	return &content.Moment{
-		ID:          mm.ID,
-		Title:       mm.Title,
-		Summary:     mm.Summary,
-		AISummary:   mm.AISummary,
-		Content:     mm.Content,
-		ContentHash: mm.ContentHash,
-		AuthorID:    mm.AuthorID,
-		TOC:         toc,
-		Image:       mm.Image,
-		ColumnID:    mm.ColumnID,
-		CommentID:   mm.CommentID,
-		ShortURL:    mm.ShortURL,
-		IsPublished: mm.IsPublished,
-		IsTop:       mm.IsTop,
-		IsHot:       mm.IsHot,
-		IsOriginal:  mm.IsOriginal,
-		ExtInfo:     mm.ExtInfo,
-		CreatedAt:   mm.CreatedAt,
-		UpdatedAt:   mm.UpdatedAt,
-		DeletedAt:   timeToTimePtr(mm.DeletedAt.Time),
+		ID:                         mm.ID,
+		Title:                      mm.Title,
+		Summary:                    mm.Summary,
+		AISummary:                  mm.AISummary,
+		Content:                    mm.Content,
+		ContentHash:                mm.ContentHash,
+		AuthorID:                   mm.AuthorID,
+		TOC:                        toc,
+		Image:                      mm.Image,
+		ColumnID:                   mm.ColumnID,
+		CommentID:                  mm.CommentID,
+		ShortURL:                   mm.ShortURL,
+		ActivityPubObjectID:        mm.ActivityPubObjectID,
+		ActivityPubLastPublishedAt: mm.ActivityPubLastPublishedAt,
+		IsPublished:                mm.IsPublished,
+		IsTop:                      mm.IsTop,
+		IsHot:                      mm.IsHot,
+		IsOriginal:                 mm.IsOriginal,
+		ExtInfo:                    mm.ExtInfo,
+		CreatedAt:                  mm.CreatedAt,
+		UpdatedAt:                  mm.UpdatedAt,
+		DeletedAt:                  timeToTimePtr(mm.DeletedAt.Time),
 	}
 }
 

@@ -1188,9 +1188,23 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 		}
 		sourceURL := strings.TrimRight(baseURL, "/") + "/moments/" +
 			moment.CreatedAt.UTC().Format("2006/01/02") + "/" + moment.ShortURL
+		objectID := ""
+		if moment.ActivityPubObjectID != nil && strings.TrimSpace(*moment.ActivityPubObjectID) != "" {
+			objectID = strings.TrimSpace(*moment.ActivityPubObjectID)
+		} else {
+			objectID = buildObjectID(baseURL, sourceType, moment.ID)
+		}
+		if persist {
+			moment.ActivityPubObjectID = &objectID
+			publishedAt := time.Now().UTC()
+			moment.ActivityPubLastPublishedAt = &publishedAt
+			if err := s.contentRepo.UpdateMoment(ctx, moment); err != nil {
+				return nil, err
+			}
+		}
 		summary := strings.TrimSpace(firstNonEmpty(summaryOverride, moment.Summary))
 		return map[string]any{
-			"id":        buildObjectID(baseURL, sourceType, moment.ID),
+			"id":        objectID,
 			"type":      "Note",
 			"url":       sourceURL,
 			"content":   renderFederatedHTML(publishTemplate, moment.Title, summary, sourceURL, sourceType),
@@ -1206,9 +1220,23 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 			return nil, err
 		}
 		sourceURL := strings.TrimRight(baseURL, "/") + "/thinkings#thinking-" + strconv.FormatInt(item.ID, 10)
+		objectID := ""
+		if item.ActivityPubObjectID != nil && strings.TrimSpace(*item.ActivityPubObjectID) != "" {
+			objectID = strings.TrimSpace(*item.ActivityPubObjectID)
+		} else {
+			objectID = buildObjectID(baseURL, sourceType, item.ID)
+		}
+		if persist {
+			item.ActivityPubObjectID = &objectID
+			publishedAt := time.Now().UTC()
+			item.ActivityPubLastPublishedAt = &publishedAt
+			if err := s.thinkingRepo.Update(ctx, item); err != nil {
+				return nil, err
+			}
+		}
 		summary := strings.TrimSpace(firstNonEmpty(summaryOverride, stripHTML(item.Content)))
 		return map[string]any{
-			"id":        buildObjectID(baseURL, sourceType, item.ID),
+			"id":        objectID,
 			"type":      "Note",
 			"url":       sourceURL,
 			"content":   renderFederatedHTML(publishTemplate, "思考", summary, sourceURL, sourceType),

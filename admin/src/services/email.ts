@@ -56,7 +56,7 @@ export interface EmailSubscription {
     id: number
     email: string
     eventName: string
-    status: 'pending' | 'verified' | 'unsubscribed'
+    status: 'active' | 'unsubscribed' | 'blocked' | string
     sourceIp: string
     unsubscribedAt?: string
     token?: string

@@ -41,10 +41,11 @@ const (
 
 // Task statuses
 const (
-	TaskStatusPending   = "pending"
-	TaskStatusRunning   = "running"
-	TaskStatusCompleted = "completed"
-	TaskStatusFailed    = "failed"
+	TaskStatusPending     = "pending"
+	TaskStatusRunning     = "running"
+	TaskStatusCompleted   = "completed"
+	TaskStatusFailed      = "failed"
+	TaskStatusInterrupted = "interrupted"
 )
 
 // Trigger sources

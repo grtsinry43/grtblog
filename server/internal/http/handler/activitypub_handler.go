@@ -37,12 +37,26 @@ func (h *ActivityPubHandler) Actor(c *fiber.Ctx) error {
 	if h.svc == nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
+	// Browser → redirect to homepage
+	if wantsHTML(c.Get("Accept")) {
+		return c.Redirect(resolveActivityPubBaseURL(c)+"/", fiber.StatusFound)
+	}
 	baseURL := resolveActivityPubBaseURL(c)
 	doc, err := h.svc.ActorDocument(c.Context(), baseURL)
 	if err != nil {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	return sendJSONWithContentType(c, fiber.StatusOK, "application/activity+json", doc)
+}
+
+// wantsHTML returns true when the Accept header indicates a browser request
+// (wants text/html) rather than an ActivityPub client request.
+func wantsHTML(accept string) bool {
+	if strings.Contains(accept, "application/activity+json") ||
+		strings.Contains(accept, "application/ld+json") {
+		return false
+	}
+	return strings.Contains(accept, "text/html")
 }
 
 func (h *ActivityPubHandler) Followers(c *fiber.Ctx) error {

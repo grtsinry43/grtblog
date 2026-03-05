@@ -68,6 +68,7 @@ type Repository interface {
 	CreateMoment(ctx context.Context, moment *Moment) error
 	GetMomentByID(ctx context.Context, id int64) (*Moment, error)
 	GetMomentByShortURL(ctx context.Context, shortURL string) (*Moment, error)
+	GetMomentByActivityPubObjectID(ctx context.Context, objectID string) (*Moment, error)
 	UpdateMoment(ctx context.Context, moment *Moment) error
 	DeleteMoment(ctx context.Context, id int64) error
 	ListMoments(ctx context.Context, options MomentListOptionsInternal) ([]*Moment, int64, error)

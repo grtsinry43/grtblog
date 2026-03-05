@@ -188,10 +188,17 @@ NGINX_PORT=8080
 
 ## 反向代理与 HTTPS
 
-生产环境建议在前面加一层反向代理（如 Caddy 或 Nginx）来处理 HTTPS：
+生产环境建议在前面加一层反向代理（如 Caddy 或 Nginx）来处理 HTTPS。内层 Nginx 已经处理了路由分发，外层只需透传即可，但有几个路径需要特殊配置。
+
+### Nginx 示例
 
 ```nginx
-# Nginx 示例
+server {
+    listen 80;
+    server_name yourdomain.com;
+    return 301 https://$host$request_uri;
+}
+
 server {
     listen 443 ssl http2;
     server_name yourdomain.com;
@@ -199,20 +206,68 @@ server {
     ssl_certificate     /path/to/cert.pem;
     ssl_certificate_key /path/to/key.pem;
 
+    # 与内层保持一致，否则大文件上传会被外层拦截
+    client_max_body_size 200M;
+
+    # 透传真实 IP（内层通过 X-Real-IP 识别客户端 IP）
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # WebSocket（实时通知推送）
+    location /api/v2/ws/ {
+        proxy_pass http://127.0.0.1:80;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400s;
+    }
+
+    # SSE 流式接口（AI 重写 / 摘要生成）
+    location ~ ^/api/v2/admin/ai/.+/stream$ {
+        proxy_pass http://127.0.0.1:80;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        add_header X-Accel-Buffering no;
+    }
+
+    # 默认转发
     location / {
         proxy_pass http://127.0.0.1:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # WebSocket 支持
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
     }
 }
 ```
+
+### Caddy 示例
+
+Caddy 默认透传 Host 和 X-Forwarded-* 头，配置更简洁：
+
+```
+yourdomain.com {
+    reverse_proxy localhost:80
+}
+```
+
+::: warning Caddy 注意事项
+Caddy 默认的反代超时可能不够长，WebSocket 和 SSE 流式接口需要额外配置超时时间，否则长连接会被提前断开。
+:::
+
+### 关键注意事项
+
+| 项目 | 说明 |
+|------|------|
+| `X-Real-IP` | **必须设置**。内层 Nginx 通过此头获取真实客户端 IP，用于评论显示、访问日志等 |
+| `Host` 头 | **必须透传**。后端依赖它生成 ActivityPub Actor URL、RSS 链接等 |
+| WebSocket | `/api/v2/ws/` 需透传 `Upgrade` + `Connection` 头，否则实时通知无法工作 |
+| SSE 流式 | AI 相关的流式接口使用 SSE，外层必须关闭 `proxy_buffering`，否则响应会被缓冲导致流式效果失效 |
+| `client_max_body_size` | 内层限制 200M，外层应 ≥ 200M |
+| ActivityPub | `/.well-known/`、`/ap/`、`/nodeinfo/` 等联邦路径无需特殊处理，普通转发即可 |
 
 ## 数据备份
 

@@ -3,10 +3,13 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	domainai "github.com/grtsinry43/grtblog-v2/server/internal/domain/ai"
@@ -394,14 +397,40 @@ func (s *Service) recordTaskEnd(ctx context.Context, taskLog *domainai.TaskLog, 
 	taskLog.DurationMs = int(time.Since(startTime).Milliseconds())
 	taskLog.OutputText = truncateText(output, 10000)
 	if taskErr != nil {
-		taskLog.Status = domainai.TaskStatusFailed
+		if isTaskInterruptedError(taskErr) {
+			taskLog.Status = domainai.TaskStatusInterrupted
+		} else {
+			taskLog.Status = domainai.TaskStatusFailed
+		}
 		taskLog.ErrorMessage = taskErr.Error()
 	} else {
 		taskLog.Status = domainai.TaskStatusCompleted
 	}
-	if err := s.repo.UpdateTaskLog(ctx, taskLog); err != nil {
+
+	// task 结束落库不要绑定调用链 context，避免请求取消或超时后状态卡在 running。
+	updateCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := s.repo.UpdateTaskLog(updateCtx, taskLog); err != nil {
 		log.Printf("[AI] update task log failed: %v", err)
 	}
+}
+
+func isTaskInterruptedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	if errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
+		return true
+	}
+
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(msg, "broken pipe") ||
+		strings.Contains(msg, "connection reset by peer") ||
+		strings.Contains(msg, "context canceled") ||
+		strings.Contains(msg, "client disconnected")
 }
 
 func (s *Service) readPrompt(ctx context.Context, promptKey, defaultPrompt string) string {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X, Mail, Check, BellRing, Newspaper, Coffee, Zap, Brain } from 'lucide-svelte';
+	import { X, Mail, Check, BellRing, Newspaper, Coffee, Brain } from 'lucide-svelte';
 	import { fly, fade, scale } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { subscribeEmail } from './api';
@@ -15,14 +15,12 @@
 	let preferences = $state<Record<HomeSubscriptionPreference, boolean>>({
 		posts: true,
 		moments: true,
-		pages: false,
 		thinkings: true
 	});
 
 	const preferenceToEventName: Record<HomeSubscriptionPreference, PublicEmailEventName> = {
-		posts: 'article.created',
-		moments: 'moment.created',
-		pages: 'page.created',
+		posts: 'article.published',
+		moments: 'moment.published',
 		thinkings: 'thinking.created'
 	};
 
@@ -53,8 +51,7 @@
 			desc: '碎片化的逻辑与灵感',
 			icon: Brain,
 			color: 'text-purple-500'
-		},
-		{ id: 'pages', name: '页面', desc: '站点页面新增通知', icon: Zap, color: 'text-blue-500' }
+		}
 	];
 
 	const selectedEventNames = $derived.by(() => {
