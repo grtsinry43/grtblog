@@ -49,6 +49,7 @@ type Service struct {
 	metrics     MetricsSnapshot
 	activityMu  sync.Mutex
 	activities  []RenderActivity
+	ogSem       chan struct{} // limits concurrent OG image fetch goroutines
 }
 
 type MetricsSnapshot struct {
@@ -104,6 +105,7 @@ func NewService(contentRepo content.Repository, baseURL string, redisClient *red
 			lastDurationSamples: make([]int64, 0, 256),
 		},
 		activities: make([]RenderActivity, 0, defaultRecentActivityLimit),
+		ogSem:      make(chan struct{}, 3),
 	}
 }
 
@@ -231,6 +233,15 @@ func (s *Service) renderURLDetailed(ctx context.Context, rawURLPath string, trac
 			detail.RemovedFiles = append(detail.RemovedFiles, filepath.ToSlash(dataPath))
 		}
 
+		ogImageFilePath := resolveOgImagePath(urlPath)
+		removed, rmErr = removeIfExists(ogImageFilePath)
+		if rmErr != nil {
+			return finalize(rmErr)
+		}
+		if removed {
+			detail.RemovedFiles = append(detail.RemovedFiles, filepath.ToSlash(ogImageFilePath))
+		}
+
 		if depErr := s.syncURLDependencies(ctx, urlPath, nil); depErr != nil {
 			log.Printf("[html-snapshot] clear deps failed url=%s err=%v", urlPath, depErr)
 		}
@@ -246,6 +257,32 @@ func (s *Service) renderURLDetailed(ctx context.Context, rawURLPath string, trac
 	if err := s.syncURLDependencies(ctx, urlPath, deps); err != nil {
 		log.Printf("[html-snapshot] sync deps failed url=%s err=%v", urlPath, err)
 	}
+
+	// Background goroutine: fetch and cache OG image from the SvelteKit fallback route.
+	ogImageFilePath := resolveOgImagePath(urlPath)
+	go func() {
+		s.ogSem <- struct{}{}
+		defer func() { <-s.ogSem }()
+
+		ogCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		ogBody, hasOg, fetchErr := s.fetchOptional(ogCtx, s.ogImageURL(urlPath))
+		if fetchErr != nil {
+			log.Printf("[html-snapshot] og-image fetch failed url=%s err=%v", urlPath, fetchErr)
+			return
+		}
+		if !hasOg {
+			// Page has a content image (cover), no generated OG image needed — clean up stale cache.
+			_, _ = removeIfExists(ogImageFilePath)
+			return
+		}
+		if writeErr := writeFileAtomically(ogImageFilePath, ogBody); writeErr != nil {
+			log.Printf("[html-snapshot] og-image write failed url=%s err=%v", urlPath, writeErr)
+			return
+		}
+		log.Printf("[html-snapshot] og-image cached url=%s", urlPath)
+	}()
 
 	dataURL := s.dataURL(urlPath)
 	dataBody, hasData, err := s.fetchOptional(ctx, dataURL)
@@ -366,6 +403,22 @@ func (s *Service) dataURL(urlPath string) string {
 		return s.baseURL + "/__data.json"
 	}
 	return s.baseURL + urlPath + "/__data.json"
+}
+
+func resolveOgImagePath(urlPath string) string {
+	root := filepath.Join("storage", "html")
+	if urlPath == "/" {
+		return filepath.Join(root, "og-image.png")
+	}
+	relative := filepath.FromSlash(strings.TrimPrefix(urlPath, "/"))
+	return filepath.Join(root, relative, "og-image.png")
+}
+
+func (s *Service) ogImageURL(urlPath string) string {
+	if urlPath == "/" {
+		return s.baseURL + "/og-image.png"
+	}
+	return s.baseURL + urlPath + "/og-image.png"
 }
 
 func resolveOutputPaths(urlPath string) (htmlPath string, dataPath string) {

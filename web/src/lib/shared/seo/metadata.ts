@@ -1,5 +1,4 @@
 import type { WebsiteInfoMap } from '$lib/features/website-info/types';
-import { resolveHomeThemeConfig } from '$lib/features/home/theme';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -166,7 +165,7 @@ const resolveListPageTitle = (baseTitle: string, page: number | null): string =>
 	return `${baseTitle} · 第${page}页`;
 };
 
-const resolveOgTag = (pathname: string, ogType: string): string => {
+export const resolveOgTag = (pathname: string, ogType: string): string => {
 	if (ogType === 'article') return 'ARTICLE';
 	if (pathname === '/') return 'HOME';
 	if (pathname === '/timeline') return 'TIMELINE';
@@ -318,14 +317,6 @@ export const resolveSeoMeta = (input: ResolveSeoMetaInput): ResolvedSeoMeta => {
 	const ogUrl = canonicalUrl;
 
 	const contentImage = toAbsoluteUrl(readString(pageMeta.image), baseUrl);
-	const siteIcon = toAbsoluteUrl(
-		readString(input.fallbackSiteIcon) || readString(websiteInfo?.favicon),
-		baseUrl
-	);
-	const ownerAvatar = toAbsoluteUrl(
-		readString(resolveHomeThemeConfig(websiteInfo).hero?.avatarUrl),
-		baseUrl
-	);
 	const ogType = readString(pageMeta.ogType) || readString(websiteInfo?.og_type) || 'website';
 	const ogSiteName = readString(websiteInfo?.og_site_name) || siteName;
 	const ogTitle =
@@ -336,20 +327,8 @@ export const resolveSeoMeta = (input: ResolveSeoMetaInput): ResolvedSeoMeta => {
 	const ogDescription = pageMeta.description
 		? description
 		: normalizeDescription(readString(websiteInfo?.og_description) || description);
-	const fallbackIcon = siteIcon || ownerAvatar;
-	const ogImageParams = new URLSearchParams({
-		title: ogTitle,
-		subtitle: ogDescription,
-		site: ogSiteName,
-		tag: resolveOgTag(pathname, ogType)
-	});
-	if (fallbackIcon) {
-		ogImageParams.set('icon', fallbackIcon);
-	}
-	if (ownerAvatar && ownerAvatar !== fallbackIcon) {
-		ogImageParams.set('icon_fallback', ownerAvatar);
-	}
-	const generatedOgImage = toAbsoluteUrl(`/og-image/?${ogImageParams.toString()}`, baseUrl);
+	const ogImagePath = pathname === '/' ? '/og-image.png' : `${pathname}/og-image.png`;
+	const generatedOgImage = toAbsoluteUrl(ogImagePath, baseUrl);
 	const ogImage = contentImage || generatedOgImage;
 	const usesGeneratedOgImage = !contentImage;
 

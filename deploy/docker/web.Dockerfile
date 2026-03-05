@@ -21,7 +21,11 @@ FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+ARG APP_VERSION=dev
+ARG BUILD_COMMIT=unknown
+ENV NODE_ENV=production \
+    APP_VERSION=${APP_VERSION} \
+    BUILD_COMMIT=${BUILD_COMMIT}
 
 RUN corepack enable
 
