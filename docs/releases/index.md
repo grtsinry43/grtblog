@@ -22,5 +22,5 @@
 ## Preview
 
 <!-- preview:start -->
-- _暂无条目_
+- [v2.0.0-rc.1](/releases/v2.0.0-rc.1) - 2026-03-06 · preview · rc
 <!-- preview:end -->
