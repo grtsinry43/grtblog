@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MomentDetail } from '$lib/features/moment/types';
+	import DetailAiSummary from '$lib/ui/detail/DetailAiSummary.svelte';
 	import DetailCommentSection from '$lib/ui/detail/DetailCommentSection.svelte';
 	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
 	import DetailActionBar from '$lib/ui/detail/DetailActionBar.svelte';
@@ -70,6 +71,10 @@
 
 			<TagList tags={moment.topics} />
 		</header>
+
+		{#if moment.aiSummary}
+			<DetailAiSummary summary={moment.aiSummary} />
+		{/if}
 
 		<DetailMarkdownContent
 			content={moment.content}

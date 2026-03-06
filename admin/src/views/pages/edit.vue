@@ -10,12 +10,14 @@ import {
   NDrawerContent,
   NForm,
   NFormItem,
+  useMessage,
 } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 // Components
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
+import { generateSummaryStream } from '@/services/ai'
 import { listWebsiteInfo } from '@/services/website-info'
 
 // Composables
@@ -25,8 +27,48 @@ import type { PageDetail } from '@/services/page'
 
 defineOptions({ name: 'PageEdit' })
 
+const message = useMessage()
+
 // 1. Initialize form logic
 const { form, saving, fetch, save } = usePageForm()
+
+// AI 摘要生成
+const aiSummaryLoading = ref(false)
+const aiSummaryResult = ref('')
+const aiSummaryDone = ref(false)
+
+async function handleAISummary() {
+  if (!form.content?.trim()) {
+    message.warning('请先输入内容')
+    return
+  }
+  aiSummaryLoading.value = true
+  aiSummaryResult.value = ''
+  aiSummaryDone.value = false
+  try {
+    await generateSummaryStream(form.content, (chunk) => {
+      aiSummaryResult.value += chunk
+    })
+    aiSummaryDone.value = true
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : 'AI 摘要生成失败')
+    aiSummaryResult.value = ''
+  } finally {
+    aiSummaryLoading.value = false
+  }
+}
+
+function adoptAISummary() {
+  form.aiSummary = aiSummaryResult.value
+  aiSummaryResult.value = ''
+  aiSummaryDone.value = false
+  message.success('已采纳 AI 摘要')
+}
+
+function dismissAISummary() {
+  aiSummaryResult.value = ''
+  aiSummaryDone.value = false
+}
 
 // 2. View state management
 const showMeta = ref(false)
@@ -74,7 +116,7 @@ function buildPreviewPayload() {
     id: loadedPage.value?.id ?? 0,
     title: form.title,
     description: form.description || null,
-    aiSummary: loadedPage.value?.aiSummary ?? null,
+    aiSummary: form.aiSummary || loadedPage.value?.aiSummary || null,
     content: form.content,
     contentHash: loadedPage.value?.contentHash ?? '',
     commentAreaId: loadedPage.value?.commentId ?? null,
@@ -340,6 +382,59 @@ watch(previewUrl, () => {
                   :autosize="{ minRows: 2, maxRows: 4 }"
                 />
               </NFormItem>
+              <NFormItem
+                :show-feedback="false"
+              >
+                <template #label>
+                  <span>AI 摘要</span>
+                  <span class="ml-1 text-xs opacity-50">用于正文前的总结导读</span>
+                </template>
+                <NInput
+                  v-model:value="form.aiSummary"
+                  type="textarea"
+                  placeholder="AI 生成的内容导读，展示在正文之前..."
+                  :autosize="{ minRows: 2, maxRows: 4 }"
+                />
+              </NFormItem>
+              <div class="flex flex-col gap-2">
+                <NButton
+                  size="small"
+                  :loading="aiSummaryLoading"
+                  :disabled="!form.content?.trim() || aiSummaryLoading"
+                  @click="handleAISummary"
+                >
+                  <template #icon><div class="iconify ph--sparkle" /></template>
+                  AI 生成导读摘要
+                </NButton>
+                <div
+                  v-if="aiSummaryLoading || aiSummaryResult"
+                  class="rounded-lg border border-current/10 p-3 text-sm leading-relaxed"
+                >
+                  <span>{{ aiSummaryResult }}</span>
+                  <span
+                    v-if="aiSummaryLoading"
+                    class="inline-block w-1.5 animate-pulse bg-current"
+                    >&nbsp;</span
+                  >
+                </div>
+                <div
+                  v-if="aiSummaryDone"
+                  class="flex justify-end gap-2"
+                >
+                  <NButton
+                    size="small"
+                    quaternary
+                    @click="dismissAISummary"
+                    >放弃</NButton
+                  >
+                  <NButton
+                    size="small"
+                    type="primary"
+                    @click="adoptAISummary"
+                    >采纳</NButton
+                  >
+                </div>
+              </div>
             </NForm>
           </div>
 

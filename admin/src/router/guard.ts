@@ -4,6 +4,7 @@ import { useEventBus } from '@/event-bus'
 import { getSetupState } from '@/services/auth'
 import { useUserStore, toRefsUserStore } from '@/stores'
 import { isFederationBetaRoute, showFederationBetaDialog } from '@/utils/federation-beta'
+import { isFederationEnabled } from '@/utils/federation-gate'
 import { applyDocumentTitle, ensureBackendSiteName, getCachedSiteName } from '@/utils/document-title'
 
 import type { Router } from 'vue-router'
@@ -35,7 +36,7 @@ export function setupRouterGuard(router: Router) {
   router.beforeEach(async (to, _from, next) => {
     routerEventBus.emit('beforeEach')
 
-    if (isFederationBetaRoute(to)) {
+    if (isFederationEnabled && isFederationBetaRoute(to)) {
       if (allowFederationRouteOnce) {
         allowFederationRouteOnce = false
       } else {

@@ -22,6 +22,13 @@
     </div>
     <div id="app"></div>
     <script>
+      // Runtime config — placeholders replaced at deploy time (e.g. docker entrypoint).
+      // If a placeholder is not substituted, it stays as the literal string → falsy.
+      window.__GRTBLOG_RUNTIME_CONFIG__ = {
+        FEDERATION_ENABLED: "%%__DANGEROUSLY_ENABLE_BETA_FEDERATION_SETTINGS__%%"  === "true",
+      };
+    </script>
+    <script>
       document.documentElement.classList.toggle(
         'dark',
         localStorage.getItem('theme-mode') === 'dark' ||

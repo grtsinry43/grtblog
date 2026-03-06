@@ -10,6 +10,7 @@ import (
 type CreatePageReq struct {
 	Title        string     `json:"title" validate:"required,max=255"`
 	Description  *string    `json:"description,omitempty"`
+	AISummary    *string    `json:"aiSummary,omitempty"`
 	Content      string     `json:"content" validate:"required"`
 	ShortURL     *string    `json:"shortUrl"`
 	AllowComment *bool      `json:"allowComment,omitempty"`
@@ -23,6 +24,7 @@ type CreatePageReq struct {
 type createPageReqJSON struct {
 	Title        string   `json:"title"`
 	Description  *string  `json:"description"`
+	AISummary    *string  `json:"aiSummary"`
 	Content      string   `json:"content"`
 	ShortURL     *string  `json:"shortUrl"`
 	AllowComment *bool    `json:"allowComment"`
@@ -40,6 +42,7 @@ func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
 	}
 	r.Title = aux.Title
 	r.Description = aux.Description
+	r.AISummary = aux.AISummary
 	r.Content = aux.Content
 	r.ShortURL = aux.ShortURL
 	r.AllowComment = aux.AllowComment
@@ -69,6 +72,7 @@ func (r *CreatePageReq) UnmarshalJSON(data []byte) error {
 type UpdatePageReq struct {
 	Title        string   `json:"title" validate:"required,max=255"`
 	Description  *string  `json:"description,omitempty"`
+	AISummary    *string  `json:"aiSummary,omitempty"`
 	Content      string   `json:"content" validate:"required"`
 	ShortURL     string   `json:"shortUrl" validate:"required"`
 	AllowComment *bool    `json:"allowComment,omitempty"`

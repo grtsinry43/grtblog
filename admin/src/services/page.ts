@@ -58,6 +58,7 @@ export interface ListPagesParams {
 export interface CreatePagePayload {
   title: string
   description?: string
+  aiSummary?: string
   content: string
   shortUrl: string
   isEnabled: boolean
@@ -69,6 +70,7 @@ export interface CreatePagePayload {
 export interface UpdatePagePayload {
   title: string
   description?: string
+  aiSummary?: string
   content: string
   shortUrl: string
   isEnabled: boolean

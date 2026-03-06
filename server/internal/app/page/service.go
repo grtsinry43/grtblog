@@ -50,7 +50,7 @@ func (s *Service) CreatePage(ctx context.Context, cmd CreatePageCmd) (*content.P
 	page := &content.Page{
 		Title:            cmd.Title,
 		Description:      description,
-		AISummary:        nil,
+		AISummary:        trimPtr(cmd.AISummary),
 		TOC:              toc,
 		Content:          cmd.Content,
 		ContentHash:      content.PageContentHash(cmd.Title, description, cmd.Content),
@@ -97,6 +97,7 @@ func (s *Service) UpdatePage(ctx context.Context, cmd UpdatePageCmd) (*content.P
 
 	existing.Title = cmd.Title
 	existing.Description = description
+	existing.AISummary = trimPtr(cmd.AISummary)
 	existing.TOC = toc
 	existing.Content = cmd.Content
 	existing.ContentHash = content.PageContentHash(cmd.Title, description, cmd.Content)

@@ -2,6 +2,7 @@ import { ref, reactive, watch, type Component, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { showFederationBetaDialog } from '@/utils/federation-beta'
+import { isFederationEnabled } from '@/utils/federation-gate'
 
 import SiteInfoTab from '../components/tabs/SiteInfoTab.vue'
 import ThemeExtendTab from '../components/tabs/ThemeExtendTab.vue'
@@ -61,7 +62,7 @@ export function useSettingsTabs() {
   async function switchTab(tabKey: string) {
     if (tabKey === activeTab.value) return
 
-    if (tabKey === 'federation') {
+    if (isFederationEnabled && tabKey === 'federation') {
       const confirmed = await showFederationBetaDialog()
       if (!confirmed) {
         return

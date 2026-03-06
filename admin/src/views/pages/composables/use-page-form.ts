@@ -16,6 +16,7 @@ export function usePageForm() {
   const form = reactive({
     title: '',
     description: '',
+    aiSummary: '',
     content: '',
     shortUrl: '',
     isEnabled: true,
@@ -31,6 +32,7 @@ export function usePageForm() {
       const data = await getPage(Number(id.value))
       form.title = data.title
       form.description = data.description || ''
+      form.aiSummary = data.aiSummary || ''
       form.content = data.content
       form.shortUrl = data.shortUrl
       form.isEnabled = data.isEnabled
@@ -47,6 +49,7 @@ export function usePageForm() {
       const payload = {
         title: form.title,
         description: form.description,
+        aiSummary: form.aiSummary || undefined,
         content: form.content,
         shortUrl: form.shortUrl,
         isEnabled: form.isEnabled,

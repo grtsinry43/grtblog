@@ -57,6 +57,7 @@ func (h *PageHandler) CreatePage(c *fiber.Ctx) error {
 	cmd := page.CreatePageCmd{
 		Title:        req.Title,
 		Description:  req.Description,
+		AISummary:    req.AISummary,
 		Content:      req.Content,
 		ShortURL:     req.ShortURL,
 		AllowComment: req.AllowComment,
@@ -128,6 +129,7 @@ func (h *PageHandler) UpdatePage(c *fiber.Ctx) error {
 		ID:           id,
 		Title:        req.Title,
 		Description:  req.Description,
+		AISummary:    req.AISummary,
 		Content:      req.Content,
 		ShortURL:     req.ShortURL,
 		AllowComment: req.AllowComment,

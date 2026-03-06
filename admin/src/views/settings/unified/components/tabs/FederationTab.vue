@@ -11,6 +11,8 @@ import {
   updateFederationConfigs,
 } from '@/services/sysconfig'
 import type { ConfigExportData } from '@/services/sysconfig'
+import { isFederationEnabled } from '@/utils/federation-gate'
+import { ComingSoon } from '@/components'
 
 import ConfigPanel from '../ConfigPanel'
 
@@ -106,7 +108,13 @@ async function confirmImport() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <ComingSoon
+    v-if="!isFederationEnabled"
+    title="Federation 联合设置"
+    description="Blog Federation 与 ActivityPub 兼容功能的设置尚未开放，敬请期待后续版本。"
+    icon="ph--circles-three"
+  />
+  <div v-else class="space-y-6">
     <div class="flex items-center gap-2">
       <NButton size="small" secondary :loading="exporting" @click="handleExport">
         导出配置

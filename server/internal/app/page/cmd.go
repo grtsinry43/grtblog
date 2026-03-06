@@ -6,6 +6,7 @@ import "time"
 type CreatePageCmd struct {
 	Title        string
 	Description  *string
+	AISummary    *string
 	Content      string
 	ShortURL     *string
 	AllowComment *bool
@@ -21,6 +22,7 @@ type UpdatePageCmd struct {
 	ID           int64
 	Title        string
 	Description  *string
+	AISummary    *string
 	Content      string
 	ShortURL     string
 	AllowComment *bool
