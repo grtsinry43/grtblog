@@ -23,14 +23,19 @@ replace_section() {
   local end_marker="$3"
   local content="$4"
   local tmp_file
+  local body_file
   tmp_file="$(mktemp)"
+  body_file="$(mktemp)"
 
-  awk -v start="$start_marker" -v end="$end_marker" -v body="$content" '
+  printf '%s\n' "$content" > "$body_file"
+
+  awk -v start="$start_marker" -v end="$end_marker" -v body_file="$body_file" '
     $0 == start {
       print
-      if (length(body) > 0) {
-        print body
+      while ((getline line < body_file) > 0) {
+        print line
       }
+      close(body_file)
       skip = 1
       next
     }
@@ -42,6 +47,7 @@ replace_section() {
     }
   ' "$file" > "$tmp_file"
 
+  rm -f "$body_file"
   mv "$tmp_file" "$file"
 }
 
