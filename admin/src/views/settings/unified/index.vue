@@ -20,7 +20,7 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
 </script>
 
 <template>
-  <div class="flex h-full max-sm:flex-col">
+  <div class="flex h-full min-h-0 max-sm:flex-col">
     <!-- Mobile: horizontal scrollable tab bar -->
     <div
       class="hidden shrink-0 border-b border-neutral-200 max-sm:block dark:border-neutral-700"
@@ -80,7 +80,7 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
     </div>
 
     <!-- Right content -->
-    <div class="min-w-0 flex-1">
+    <div class="min-w-0 min-h-0 flex-1">
       <ScrollContainer :scrollable="currentScrollable" wrapper-class="!p-3 max-sm:!p-2">
         <KeepAlive>
           <component
