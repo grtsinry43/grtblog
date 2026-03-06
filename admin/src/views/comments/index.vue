@@ -7,7 +7,6 @@ import {
   NList,
   NListItem,
   NThing,
-  NAvatar,
   NTag,
   NSpace,
   NButton,
@@ -23,7 +22,7 @@ import {
   NSwitch,
   NPagination,
 } from 'naive-ui'
-import { ScrollContainer, EmptyPlaceholder } from '@/components'
+import { ScrollContainer, EmptyPlaceholder, UserAvatar } from '@/components'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import {
   listComments,
@@ -262,7 +261,7 @@ const handleMouseLeave = () => {
                             <n-thing content-indented>
                                  <template #avatar>
                                     <div class="relative">
-                                        <n-avatar round :src="`https://cravatar.cn/avatar/${comment.email ? comment.email : 'default'}?d=mp`" />
+                                        <UserAvatar :src="comment.avatar || undefined" round />
                                         <div v-if="!comment.isViewed" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></div>
                                     </div>
                                 </template>

@@ -16,6 +16,7 @@ export interface Comment {
     content?: string
     authorId?: number
     nickName?: string
+    avatar?: string
     email?: string
     ip?: string
     location?: string
