@@ -93,6 +93,9 @@ func (s *Service) TouchAdminPanel() Snapshot {
 	}
 	if s.status.OK == 1 && isOwnerExpired(now, s.lastOwnerUpdatedAt) {
 		s.status.OK = 0
+		s.status.Process = ""
+		s.status.Extend = ""
+		s.status.Media = nil
 		changed = true
 	}
 	snapshot := s.status
@@ -141,6 +144,9 @@ func (s *Service) applyExpireLocked(now time.Time) bool {
 
 	if s.status.OK == 1 && isOwnerExpired(now, s.lastOwnerUpdatedAt) {
 		s.status.OK = 0
+		s.status.Process = ""
+		s.status.Extend = ""
+		s.status.Media = nil
 		changed = true
 	}
 	if s.status.AdminPanelOnline && isPanelBeatExpired(now, s.lastPanelBeatAt) {
