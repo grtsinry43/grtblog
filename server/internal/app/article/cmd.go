@@ -41,6 +41,14 @@ type UpdateArticleCmd struct {
 	ExtInfo      []byte
 }
 
+// ResetFederationSignalsCmd 重置文章联合条目状态命令。
+type ResetFederationSignalsCmd struct {
+	ID        int64
+	Mentions  []string
+	Citations []string
+	Retrigger bool
+}
+
 // BatchSetPublishedCmd 批量设置文章发布状态命令。
 type BatchSetPublishedCmd struct {
 	IDs         []int64

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -84,10 +85,12 @@ func (h *FederationInteractionHandler) GetArticleInteractions(c *fiber.Ctx) erro
 		}
 	}
 	for i := range outbounds {
+		signalKey := outboundSignalKey(outbounds[i])
 		resp.Outbound[i] = contract.FederationOutboundInteractionResp{
 			ID:                outbounds[i].ID,
 			RequestID:         outbounds[i].RequestID,
 			Type:              outbounds[i].DeliveryType,
+			SignalKey:         signalKey,
 			TargetInstanceURL: outbounds[i].TargetInstanceURL,
 			Status:            outbounds[i].Status,
 			AttemptCount:      outbounds[i].AttemptCount,
@@ -99,6 +102,73 @@ func (h *FederationInteractionHandler) GetArticleInteractions(c *fiber.Ctx) erro
 		}
 	}
 	return response.Success(c, resp)
+}
+
+func outboundSignalKey(item domainfed.OutboundDelivery) *string {
+	var payload map[string]any
+	_ = json.Unmarshal(item.Payload, &payload)
+
+	host := normalizeFederationSignalHost(item.TargetInstanceURL)
+	if host == "" {
+		host = normalizeFederationSignalHost(firstPayloadString(payload, "TargetInstance", "target_instance", "TargetInstanceURL", "target_instance_url"))
+	}
+	if host == "" {
+		return nil
+	}
+
+	switch item.DeliveryType {
+	case domainfed.DeliveryTypeMention:
+		user := firstPayloadString(payload, "TargetUser", "target_user", "MentionedUser", "mentioned_user")
+		if user == "" {
+			return nil
+		}
+		key := strings.TrimSpace(user) + "@" + host
+		return &key
+	case domainfed.DeliveryTypeCitation:
+		postID := firstPayloadString(payload, "TargetPostID", "target_post_id")
+		if postID == "" {
+			return nil
+		}
+		key := host + "|" + strings.TrimSpace(postID)
+		return &key
+	default:
+		return nil
+	}
+}
+
+func firstPayloadString(payload map[string]any, keys ...string) string {
+	if len(payload) == 0 {
+		return ""
+	}
+	for _, key := range keys {
+		value, ok := payload[key]
+		if !ok {
+			continue
+		}
+		str, ok := value.(string)
+		if !ok {
+			continue
+		}
+		trimmed := strings.TrimSpace(str)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func normalizeFederationSignalHost(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	trimmed = strings.TrimPrefix(trimmed, "https://")
+	trimmed = strings.TrimPrefix(trimmed, "http://")
+	trimmed = strings.TrimRight(trimmed, "/")
+	if idx := strings.Index(trimmed, "/"); idx >= 0 {
+		trimmed = trimmed[:idx]
+	}
+	return strings.TrimSpace(trimmed)
 }
 
 func (h *FederationInteractionHandler) resolveArticle(c *fiber.Ctx, rawID string) (*content.Article, error) {

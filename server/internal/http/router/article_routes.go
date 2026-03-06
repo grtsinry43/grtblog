@@ -44,6 +44,7 @@ func registerArticleAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	adminGroup.Put("/articles/published", articleHandler.BatchSetArticlePublished) // PUT /api/v2/admin/articles/published
 	adminGroup.Put("/articles/top", articleHandler.BatchSetArticleTop)             // PUT /api/v2/admin/articles/top
 	adminGroup.Post("/articles/batch-delete", articleHandler.BatchDeleteArticles)  // POST /api/v2/admin/articles/batch-delete
+	adminGroup.Post("/articles/:id/federation/signals/reset", articleHandler.ResetArticleFederationSignals)
 }
 
 func newArticleHandler(deps Dependencies) *handler.ArticleHandler {

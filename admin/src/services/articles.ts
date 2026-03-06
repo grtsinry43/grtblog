@@ -1,5 +1,7 @@
 import { request } from './http'
+
 import type { ContentExtInfo } from '@/types/ext-info'
+import type { FederationArticleInteractionsResp } from '@/types/federation'
 
 export interface ArticleListItem {
   id: number
@@ -106,6 +108,18 @@ export interface UpdateArticlePayload {
   extInfo?: ContentExtInfo | null
 }
 
+export interface ResetArticleFederationSignalsPayload {
+  mentions?: string[]
+  citations?: string[]
+  retrigger?: boolean
+}
+
+export interface ResetArticleFederationSignalsResp {
+  articleId: number
+  retriggered: boolean
+  extInfo?: ContentExtInfo | null
+}
+
 function stripEmpty<T extends object>(value: T): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(value).filter(
@@ -137,6 +151,19 @@ export function createArticle(payload: CreateArticlePayload) {
 export function updateArticle(id: number, payload: UpdateArticlePayload) {
   return request<ArticleDetail>(`/articles/${id}`, {
     method: 'PUT',
+    body: payload,
+  })
+}
+
+export function getArticleFederationInteractions(id: number | string) {
+  return request<FederationArticleInteractionsResp>(`/articles/${id}/federation/interactions`, {
+    method: 'GET',
+  })
+}
+
+export function resetArticleFederationSignals(id: number | string, payload?: ResetArticleFederationSignalsPayload) {
+  return request<ResetArticleFederationSignalsResp>(`/admin/articles/${id}/federation/signals/reset`, {
+    method: 'POST',
     body: payload,
   })
 }

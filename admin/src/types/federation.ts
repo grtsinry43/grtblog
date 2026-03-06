@@ -191,6 +191,37 @@ export interface FederationAuthorListResp {
     items: FederationAuthorResp[]
 }
 
+export interface FederationCitationInteractionResp {
+  id: number
+  source_instance_id: number
+  source_post_url: string
+  source_post_title?: string
+  citation_type: string
+  status: string
+  requested_at: string
+}
+
+export interface FederationOutboundInteractionResp {
+  id: number
+  request_id: string
+  type: string
+  signal_key?: string
+  target_instance_url: string
+  status: string
+  attempt_count: number
+  http_status?: number
+  error_message?: string
+  remote_ticket_id?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface FederationArticleInteractionsResp {
+  article_id: number
+  inbound_citations: FederationCitationInteractionResp[]
+  outbound: FederationOutboundInteractionResp[]
+}
+
 export interface ActivityPubDeliveryDetailResp {
   inbox: string
   actor_id?: string

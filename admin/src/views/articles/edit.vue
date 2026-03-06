@@ -2,6 +2,7 @@
 import { PreviewLink20Regular } from '@vicons/fluent'
 import { PaperPlaneOutline, SaveOutline } from '@vicons/ionicons5'
 import {
+  NAlert,
   NButton,
   NButtonGroup,
   NCard,
@@ -9,14 +10,18 @@ import {
   NDrawer,
   NDrawerContent,
   NDynamicTags,
+  NEmpty,
   NForm,
   NFormItem,
   NInput,
   NInputNumber,
   NModal,
+  NPopconfirm,
   NPopover,
   NSelect,
+  NSkeleton,
   NSwitch,
+  NTag,
   useMessage,
   NAutoComplete,
 } from 'naive-ui'
@@ -26,29 +31,35 @@ import { computed, onMounted, onUnmounted, ref, toRaw, toRef, watch } from 'vue'
 import ImageInput from '@/components/image-picker/ImageInput.vue'
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
+import { parseFederationSignals } from '@/composables/markdown-editor/utils/federation-signals'
 import { generateTitle, generateSummaryStream } from '@/services/ai'
+import {
+  getArticleFederationInteractions,
+  resetArticleFederationSignals,
+  type ArticleDetail,
+} from '@/services/articles'
 import { publishFederationActivityPub } from '@/services/federation-admin'
 import { listWebsiteInfo } from '@/services/website-info'
-import type { ArticleDetail } from '@/services/articles'
 
 // 逻辑 Hooks
 import { useArticleForm } from './composables/use-article-form'
 import { useEditorStats } from './composables/use-editor-stats'
 import { useTaxonomySelect } from './composables/use-taxonomy-select'
 
+import type { FederationOutboundInteractionResp } from '@/types/federation'
+
 defineOptions({ name: 'ArticleEdit' })
 
 const message = useMessage()
 
 // 1. 初始化表单核心逻辑
-const { form, loading, saving, imageProcessing, isCreating, fetch, save, extInfo, baseExtInfo } =
+const { form, saving, imageProcessing, isCreating, fetch, save, extInfo, baseExtInfo } =
   useArticleForm()
 
 // 2. 初始化分类与标签逻辑
 // 将表单中的响应式属性传给 Hook，实现双向绑定
 const {
   categoryOptions,
-  tagOptions,
   dynamicTags,
   tagSearchValue,
   autoCompleteOptions,
@@ -75,6 +86,24 @@ const apPublishing = ref(false)
 const isYearSummary = ref(false)
 const yearSummaryYear = ref(new Date().getFullYear())
 const yearSummaryReady = ref(false)
+const federationInteractionsLoading = ref(false)
+const federationInteractionsError = ref('')
+const federationOutbounds = ref<FederationOutboundInteractionResp[]>([])
+const resetAllFederationLoading = ref(false)
+const resetSignalLoadingKeys = ref<Record<string, boolean>>({})
+
+type FederationSignalType = 'mention' | 'citation'
+
+interface FederationSignalRow {
+  key: string
+  type: FederationSignalType
+  instance: string
+  target: string
+  marker: string
+  inContent: boolean
+  deliveredAt: string | null
+  outbound: FederationOutboundInteractionResp | null
+}
 
 const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
 const PREVIEW_POST_TYPE = 'grtblog-preview:post'
@@ -204,6 +233,258 @@ async function handleRepublishActivityPub() {
   }
 }
 
+function readFederationRegistry(value: unknown) {
+  const root = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+  const rawRegistry = root._federation_delivery_registry
+  const registry =
+    rawRegistry && typeof rawRegistry === 'object'
+      ? (rawRegistry as Record<string, unknown>)
+      : {}
+  const mentionRegistry =
+    registry.mentions && typeof registry.mentions === 'object'
+      ? (registry.mentions as Record<string, unknown>)
+      : {}
+  const citationRegistry =
+    registry.citations && typeof registry.citations === 'object'
+      ? (registry.citations as Record<string, unknown>)
+      : {}
+
+  const mentions: Record<string, string> = {}
+  const citations: Record<string, string> = {}
+
+  for (const [key, rawValue] of Object.entries(mentionRegistry)) {
+    const normalizedKey = key.trim()
+    if (!normalizedKey) continue
+    mentions[normalizedKey] = typeof rawValue === 'string' ? rawValue : ''
+  }
+  for (const [key, rawValue] of Object.entries(citationRegistry)) {
+    const normalizedKey = key.trim()
+    if (!normalizedKey) continue
+    citations[normalizedKey] = typeof rawValue === 'string' ? rawValue : ''
+  }
+
+  return { mentions, citations }
+}
+
+const federationOutboundBySignalKey = computed(() => {
+  const map = new Map<string, FederationOutboundInteractionResp>()
+  for (const item of federationOutbounds.value) {
+    const key = item.signal_key?.trim()
+    if (!key) continue
+    const prev = map.get(key)
+    if (!prev) {
+      map.set(key, item)
+      continue
+    }
+    const prevTs = Date.parse(prev.updated_at || prev.created_at || '')
+    const curTs = Date.parse(item.updated_at || item.created_at || '')
+    if ((Number.isFinite(curTs) ? curTs : 0) >= (Number.isFinite(prevTs) ? prevTs : 0)) {
+      map.set(key, item)
+    }
+  }
+  return map
+})
+
+const federationSignalRows = computed<FederationSignalRow[]>(() => {
+  const rows = new Map<string, FederationSignalRow>()
+  const parsedSignals = parseFederationSignals(form.content || '')
+  const registry = readFederationRegistry(extInfo.value ?? baseExtInfo.value ?? null)
+
+  const ensureMentionRow = (key: string) => {
+    const splitAt = key.indexOf('@')
+    if (splitAt <= 0 || splitAt >= key.length - 1) return
+    const target = key.slice(0, splitAt)
+    const instance = key.slice(splitAt + 1)
+    if (!target || !instance) return
+    if (!rows.has(key)) {
+      rows.set(key, {
+        key,
+        type: 'mention',
+        instance,
+        target,
+        marker: `<@${target}@${instance}>`,
+        inContent: false,
+        deliveredAt: null,
+        outbound: null,
+      })
+    }
+  }
+
+  const ensureCitationRow = (key: string) => {
+    const splitAt = key.indexOf('|')
+    if (splitAt <= 0 || splitAt >= key.length - 1) return
+    const instance = key.slice(0, splitAt)
+    const target = key.slice(splitAt + 1)
+    if (!instance || !target) return
+    if (!rows.has(key)) {
+      rows.set(key, {
+        key,
+        type: 'citation',
+        instance,
+        target,
+        marker: `<cite:${instance}|${target}>`,
+        inContent: false,
+        deliveredAt: null,
+        outbound: null,
+      })
+    }
+  }
+
+  parsedSignals.mentions.forEach((item) => {
+    ensureMentionRow(item.key)
+    const row = rows.get(item.key)
+    if (row) row.inContent = true
+  })
+  parsedSignals.citations.forEach((item) => {
+    ensureCitationRow(item.key)
+    const row = rows.get(item.key)
+    if (row) row.inContent = true
+  })
+
+  Object.entries(registry.mentions).forEach(([key, deliveredAt]) => {
+    ensureMentionRow(key)
+    const row = rows.get(key)
+    if (row) row.deliveredAt = deliveredAt || null
+  })
+  Object.entries(registry.citations).forEach(([key, deliveredAt]) => {
+    ensureCitationRow(key)
+    const row = rows.get(key)
+    if (row) row.deliveredAt = deliveredAt || null
+  })
+
+  federationOutboundBySignalKey.value.forEach((outbound, key) => {
+    if (outbound.type === 'mention') {
+      ensureMentionRow(key)
+    } else if (outbound.type === 'citation') {
+      ensureCitationRow(key)
+    }
+    const row = rows.get(key)
+    if (row) row.outbound = outbound
+  })
+
+  return Array.from(rows.values()).sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'mention' ? -1 : 1
+    return a.key.localeCompare(b.key)
+  })
+})
+
+function outboundStatusTagType(status?: string | null) {
+  const normalized = (status || '').trim().toLowerCase()
+  if (normalized === 'approved' || normalized === 'accepted') return 'success'
+  if (normalized === 'queued' || normalized === 'sending') return 'warning'
+  if (normalized === 'rejected' || normalized === 'failed' || normalized === 'timeout' || normalized === 'dead') return 'error'
+  return 'default'
+}
+
+function outboundStatusText(status?: string | null) {
+  const normalized = (status || '').trim().toLowerCase()
+  switch (normalized) {
+    case 'queued':
+      return '排队中'
+    case 'sending':
+      return '投递中'
+    case 'accepted':
+      return '已接收'
+    case 'approved':
+      return '已通过'
+    case 'rejected':
+      return '已拒绝'
+    case 'failed':
+      return '失败'
+    case 'timeout':
+      return '超时'
+    case 'dead':
+      return '终止'
+    default:
+      return normalized || '未知'
+  }
+}
+
+function signalStatusText(row: FederationSignalRow) {
+  if (row.outbound) return `队列：${outboundStatusText(row.outbound.status)}`
+  if (row.deliveredAt) return '已记录（未发现出站记录）'
+  if (row.inContent) return '正文存在，待触发'
+  return '已脱离正文'
+}
+
+async function fetchFederationInteractions(articleID?: number) {
+  const id = articleID ?? loadedArticle.value?.id
+  if (!id) {
+    federationOutbounds.value = []
+    federationInteractionsError.value = ''
+    return
+  }
+  federationInteractionsLoading.value = true
+  federationInteractionsError.value = ''
+  try {
+    const data = await getArticleFederationInteractions(id)
+    federationOutbounds.value = data.outbound ?? []
+  } catch (err) {
+    federationOutbounds.value = []
+    federationInteractionsError.value = err instanceof Error ? err.message : '加载联合状态失败'
+  } finally {
+    federationInteractionsLoading.value = false
+  }
+}
+
+function setSignalResetLoading(key: string, loading: boolean) {
+  const next = { ...resetSignalLoadingKeys.value }
+  if (loading) next[key] = true
+  else delete next[key]
+  resetSignalLoadingKeys.value = next
+}
+
+function applyFederationResetResult(extInfoValue: ArticleDetail['extInfo']) {
+  const cloned = extInfoValue ? JSON.parse(JSON.stringify(extInfoValue)) : null
+  baseExtInfo.value = cloned
+  extInfo.value = cloned
+  if (loadedArticle.value) {
+    loadedArticle.value.extInfo = cloned
+  }
+}
+
+async function handleResetFederationSignal(row: FederationSignalRow) {
+  if (!loadedArticle.value?.id) return
+  setSignalResetLoading(row.key, true)
+  try {
+    const payload =
+      row.type === 'mention'
+        ? { mentions: [row.key] }
+        : { citations: [row.key] }
+    const result = await resetArticleFederationSignals(loadedArticle.value.id, payload)
+    applyFederationResetResult(result.extInfo ?? null)
+    await fetchFederationInteractions(loadedArticle.value.id)
+    if (result.retriggered) {
+      message.success('已重置并重新触发该联合条目')
+    } else {
+      message.success('已重置该联合条目（当前未触发出站）')
+    }
+  } catch (err) {
+    message.error(err instanceof Error ? err.message : '重置失败')
+  } finally {
+    setSignalResetLoading(row.key, false)
+  }
+}
+
+async function handleResetAllFederationSignals() {
+  if (!loadedArticle.value?.id) return
+  resetAllFederationLoading.value = true
+  try {
+    const result = await resetArticleFederationSignals(loadedArticle.value.id)
+    applyFederationResetResult(result.extInfo ?? null)
+    await fetchFederationInteractions(loadedArticle.value.id)
+    if (result.retriggered) {
+      message.success('已重置全部联合条目并重新触发')
+    } else {
+      message.success('已重置全部联合条目（当前未触发出站）')
+    }
+  } catch (err) {
+    message.error(err instanceof Error ? err.message : '重置失败')
+  } finally {
+    resetAllFederationLoading.value = false
+  }
+}
+
 async function fetchWebsiteInfo() {
   try {
     const list = await listWebsiteInfo()
@@ -328,6 +609,7 @@ onMounted(async () => {
 
   const [data] = await Promise.all([fetch(), fetchWebsiteInfo()])
   loadedArticle.value = data as ArticleDetail | null
+  await fetchFederationInteractions(data?.id)
   const summaryYear = readYearSummaryFromExtInfo(data?.extInfo ?? null)
   if (summaryYear) {
     isYearSummary.value = true
@@ -851,6 +1133,144 @@ watch([isYearSummary, yearSummaryYear], () => {
                   >
                     手动补发
                   </NButton>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <NDivider style="margin: 0" />
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2 text-sm font-medium">
+                <div class="iconify ph--circles-three" />
+                <span>联合条目状态</span>
+              </div>
+              <NPopconfirm
+                trigger="click"
+                @positive-click="handleResetAllFederationSignals"
+              >
+                <template #trigger>
+                  <NButton
+                    size="small"
+                    secondary
+                    :loading="resetAllFederationLoading"
+                    :disabled="isCreating || federationSignalRows.length === 0 || resetAllFederationLoading"
+                  >
+                    全部重置
+                  </NButton>
+                </template>
+                将重置全部联合条目状态，并尝试重新触发出站。
+              </NPopconfirm>
+            </div>
+
+            <NAlert
+              v-if="isCreating"
+              type="info"
+              :show-icon="false"
+            >
+              新建文章保存后可查看联合条目状态。
+            </NAlert>
+
+            <NAlert
+              v-else-if="federationInteractionsError"
+              type="warning"
+              :show-icon="false"
+            >
+              {{ federationInteractionsError }}
+            </NAlert>
+
+            <div
+              v-else-if="federationInteractionsLoading"
+              class="space-y-3"
+            >
+              <NSkeleton
+                text
+                :repeat="2"
+              />
+              <NSkeleton
+                text
+                :repeat="2"
+              />
+            </div>
+
+            <NEmpty
+              v-else-if="federationSignalRows.length === 0"
+              size="small"
+              description="当前未识别到联合条目"
+            />
+
+            <div
+              v-else
+              class="space-y-3"
+            >
+              <div
+                v-for="row in federationSignalRows"
+                :key="row.key"
+                class="rounded-lg border border-current/10 p-3"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0 space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <NTag
+                        size="small"
+                        :bordered="false"
+                        :type="row.type === 'mention' ? 'info' : 'warning'"
+                      >
+                        {{ row.type === 'mention' ? '提及' : '引用' }}
+                      </NTag>
+                      <NTag
+                        size="small"
+                        :bordered="false"
+                        :type="outboundStatusTagType(row.outbound?.status)"
+                      >
+                        {{ signalStatusText(row) }}
+                      </NTag>
+                      <NTag
+                        v-if="!row.inContent"
+                        size="small"
+                        :bordered="false"
+                        type="default"
+                      >
+                        已不在正文
+                      </NTag>
+                    </div>
+                    <div class="break-all font-mono text-xs opacity-80">
+                      {{ row.marker }}
+                    </div>
+                    <div class="text-xs opacity-70">
+                      目标：{{ row.instance }} / {{ row.target }}
+                    </div>
+                    <div
+                      v-if="row.deliveredAt"
+                      class="text-xs opacity-70"
+                    >
+                      已记录时间：{{ formatDateTime(row.deliveredAt) }}
+                    </div>
+                    <div
+                      v-if="row.outbound?.updated_at"
+                      class="text-xs opacity-70"
+                    >
+                      队列更新时间：{{ formatDateTime(row.outbound.updated_at) }}
+                    </div>
+                  </div>
+
+                  <NPopconfirm
+                    trigger="click"
+                    @positive-click="handleResetFederationSignal(row)"
+                  >
+                    <template #trigger>
+                      <NButton
+                        size="tiny"
+                        secondary
+                        :loading="!!resetSignalLoadingKeys[row.key]"
+                        :disabled="!!resetSignalLoadingKeys[row.key]"
+                      >
+                        重置
+                      </NButton>
+                    </template>
+                    将重置该条目状态，并尝试重新触发一次出站。
+                  </NPopconfirm>
                 </div>
               </div>
             </div>

@@ -85,6 +85,7 @@ type FederationOutboundInteractionResp struct {
 	ID                int64   `json:"id"`
 	RequestID         string  `json:"request_id"`
 	Type              string  `json:"type"`
+	SignalKey         *string `json:"signal_key,omitempty"`
 	TargetInstanceURL string  `json:"target_instance_url"`
 	Status            string  `json:"status"`
 	AttemptCount      int     `json:"attempt_count"`

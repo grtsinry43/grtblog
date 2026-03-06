@@ -86,6 +86,51 @@ func deliveredSignalKeys(extInfo []byte) (map[string]struct{}, map[string]struct
 	return mentionSet, citationSet
 }
 
+func resetDeliveredSignals(extInfo []byte, mentions []string, citations []string, resetAll bool) ([]byte, bool) {
+	obj := parseExtInfoObject(extInfo)
+	reg := registryFromObj(obj)
+	changed := false
+
+	if resetAll {
+		if len(reg.Mentions) > 0 || len(reg.Citations) > 0 {
+			reg.Mentions = map[string]string{}
+			reg.Citations = map[string]string{}
+			changed = true
+		}
+	} else {
+		for _, key := range mentions {
+			normalized := strings.TrimSpace(key)
+			if normalized == "" {
+				continue
+			}
+			if _, ok := reg.Mentions[normalized]; ok {
+				delete(reg.Mentions, normalized)
+				changed = true
+			}
+		}
+		for _, key := range citations {
+			normalized := strings.TrimSpace(key)
+			if normalized == "" {
+				continue
+			}
+			if _, ok := reg.Citations[normalized]; ok {
+				delete(reg.Citations, normalized)
+				changed = true
+			}
+		}
+	}
+
+	if !changed {
+		return extInfo, false
+	}
+	if len(reg.Mentions) == 0 && len(reg.Citations) == 0 {
+		delete(obj, federationRegistryKey)
+	} else {
+		setRegistry(obj, reg)
+	}
+	return normalizeExtInfo(obj), true
+}
+
 func parseExtInfoObject(raw []byte) map[string]any {
 	trimmed := bytes.TrimSpace(raw)
 	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {

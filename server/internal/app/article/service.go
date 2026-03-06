@@ -232,6 +232,35 @@ func (s *Service) UpdateArticle(ctx context.Context, cmd UpdateArticleCmd) (*con
 	return existing, nil
 }
 
+// ResetFederationSignals 重置文章 ext_info 中记录的联合条目状态，并按需重新触发分发。
+func (s *Service) ResetFederationSignals(ctx context.Context, cmd ResetFederationSignalsCmd) (*content.Article, bool, error) {
+	existing, err := s.repo.GetArticleByID(ctx, cmd.ID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	resetAll := len(cmd.Mentions) == 0 && len(cmd.Citations) == 0
+	if updated, changed := resetDeliveredSignals(existing.ExtInfo, cmd.Mentions, cmd.Citations, resetAll); changed {
+		existing.ExtInfo = updated
+		if err := s.repo.UpdateArticle(ctx, existing); err != nil {
+			return nil, false, err
+		}
+	}
+
+	retriggered := cmd.Retrigger && existing.IsPublished
+	if retriggered {
+		prevExtInfo := append([]byte(nil), existing.ExtInfo...)
+		publishFederationSignals(ctx, s.events, existing, existing.Content)
+		if !bytes.Equal(prevExtInfo, existing.ExtInfo) {
+			if err := s.repo.UpdateArticle(ctx, existing); err != nil {
+				return nil, false, err
+			}
+		}
+	}
+
+	return existing, retriggered, nil
+}
+
 // GetArticleByID 根据 ID 获取文章
 func (s *Service) GetArticleByID(ctx context.Context, id int64) (*content.Article, error) {
 	return s.repo.GetArticleByID(ctx, id)

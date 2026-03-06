@@ -191,6 +191,82 @@ func (h *ArticleHandler) UpdateArticle(c *fiber.Ctx) error {
 	return response.SuccessWithMessage(c, articleResponse, "文章更新成功")
 }
 
+// ResetArticleFederationSignals godoc
+// @Summary 重置文章联合条目状态（管理端）
+// @Tags Article
+// @Accept json
+// @Produce json
+// @Param id path int true "文章ID"
+// @Param request body contract.ResetArticleFederationSignalsReq false "重置参数"
+// @Success 200 {object} contract.ResetArticleFederationSignalsResp
+// @Security BearerAuth
+// @Router /admin/articles/{id}/federation/signals/reset [post]
+// @Security JWTAuth
+func (h *ArticleHandler) ResetArticleFederationSignals(c *fiber.Ctx) error {
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return response.ErrorFromBiz[any](c, response.NotLogin)
+	}
+
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的文章ID")
+	}
+
+	var req contract.ResetArticleFederationSignalsReq
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&req); err != nil {
+			return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+		}
+	}
+
+	retrigger := true
+	if req.Retrigger != nil {
+		retrigger = *req.Retrigger
+	}
+	if retrigger && h.apCfgSvc != nil {
+		settings, err := h.apCfgSvc.FederationSettings(c.Context())
+		if err != nil {
+			return response.NewBizErrorWithCause(response.ServerError, "联合配置读取失败", err)
+		}
+		if !settings.Enabled || !settings.AllowOutbound {
+			retrigger = false
+		}
+	}
+
+	updatedArticle, retriggered, err := h.svc.ResetFederationSignals(c.Context(), article.ResetFederationSignalsCmd{
+		ID:        id,
+		Mentions:  req.Mentions,
+		Citations: req.Citations,
+		Retrigger: retrigger,
+	})
+	if err != nil {
+		if errors.Is(err, content.ErrArticleNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
+		}
+		return err
+	}
+
+	Audit(c, "article.federation.signal.reset", map[string]any{
+		"articleId":   id,
+		"mentions":    req.Mentions,
+		"citations":   req.Citations,
+		"retrigger":   retrigger,
+		"retriggered": retriggered,
+		"userId":      claims.UserID,
+	})
+
+	resp := contract.ResetArticleFederationSignalsResp{
+		ArticleID:   updatedArticle.ID,
+		Retriggered: retriggered,
+		ExtInfo:     jsonRawFromBytes(updatedArticle.ExtInfo),
+	}
+	if retriggered {
+		return response.SuccessWithMessage(c, resp, "已重置联合条目并重新触发")
+	}
+	return response.SuccessWithMessage(c, resp, "已重置联合条目")
+}
+
 // BatchSetArticlePublished godoc
 // @Summary 批量设置文章发布状态（管理端）
 // @Tags Article

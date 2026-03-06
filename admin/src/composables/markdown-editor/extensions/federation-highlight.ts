@@ -1,3 +1,4 @@
+import { RangeSetBuilder } from '@codemirror/state'
 import {
   Decoration,
   type DecorationSet,
@@ -5,16 +6,19 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from '@codemirror/view'
-import { RangeSetBuilder } from '@codemirror/state'
 
-const mentionRe = /<@([^\s@<>]+)@([^\s<>]+)>/g
-const citationRe = /<cite:([^|<>]+)\|([^<>]+)>/g
+import {
+  createFederationCitationRegExp,
+  createFederationMentionRegExp,
+} from '../utils/federation-signals'
 
 const mentionDeco = Decoration.mark({ class: 'cm-federation-mention' })
 const citationDeco = Decoration.mark({ class: 'cm-federation-citation' })
 
 function buildDecorations(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>()
+  const mentionRe = createFederationMentionRegExp('g')
+  const citationRe = createFederationCitationRegExp('g')
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.doc.sliceString(from, to)
     let m: RegExpExecArray | null

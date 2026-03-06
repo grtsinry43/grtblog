@@ -133,3 +133,10 @@ type BatchSetArticleTopReq struct {
 type BatchDeleteArticleReq struct {
 	IDs []int64 `json:"ids"`
 }
+
+// ResetArticleFederationSignalsReq 重置文章联合条目状态请求。
+type ResetArticleFederationSignalsReq struct {
+	Mentions  []string `json:"mentions,omitempty"`
+	Citations []string `json:"citations,omitempty"`
+	Retrigger *bool    `json:"retrigger,omitempty"`
+}

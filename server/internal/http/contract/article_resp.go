@@ -104,3 +104,10 @@ type CheckArticleLatestResp struct {
 	Latest bool `json:"latest"`
 	ArticleContentPayload
 }
+
+// ResetArticleFederationSignalsResp 重置联合条目状态响应。
+type ResetArticleFederationSignalsResp struct {
+	ArticleID   int64    `json:"articleId"`
+	Retriggered bool     `json:"retriggered"`
+	ExtInfo     *JSONRaw `json:"extInfo,omitempty" swaggertype:"object"`
+}
