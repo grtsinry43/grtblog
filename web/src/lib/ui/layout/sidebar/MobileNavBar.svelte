@@ -178,12 +178,12 @@
 			class:duration-0={!isMobileMenuOpen && !isMenuAnimating}
 			class:duration-500={isMobileMenuOpen || isMenuAnimating}
 			style:opacity={1}
-			style:height={isMobileMenuOpen ? '100vh' : '3rem'}
-			style:min-height={isMobileMenuOpen ? '100vh' : '3rem'}
+			style:height={isMobileMenuOpen ? '100vh' : '3.25rem'}
+			style:min-height={isMobileMenuOpen ? '100vh' : '3.25rem'}
 		></div>
 
 		<!-- 1. Collapsed Header -->
-		<div class="relative z-10 flex h-12 items-center justify-between px-3">
+		<div class="relative z-10 flex h-[3.25rem] items-center justify-between px-3">
 			<!-- Left: Avatar & Title -->
 			<div class="flex items-center gap-3 overflow-hidden">
 					<button
@@ -221,20 +221,20 @@
 					</button>
 
 				<div
-					class="relative min-w-0 flex-1 flex flex-col justify-center transition-all duration-300"
+					class="relative min-w-0 flex-1 flex flex-col justify-center py-0.5 transition-all duration-300"
 					class:opacity-0={isMobileMenuOpen}
 				>
 					{#if showPageTitle}
 						<span
 							transition:fly={{ y: 10, duration: 300 }}
-							class="truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
+							class="truncate font-serif text-sm font-bold leading-tight text-ink-900 dark:text-jade-100"
 						>
 							{currentTitle}
 						</span>
 					{:else}
 						<span
 							transition:fly={{ y: -10, duration: 300 }}
-							class="truncate font-serif text-sm font-bold leading-none text-ink-900 dark:text-jade-100"
+							class="truncate font-serif text-sm font-bold leading-tight text-ink-900 dark:text-jade-100"
 						>
 							{$websiteNameStore}
 						</span>

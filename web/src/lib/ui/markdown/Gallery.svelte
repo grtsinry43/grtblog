@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SvmdComponentNode } from 'svmarkdown';
+	import { browser } from '$app/environment';
 	import MarkdownImage from './MarkdownImage.svelte';
 	import {
 		extractImageUrlsFromNodes,
@@ -31,41 +32,75 @@
 	let scrollContainer = $state<HTMLDivElement | null>(null);
 	let currentIndex = $state(0);
 	let isJumping = false;
+	let jumpFrame = 0;
+
+	function clearJumpFrame() {
+		if (!browser) return;
+		if (jumpFrame) {
+			cancelAnimationFrame(jumpFrame);
+			jumpFrame = 0;
+		}
+	}
+
+	function syncToDisplayIndex(displayIndex: number) {
+		if (!scrollContainer) return;
+		scrollContainer.scrollTo({
+			left: displayIndex * scrollContainer.clientWidth,
+			behavior: 'smooth'
+		});
+	}
+
+	function jumpToRealIndex(realIndex: number) {
+		if (!scrollContainer || urlList.length <= 1) return;
+
+		clearJumpFrame();
+		isJumping = true;
+
+		const targetLeft = (realIndex + 1) * scrollContainer.clientWidth;
+		scrollContainer.style.scrollSnapType = 'none';
+		scrollContainer.scrollTo({ left: targetLeft, behavior: 'auto' });
+
+		jumpFrame = requestAnimationFrame(() => {
+			if (!scrollContainer) return;
+			scrollContainer.style.scrollSnapType = '';
+			isJumping = false;
+			jumpFrame = 0;
+		});
+	}
 
 	// 初始化和窗口大小变化时重置滚动位置
 	$effect(() => {
 		if (scrollContainer && urlList.length > 1) {
-			scrollContainer.scrollLeft = scrollContainer.clientWidth;
+			jumpToRealIndex(currentIndex);
 		}
 	});
 
+	$effect(() => {
+		return () => clearJumpFrame();
+	});
+
 	const scroll = (direction: 'left' | 'right') => {
-		if (!scrollContainer) return;
-		const scrollAmount = scrollContainer.clientWidth;
-		scrollContainer.scrollBy({
-			left: direction === 'left' ? -scrollAmount : scrollAmount,
-			behavior: 'smooth'
-		});
+		if (!scrollContainer || urlList.length <= 1) return;
+		const nextIndex =
+			direction === 'left'
+				? (currentIndex - 1 + urlList.length) % urlList.length
+				: (currentIndex + 1) % urlList.length;
+		syncToDisplayIndex(nextIndex + 1);
 	};
 
 	const handleScroll = () => {
 		if (!scrollContainer || urlList.length <= 1 || isJumping) return;
 
 		const { scrollLeft, clientWidth } = scrollContainer;
+		if (!clientWidth) return;
 		const index = Math.round(scrollLeft / clientWidth);
 
 		if (index === 0) {
-			// 滚动到了开头的克隆节点（实际上是原列表最后一个）
-			isJumping = true;
-			scrollContainer.scrollLeft = clientWidth * urlList.length;
 			currentIndex = urlList.length - 1;
-			setTimeout(() => (isJumping = false), 50);
+			jumpToRealIndex(currentIndex);
 		} else if (index === displayList.length - 1) {
-			// 滚动到了结尾的克隆节点（实际上是原列表第一个）
-			isJumping = true;
-			scrollContainer.scrollLeft = clientWidth;
 			currentIndex = 0;
-			setTimeout(() => (isJumping = false), 50);
+			jumpToRealIndex(0);
 		} else {
 			currentIndex = index - 1;
 		}
@@ -142,10 +177,7 @@
 					<button
 						onclick={() => {
 							if (!scrollContainer) return;
-							scrollContainer.scrollTo({
-								left: (i + 1) * scrollContainer.clientWidth,
-								behavior: 'smooth'
-							});
+							syncToDisplayIndex(i + 1);
 						}}
 						class="h-1 rounded-full transition-all duration-300 {i === currentIndex
 							? 'bg-jade-500 w-4'

@@ -1,13 +1,10 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { ArrowLeft, Compass, RefreshCw } from 'lucide-svelte';
 
-	type ErrorPayload = {
-		message?: string;
-	};
-
-	// eslint-disable-next-line svelte/valid-prop-names-in-kit-pages
-	let { status, error }: { status: number; error: ErrorPayload } = $props();
+	const status = $derived(page.status);
+	const error = $derived(page.error);
 
 	const isNotFound = $derived(status === 404);
 	const title = $derived(isNotFound ? '页面走丢了' : '页面暂时不可用');
@@ -35,6 +32,8 @@
 			class="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-jade-400/15 blur-2xl"
 			aria-hidden="true"
 		></div>
+
+		<span>Code {status}</span>
 
 		<h1 class="font-serif text-3xl text-ink-900 dark:text-ink-100 md:text-4xl">{title}</h1>
 		<p class="mt-3 text-sm leading-relaxed text-ink-600 dark:text-ink-300 md:text-base">

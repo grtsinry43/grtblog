@@ -161,6 +161,41 @@
 	};
 	const siteFavicon = $derived.by(() => normalizeIconUrl($websiteInfoStore?.favicon) || favicon);
 	const siteFaviconType = $derived.by(() => inferIconMimeType(siteFavicon));
+
+	// Clip favicon to circle via Canvas
+	let circularFaviconUrl = $state('');
+	$effect(() => {
+		const src = siteFavicon;
+		if (!browser || !src) return;
+
+		let cancelled = false;
+		const size = 128;
+		const img = new Image();
+		img.crossOrigin = 'anonymous';
+		img.onload = () => {
+			if (cancelled) return;
+			try {
+				const canvas = document.createElement('canvas');
+				canvas.width = size;
+				canvas.height = size;
+				const ctx = canvas.getContext('2d');
+				if (!ctx) return;
+				ctx.beginPath();
+				ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+				ctx.closePath();
+				ctx.clip();
+				ctx.drawImage(img, 0, 0, size, size);
+				circularFaviconUrl = canvas.toDataURL('image/png');
+			} catch {
+				// Canvas tainted by CORS, keep original
+			}
+		};
+		img.src = src;
+		return () => { cancelled = true; };
+	});
+	const resolvedFavicon = $derived(circularFaviconUrl || siteFavicon);
+	const resolvedFaviconType = $derived(circularFaviconUrl ? 'image/png' : (siteFaviconType || undefined));
+
 	const seoMeta = $derived.by(() =>
 		resolveSeoMeta({
 			pathname: page.url.pathname,
@@ -247,9 +282,9 @@
 		<link rel="preconnect" href={avatarOrigin} crossorigin />
 		<link rel="dns-prefetch" href={avatarOrigin} />
 	{/if}
-	<link rel="icon" href={siteFavicon} type={siteFaviconType || undefined} />
-	<link rel="shortcut icon" href={siteFavicon} />
-	<link rel="apple-touch-icon" href={siteFavicon} />
+	<link rel="icon" href={resolvedFavicon} type={resolvedFaviconType} />
+	<link rel="shortcut icon" href={resolvedFavicon} />
+	<link rel="apple-touch-icon" href={resolvedFavicon} />
 	<title>{seoMeta.title}</title>
 	<link rel="canonical" href={seoMeta.canonicalUrl} />
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
