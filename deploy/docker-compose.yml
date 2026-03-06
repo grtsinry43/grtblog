@@ -28,6 +28,9 @@ services:
       REDIS_DB: "0"
       REDIS_PREFIX: "${REDIS_PREFIX:-grtblog:}"
       HTMLSNAPSHOT_BASE_URL: "http://renderer:3000"
+      APP_UPDATE_CHECK_ENABLED: "${APP_UPDATE_CHECK_ENABLED:-true}"
+      APP_UPDATE_CHECK_REPO: "${APP_UPDATE_CHECK_REPO:-grtsinry43/grtblog-v2}"
+      APP_UPDATE_CHANNEL: "${APP_UPDATE_CHANNEL:-stable}"
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,20 +1,17 @@
 import './assets/main.css'
 
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createApp } from 'vue'
 
 import { setupEventBus } from '@/event-bus'
 import { setupRouterGuard } from '@/router/guard'
-import { pinia } from '@/stores'
 import { setupApiInterceptors } from '@/services/api-interceptors'
-import { checkVersion } from '@/utils/checkVersion'
-import { VueQueryPlugin } from '@tanstack/vue-query'
+import { pinia } from '@/stores'
 
 import App from './App.vue'
 import router from './router'
 
 async function setupApp() {
-  checkVersion()
-
   const app = createApp(App)
 
   app.use(pinia)

@@ -37,6 +37,7 @@ curl -fsSL "$BASE_URL/deploy/nginx/nginx.conf"    -o nginx/nginx.conf
 # 使用 GHCR 预构建镜像
 IMAGE_REPO_PREFIX=ghcr.io/grtsinry43/
 APP_VERSION=1.0.0
+APP_UPDATE_CHANNEL=stable
 
 # 数据库密码（请设置为强密码）
 POSTGRES_PASSWORD=your-secure-password
@@ -157,6 +158,17 @@ curl -f http://localhost:80/health/liveness
 | 预发布版本 | `2.0.0-alpha.1` | 测试版本，不附带 `latest` 标签 |
 
 预发布版本（含 `-alpha` / `-beta` / `-rc` 后缀）不会更新 `latest` 和主次版本标签，适合提前测试。
+
+更新检查通道与镜像标签建议配套使用：
+
+| 用途 | 推荐 `APP_VERSION` | 推荐 `APP_UPDATE_CHANNEL` |
+|----------|------|------|
+| 生产稳定 | `1.2.3` | `stable` |
+| 预发布验证 | `2.1.0-beta.1` | `preview` |
+| 跟随 stable 滚动 | `stable` | `stable` |
+| 跟随 preview 滚动 | `preview` | `preview` |
+
+其中 `APP_UPDATE_CHANNEL=stable` 会读取 GitHub Releases，`APP_UPDATE_CHANNEL=preview` 会读取 Git tags，并默认只提示当前 major 内的预发布版本。
 
 ## 可选配置
 

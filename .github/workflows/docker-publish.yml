@@ -6,12 +6,12 @@ on:
       - "v*.*.*"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
-  REGISTRY: ghcr.io
-  OWNER: grtsinry43
+  GHCR_REGISTRY: ghcr.io
+  GHCR_OWNER: grtsinry43
 
 jobs:
   build-and-push:
@@ -29,6 +29,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Determine tag info
+        id: taginfo
+        run: |
+          REF_NAME="${GITHUB_REF_NAME}"
+          VERSION="${REF_NAME#v}"
+          if [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
+            echo "stage=stable" >> "$GITHUB_OUTPUT"
+            echo "major=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            echo "minor=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+          elif [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)-(alpha|beta|rc)\.([0-9]+)$ ]]; then
+            echo "channel=preview" >> "$GITHUB_OUTPUT"
+            echo "stage=${BASH_REMATCH[4]}" >> "$GITHUB_OUTPUT"
+            echo "major=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            echo "minor=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unsupported tag format: $REF_NAME" >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "ref_name=$REF_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -38,43 +61,53 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ env.GHCR_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine tag type
-        id: tagtype
-        run: |
-          REF_NAME="${GITHUB_REF_NAME}"            # e.g. v2.0.0-alpha.1 or v1.2.3
-          VERSION="${REF_NAME#v}"                   # strip leading v
+      - name: Log in to Docker Hub
+        if: steps.taginfo.outputs.channel == 'stable' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-          if [[ "$VERSION" == *-* ]]; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+      - name: Compute image tags
+        id: imagetags
+        env:
+          CHANNEL: ${{ steps.taginfo.outputs.channel }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE_NAME: ${{ matrix.image }}
+          MAJOR: ${{ steps.taginfo.outputs.major }}
+          MINOR: ${{ steps.taginfo.outputs.minor }}
+          STAGE: ${{ steps.taginfo.outputs.stage }}
+          VERSION: ${{ steps.taginfo.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          image_refs=("${GHCR_REGISTRY}/${GHCR_OWNER}/${IMAGE_NAME}")
+          dockerhub_namespace="${DOCKERHUB_NAMESPACE:-${DOCKERHUB_USERNAME:-}}"
+          if [[ "$CHANNEL" == "stable" && -n "${dockerhub_namespace}" && -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
+            image_refs+=("docker.io/${dockerhub_namespace}/${IMAGE_NAME}")
           fi
 
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Docker metadata (prerelease)
-        if: steps.tagtype.outputs.prerelease == 'true'
-        id: meta-pre
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
-          tags: |
-            type=raw,value=${{ steps.tagtype.outputs.version }}
-
-      - name: Docker metadata (stable)
-        if: steps.tagtype.outputs.prerelease == 'false'
-        id: meta-stable
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
-          tags: |
-            type=semver,pattern={{version}},value=${{ github.ref_name }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.ref_name }}
-            type=raw,value=latest
+          {
+            echo 'tags<<EOF'
+            for ref in "${image_refs[@]}"; do
+              echo "${ref}:${VERSION}"
+              if [[ "$CHANNEL" == "stable" ]]; then
+                echo "${ref}:${MAJOR}.${MINOR}"
+                echo "${ref}:stable"
+                echo "${ref}:latest"
+              else
+                echo "${ref}:preview"
+                echo "${ref}:${STAGE}"
+              fi
+            done
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build & push
         uses: docker/build-push-action@v6
@@ -83,10 +116,52 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta-pre.outputs.tags || steps.meta-stable.outputs.tags }}
-          labels: ${{ steps.meta-pre.outputs.labels || steps.meta-stable.outputs.labels }}
+          tags: ${{ steps.imagetags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.taginfo.outputs.version }}
+            org.opencontainers.image.ref.name=${{ steps.taginfo.outputs.ref_name }}
+            org.opencontainers.image.title=${{ matrix.image }}
           build-args: |
-            APP_VERSION=${{ steps.tagtype.outputs.version }}
+            APP_VERSION=${{ steps.taginfo.outputs.version }}
             BUILD_COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  create-github-release:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: ${{ !contains(github.ref_name, '-') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check release notes file
+        id: releasefile
+        run: |
+          RELEASE_FILE="docs/releases/${GITHUB_REF_NAME}.md"
+          if [[ -f "$RELEASE_FILE" ]]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "path=$RELEASE_FILE" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release with notes file
+        if: steps.releasefile.outputs.exists == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ steps.releasefile.outputs.path }}
+          draft: false
+          prerelease: false
+          tag_name: ${{ github.ref_name }}
+
+      - name: Publish GitHub Release with autogenerated notes
+        if: steps.releasefile.outputs.exists != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          generate_release_notes: true
+          prerelease: false
+          tag_name: ${{ github.ref_name }}

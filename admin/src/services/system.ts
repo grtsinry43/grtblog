@@ -21,6 +21,8 @@ export interface SystemUpdateInfo {
   latestStableRelease?: SystemUpdateReleaseInfo
   message?: string
   repo: string
+  releaseNotesUrl?: string
+  source: string
   status: 'ok' | 'disabled' | 'error' | string
   targetRelease?: SystemUpdateReleaseInfo
   upgradeUrl?: string

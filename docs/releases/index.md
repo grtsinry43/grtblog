@@ -1,0 +1,26 @@
+# 版本发布
+
+这里汇总 GrtBlog 的版本发布记录，包含两个通道：
+
+- `stable`：正式版本，会同步发布 GitHub Release、GHCR，以及已配置时的 Docker Hub
+- `preview`：预发布版本，只保留 Git tag 和 GHCR 镜像，用于 beta / rc 验证
+
+每个版本页面都会包含：
+
+- 发布时间
+- 上一个版本
+- 发布通道与阶段
+- 变更摘要
+- 对应 commit 列表
+
+## Stable
+
+<!-- stable:start -->
+- _暂无条目_
+<!-- stable:end -->
+
+## Preview
+
+<!-- preview:start -->
+- _暂无条目_
+<!-- preview:end -->

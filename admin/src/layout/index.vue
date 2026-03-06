@@ -1,29 +1,27 @@
 <script setup lang="ts">
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { isEmpty } from 'lodash-es'
-import { computed, defineAsyncComponent, h, onMounted, onUnmounted, watch } from 'vue'
-
 import { useDialog } from 'naive-ui'
+import { computed, defineAsyncComponent, h, onMounted, onUnmounted, watch } from 'vue'
 
 import texturePng from '@/assets/texture.png'
 import { CollapseTransition, EmptyPlaceholder } from '@/components'
-import { createMarkdownIt } from '@/composables/markdown-it/core'
 import HealthBanner from '@/components/health/HealthBanner.vue'
-import DevModeBadge from '@/components/health/DevModeBadge.vue'
 import { useInjection } from '@/composables'
+import { createMarkdownIt } from '@/composables/markdown-it/core'
 import { mediaQueryInjectionKey, layoutInjectionKey } from '@/injection'
+import router from '@/router'
 import { adminRealtimeWSCore } from '@/services/realtime-ws'
 import { getSystemUpdateCheck } from '@/services/system'
-import router from '@/router'
 import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore, useHealthStore, useUserStore } from '@/stores'
-
-import type { OwnerStatusPayload } from '@/services/owner-status'
-import type { HealthWSPayload } from '@/services/health'
 
 import FooterLayout from './footer/index.vue'
 import HeaderLayout from './header/index.vue'
 import MainLayout from './main/index.vue'
 import Tabs from './tabs/index.vue'
+
+import type { HealthWSPayload } from '@/services/health'
+import type { OwnerStatusPayload } from '@/services/owner-status'
 
 defineOptions({
   name: 'Layout',
@@ -43,7 +41,13 @@ const realtimeStore = useRealtimeStore()
 const healthStore = useHealthStore()
 const queryClient = useQueryClient()
 const dialog = useDialog()
-const releaseNotesMd = createMarkdownIt({ html: false, linkify: true, breaks: true })
+const releaseNotesMd = createMarkdownIt({
+  options: {
+    html: false,
+    linkify: true,
+    breaks: true,
+  },
+})
 
 const UPDATE_DIALOG_ACK_KEY = 'grtblog:update-dialog:last-seen'
 
@@ -74,20 +78,63 @@ function shouldShowUpdateDialog() {
   return window.sessionStorage.getItem(UPDATE_DIALOG_ACK_KEY) !== versionKey
 }
 
+function escapeHtml(input: string) {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function buildUpgradeCommands(targetVersion: string) {
+  const prebuilt = [
+    `# deploy/.env`,
+    `APP_VERSION=${targetVersion}`,
+    `docker compose pull server renderer`,
+    `docker compose up -d server renderer`,
+  ].join('\n')
+
+  const localBuild = [
+    `git fetch --tags`,
+    `git checkout v${targetVersion}`,
+    `docker compose up -d --build server renderer`,
+  ].join('\n')
+
+  return {
+    localBuild,
+    prebuilt,
+  }
+}
+
 function renderUpdateDialogContent() {
   const info = updateInfo.value
   const targetVersion = info?.targetRelease?.tag || info?.latestRelease?.tag || '最新版本'
   const releaseBody = info?.targetRelease?.body?.trim() || info?.latestRelease?.body?.trim() || ''
+  const { prebuilt, localBuild } = buildUpgradeCommands(targetVersion)
   const releaseHtml = releaseBody
     ? releaseNotesMd.render(releaseBody)
     : `<p>${info?.message || `当前版本 ${info?.currentVersion}，检测到新版本 ${targetVersion}。`}</p>`
 
   return () => h('div', { class: 'space-y-3' }, [
-    h('div', { class: 'text-sm text-neutral-500 dark:text-neutral-400' }, `当前版本 ${info?.currentVersion || '-'} → 最新版本 ${targetVersion}`),
+    h('div', { class: 'space-y-1 text-sm text-neutral-500 dark:text-neutral-400' }, [
+      h('div', `当前版本 ${info?.currentVersion || '-'} → 目标版本 ${targetVersion}`),
+      h('div', `更新通道 ${info?.channel || '-'} / 来源 ${info?.source || '-'}`),
+    ]),
     h('div', {
       class: 'max-h-[360px] overflow-y-auto rounded-lg bg-neutral-50 p-4 text-sm leading-6 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
       innerHTML: releaseHtml,
     }),
+    h('div', { class: 'space-y-2' }, [
+      h('div', { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' }, '预构建镜像升级'),
+      h('pre', {
+        class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',
+        innerHTML: escapeHtml(prebuilt),
+      }),
+      h('div', { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' }, '本地构建升级'),
+      h('pre', {
+        class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',
+        innerHTML: escapeHtml(localBuild),
+      }),
+    ]),
   ])
 }
 
@@ -98,14 +145,15 @@ function openUpdateDialog() {
   dialog.info({
     title: `发现新版本 ${info.targetRelease?.tag || info.latestRelease?.tag || ''}`.trim(),
     content: renderUpdateDialogContent(),
-    positiveText: info.upgradeUrl ? '查看 Release' : '知道了',
-    negativeText: info.upgradeUrl ? '稍后再说' : undefined,
+    positiveText: info.releaseNotesUrl || info.upgradeUrl ? '查看说明' : '知道了',
+    negativeText: info.releaseNotesUrl || info.upgradeUrl ? '稍后再说' : undefined,
     maskClosable: false,
     style: 'width: min(720px, calc(100vw - 32px));',
     onPositiveClick: () => {
       markUpdateDialogSeen()
-      if (info.upgradeUrl && typeof window !== 'undefined') {
-        window.open(info.upgradeUrl, '_blank', 'noopener,noreferrer')
+      const targetUrl = info.releaseNotesUrl || info.upgradeUrl
+      if (targetUrl && typeof window !== 'undefined') {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer')
       }
     },
     onNegativeClick: () => {

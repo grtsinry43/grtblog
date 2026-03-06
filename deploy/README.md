@@ -12,22 +12,47 @@ Update at least these values in `.env`:
 - `POSTGRES_PASSWORD`
 - `AUTH_SECRET`
 - `IMAGE_REPO_PREFIX` / `APP_VERSION` (see below)
-- `APP_UPDATE_CHECK_ENABLED` / `APP_UPDATE_CHECK_REPO` (后台更新检查来源，默认 GitHub Release)
+- `APP_UPDATE_CHECK_ENABLED` / `APP_UPDATE_CHECK_REPO` / `APP_UPDATE_CHANNEL`
 
-更新检查策略：Admin 面板打开时触发一次，服务端 30 分钟内复用缓存，不会频繁请求 GitHub API。
+更新检查策略：
+- `APP_UPDATE_CHANNEL=stable` 时，后端查询 GitHub Releases
+- `APP_UPDATE_CHANNEL=preview` 时，后端查询 Git tags，并只跟踪当前 major 内的预发布版本
+- Admin 面板打开时触发一次，服务端 30 分钟内复用缓存，不会频繁请求 GitHub API
 
 ### Using prebuilt images from GHCR (recommended)
 
-Every tagged release triggers a GitHub Actions workflow that builds multi-arch (`linux/amd64` + `linux/arm64`) images and pushes them to `ghcr.io/grtsinry43/`.
+Every tagged release triggers a GitHub Actions workflow that builds multi-arch (`linux/amd64` + `linux/arm64`) images.
+
+- `stable` tags push to `ghcr.io/grtsinry43/` and Docker Hub
+- `preview` tags push only to `ghcr.io/grtsinry43/`
 
 ```ini
 IMAGE_REPO_PREFIX=ghcr.io/grtsinry43/
 APP_VERSION=1.2.3
+APP_UPDATE_CHANNEL=stable
 ```
 
 Tag strategy:
-- Stable `v1.2.3` → tags `1.2.3`, `1.2`, `latest`
-- Prerelease `v2.0.0-alpha.1` → tag `2.0.0-alpha.1` only (no `latest`)
+- Stable `v1.2.3` → tags `1.2.3`, `1.2`, `stable`, `latest`
+- Preview `v2.1.0-beta.1` → tags `2.1.0-beta.1`, `preview`, `beta`
+- Preview `v2.1.0-rc.1` → tags `2.1.0-rc.1`, `preview`, `rc`
+
+生产环境建议固定精确版本号，例如：
+
+```ini
+APP_VERSION=2.1.3
+APP_UPDATE_CHANNEL=stable
+```
+
+如果你愿意跟随滚动通道，也可以使用：
+
+```ini
+APP_VERSION=stable
+# 或
+APP_VERSION=preview
+```
+
+但这种模式的可回滚性会更差，不建议作为默认配置。
 
 ### Using local builds
 
@@ -36,6 +61,7 @@ Leave `IMAGE_REPO_PREFIX` empty and build from source:
 ```ini
 IMAGE_REPO_PREFIX=
 APP_VERSION=local
+APP_UPDATE_CHANNEL=stable
 ```
 
 ## 2) Start
@@ -86,6 +112,14 @@ docker compose up -d server renderer
 ```
 
 Nginx 不会被重建。通过 `resolver 127.0.0.11 valid=10s` 自动发现新容器 IP，无需手动 reload。
+
+如果后台提示发现新版本，推荐操作仍然是：
+
+1. 修改 `.env` 中的 `APP_VERSION`
+2. 执行 `docker compose pull server renderer`
+3. 执行 `docker compose up -d server renderer`
+
+后台会展示目标版本、更新通道、变更说明链接，以及预构建/本地构建两种升级命令。
 
 ## 3) Verify
 

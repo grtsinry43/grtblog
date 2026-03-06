@@ -1,0 +1,132 @@
+name: Cleanup Preview Images
+
+on:
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GHCR_OWNER: grtsinry43
+  KEEP_PER_LINE: "5"
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - grtblog-server
+          - grtblog-renderer
+
+    steps:
+      - name: Delete old preview package versions
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = process.env.GHCR_OWNER;
+            const packageName = '${{ matrix.package }}';
+            const keepPerLine = Number(process.env.KEEP_PER_LINE || '5');
+
+            function parseSemverTag(tag) {
+              const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(String(tag || '').trim());
+              if (!match) return null;
+              return {
+                major: Number(match[1]),
+                minor: Number(match[2]),
+                patch: Number(match[3]),
+                prerelease: match[4] || '',
+              };
+            }
+
+            function isStableTag(tag) {
+              const parsed = parseSemverTag(tag);
+              return Boolean(parsed && !parsed.prerelease);
+            }
+
+            function prereleaseLineKey(tag) {
+              const parsed = parseSemverTag(tag);
+              if (!parsed || !parsed.prerelease) return null;
+              const parts = parsed.prerelease.split('.');
+              const stage = parts[0] || 'preview';
+              return `${parsed.major}.${parsed.minor}.${parsed.patch}-${stage}`;
+            }
+
+            function compareSemverTagDesc(a, b) {
+              const pa = parseSemverTag(a);
+              const pb = parseSemverTag(b);
+              if (!pa || !pb) return 0;
+              for (const key of ['major', 'minor', 'patch']) {
+                if (pa[key] !== pb[key]) return pb[key] - pa[key];
+              }
+              return String(pb.prerelease).localeCompare(String(pa.prerelease), undefined, { numeric: true });
+            }
+
+            const versions = await github.paginate('GET /users/{username}/packages/container/{package_name}/versions', {
+              username: owner,
+              package_name: packageName,
+              per_page: 100,
+            });
+
+            const lineBuckets = new Map();
+            const preserveIds = new Set();
+
+            for (const version of versions) {
+              const tags = version.metadata?.container?.tags || [];
+              if (tags.length === 0) continue;
+
+              if (tags.some((tag) => ['latest', 'stable', 'preview', 'beta', 'rc', 'alpha'].includes(tag))) {
+                preserveIds.add(version.id);
+                continue;
+              }
+
+              if (tags.some((tag) => isStableTag(tag))) {
+                preserveIds.add(version.id);
+                continue;
+              }
+
+              const exactPreviewTag = tags.find((tag) => prereleaseLineKey(tag));
+              if (!exactPreviewTag) {
+                preserveIds.add(version.id);
+                continue;
+              }
+
+              const bucketKey = prereleaseLineKey(exactPreviewTag);
+              const bucket = lineBuckets.get(bucketKey) || [];
+              bucket.push({ id: version.id, tag: exactPreviewTag, updated_at: version.updated_at });
+              lineBuckets.set(bucketKey, bucket);
+            }
+
+            for (const bucket of lineBuckets.values()) {
+              bucket.sort((a, b) => {
+                const semverCmp = compareSemverTagDesc(a.tag, b.tag);
+                if (semverCmp !== 0) return semverCmp;
+                return String(b.updated_at).localeCompare(String(a.updated_at));
+              });
+              for (const entry of bucket.slice(0, keepPerLine)) {
+                preserveIds.add(entry.id);
+              }
+            }
+
+            const deletions = versions.filter((version) => {
+              if (preserveIds.has(version.id)) return false;
+              const tags = version.metadata?.container?.tags || [];
+              return tags.some((tag) => prereleaseLineKey(tag));
+            });
+
+            core.info(`package=${packageName} total_versions=${versions.length} delete_candidates=${deletions.length}`);
+
+            for (const version of deletions) {
+              const tags = version.metadata?.container?.tags || [];
+              core.info(`Deleting ${packageName} version_id=${version.id} tags=${tags.join(',')}`);
+              await github.request('DELETE /users/{username}/packages/container/{package_name}/versions/{package_version_id}', {
+                username: owner,
+                package_name: packageName,
+                package_version_id: version.id,
+              });
+            }

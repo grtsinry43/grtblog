@@ -15,11 +15,12 @@ import {
 import { watch } from 'vue'
 
 import { PageHeader, ScrollContainer } from '@/components'
-import { useObservability } from './composables/use-observability'
-import TrafficChart from './components/TrafficChart.vue'
+
+import AlertTimeline from './components/AlertTimeline.vue'
 import FederationChart from './components/FederationChart.vue'
 import SystemHealthCard from './components/SystemHealthCard.vue'
-import AlertTimeline from './components/AlertTimeline.vue'
+import TrafficChart from './components/TrafficChart.vue'
+import { useObservability } from './composables/use-observability'
 
 defineOptions({
   name: 'AdvancedInfo',
@@ -186,9 +187,9 @@ watch(timelineWindow, () => queryClient.invalidateQueries({ queryKey: ['obs-time
         <NDescriptionsItem label="检查时间">{{ updateInfo.checkedAt ? new Date(updateInfo.checkedAt).toLocaleString() : '-' }}</NDescriptionsItem>
       </NDescriptions>
       <div class="mt-3 flex items-center justify-between gap-2">
-        <span class="text-xs text-neutral-500">{{ updateInfo?.message || '版本来源：GitHub Releases' }}</span>
-        <NButton v-if="updateInfo?.upgradeUrl" size="small" secondary tag="a" :href="updateInfo.upgradeUrl" target="_blank">
-          查看 Release
+        <span class="text-xs text-neutral-500">{{ updateInfo?.message || '版本来源：GitHub Releases / Git tags' }}</span>
+        <NButton v-if="updateInfo?.releaseNotesUrl || updateInfo?.upgradeUrl" size="small" secondary tag="a" :href="updateInfo.releaseNotesUrl || updateInfo.upgradeUrl" target="_blank">
+          查看说明
         </NButton>
       </div>
     </div>

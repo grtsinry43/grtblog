@@ -12,6 +12,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '使用指南', link: '/guide/introduction' },
       { text: '开发文档', link: '/dev/architecture' },
+      { text: '版本发布', link: '/releases/' },
     ],
 
     sidebar: {
@@ -38,6 +39,14 @@ export default defineConfig({
             { text: 'svmarkdown 渲染', link: '/dev/svmarkdown' },
             { text: '管理后台', link: '/dev/admin' },
             { text: '贡献指南', link: '/dev/contributing' },
+          ]
+        }
+      ],
+      '/releases/': [
+        {
+          text: '版本发布',
+          items: [
+            { text: '发布归档', link: '/releases/' },
           ]
         }
       ],
