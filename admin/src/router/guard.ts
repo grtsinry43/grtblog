@@ -3,6 +3,7 @@ import { isEmpty } from 'lodash-es'
 import { useEventBus } from '@/event-bus'
 import { getSetupState } from '@/services/auth'
 import { useUserStore, toRefsUserStore } from '@/stores'
+import { isFederationBetaRoute, showFederationBetaDialog } from '@/utils/federation-beta'
 import { applyDocumentTitle, ensureBackendSiteName, getCachedSiteName } from '@/utils/document-title'
 
 import type { Router } from 'vue-router'
@@ -29,9 +30,23 @@ export function setupRouterGuard(router: Router) {
 
   const { token, user } = toRefsUserStore()
   const { routerEventBus } = useEventBus()
+  let allowFederationRouteOnce = false
 
   router.beforeEach(async (to, _from, next) => {
     routerEventBus.emit('beforeEach')
+
+    if (isFederationBetaRoute(to)) {
+      if (allowFederationRouteOnce) {
+        allowFederationRouteOnce = false
+      } else {
+        const confirmed = await showFederationBetaDialog()
+        if (!confirmed) {
+          next(false)
+          return false
+        }
+        allowFederationRouteOnce = true
+      }
+    }
 
     if (to.name === 'init') {
       if (token.value) {

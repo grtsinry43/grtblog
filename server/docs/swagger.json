@@ -396,6 +396,53 @@
                 }
             }
         },
+        "/admin/articles/{id}/federation/signals/reset": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Article"
+                ],
+                "summary": "重置文章联合条目状态（管理端）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "重置参数",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ResetArticleFederationSignalsReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.ResetArticleFederationSignalsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/categories": {
             "post": {
                 "security": [
@@ -8037,6 +8084,9 @@
                 "isDeleted": {
                     "type": "boolean"
                 },
+                "isEdited": {
+                    "type": "boolean"
+                },
                 "isFederated": {
                     "type": "boolean"
                 },
@@ -8511,6 +8561,9 @@
                 "comments": {
                     "type": "integer"
                 },
+                "contentUpdatedAt": {
+                    "type": "string"
+                },
                 "cover": {
                     "type": "string"
                 },
@@ -8581,6 +8634,12 @@
         "contract.ArticleResp": {
             "type": "object",
             "properties": {
+                "activityPubLastPublishedAt": {
+                    "type": "string"
+                },
+                "activityPubObjectId": {
+                    "type": "string"
+                },
                 "aiSummary": {
                     "type": "string"
                 },
@@ -8606,6 +8665,9 @@
                     "type": "string"
                 },
                 "contentHash": {
+                    "type": "string"
+                },
+                "contentUpdatedAt": {
                     "type": "string"
                 },
                 "cover": {
@@ -9054,6 +9116,9 @@
                 "federatedProtocol": {
                     "type": "string"
                 },
+                "floor": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -9061,6 +9126,9 @@
                     "type": "boolean"
                 },
                 "isDeleted": {
+                    "type": "boolean"
+                },
+                "isEdited": {
                     "type": "boolean"
                 },
                 "isFederated": {
@@ -9223,6 +9291,9 @@
                     "type": "boolean"
                 },
                 "isDeleted": {
+                    "type": "boolean"
+                },
+                "isEdited": {
                     "type": "boolean"
                 },
                 "isFederated": {
@@ -10491,6 +10562,9 @@
                 "request_id": {
                     "type": "string"
                 },
+                "signal_key": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string"
                 },
@@ -11447,6 +11521,9 @@
                 "comments": {
                     "type": "integer"
                 },
+                "contentUpdatedAt": {
+                    "type": "string"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -11520,6 +11597,12 @@
         "contract.MomentResp": {
             "type": "object",
             "properties": {
+                "activityPubLastPublishedAt": {
+                    "type": "string"
+                },
+                "activityPubObjectId": {
+                    "type": "string"
+                },
                 "aiSummary": {
                     "type": "string"
                 },
@@ -11545,6 +11628,9 @@
                     "type": "string"
                 },
                 "contentHash": {
+                    "type": "string"
+                },
+                "contentUpdatedAt": {
                     "type": "string"
                 },
                 "createdAt": {
@@ -11741,6 +11827,9 @@
                 "comments": {
                     "type": "integer"
                 },
+                "contentUpdatedAt": {
+                    "type": "string"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -11812,6 +11901,9 @@
                     "type": "string"
                 },
                 "contentHash": {
+                    "type": "string"
+                },
+                "contentUpdatedAt": {
                     "type": "string"
                 },
                 "createdAt": {
@@ -11964,6 +12056,40 @@
                 "content": {
                     "type": "string",
                     "maxLength": 500
+                }
+            }
+        },
+        "contract.ResetArticleFederationSignalsReq": {
+            "type": "object",
+            "properties": {
+                "citations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "mentions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "retrigger": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "contract.ResetArticleFederationSignalsResp": {
+            "type": "object",
+            "properties": {
+                "articleId": {
+                    "type": "integer"
+                },
+                "extInfo": {
+                    "type": "object"
+                },
+                "retriggered": {
+                    "type": "boolean"
                 }
             }
         },
@@ -12425,6 +12551,9 @@
         "contract.ThinkingListItemResp": {
             "type": "object",
             "properties": {
+                "activityPubObjectId": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -12483,6 +12612,12 @@
         "contract.ThinkingResp": {
             "type": "object",
             "properties": {
+                "activityPubLastPublishedAt": {
+                    "type": "string"
+                },
+                "activityPubObjectId": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -13890,6 +14025,9 @@
         "handler.UpdateReleaseInfo": {
             "type": "object",
             "properties": {
+                "body": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },

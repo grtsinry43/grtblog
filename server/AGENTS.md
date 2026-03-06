@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - `cmd/api`: application entry point (config load, dependency wiring, Fiber startup).
 - `internal/`: core packages (config, database, HTTP handlers/routers, services, domain models, persistence).
-- `configs/`: runtime configuration files (e.g., RBAC model).
+- `configs/`: runtime configuration files (e.g., app and auth settings).
 - `migrations/`: Goose SQL migrations using `NNNN_description.sql` naming.
 - `docs/`: generated OpenAPI artifacts (`swagger.json`).
 - `storage/`: default SQLite database location for local use.

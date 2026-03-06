@@ -31,6 +31,7 @@ type SystemUpdateInfo struct {
 type UpdateReleaseInfo struct {
 	Tag         string    `json:"tag"`
 	Name        string    `json:"name"`
+	Body        string    `json:"body,omitempty"`
 	Prerelease  bool      `json:"prerelease"`
 	PublishedAt time.Time `json:"publishedAt"`
 	URL         string    `json:"url"`
@@ -41,6 +42,7 @@ type githubRelease struct {
 	Prerelease  bool      `json:"prerelease"`
 	TagName     string    `json:"tag_name"`
 	Name        string    `json:"name"`
+	Body        string    `json:"body"`
 	HTMLURL     string    `json:"html_url"`
 	PublishedAt time.Time `json:"published_at"`
 }
@@ -231,6 +233,7 @@ func toUpdateRelease(item githubRelease) UpdateReleaseInfo {
 	return UpdateReleaseInfo{
 		Tag:         strings.TrimSpace(item.TagName),
 		Name:        name,
+		Body:        strings.TrimSpace(item.Body),
 		Prerelease:  item.Prerelease,
 		PublishedAt: item.PublishedAt.UTC(),
 		URL:         strings.TrimSpace(item.HTMLURL),

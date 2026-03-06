@@ -1,6 +1,7 @@
 import { request } from './http'
 
 export interface SystemUpdateReleaseInfo {
+  body?: string
   name: string
   prerelease: boolean
   publishedAt: string

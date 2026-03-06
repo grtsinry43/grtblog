@@ -1,4 +1,14 @@
+import { NTag } from 'naive-ui'
+import { h } from 'vue'
+
 import type { MenuMixedOptions } from './interface'
+
+function withBetaTag(label: string) {
+  return () => h('span', { class: 'inline-flex items-center gap-2' }, [
+    h('span', label),
+    h(NTag, { size: 'small', type: 'warning', round: true, bordered: false }, { default: () => 'Beta' }),
+  ])
+}
 
 export const routeRecordRaw: MenuMixedOptions[] = [
   {
@@ -378,7 +388,7 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     path: 'federation',
     name: 'unionManagement',
     icon: 'iconify ph--circles-three',
-    label: '联合',
+    label: withBetaTag('联合'),
     redirect: 'federation/instances',
     children: [
       {

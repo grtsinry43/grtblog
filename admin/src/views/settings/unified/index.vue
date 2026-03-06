@@ -10,7 +10,7 @@ import { useSettingsTabs } from './composables/use-settings-tabs'
 
 defineOptions({ name: 'UnifiedSettings' })
 
-const { tabs, activeTab, currentTabDef, dirtyTabs, setDirty } = useSettingsTabs()
+const { tabs, activeTab, switchTab, currentTabDef, dirtyTabs, setDirty } = useSettingsTabs()
 const { scrollbarInMainLayout } = useComponentThemeOverrides()
 
 useLeaveConfirm({ when: () => dirtyTabs.size > 0 })
@@ -36,7 +36,7 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
                 ? 'bg-[var(--primary-color-hover)]/10 font-medium text-[var(--primary-color)]'
                 : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800'
             "
-            @click="activeTab = tab.key"
+            @click="switchTab(tab.key)"
           >
             <span :class="tab.icon" class="text-sm" />
             <span>{{ tab.label }}</span>
@@ -64,7 +64,7 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
                 ? 'bg-[var(--primary-color-hover)]/10 font-medium text-[var(--primary-color)]'
                 : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800'
             "
-            @click="activeTab = tab.key"
+            @click="switchTab(tab.key)"
           >
             <div class="flex items-center gap-2">
               <span :class="tab.icon" class="text-base" />

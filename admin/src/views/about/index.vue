@@ -19,7 +19,7 @@ getSystemStatus().then((res) => {
   version.value = res.app.version
   commit.value = res.app.commit ?? ''
 }).catch(() => {
-  version.value = __APP_VERSION__
+  version.value = 'unknown'
 })
 
 let codeToHtml: any
@@ -47,7 +47,7 @@ const features = [
   { icon: 'ph--article', title: 'Markdown 写作', desc: '组件块扩展：相册、提示框、时间轴、链接卡片' },
   { icon: 'ph--newspaper', title: '内容管理', desc: '文章、动态、思考、页面的完整生命周期管理' },
   { icon: 'ph--cloud-arrow-up', title: '媒体资源', desc: '图片与文件上传、预览、重命名与批量管理' },
-  { icon: 'ph--shield-check', title: '安全与权限', desc: 'JWT + RBAC 权限控制、OAuth 绑定、登录限流' },
+  { icon: 'ph--shield-check', title: '安全与权限', desc: 'JWT 认证、OAuth 绑定、登录限流' },
   { icon: 'ph--arrows-clockwise', title: '事件驱动更新', desc: '内容变更触发异步刷新，WebSocket 推送实时更新' },
   { icon: 'ph--chart-line-up', title: '数据分析', desc: '访客画像、行为漏斗、流量趋势、可观测性监控' },
 ]

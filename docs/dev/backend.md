@@ -5,7 +5,6 @@
 - **Go 1.24+** / Fiber v2 (HTTP 框架)
 - **GORM** (ORM)
 - **Goose** (数据库迁移)
-- **Casbin** (RBAC 权限控制)
 - **JWT** (认证)
 
 ## DDD 分层架构
@@ -16,7 +15,7 @@ server/internal/
 ├── app/            # 应用层：用例编排、业务逻辑
 ├── http/           # 接口层：Handler、Router、Middleware
 ├── infra/          # 基础设施层：持久化、事件、外部服务
-├── security/       # 安全：JWT、RBAC、Turnstile
+├── security/       # 安全：JWT、Turnstile
 └── ws/             # WebSocket Hub
 ```
 

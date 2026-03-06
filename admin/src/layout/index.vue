@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { isEmpty } from 'lodash-es'
 import { computed, defineAsyncComponent, h, onMounted, onUnmounted, watch } from 'vue'
 
+import { useDialog } from 'naive-ui'
+
 import texturePng from '@/assets/texture.png'
 import { CollapseTransition, EmptyPlaceholder } from '@/components'
+import { createMarkdownIt } from '@/composables/markdown-it/core'
 import HealthBanner from '@/components/health/HealthBanner.vue'
 import DevModeBadge from '@/components/health/DevModeBadge.vue'
 import { useInjection } from '@/composables'
@@ -39,6 +42,85 @@ const userStore = useUserStore()
 const realtimeStore = useRealtimeStore()
 const healthStore = useHealthStore()
 const queryClient = useQueryClient()
+const dialog = useDialog()
+const releaseNotesMd = createMarkdownIt({ html: false, linkify: true, breaks: true })
+
+const UPDATE_DIALOG_ACK_KEY = 'grtblog:update-dialog:last-seen'
+
+const { data: updateInfo } = useQuery({
+  queryKey: ['system-update-check'],
+  queryFn: () => getSystemUpdateCheck(false),
+  staleTime: 30 * 60 * 1000,
+  refetchOnWindowFocus: false,
+})
+
+function getUpdateDialogVersionKey() {
+  const info = updateInfo.value
+  return info?.targetRelease?.tag || info?.latestRelease?.tag || ''
+}
+
+function markUpdateDialogSeen() {
+  if (typeof window === 'undefined') return
+  const versionKey = getUpdateDialogVersionKey()
+  if (!versionKey) return
+  window.sessionStorage.setItem(UPDATE_DIALOG_ACK_KEY, versionKey)
+}
+
+function shouldShowUpdateDialog() {
+  const info = updateInfo.value
+  if (!info?.hasUpdate) return false
+  const versionKey = getUpdateDialogVersionKey()
+  if (!versionKey || typeof window === 'undefined') return false
+  return window.sessionStorage.getItem(UPDATE_DIALOG_ACK_KEY) !== versionKey
+}
+
+function renderUpdateDialogContent() {
+  const info = updateInfo.value
+  const targetVersion = info?.targetRelease?.tag || info?.latestRelease?.tag || '最新版本'
+  const releaseBody = info?.targetRelease?.body?.trim() || info?.latestRelease?.body?.trim() || ''
+  const releaseHtml = releaseBody
+    ? releaseNotesMd.render(releaseBody)
+    : `<p>${info?.message || `当前版本 ${info?.currentVersion}，检测到新版本 ${targetVersion}。`}</p>`
+
+  return () => h('div', { class: 'space-y-3' }, [
+    h('div', { class: 'text-sm text-neutral-500 dark:text-neutral-400' }, `当前版本 ${info?.currentVersion || '-'} → 最新版本 ${targetVersion}`),
+    h('div', {
+      class: 'max-h-[360px] overflow-y-auto rounded-lg bg-neutral-50 p-4 text-sm leading-6 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
+      innerHTML: releaseHtml,
+    }),
+  ])
+}
+
+function openUpdateDialog() {
+  const info = updateInfo.value
+  if (!info || !shouldShowUpdateDialog()) return
+
+  dialog.info({
+    title: `发现新版本 ${info.targetRelease?.tag || info.latestRelease?.tag || ''}`.trim(),
+    content: renderUpdateDialogContent(),
+    positiveText: info.upgradeUrl ? '查看 Release' : '知道了',
+    negativeText: info.upgradeUrl ? '稍后再说' : undefined,
+    maskClosable: false,
+    style: 'width: min(720px, calc(100vw - 32px));',
+    onPositiveClick: () => {
+      markUpdateDialogSeen()
+      if (info.upgradeUrl && typeof window !== 'undefined') {
+        window.open(info.upgradeUrl, '_blank', 'noopener,noreferrer')
+      }
+    },
+    onNegativeClick: () => {
+      markUpdateDialogSeen()
+    },
+    onClose: () => {
+      markUpdateDialogSeen()
+    },
+  })
+}
+
+watch(updateInfo, (info) => {
+  if (!info?.hasUpdate) return
+  openUpdateDialog()
+}, { immediate: true })
 
 const AsyncMobileHeader = defineAsyncComponent(() => import('./mobile/MobileHeader.vue'))
 const AsyncMobileLeftAside = defineAsyncComponent(() => import('./mobile/MobileLeftAside.vue'))
@@ -100,7 +182,6 @@ const stopRealtimeConnectionListener = adminRealtimeWSCore.onConnection((connect
 })
 
 const stopRealtimeMessageListener = adminRealtimeWSCore.onMessage((payload) => {
-  // Dispatch health state messages.
   if (payload && typeof payload === 'object' && (payload as Record<string, unknown>).type === 'system.health.state') {
     healthStore.handleWSMessage(payload as HealthWSPayload)
     return
@@ -151,11 +232,6 @@ onUnmounted(() => {
 
 onMounted(() => {
   healthStore.startPolling()
-  void queryClient.prefetchQuery({
-    queryKey: ['system-update-check'],
-    queryFn: () => getSystemUpdateCheck(false),
-    staleTime: 30 * 60 * 1000,
-  })
 })
 
 function normalizeOwnerStatusPayload(payload: unknown): OwnerStatusPayload | null {
@@ -186,6 +262,7 @@ function normalizeOwnerStatusPayload(payload: unknown): OwnerStatusPayload | nul
   }
 }
 </script>
+
 <template>
   <div
     class="relative h-svh overflow-hidden"

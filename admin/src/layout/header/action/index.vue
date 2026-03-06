@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { defineAsyncComponent, h } from 'vue'
 
-import { ButtonAnimation } from '@/components'
 import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey } from '@/injection'
 import { toRefsPreferencesStore } from '@/stores'
@@ -29,14 +28,6 @@ const { navigationMode } = toRefsPreferencesStore()
 <template>
   <div class="flex items-center">
     <DevModeBadge />
-    <ButtonAnimation
-      :animation="false"
-      tag="a"
-      href="https://github.com/tenianon/lithe-admin"
-      target="_blank"
-    >
-      <span class="icon-[mdi--github]" />
-    </ButtonAnimation>
     <Notification />
     <FullScreen />
     <ThemeModePopover />

@@ -85,7 +85,7 @@ GrtBlog v2 的核心架构在静态站点的极致性能和动态应用的实时
 - WebSocket Hub：维护实时连接与房间订阅
 - **联合协议**：自有联合协议实现，内容分发与订阅
 - **ActivityPub 兼容层**：HTTP Signatures 验签、Inbox 消息处理
-- 认证与权限 (JWT + RBAC/Casbin)
+- 认证与安全 (JWT)
 
 **技术栈**: Go 1.24+, Fiber, GORM, DDD 分层架构
 
