@@ -66,6 +66,7 @@ func (h *MomentHandler) CreateMoment(c *fiber.Ctx) error {
 	cmd := moment.CreateMomentCmd{
 		Title:        req.Title,
 		Summary:      req.Summary,
+		AISummary:    req.AISummary,
 		Content:      req.Content,
 		Image:        joinImages(req.Image),
 		ColumnID:     req.ColumnID,
@@ -146,6 +147,7 @@ func (h *MomentHandler) UpdateMoment(c *fiber.Ctx) error {
 	cmd := moment.UpdateMomentCmd{
 		Title:        req.Title,
 		Summary:      req.Summary,
+		AISummary:    req.AISummary,
 		Content:      req.Content,
 		Image:        joinImages(req.Image),
 		ColumnID:     req.ColumnID,
