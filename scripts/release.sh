@@ -172,8 +172,34 @@ fi
 
 LAST_TAG="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)"
 if [[ -n "$LAST_TAG" ]]; then
-  newest="$(printf "%s\n%s\n" "${LAST_TAG#v}" "${VERSION#v}" | sort -V | tail -n 1)"
-  if [[ "v${newest}" != "$VERSION" ]]; then
+  # SemVer comparison: a release (no pre-release suffix) is always greater than
+  # a pre-release of the same numeric version (e.g. 2.0.0 > 2.0.0-rc.2).
+  # sort -V gets this wrong, so we handle it explicitly.
+  semver_greater_or_equal() {
+    local a="$1" b="$2"
+    local a_base="${a%%-*}" b_base="${b%%-*}"
+    local a_pre="" b_pre=""
+    [[ "$a" == *-* ]] && a_pre="${a#*-}"
+    [[ "$b" == *-* ]] && b_pre="${b#*-}"
+
+    local newest
+    newest="$(printf "%s\n%s\n" "$a_base" "$b_base" | sort -V | tail -n 1)"
+
+    if [[ "$a_base" != "$b_base" ]]; then
+      [[ "$newest" == "$a_base" ]] && return 0 || return 1
+    fi
+
+    # Same base version: release > pre-release
+    if [[ -z "$a_pre" && -n "$b_pre" ]]; then return 0; fi
+    if [[ -n "$a_pre" && -z "$b_pre" ]]; then return 1; fi
+    if [[ -z "$a_pre" && -z "$b_pre" ]]; then return 0; fi
+
+    # Both pre-release: fall back to sort -V
+    newest="$(printf "%s\n%s\n" "$a" "$b" | sort -V | tail -n 1)"
+    [[ "$newest" == "$a" ]] && return 0 || return 1
+  }
+
+  if ! semver_greater_or_equal "${VERSION#v}" "${LAST_TAG#v}"; then
     warn "Version ${VERSION} must be greater than latest tag ${LAST_TAG}."
     exit 1
   fi
@@ -256,7 +282,12 @@ section "Generate Release Notes"
 info "source range: ${RANGE}"
 info "release notes file: ${RELEASE_FILE}"
 
-cat > "$TMP_RELEASE_FILE" <<EOF
+NOTES_CHANGED="false"
+if [[ "$CONTINUE_RELEASE" == "true" && -f "$RELEASE_FILE" ]]; then
+  # --continue: preserve user-edited release notes, do not overwrite with template
+  info "release notes already exist, preserving user edits (--continue)"
+else
+  cat > "$TMP_RELEASE_FILE" <<EOF
 # Release ${VERSION}
 
 - Date (UTC): ${DATE_UTC}
@@ -273,17 +304,17 @@ cat > "$TMP_RELEASE_FILE" <<EOF
 ${COMMITS}
 EOF
 
-NOTES_CHANGED="false"
-if [[ ! -f "$RELEASE_FILE" ]] || ! cmp -s "$TMP_RELEASE_FILE" "$RELEASE_FILE"; then
-  mkdir -p "$(dirname "$RELEASE_FILE")"
-  cp "$TMP_RELEASE_FILE" "$RELEASE_FILE"
-  NOTES_CHANGED="true"
-fi
+  if [[ ! -f "$RELEASE_FILE" ]] || ! cmp -s "$TMP_RELEASE_FILE" "$RELEASE_FILE"; then
+    mkdir -p "$(dirname "$RELEASE_FILE")"
+    cp "$TMP_RELEASE_FILE" "$RELEASE_FILE"
+    NOTES_CHANGED="true"
+  fi
 
-if [[ "$NOTES_CHANGED" == "true" ]]; then
-  info "release notes generated or refreshed"
-else
-  info "release notes already up to date"
+  if [[ "$NOTES_CHANGED" == "true" ]]; then
+    info "release notes generated or refreshed"
+  else
+    info "release notes already up to date"
+  fi
 fi
 
 section "Update Release Archive"
