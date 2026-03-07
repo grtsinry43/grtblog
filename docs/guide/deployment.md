@@ -224,12 +224,21 @@ APP_UPDATE_CHECK_ENABLED=false
 
 ### Cloudflare Turnstile 验证
 
-如果需要防止垃圾评论，可以启用 Turnstile 人机验证：
+启用 Turnstile 人机验证可以提升管理后台的安全性，防止未授权的登录尝试：
 
 ```ini
 TURNSTILE_ENABLED=true
 TURNSTILE_SECRET=your-turnstile-secret
 ```
+
+::: tip 防止垃圾评论
+如需过滤垃圾评论，推荐在管理后台开启评论审核并配置 AI 自动审核：
+
+1. **设置 > 评论设置**：开启评论审核
+2. **设置 > AI 配置**：配置 AI 服务并开启评论自动审核
+
+开启后系统会对新评论进行智能识别和过滤。
+:::
 
 ### GeoIP 地理定位
 
