@@ -35,8 +35,8 @@ curl -fsSL "$BASE_URL/deploy/nginx/nginx.conf"    -o nginx/nginx.conf
 
 ```ini
 # 镜像来源（二选一）
-# Docker Hub（默认，留空即可）：
-IMAGE_REPO_PREFIX=
+# Docker Hub（默认）：
+IMAGE_REPO_PREFIX=grtsinry43/
 # GHCR（适用于内测和加速拉取）：
 # IMAGE_REPO_PREFIX=ghcr.io/grtsinry43/
 
@@ -55,7 +55,7 @@ AUTH_SECRET=your-random-secret-string
 
 | 来源 | `IMAGE_REPO_PREFIX` | 拉取示例 |
 |------|---------------------|----------|
-| Docker Hub | 留空 | `grtsinry43/grtblog-server:2.0.0` |
+| Docker Hub | `grtsinry43/` | `grtsinry43/grtblog-server:2.0.0` |
 | GHCR | `ghcr.io/grtsinry43/` | `ghcr.io/grtsinry43/grtblog-server:2.0.0` |
 
 国内服务器如果拉取 Docker Hub 较慢，可切换到 GHCR 或配置镜像加速。
