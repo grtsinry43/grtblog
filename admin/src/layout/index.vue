@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { isEmpty } from 'lodash-es'
-import { useDialog } from 'naive-ui'
+import { NScrollbar, useDialog } from 'naive-ui'
 import { computed, defineAsyncComponent, h, onMounted, onUnmounted, watch } from 'vue'
 
 import texturePng from '@/assets/texture.png'
@@ -86,16 +86,19 @@ function escapeHtml(input: string) {
 }
 
 function buildUpgradeCommands(targetVersion: string) {
+  const bare = targetVersion.replace(/^v/, '')
+  const tag = `v${bare}`
+
   const prebuilt = [
     `# deploy/.env`,
-    `APP_VERSION=${targetVersion}`,
+    `APP_VERSION=${bare}`,
     `docker compose pull server renderer`,
     `docker compose up -d server renderer`,
   ].join('\n')
 
   const localBuild = [
     `git fetch --tags`,
-    `git checkout v${targetVersion}`,
+    `git checkout ${tag}`,
     `docker compose up -d --build server renderer`,
   ].join('\n')
 
@@ -119,9 +122,11 @@ function renderUpdateDialogContent() {
       h('div', `当前版本 ${info?.currentVersion || '-'} → 目标版本 ${targetVersion}`),
       h('div', `更新通道 ${info?.channel || '-'} / 来源 ${info?.source || '-'}`),
     ]),
-    h('div', {
-      class: 'max-h-[360px] overflow-y-auto rounded-lg bg-neutral-50 p-4 text-sm leading-6 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
-      innerHTML: releaseHtml,
+    h(NScrollbar, { style: 'max-height: 360px' }, {
+      default: () => h('div', {
+        class: 'rounded-lg bg-neutral-50 p-4 text-sm leading-6 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
+        innerHTML: releaseHtml,
+      }),
     }),
     h('div', { class: 'space-y-2' }, [
       h('div', { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' }, '预构建镜像升级'),
@@ -142,18 +147,20 @@ function openUpdateDialog() {
   const info = updateInfo.value
   if (!info || !shouldShowUpdateDialog()) return
 
+  const tag = info.targetRelease?.tag || info.latestRelease?.tag || ''
+  const releaseNotesUrl = tag ? `https://grtblog.js.org/releases/${tag}` : ''
+
   dialog.info({
-    title: `发现新版本 ${info.targetRelease?.tag || info.latestRelease?.tag || ''}`.trim(),
+    title: `发现新版本 ${tag}`.trim(),
     content: renderUpdateDialogContent(),
-    positiveText: info.releaseNotesUrl || info.upgradeUrl ? '查看说明' : '知道了',
-    negativeText: info.releaseNotesUrl || info.upgradeUrl ? '稍后再说' : undefined,
+    positiveText: releaseNotesUrl ? '查看说明' : '知道了',
+    negativeText: releaseNotesUrl ? '稍后再说' : undefined,
     maskClosable: false,
     style: 'width: min(720px, calc(100vw - 32px));',
     onPositiveClick: () => {
       markUpdateDialogSeen()
-      const targetUrl = info.releaseNotesUrl || info.upgradeUrl
-      if (targetUrl && typeof window !== 'undefined') {
-        window.open(targetUrl, '_blank', 'noopener,noreferrer')
+      if (releaseNotesUrl && typeof window !== 'undefined') {
+        window.open(releaseNotesUrl, '_blank', 'noopener,noreferrer')
       }
     },
     onNegativeClick: () => {
