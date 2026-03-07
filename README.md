@@ -4,9 +4,12 @@
 
 [![Docker Publish](https://github.com/grtsinry43/grtblog/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/grtsinry43/grtblog/actions/workflows/docker-publish.yml)
 
+[English](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=en) | [简体中文](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=zh-CN) | [繁體中文](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=zh-TW) | [日本語](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ja) | [한국어](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ko) | [हिन्दी](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=hi) | [ไทย](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=th) | [Français](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=fr) | [Deutsch](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=de) | [Español](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=es) | [Italiano](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=it) | [Русский](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ru) | [Português](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=pt) | [Nederlands](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=nl) | [Polski](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=pl) | [العربية](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ar) | [فارسی](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=fa) | [Türkçe](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=tr) | [Tiếng Việt](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=vi) | [Bahasa Indonesia](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=id) | [অসমীয়া](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=as)
+
 GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现极致首屏速度，通过 WebSocket 实现毫秒级实时更新，并内置联合社交协议让博客不再是孤岛。
 
 > 联合协议仍在内测和修复中，将在 v2.1.0 正式发布。
+> 旧版已归档至 https://github.com/grtsinry43/grtblog-legacy
 
 ## 特性
 

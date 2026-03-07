@@ -23,8 +23,8 @@ function close() {
       <div class="container">
         <div class="content">
           <span class="badge">New</span>
-          <span class="text">GrtBlog v2 开发接近尾声，已发布 Alpha 版本，将替代 v1 提供更出色的体验！</span>
-          <a href="https://github.com/grtsinry43/grtblog-v2" target="_blank" class="link">了解更多 &rarr;</a>
+          <span class="text">GrtBlog v2 开发接近尾声，已发布正式版本，将替代 v1 提供更出色的体验！</span>
+          <a href="https://github.com/grtsinry43/grtblog" target="_blank" class="link">了解更多 &rarr;</a>
         </div>
         <button class="close" @click="close" aria-label="Close">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="icon">

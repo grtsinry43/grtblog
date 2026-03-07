@@ -15,7 +15,7 @@ hero:
       link: /dev/architecture
     - theme: alt
       text: GitHub
-      link: https://github.com/grtsinry43/grtblog-v2
+      link: https://github.com/grtsinry43/grtblog
 
 features:
   - title: 极速加载
