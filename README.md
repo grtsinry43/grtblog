@@ -1,12 +1,12 @@
 # GrtBlog v2
 
-> 目前在修复问题和内测，请耐心等待稳定版发布😭
-
 **现代化博客系统** — 静态先行、实时注水、联合社交
 
-[![Docker Publish](https://github.com/grtsinry43/grtblog-v2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/grtsinry43/grtblog-v2/actions/workflows/docker-publish.yml)
+[![Docker Publish](https://github.com/grtsinry43/grtblog/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/grtsinry43/grtblog/actions/workflows/docker-publish.yml)
 
 GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现极致首屏速度，通过 WebSocket 实现毫秒级实时更新，并内置联合社交协议让博客不再是孤岛。
+
+> 联合协议仍在内测和修复中，将在 v2.1.0 正式发布。
 
 ## 特性
 
@@ -15,7 +15,7 @@ GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现
 - **联合社交** — 自有联合协议 + ActivityPub 兼容，Mastodon 等 Fediverse 平台可关注你的博客
 - **丰富内容** — 文章、手记 (Moments)、思考 (Thinking)、友链、时间线，满足多种表达需求
 - **管理后台** — 美观且功能完备的 Vue 3 后台，Markdown 实时预览、评论管理、数据统计
-- **一键部署** — Docker Compose 一键启动，多架构镜像 (amd64/arm64) 自动发布到 GHCR
+- **一键部署** — Docker Compose 一键启动，多架构镜像 (amd64/arm64) 自动打包，方便拉取
 
 ## 截图
 
@@ -79,7 +79,7 @@ GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现
 mkdir -p grtblog && cd grtblog
 
 # 下载部署配置
-BASE_URL="https://raw.githubusercontent.com/grtsinry43/grtblog-v2/main"
+BASE_URL="https://raw.githubusercontent.com/grtsinry43/grtblog/main"
 curl -fsSL "$BASE_URL/deploy/docker-compose.yml" -o docker-compose.yml
 curl -fsSL "$BASE_URL/deploy/.env.example"       -o .env
 mkdir -p nginx
@@ -104,8 +104,8 @@ docker compose up -d
 ### 本地构建部署
 
 ```bash
-git clone https://github.com/grtsinry43/grtblog-v2.git
-cd grtblog-v2/deploy
+git clone https://github.com/grtsinry43/grtblog.git
+cd grtblog/deploy
 cp .env.example .env
 # 编辑 .env：设置密码和密钥（IMAGE_REPO_PREFIX 留空）
 
