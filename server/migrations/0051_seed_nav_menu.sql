@@ -29,8 +29,8 @@ WHERE name = '更多'
 
 -- Children of "更多"
 INSERT INTO nav_menu (name, url, icon, sort, parent_id, created_at, updated_at)
-VALUES ('友链', '/friends', NULL, 50, _more_id, NOW(), NOW()),
-       ('朋友圈', '/friends-timeline', NULL, 50, _more_id, NOW(), NOW());
+VALUES ('友链', '/friends', NULL, 10, _more_id, NOW(), NOW()),
+       ('朋友圈', '/friends-timeline', NULL, 20, _more_id, NOW(), NOW());
 END
 $$;
 -- +goose StatementEnd
