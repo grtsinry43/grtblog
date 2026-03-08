@@ -270,4 +270,5 @@ jobs:
           PLUGIN_USERNAME: "cnb"
           PLUGIN_PASSWORD: ${{ secrets.CNB_ACCESS_TOKEN }}
           PLUGIN_FORCE: "true"
+          PLUGIN_PUSH_ALL: "true"
           PLUGIN_PUSH_TAGS: "true"
