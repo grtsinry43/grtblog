@@ -471,8 +471,13 @@ func parseFeedItems(feed *gofeed.Feed, friendLinkID int64, instanceID *int64, so
 			publishedAt = item.UpdatedParsed.UTC()
 		}
 		authorPayload := map[string]any{}
-		if item.Author != nil && strings.TrimSpace(item.Author.Name) != "" {
+		switch {
+		case item.Author != nil && strings.TrimSpace(item.Author.Name) != "":
 			authorPayload["name"] = strings.TrimSpace(item.Author.Name)
+		case feed.Author != nil && strings.TrimSpace(feed.Author.Name) != "":
+			authorPayload["name"] = strings.TrimSpace(feed.Author.Name)
+		case strings.TrimSpace(feed.Title) != "":
+			authorPayload["name"] = strings.TrimSpace(feed.Title)
 		}
 		authorRaw, _ := json.Marshal(authorPayload)
 		id := strings.TrimSpace(item.GUID)

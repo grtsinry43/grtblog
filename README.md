@@ -71,18 +71,33 @@ GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现
 | 后台 | Vue 3.5, Naive UI, Tailwind CSS, Pinia, Vite |
 | 数据库 | PostgreSQL 17 |
 | 缓存 | Redis 7 |
-| 部署 | Docker Compose, Nginx, GitHub Actions, GHCR |
+| 部署 | Docker Compose, Nginx, GitHub Actions, GHCR / Docker Hub / CNB |
 
 ## 快速开始
 
 ### 使用预构建镜像部署（推荐）
 
+**一键安装（推荐）：**
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/grtsinry43/grtblog/main/deploy/install.sh)
+# 国内：
+bash <(curl -fsSL https://cnb.cool/grtsinry43/grtblog/-/git/raw/main/deploy/install.sh)
+```
+
+脚本会自动检测环境、选择镜像源、生成密钥、下载配置并启动服务。
+
+<details>
+<summary>手动安装</summary>
+
 ```bash
 # 创建部署目录
 mkdir -p grtblog && cd grtblog
 
-# 下载部署配置
+# 下载部署配置（国际）
 BASE_URL="https://raw.githubusercontent.com/grtsinry43/grtblog/main"
+# 国内加速：
+# BASE_URL="https://cnb.cool/grtsinry43/grtblog/-/git/raw/main"
 curl -fsSL "$BASE_URL/deploy/docker-compose.yml" -o docker-compose.yml
 curl -fsSL "$BASE_URL/deploy/.env.example"       -o .env
 mkdir -p nginx
@@ -93,11 +108,15 @@ curl -fsSL "$BASE_URL/deploy/nginx/nginx.conf"    -o nginx/nginx.conf
 #   APP_VERSION=2.0.2              # 查看 Releases 页面获取最新版本
 #   POSTGRES_PASSWORD=<强密码>
 #   AUTH_SECRET=<openssl rand -hex 32>
+# 国内服务器推荐使用 CNB 镜像源：
+#   IMAGE_REPO_PREFIX=docker.cnb.cool/grtsinry43/grtblog/
 
 # 启动
 mkdir -p storage/html storage/uploads storage/geoip
 docker compose up -d
 ```
+
+</details>
 
 首次启动会自动拉取镜像、运行数据库迁移。
 
@@ -108,6 +127,8 @@ docker compose up -d
 
 ```bash
 git clone https://github.com/grtsinry43/grtblog.git
+# 国内加速：
+# git clone https://cnb.cool/grtsinry43/grtblog.git
 cd grtblog/deploy
 cp .env.example .env
 # 编辑 .env：设置密码和密钥（IMAGE_REPO_PREFIX 留空）

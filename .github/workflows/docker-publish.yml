@@ -15,6 +15,9 @@ env:
   DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  CNB_REGISTRY: docker.cnb.cool
+  CNB_REPO: grtsinry43/grtblog
+  CNB_ACCESS_TOKEN: ${{ secrets.CNB_ACCESS_TOKEN }}
 
 jobs:
   # ── 1. Parse tag once, share outputs with downstream jobs ──
@@ -157,6 +160,14 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
 
+      - name: Log in to CNB Docker Registry
+        if: ${{ env.CNB_ACCESS_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.CNB_REGISTRY }}
+          username: cnb
+          password: ${{ env.CNB_ACCESS_TOKEN }}
+
       - name: Compute image tags
         id: imagetags
         env:
@@ -174,6 +185,9 @@ jobs:
           dockerhub_namespace="${DOCKERHUB_NAMESPACE:-${DOCKERHUB_USERNAME:-}}"
           if [[ "$CHANNEL" == "stable" && -n "${dockerhub_namespace}" && -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
             image_refs+=("docker.io/${dockerhub_namespace}/${IMAGE_NAME}")
+          fi
+          if [[ -n "${CNB_ACCESS_TOKEN:-}" ]]; then
+            image_refs+=("${CNB_REGISTRY}/${CNB_REPO}/${IMAGE_NAME}")
           fi
 
           for ref in "${image_refs[@]}"; do
@@ -236,3 +250,24 @@ jobs:
           generate_release_notes: true
           prerelease: false
           tag_name: ${{ github.ref_name }}
+
+  # ── 5. Sync source code to CNB.cool ──
+  sync-to-cnb:
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: ${{ vars.CNB_SYNC_ENABLED == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync to CNB
+        uses: docker://tencentcom/git-sync
+        env:
+          PLUGIN_TARGET_URL: "https://cnb.cool/grtsinry43/grtblog.git"
+          PLUGIN_AUTH_TYPE: "https"
+          PLUGIN_USERNAME: "cnb"
+          PLUGIN_PASSWORD: ${{ secrets.CNB_ACCESS_TOKEN }}
+          PLUGIN_FORCE: "true"
+          PLUGIN_PUSH_TAGS: "true"

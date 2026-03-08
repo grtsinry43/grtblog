@@ -23,11 +23,27 @@ Update at least these values in `.env`:
 
 Every tagged release triggers a GitHub Actions workflow that builds multi-arch (`linux/amd64` + `linux/arm64`) images.
 
-- `stable` tags push to `ghcr.io/grtsinry43/` and Docker Hub
-- `preview` tags push only to `ghcr.io/grtsinry43/`
+- `stable` tags push to `ghcr.io/grtsinry43/`, Docker Hub, and CNB
+- `preview` tags push to `ghcr.io/grtsinry43/` and CNB
+
+三个源的镜像内容完全一致，选择最适合你网络环境的即可：
+
+| 来源 | `IMAGE_REPO_PREFIX` | 适用场景 |
+|------|---------------------|----------|
+| Docker Hub | `grtsinry43/` | 国际通用 |
+| GHCR | `ghcr.io/grtsinry43/` | 国际通用、预发布版本 |
+| CNB（推荐国内） | `docker.cnb.cool/grtsinry43/grtblog/` | 国内服务器加速拉取 |
 
 ```ini
 IMAGE_REPO_PREFIX=ghcr.io/grtsinry43/
+APP_VERSION=1.2.3
+APP_UPDATE_CHANNEL=stable
+```
+
+国内服务器推荐：
+
+```ini
+IMAGE_REPO_PREFIX=docker.cnb.cool/grtsinry43/grtblog/
 APP_VERSION=1.2.3
 APP_UPDATE_CHANNEL=stable
 ```
