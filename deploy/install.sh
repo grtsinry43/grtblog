@@ -392,6 +392,7 @@ COMPOSE_CMD=""
 APP_VERSION="${APP_VERSION:-}"
 APP_UPDATE_CHANNEL="${APP_UPDATE_CHANNEL:-}"
 IMAGE_REPO_PREFIX="${IMAGE_REPO_PREFIX:-}"
+DOCKER_MIRROR="${DOCKER_MIRROR:-}"
 NGINX_PORT="${NGINX_PORT:-80}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
 AUTH_SECRET="${AUTH_SECRET:-}"
@@ -557,8 +558,16 @@ else
   fi
 fi
 
+# Auto-set Docker Hub mirror for nginx/postgres/redis in China
+if [[ "$IS_CHINA" == "true" ]] && [[ -z "$DOCKER_MIRROR" ]]; then
+  DOCKER_MIRROR="docker.1ms.run/"
+fi
+
 info "$(__ IMAGE_SOURCE): ${IMAGE_REPO_PREFIX}"
 info "$(__ CONFIG_SOURCE): ${CONFIG_BASE_URL}"
+if [[ -n "$DOCKER_MIRROR" ]]; then
+  info "Docker Hub mirror: ${DOCKER_MIRROR}"
+fi
 
 # =========================================================================
 # Step 6: Fetch Latest Version
@@ -728,6 +737,12 @@ if [[ "$INSTALL_MODE" == "upgrade" ]]; then
     printf '\nAPP_UPDATE_CHANNEL=%s\n' "$APP_UPDATE_CHANNEL" >> .env
   fi
 
+  if grep -q '^DOCKER_MIRROR=' .env; then
+    sed -i.bak "s|^DOCKER_MIRROR=.*|DOCKER_MIRROR=${DOCKER_MIRROR}|" .env
+  else
+    printf '\nDOCKER_MIRROR=%s\n' "$DOCKER_MIRROR" >> .env
+  fi
+
   rm -f .env.bak
   ok "$(__ ENV_UPDATED)"
 else
@@ -735,6 +750,7 @@ else
   cat > .env <<EOF
 APP_VERSION=${APP_VERSION}
 IMAGE_REPO_PREFIX=${IMAGE_REPO_PREFIX}
+DOCKER_MIRROR=${DOCKER_MIRROR}
 
 NGINX_PORT=${NGINX_PORT}
 

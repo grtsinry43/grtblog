@@ -46,6 +46,8 @@ APP_UPDATE_CHANNEL=stable
 IMAGE_REPO_PREFIX=docker.cnb.cool/grtsinry43/grtblog/
 APP_VERSION=1.2.3
 APP_UPDATE_CHANNEL=stable
+# Docker Hub 镜像加速（nginx/postgres/redis）
+DOCKER_MIRROR=docker.1ms.run/
 ```
 
 Tag strategy:

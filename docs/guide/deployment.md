@@ -84,6 +84,16 @@ AUTH_SECRET=your-random-secret-string
 **国内服务器推荐使用 CNB 源**，直连国内节点，无需配置镜像加速。
 :::
 
+::: tip Docker Hub 镜像加速
+Nginx、PostgreSQL、Redis 等第三方镜像默认从 Docker Hub 拉取。国内服务器如果拉取缓慢，可以设置 `DOCKER_MIRROR` 使用 [毫秒镜像](https://1ms.run/) 加速：
+
+```ini
+DOCKER_MIRROR=docker.1ms.run/
+```
+
+设置后，`nginx:1.27-alpine` 会自动变为 `docker.1ms.run/nginx:1.27-alpine`。使用一键安装脚本时，国内网络会自动配置此项。
+:::
+
 ::: tip 生成随机密钥
 可以使用以下命令生成：
 ```bash

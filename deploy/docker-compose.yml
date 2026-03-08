@@ -67,7 +67,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:1.27-alpine
+    image: ${DOCKER_MIRROR:-}nginx:1.27-alpine
     container_name: grtblog-nginx
     ports:
       - "${NGINX_PORT:-80}:80"
@@ -82,7 +82,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:17-alpine
+    image: ${DOCKER_MIRROR:-}postgres:17-alpine
     container_name: grtblog-postgres
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-grtblog}"
@@ -100,7 +100,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: ${DOCKER_MIRROR:-}redis:7-alpine
     container_name: grtblog-redis
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
