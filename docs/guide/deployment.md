@@ -40,7 +40,7 @@ IMAGE_REPO_PREFIX=grtsinry43/
 # GHCR（适用于内测和加速拉取）：
 # IMAGE_REPO_PREFIX=ghcr.io/grtsinry43/
 
-APP_VERSION=2.0.0
+APP_VERSION=2.0.2
 APP_UPDATE_CHANNEL=stable
 
 # 数据库密码（请设置为强密码）

@@ -90,7 +90,7 @@ curl -fsSL "$BASE_URL/deploy/nginx/nginx.conf"    -o nginx/nginx.conf
 
 # 编辑 .env：设置 IMAGE_REPO_PREFIX、APP_VERSION、密码和密钥
 #   IMAGE_REPO_PREFIX=ghcr.io/grtsinry43/
-#   APP_VERSION=1.0.0              # 查看 Releases 页面获取最新版本
+#   APP_VERSION=2.0.2              # 查看 Releases 页面获取最新版本
 #   POSTGRES_PASSWORD=<强密码>
 #   AUTH_SECRET=<openssl rand -hex 32>
 
