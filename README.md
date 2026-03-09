@@ -2,9 +2,9 @@
 
 **现代化博客系统** — 静态先行、实时注水、联合社交
 
-[![Docker Publish](https://github.com/grtsinry43/grtblog/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/grtsinry43/grtblog/actions/workflows/docker-publish.yml)
-
-[English](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=en) | [简体中文](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=zh-CN) | [繁體中文](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=zh-TW) | [日本語](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ja) | [한국어](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ko) | [हिन्दी](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=hi) | [ไทย](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=th) | [Français](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=fr) | [Deutsch](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=de) | [Español](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=es) | [Italiano](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=it) | [Русский](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ru) | [Português](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=pt) | [Nederlands](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=nl) | [Polski](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=pl) | [العربية](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=ar) | [فارسی](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=fa) | [Türkçe](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=tr) | [Tiếng Việt](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=vi) | [Bahasa Indonesia](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=id) | [অসমীয়া](https://openaitx.github.io/#/view?user=grtsinry43&project=grtblog&lang=as)
+[![GitHub release](https://img.shields.io/github/v/release/grtsinry43/grtblog)](https://github.com/grtsinry43/grtblog/releases)
+[![GitHub top language](https://img.shields.io/github/languages/top/grtsinry43/grtblog)](https://github.com/grtsinry43/grtblog)
+[![GitHub languages count](https://img.shields.io/github/languages/count/grtsinry43/grtblog)](https://github.com/grtsinry43/grtblog)
 
 GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现极致首屏速度，通过 WebSocket 实现毫秒级实时更新，并内置联合社交协议让博客不再是孤岛。
 
@@ -195,7 +195,19 @@ grtblog-v2/
 已提供 API 迁移脚本：`scripts/migrate-v1-to-v2.mjs`
 使用说明见：`scripts/migrate-v1-to-v2.md`
 
+## Star History
+
+<a href="https://star-history.com/#grtsinry43/grtblog&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=grtsinry43/grtblog&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=grtsinry43/grtblog&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=grtsinry43/grtblog&type=Date" />
+ </picture>
+</a>
+
 ## 致谢
+
+本项目的许多设计灵感与交互理念来源于 [Innei](https://github.com/Innei) 的 [Shiro](https://github.com/Innei/Shiro)，包括布局、文章手记、创作律动等模块的视觉风格与体验设计均深受其启发，万分感谢 Innei 大佬为开源社区带来的优秀作品！
 
 本项目包含第三方开源软件，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 

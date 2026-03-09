@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 文档
+    url: https://grtblog.js.org
+    about: 查看项目文档

@@ -1,0 +1,83 @@
+name: Bug 报告
+description: 提交一个 Bug 报告
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: module
+    attributes:
+      label: 涉及模块
+      options:
+        - Server (Go/Fiber)
+        - Admin (Vue)
+        - Web (SvelteKit)
+        - Docker / 部署
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug 描述
+      description: 简要描述遇到的问题
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 提供详细的复现步骤
+      placeholder: |
+        1. 打开 '...'
+        2. 点击 '...'
+        3. 滚动到 '...'
+        4. 出现错误
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 描述你期望看到的行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 描述实际发生的行为
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本号
+      description: 项目版本号（如 v2.0.3）
+      placeholder: v2.0.3
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境信息
+      description: 操作系统、浏览器、Go/Node 版本等
+      placeholder: |
+        - OS: macOS 15
+        - 浏览器: Chrome 130
+        - Node: 22.x
+        - Go: 1.24
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图
+      description: 如有截图请粘贴在此处
+    validations:
+      required: false
