@@ -1,6 +1,7 @@
 import type { WebsiteInfoMap } from '$lib/features/website-info/types';
 import type {
 	HomeActivityPulseThemeConfig,
+	HomeHeroAlignMode,
 	HomeHeroSocialLink,
 	HomeHeroTemplateNode,
 	HomeInspirationIconName,
@@ -12,6 +13,7 @@ import type {
 } from './types';
 
 const allowedHeroTemplateTypes = new Set(['h1', 'span', 'code', 'br']);
+const allowedHeroAlignModes = new Set(['default', 'center']);
 const allowedInspirationIconNames = new Set([
 	'quote',
 	'code2',
@@ -51,7 +53,9 @@ const defaultThemeConfig: HomeThemeConfig = {
 			'热衷于在逻辑与感性的缝隙中构建数字花园。',
 			'也许，代码是现代的诗歌，而文字是思想的快照。'
 		],
-		socials: defaultHeroSocials
+		mottoLinesAlign: 'default',
+		socials: defaultHeroSocials,
+		socialsAlign: 'default'
 	},
 	activityPulse: {
 		title: '创作律动',
@@ -131,6 +135,14 @@ const toStringValue = (value: unknown): string | undefined => {
 	}
 	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const parseHeroAlignMode = (value: unknown): HomeHeroAlignMode | undefined => {
+	const align = toStringValue(value);
+	if (!align || !allowedHeroAlignModes.has(align)) {
+		return undefined;
+	}
+	return align as HomeHeroAlignMode;
 };
 
 const toPositiveInt = (value: unknown): number | undefined => {
@@ -364,7 +376,11 @@ export const resolveHomeThemeConfig = (
 			parseHeroTemplate(isRecord(heroRaw.title) ? heroRaw.title.template : heroRaw.titleTemplate) ??
 			defaultThemeConfig.hero?.titleTemplate,
 		mottoLines: parseStringList(heroRaw.mottoLines) ?? defaultThemeConfig.hero?.mottoLines,
-		socials: parseSocials(heroRaw.socials) ?? defaultThemeConfig.hero?.socials
+		mottoLinesAlign:
+			parseHeroAlignMode(heroRaw.mottoLinesAlign) ?? defaultThemeConfig.hero?.mottoLinesAlign,
+		socials: parseSocials(heroRaw.socials) ?? defaultThemeConfig.hero?.socials,
+		socialsAlign:
+			parseHeroAlignMode(heroRaw.socialsAlign) ?? defaultThemeConfig.hero?.socialsAlign
 	};
 
 	const activity = {
