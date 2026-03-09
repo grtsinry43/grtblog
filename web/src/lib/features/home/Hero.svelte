@@ -102,7 +102,7 @@
 
 		<div class="flex flex-col gap-12 ml-4">
 			<FadeIn y={16} duration={900} delay={400}>
-				<div class="hero-motto font-serif text-2xl leading-relaxed text-ink-800 dark:text-ink-200">
+				<div class="hero-motto text-center font-serif text-2xl leading-relaxed text-ink-800 dark:text-ink-200">
 					{#each mottoLines as line, lineIdx (`${line}-${lineIdx}`)}
 						{line}<br />
 					{/each}
