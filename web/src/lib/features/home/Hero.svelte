@@ -45,9 +45,11 @@
 	const mottoLines = $derived(
 		config?.mottoLines && config.mottoLines.length > 0 ? config.mottoLines : defaultMottoLines
 	);
+	const mottoLinesAlign = $derived(config?.mottoLinesAlign ?? 'default');
 	const socials = $derived(
 		config?.socials && config.socials.length > 0 ? config.socials : defaultSocials
 	);
+	const socialsAlign = $derived(config?.socialsAlign ?? 'default');
 
 	function resolveNodeClass(node: HomeHeroTemplateNode): string {
 		const baseClass = node.type === 'h1' ? 'text-ink-900 dark:text-ink-100' : '';
@@ -102,18 +104,24 @@
 
 		<div class="flex flex-col gap-12 ml-4">
 			<FadeIn y={16} duration={900} delay={400}>
-				<div class="hero-motto text-center font-serif text-2xl leading-relaxed text-ink-800 dark:text-ink-200">
+				<div
+					class="hero-motto font-serif text-2xl leading-relaxed text-ink-800 dark:text-ink-200"
+					class:text-center={mottoLinesAlign === 'center'}
+				>
 					{#each mottoLines as line, lineIdx (`${line}-${lineIdx}`)}
 						{line}<br />
 					{/each}
 				</div>
 			</FadeIn>
 
-			<FadeIn y={12} duration={800} delay={600}>
-				<div class="social-container flex items-center justify-center gap-6">
-					{#each socials as social, socialIdx (`${social.icon}-${social.href}-${socialIdx}`)}
-						<SocialItem icon={social.icon} name={social.name} href={social.href} />
-					{/each}
+				<FadeIn y={12} duration={800} delay={600}>
+					<div
+						class="social-container flex items-center gap-6"
+						class:justify-center={socialsAlign === 'center'}
+					>
+						{#each socials as social, socialIdx (`${social.icon}-${social.href}-${socialIdx}`)}
+							<SocialItem icon={social.icon} name={social.name} href={social.href} />
+						{/each}
 				</div>
 			</FadeIn>
 		</div>

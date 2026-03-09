@@ -37,12 +37,16 @@ export type HomeHeroSocialLink = {
 	href: string;
 };
 
+export type HomeHeroAlignMode = 'default' | 'center';
+
 export type HomeHeroThemeConfig = {
 	avatarUrl?: string;
 	description?: string;
 	titleTemplate?: HomeHeroTemplateNode[];
 	mottoLines?: string[];
+	mottoLinesAlign?: HomeHeroAlignMode;
 	socials?: HomeHeroSocialLink[];
+	socialsAlign?: HomeHeroAlignMode;
 };
 
 export type HomeActivityPulseThemeConfig = {
