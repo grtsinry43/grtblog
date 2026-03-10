@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { NAlert, NButton, NForm, NFormItem, NSelect, NTag, useMessage } from 'naive-ui'
+import { NAlert, NButton, NTag, useMessage } from 'naive-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import TemplateEditor from '@/components/template-editor/TemplateEditor.vue'
 import { listWebsiteInfo, updateWebsiteInfo } from '@/services/website-info'
-
-import type { SelectOption } from 'naive-ui'
 
 const emit = defineEmits<{ 'dirty-change': [dirty: boolean] }>()
 
@@ -16,15 +14,6 @@ const saving = ref(false)
 const jsonText = ref('')
 const originalJson = ref('')
 const jsonError = ref<string | null>(null)
-const mottoLinesAlign = ref<'default' | 'center'>('default')
-const socialsAlign = ref<'default' | 'center'>('default')
-const syncFromJson = ref(false)
-const syncFromForm = ref(false)
-
-const alignOptions: SelectOption[] = [
-  { label: '默认', value: 'default' },
-  { label: '居中', value: 'center' },
-]
 
 const jsonValid = computed(() => !jsonError.value)
 const isDirty = computed(() => jsonText.value.trim() !== originalJson.value.trim())
@@ -37,80 +26,17 @@ watch(
     const source = value.trim()
     if (!source) {
       jsonError.value = null
-      syncFromJson.value = true
-      mottoLinesAlign.value = 'default'
-      socialsAlign.value = 'default'
-      syncFromJson.value = false
       return
     }
     try {
-      const parsed = JSON.parse(source)
+      JSON.parse(source)
       jsonError.value = null
-      if (!syncFromForm.value) {
-        const heroAlign = readHeroAlignFromThemeExtendInfo(parsed)
-        syncFromJson.value = true
-        mottoLinesAlign.value = heroAlign.mottoLinesAlign
-        socialsAlign.value = heroAlign.socialsAlign
-        syncFromJson.value = false
-      }
     } catch (err) {
       jsonError.value = err instanceof Error ? err.message : 'JSON 格式不正确'
     }
   },
   { immediate: true },
 )
-
-watch([mottoLinesAlign, socialsAlign], ([nextMottoAlign, nextSocialAlign]) => {
-  if (syncFromJson.value || !jsonValid.value) return
-
-  try {
-    syncFromForm.value = true
-    jsonText.value = JSON.stringify(
-      mergeHeroAlignIntoThemeExtendInfo(jsonText.value, nextMottoAlign, nextSocialAlign),
-      null,
-      2,
-    )
-  } finally {
-    syncFromForm.value = false
-  }
-})
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function normalizeAlign(value: unknown): 'default' | 'center' {
-  return value === 'center' ? 'center' : 'default'
-}
-
-function readHeroAlignFromThemeExtendInfo(value: unknown) {
-  const root = isRecord(value) ? value : {}
-  const home = isRecord(root.home) ? root.home : root
-  const hero = isRecord(home.hero) ? home.hero : {}
-
-  return {
-    mottoLinesAlign: normalizeAlign(hero.mottoLinesAlign),
-    socialsAlign: normalizeAlign(hero.socialsAlign),
-  }
-}
-
-function mergeHeroAlignIntoThemeExtendInfo(
-  source: string,
-  nextMottoAlign: 'default' | 'center',
-  nextSocialAlign: 'default' | 'center',
-) {
-  const parsed = JSON.parse(source.trim() || '{}')
-  const root = isRecord(parsed) ? { ...parsed } : {}
-  const home = isRecord(root.home) ? { ...root.home } : {}
-  const hero = isRecord(home.hero) ? { ...home.hero } : {}
-
-  hero.mottoLinesAlign = nextMottoAlign
-  hero.socialsAlign = nextSocialAlign
-  home.hero = hero
-  root.home = home
-
-  return root
-}
 
 async function fetchData() {
   loading.value = true
@@ -198,31 +124,6 @@ onMounted(fetchData)
       </div>
     </div>
 
-    <div class="shrink-0 rounded-lg border border-neutral-200 bg-white px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900">
-      <NForm
-        label-placement="left"
-        label-width="auto"
-        class="flex flex-wrap items-center justify-start gap-x-4 gap-y-3"
-      >
-        <NFormItem label="mottoLines排版" class="mb-0 theme-align-form-item">
-          <NSelect
-            v-model:value="mottoLinesAlign"
-            :options="alignOptions"
-            :disabled="loading || saving || !jsonValid"
-            class="theme-align-select"
-          />
-        </NFormItem>
-        <NFormItem label="socials排版" class="mb-0 theme-align-form-item">
-          <NSelect
-            v-model:value="socialsAlign"
-            :options="alignOptions"
-            :disabled="loading || saving || !jsonValid"
-            class="theme-align-select"
-          />
-        </NFormItem>
-      </NForm>
-    </div>
-
     <!-- Editor fills remaining space -->
     <TemplateEditor v-model="jsonText" class="theme-editor min-h-0 flex-1" />
 
@@ -237,25 +138,5 @@ onMounted(fetchData)
 .theme-editor :deep(.cm-editor) {
   height: 100%;
   min-height: unset;
-}
-
-.theme-align-form-item :deep(.n-form-item-blank) {
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.theme-align-form-item {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 0;
-}
-
-.theme-align-form-item :deep(.n-form-item-feedback-wrapper) {
-  display: flex;
-  align-items: center;
-}
-
-.theme-align-select {
-  width: 140px;
 }
 </style>

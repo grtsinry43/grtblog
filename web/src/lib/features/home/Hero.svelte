@@ -114,14 +114,14 @@
 				</div>
 			</FadeIn>
 
-				<FadeIn y={12} duration={800} delay={600}>
-					<div
-						class="social-container flex items-center gap-6"
-						class:justify-center={socialsAlign === 'center'}
-					>
-						{#each socials as social, socialIdx (`${social.icon}-${social.href}-${socialIdx}`)}
-							<SocialItem icon={social.icon} name={social.name} href={social.href} />
-						{/each}
+			<FadeIn y={12} duration={800} delay={600}>
+				<div
+					class="social-container flex items-center gap-6"
+					class:justify-center={socialsAlign === 'center'}
+				>
+					{#each socials as social, socialIdx (`${social.icon}-${social.href}-${socialIdx}`)}
+						<SocialItem icon={social.icon} name={social.name} href={social.href} />
+					{/each}
 				</div>
 			</FadeIn>
 		</div>
