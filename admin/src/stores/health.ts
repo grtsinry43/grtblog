@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useDiscreteApi } from '@/composables/useDiscreteApi'
 import {
   deriveMode,
   fetchReadiness,
@@ -68,13 +69,31 @@ export const useHealthStore = defineStore('healthStore', () => {
   }
 
   // ── Frontend probes ───────────────────────────────────────
+  const networkToastShown = ref(false)
+  const { message } = useDiscreteApi()
+
   async function runProbes() {
     const [nginx, renderer] = await Promise.all([
       probeNginx(),
       probeRenderer(),
     ])
-    nginxOk.value = nginx
-    rendererOk.value = renderer
+
+    if (nginx && renderer) {
+      // Both probes succeeded — update state normally and reset toast flag.
+      nginxOk.value = true
+      rendererOk.value = true
+      networkToastShown.value = false
+    } else {
+      // Probe failed — keep current state (don't flip bits).
+      // Show a one-time toast so the user knows their network may be unstable.
+      if (!networkToastShown.value) {
+        message.warning('当前网络连接不太稳定，部分页面加载可能较慢', {
+          duration: 5000,
+          closable: true,
+        })
+        networkToastShown.value = true
+      }
+    }
   }
 
   async function fetchInitialState() {

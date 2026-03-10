@@ -18,6 +18,11 @@ type SysConfigReader interface {
 	GetConfigValue(ctx context.Context, key string) (string, error)
 }
 
+const (
+	failThreshold    = 3 // consecutive failures before marking unhealthy
+	recoverThreshold = 2 // consecutive successes before marking healthy again
+)
+
 // Checker is a background goroutine that periodically probes DB, Redis,
 // the SvelteKit renderer, and the site.maintenance sysconfig flag,
 // then publishes state changes.
@@ -30,6 +35,9 @@ type Checker struct {
 	interval    time.Duration
 	rendererURL string
 	httpClient  *http.Client
+
+	failCount    map[int]int // consecutive failure count per bit
+	successCount map[int]int // consecutive success count per bit
 }
 
 // NewChecker creates a health checker. Interval defaults to 15s if zero.
@@ -38,14 +46,16 @@ func NewChecker(state *State, db *gorm.DB, redisClient *redis.Client, sysconf Sy
 		interval = 15 * time.Second
 	}
 	return &Checker{
-		state:       state,
-		db:          db,
-		redis:       redisClient,
-		sysconf:     sysconf,
-		events:      events,
-		interval:    interval,
-		rendererURL: rendererURL,
-		httpClient:  &http.Client{Timeout: 2 * time.Second},
+		state:        state,
+		db:           db,
+		redis:        redisClient,
+		sysconf:      sysconf,
+		events:       events,
+		interval:     interval,
+		rendererURL:  rendererURL,
+		httpClient:   &http.Client{Timeout: 3 * time.Second},
+		failCount:    make(map[int]int),
+		successCount: make(map[int]int),
 	}
 }
 
@@ -79,13 +89,13 @@ func (c *Checker) probe(ctx context.Context) {
 	c.state.SetBit(BitBackend, true)
 
 	// Probe database.
-	c.state.SetBit(BitDatabase, c.probeDB(ctx))
+	c.updateBitWithThreshold(BitDatabase, c.probeDB(ctx))
 
 	// Probe Redis.
-	c.state.SetBit(BitRedis, c.probeRedis(ctx))
+	c.updateBitWithThreshold(BitRedis, c.probeRedis(ctx))
 
 	// Probe SvelteKit renderer.
-	c.state.SetBit(BitRenderer, c.probeRenderer())
+	c.updateBitWithThreshold(BitRenderer, c.probeRenderer())
 
 	// Read manual maintenance flag from sysconfig.
 	c.readMaintenance(ctx)
@@ -107,6 +117,25 @@ func (c *Checker) probe(ctx context.Context) {
 	}
 }
 
+// updateBitWithThreshold applies hysteresis to avoid flapping on transient
+// failures.  A bit is only cleared after failThreshold consecutive failures
+// and only re-set after recoverThreshold consecutive successes.
+func (c *Checker) updateBitWithThreshold(bit int, ok bool) {
+	if ok {
+		c.failCount[bit] = 0
+		c.successCount[bit]++
+		if c.successCount[bit] >= recoverThreshold {
+			c.state.SetBit(bit, true)
+		}
+	} else {
+		c.successCount[bit] = 0
+		c.failCount[bit]++
+		if c.failCount[bit] >= failThreshold {
+			c.state.SetBit(bit, false)
+		}
+	}
+}
+
 func (c *Checker) probeDB(ctx context.Context) bool {
 	if c.db == nil {
 		return false
@@ -115,7 +144,7 @@ func (c *Checker) probeDB(ctx context.Context) bool {
 	if err != nil {
 		return false
 	}
-	pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	return sqlDB.PingContext(pingCtx) == nil
 }
@@ -125,7 +154,7 @@ func (c *Checker) probeRedis(ctx context.Context) bool {
 		// Redis not configured is treated as healthy (optional component).
 		return true
 	}
-	pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	return c.redis.Ping(pingCtx).Err() == nil
 }

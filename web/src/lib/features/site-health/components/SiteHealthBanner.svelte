@@ -15,10 +15,17 @@
 					iconColor: 'text-amber-500'
 				};
 			case 'degraded':
+				return {
+					text: '站点部分服务运行缓慢，我们正在优化中',
+					bg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60',
+					textColor: 'text-amber-800 dark:text-amber-200',
+					icon: 'i-ph-warning-bold',
+					iconColor: 'text-amber-500'
+				};
 			case 'critical':
 			case 'outage':
 				return {
-					text: '站点部分服务异常，我们正在处理中',
+					text: '站点部分服务异常，我们正在紧急处理',
 					bg: 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800/60',
 					textColor: 'text-red-800 dark:text-red-200',
 					icon: 'i-ph-warning-bold',
