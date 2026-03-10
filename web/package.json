@@ -50,7 +50,7 @@
 		"prettier-plugin-svelte": "^3.4.1",
 		"prettier-plugin-tailwindcss": "^0.7.2",
 		"rollup-plugin-visualizer": "^6.0.5",
-		"storybook": "^10.2.8",
+		"storybook": "^10.2.10",
 		"svelte": "^5.53.5",
 		"svelte-check": "^4.3.6",
 		"tailwindcss": "^4.1.18",
