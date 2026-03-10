@@ -887,8 +887,8 @@ func (s *Service) queryDayCountMap(ctx context.Context, query *gorm.DB, start ti
 
 func scanDayCountMap(query *gorm.DB) (map[string]int64, error) {
 	type row struct {
-		Day   string `gorm:"column:day"`
-		Count int64  `gorm:"column:count"`
+		Day   time.Time `gorm:"column:day"`
+		Count int64     `gorm:"column:count"`
 	}
 	var rows []row
 	if err := query.Scan(&rows).Error; err != nil {
@@ -896,8 +896,8 @@ func scanDayCountMap(query *gorm.DB) (map[string]int64, error) {
 	}
 	out := make(map[string]int64, len(rows))
 	for _, r := range rows {
-		if strings.TrimSpace(r.Day) != "" {
-			out[r.Day] = r.Count
+		if !r.Day.IsZero() {
+			out[r.Day.Format("2006-01-02")] = r.Count
 		}
 	}
 	return out, nil
@@ -918,8 +918,8 @@ func (s *Service) queryAnalyticsCountByDay(ctx context.Context, days int, aggreg
 	}
 	start := s.now().UTC().AddDate(0, 0, -(days - 1)).Truncate(24 * time.Hour)
 	type row struct {
-		Day   string `gorm:"column:day"`
-		Count int64  `gorm:"column:count"`
+		Day   time.Time `gorm:"column:day"`
+		Count int64     `gorm:"column:count"`
 	}
 	var rows []row
 	err := s.db.WithContext(ctx).Model(&model.AnalyticsContentHourly{}).
@@ -932,8 +932,8 @@ func (s *Service) queryAnalyticsCountByDay(ctx context.Context, days int, aggreg
 	}
 	dayMap := make(map[string]int64, len(rows))
 	for _, r := range rows {
-		if r.Day != "" {
-			dayMap[r.Day] = r.Count
+		if !r.Day.IsZero() {
+			dayMap[r.Day.Format("2006-01-02")] = r.Count
 		}
 	}
 	return fillDaySeries(start, days, dayMap), nil

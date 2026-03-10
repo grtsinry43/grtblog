@@ -70,7 +70,6 @@ export const useHealthStore = defineStore('healthStore', () => {
 
   // ── Frontend probes ───────────────────────────────────────
   const networkToastShown = ref(false)
-  const { message } = useDiscreteApi()
 
   async function runProbes() {
     const [nginx, renderer] = await Promise.all([
@@ -87,6 +86,7 @@ export const useHealthStore = defineStore('healthStore', () => {
       // Probe failed — keep current state (don't flip bits).
       // Show a one-time toast so the user knows their network may be unstable.
       if (!networkToastShown.value) {
+        const { message } = useDiscreteApi()
         message.warning('当前网络连接不太稳定，部分页面加载可能较慢', {
           duration: 5000,
           closable: true,
