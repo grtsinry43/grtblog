@@ -175,7 +175,12 @@ body {
 }
 
 @utility article-enter {
-	animation: article-enter 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+	animation-name: none;
+}
+
+/* Only animate on forward client-side navigation */
+:root[data-nav-type="forward"] .article-enter {
+	animation: article-enter 0.8s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 @keyframes article-enter {
@@ -230,7 +235,12 @@ body {
 }
 
 @utility animate-sheet-enter {
-	animation: sheet-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+	animation-name: none;
+}
+
+/* Only animate on forward client-side navigation */
+:root[data-nav-type="forward"] .animate-sheet-enter {
+	animation: sheet-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes sheet-enter {
@@ -349,45 +359,39 @@ button {
 	cursor: pointer;
 }
 
-/* View Transitions for Moments */
-::view-transition-group(moment-hero) {
-	animation-duration: 0.6s;
-	perspective: 1000px;
+/* Back navigation: disable per-card morph so moment-sheet handles the exit */
+:root[data-nav-type="back"] .moment-vt {
+	view-transition-name: none !important;
 }
 
-::view-transition-old(moment-hero) {
-	animation: flip-out 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
-	backface-visibility: hidden;
-	mix-blend-mode: normal;
+/* View Transitions for detail pages — paper sink/slide */
+/* Default: suppress the browser cross-fade */
+::view-transition-old(moment-sheet),
+::view-transition-new(moment-sheet) {
+	animation: none;
 }
 
-::view-transition-new(moment-hero) {
-	animation: flip-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
-	backface-visibility: hidden;
-	mix-blend-mode: normal;
+/* Forward: slide-in entry */
+:root[data-nav-type="forward"]::view-transition-new(moment-sheet) {
+	animation: sheet-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes flip-out {
-	from {
-		transform: rotateY(0deg) scale(1);
-		opacity: 1;
-	}
+/* Back: paper sink-out exit (moment only) */
+:root[data-nav-type="back"]::view-transition-old(moment-sheet) {
+	animation: sheet-sink-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
 
+@keyframes sheet-sink-out {
 	to {
-		transform: rotateY(-180deg) scale(0.8);
 		opacity: 0;
+		transform: translateY(30px);
 	}
 }
 
-@keyframes flip-in {
+@keyframes sheet-slide-in {
 	from {
-		transform: rotateY(180deg) scale(0.8);
 		opacity: 0;
-	}
-
-	to {
-		transform: rotateY(0deg) scale(1);
-		opacity: 1;
+		transform: translateY(-15px);
 	}
 }
 

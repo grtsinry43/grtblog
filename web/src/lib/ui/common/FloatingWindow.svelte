@@ -7,9 +7,6 @@
 	let { children } = $props<{ children?: Snippet }>();
 	let windowEl = $state<HTMLElement>();
 	let centeredOpenVersion = $state(0);
-	let outsidePulse = $state(false);
-	let outsidePulseTimer: ReturnType<typeof setTimeout> | undefined;
-
 	// Keep-alive: once opened, stay mounted (hidden via CSS when closed)
 	let hasBeenOpened = $state(false);
 
@@ -65,16 +62,15 @@
 	}
 
 	function triggerOutsidePulse() {
-		if (outsidePulseTimer) {
-			clearTimeout(outsidePulseTimer);
-		}
-		outsidePulse = false;
-		requestAnimationFrame(() => {
-			outsidePulse = true;
-			outsidePulseTimer = setTimeout(() => {
-				outsidePulse = false;
-			}, 280);
-		});
+		if (!windowEl) return;
+		windowEl.animate(
+			[
+				{ transform: 'scale(1)' },
+				{ transform: 'scale(1.025)' },
+				{ transform: 'scale(1)' }
+			],
+			{ duration: 280, easing: 'cubic-bezier(0.18, 0.89, 0.32, 1.28)' }
+		);
 	}
 
 	function handleOutsidePointerDown(event: PointerEvent) {
@@ -122,11 +118,6 @@
 			window.removeEventListener('pointerup', snapshotWindowSize, true);
 			window.removeEventListener('resize', handleResize);
 			window.removeEventListener('pointerdown', handleOutsidePointerDown, true);
-			if (outsidePulseTimer) {
-				clearTimeout(outsidePulseTimer);
-				outsidePulseTimer = undefined;
-			}
-			outsidePulse = false;
 		};
 	});
 </script>
@@ -152,7 +143,6 @@
 		class:floating-window--enter-mobile={isVisible && isMobile}
 		class:floating-window--enter-desktop={isVisible && !isMobile}
 		class:window-expanded={windowStore.isExpanded && !isMobile}
-		class:window-outside-pulse={outsidePulse && !isMobile}
 		style={windowStyle}
 		use:draggable={{ handle: '.window-header', onMove: handleMove }}
 	>
@@ -255,10 +245,6 @@
 		mix-blend-mode: soft-light !important;
 	}
 
-	.window-outside-pulse {
-		animation: window-outside-pulse 280ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
-	}
-
 	@media (min-width: 768px) {
 		.floating-window {
 			width: 450px;
@@ -325,18 +311,6 @@
 
 	:global(.dark .floating-window__content::-webkit-scrollbar-thumb:hover) {
 		background: linear-gradient(180deg, rgb(71 85 105 / 0.52), rgb(51 65 85 / 0.56));
-	}
-
-	@keyframes window-outside-pulse {
-		0% {
-			transform: scale(1);
-		}
-		45% {
-			transform: scale(1.025);
-		}
-		100% {
-			transform: scale(1);
-		}
 	}
 
 	@keyframes float-window-scale-in {

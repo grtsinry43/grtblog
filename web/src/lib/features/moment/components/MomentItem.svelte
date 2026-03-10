@@ -45,7 +45,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="group cursor-pointer relative"
+	class="group cursor-pointer relative moment-vt"
 	style="view-transition-name: moment-{moment.id};"
 	onclick={handleClick}
 >

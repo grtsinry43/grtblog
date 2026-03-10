@@ -30,6 +30,7 @@
 		md:shadow-[0_4px_30px_-8px_rgba(0,0,0,0.06)] dark:md:shadow-none
 		md:border md:border-ink-200/80 dark:md:border-ink-200/10
 		px-0 py-10 md:p-20 md:rounded-sm relative overflow-hidden md:min-h-[80vh]
+		moment-vt
 	"
 	style:view-transition-name={`moment-${moment.id}`}
 >

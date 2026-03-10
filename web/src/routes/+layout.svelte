@@ -12,7 +12,7 @@
 	import { navigating } from '$app/stores';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
-	import { onNavigate } from '$app/navigation';
+	import { beforeNavigate, onNavigate } from '$app/navigation';
 	import SearchModal from '$lib/ui/search/SearchModal.svelte';
 	import Footer from '$lib/ui/layout/Footer.svelte';
 	import FloatingWindow from '$lib/ui/common/FloatingWindow.svelte';
@@ -38,6 +38,15 @@
 			uiState.toggleSearch();
 		}
 	}
+
+	/**
+	 * Avoid back animation and LCP delay caused by lang time animation.
+	 * reference: https://innei.in/posts/design/page-transition-animation-and-lcp
+	 */
+	beforeNavigate(({ type, willUnload }) => {
+		if (willUnload || typeof document === 'undefined') return;
+		document.documentElement.dataset.navType = type === 'popstate' ? 'back' : 'forward';
+	});
 
 	onNavigate((navigation) => {
 		if (typeof document === 'undefined' || !document.startViewTransition) return;

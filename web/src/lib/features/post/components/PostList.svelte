@@ -109,9 +109,9 @@
 
 			{#each $posts as post, i (post.id)}
 				<div
-					class="article-enter rounded-default transition-colors duration-300 opacity-0"
+					class="article-enter rounded-default transition-colors duration-300"
 					role="listitem"
-					style="animation-delay: {i * 100}ms; animation-fill-mode: forwards;"
+					style="animation-delay: {i * 100}ms;"
 					onmouseenter={(e) => handleMouseEnter(i, e)}
 				>
 					<ArticleItem {post} />
