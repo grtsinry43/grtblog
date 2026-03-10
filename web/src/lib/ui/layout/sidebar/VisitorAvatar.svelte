@@ -2,14 +2,14 @@
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { authLoginModal } from '$lib/shared/actions/auth-login-modal';
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
-	import { UserIcon } from 'lucide-svelte';	import Button from '$lib/ui/primitives/button/Button.svelte';
+	import { UserIcon } from 'lucide-svelte';
 </script>
 
 {#if $userStore.isLogin}
-	<Button
-		variant="icon"
+	<button
+		type="button"
 		onclick={() => windowStore.open('用户中心', null, 'user-center')}
-		class="h-10 w-10 !p-0 rounded-default overflow-hidden ring-1 ring-ink-200 hover:ring-ink-300 dark:ring-ink-700 dark:hover:ring-ink-500"
+		class="h-10 w-10 rounded-default overflow-hidden ring-1 ring-ink-200 hover:ring-ink-300 dark:ring-ink-700 dark:hover:ring-ink-500 flex items-center justify-center"
 		aria-label="用户中心"
 	>
 		{#if $userStore.userInfo?.avatar !== ''}
@@ -19,15 +19,14 @@
 				<span>{$userStore.userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}</span>
 			</div>
 		{/if}
-	</Button>
+	</button>
 {:else}
-	<Button
-		variant="icon"
-		class="h-10 w-10 rounded-default text-ink-400 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-ink-800 dark:hover:text-ink-100"
+	<button
+		type="button"
+		use:authLoginModal={{ source: 'sidebar-avatar' }}
+		class="h-10 w-10 rounded-default text-ink-400 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-ink-800 dark:hover:text-ink-100 flex items-center justify-center"
 		aria-label="登录"
-		action={authLoginModal}
-		actionOptions={{ source: 'sidebar-avatar' }}
 	>
 		<UserIcon class="h-5 w-5" />
-	</Button>
+	</button>
 {/if}
