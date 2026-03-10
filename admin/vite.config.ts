@@ -44,8 +44,16 @@ export default defineConfig((env) => {
       },
     },
     build: {
-      rollupOptions: {
+      rolldownOptions: {
         output: {
+          ...(env.mode === 'production' && {
+            minify: {
+              compress: {
+                dropConsole: true,
+                dropDebugger: true,
+              },
+            },
+          }),
           advancedChunks: {
             groups: [
               {
@@ -96,9 +104,6 @@ export default defineConfig((env) => {
           },
         },
       },
-    },
-    esbuild: {
-      drop: env.mode === 'production' ? ['console', 'debugger'] : [],
     },
   }
 })
