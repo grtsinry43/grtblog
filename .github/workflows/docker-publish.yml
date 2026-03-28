@@ -161,7 +161,7 @@ jobs:
           password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Log in to CNB Docker Registry
-        if: ${{ env.CNB_ACCESS_TOKEN != '' }}
+        if: ${{ needs.prepare.outputs.channel == 'stable' && env.CNB_ACCESS_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           registry: ${{ env.CNB_REGISTRY }}
@@ -186,7 +186,7 @@ jobs:
           if [[ "$CHANNEL" == "stable" && -n "${dockerhub_namespace}" && -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
             image_refs+=("docker.io/${dockerhub_namespace}/${IMAGE_NAME}")
           fi
-          if [[ -n "${CNB_ACCESS_TOKEN:-}" ]]; then
+          if [[ "$CHANNEL" == "stable" && -n "${CNB_ACCESS_TOKEN:-}" ]]; then
             image_refs+=("${CNB_REGISTRY}/${CNB_REPO}/${IMAGE_NAME}")
           fi
 
@@ -255,7 +255,7 @@ jobs:
   sync-to-cnb:
     runs-on: ubuntu-latest
     needs: prepare
-    if: ${{ vars.CNB_SYNC_ENABLED == 'true' }}
+    if: ${{ needs.prepare.outputs.channel == 'stable' && vars.CNB_SYNC_ENABLED == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
