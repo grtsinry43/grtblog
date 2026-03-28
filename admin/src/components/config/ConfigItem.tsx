@@ -77,18 +77,31 @@ export default defineComponent({
           )
           break
         case 'string':
-        default:
-          const inputType = (item.meta as any)?.inputType === 'password' ? 'password' : 'text'
-          control = (
-            <NInput
-              v-model:value={valueMap[item.key]}
-              type={inputType}
-              clearable
-              showPasswordOn='click'
-              placeholder={item.isSensitive ? '********** (留空不更新)' : ''}
-            />
-          )
+        default: {
+          const metaInputType = (item.meta as any)?.inputType
+          if (metaInputType === 'textarea') {
+            control = (
+              <NInput
+                v-model:value={valueMap[item.key]}
+                type='textarea'
+                autosize={{ minRows: 2, maxRows: 10 }}
+                placeholder={item.isSensitive ? '********** (留空不更新)' : ''}
+              />
+            )
+          } else {
+            const inputType = metaInputType === 'password' ? 'password' : 'text'
+            control = (
+              <NInput
+                v-model:value={valueMap[item.key]}
+                type={inputType}
+                clearable
+                showPasswordOn='click'
+                placeholder={item.isSensitive ? '********** (留空不更新)' : ''}
+              />
+            )
+          }
           break
+        }
       }
 
       // 4. 组装 FormItem (使用 Slots)

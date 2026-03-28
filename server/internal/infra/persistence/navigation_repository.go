@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/navigation"
@@ -82,16 +83,22 @@ func (r *NavMenuRepository) UpdateOrder(ctx context.Context, updates []navigatio
 		return nil
 	}
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for _, update := range updates {
-			values := map[string]any{
-				"parent_id": update.ParentID,
-				"sort":      update.Sort,
-			}
-			if err := tx.Model(&model.NavMenu{}).Where("id = ?", update.ID).Updates(values).Error; err != nil {
-				return err
-			}
+		// 延迟唯一约束检查到事务提交时，避免行级中间状态冲突。
+		if err := tx.Exec("SET CONSTRAINTS uq_nav_menu_parent_sort DEFERRED").Error; err != nil {
+			return err
 		}
-		return nil
+		var sb strings.Builder
+		args := make([]any, 0, len(updates)*3)
+		sb.WriteString("UPDATE nav_menu AS m SET parent_id = v.parent_id, sort = v.sort, updated_at = NOW() FROM (VALUES ")
+		for i, u := range updates {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("(?::bigint, ?::bigint, ?::int)")
+			args = append(args, u.ID, u.ParentID, u.Sort)
+		}
+		sb.WriteString(") AS v(id, parent_id, sort) WHERE m.id = v.id AND m.deleted_at IS NULL")
+		return tx.Exec(sb.String(), args...).Error
 	})
 }
 

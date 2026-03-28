@@ -32,6 +32,7 @@ type Comment struct {
 	Browser           string         `gorm:"column:browser;size:45"`
 	Email             string         `gorm:"column:email;size:255"`
 	Website           string         `gorm:"column:website;size:255"`
+	Avatar            string         `gorm:"column:avatar;size:500"`
 	IsOwner           bool           `gorm:"column:is_owner"`
 	IsFriend          bool           `gorm:"column:is_friend"`
 	IsAuthor          bool           `gorm:"column:is_author"`

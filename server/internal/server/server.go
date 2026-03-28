@@ -22,6 +22,7 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/cleanup"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
@@ -56,6 +57,7 @@ type Server struct {
 	isrSvc        *isr.Service
 	fedSync       *appfed.SyncWorker
 	fedDeliver    *appfed.DeliveryService
+	cleanupSvc    *cleanup.Service
 	healthChecker *health.Checker
 	version       string
 }
@@ -248,6 +250,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		isrSvc:        isrSvc,
 		fedSync:       fedSync,
 		fedDeliver:    fedDeliver,
+		cleanupSvc:    cleanup.NewService(persistence.NewCleanupRepository(db)),
 		healthChecker: healthChecker,
 		version:       buildinfo.Version(),
 	}
@@ -290,6 +293,8 @@ func (s *Server) Start() error {
 	if s.fedDeliver != nil {
 		go s.runFederationRetryWorker()
 	}
+	// 启动数据清理定时任务（每 6 小时执行一次）
+	go s.cleanupSvc.Run(s.ctx, 6*time.Hour)
 
 	addr := fmt.Sprintf(":%s", s.cfg.App.Port)
 	return s.app.Listen(addr)

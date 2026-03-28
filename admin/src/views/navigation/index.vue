@@ -172,9 +172,34 @@ const openEdit = (item: NavMenuItem) => {
   modalOpen.value = true
 }
 
+// 如果有未保存的拖拽排序，先静默提交，防止后续 fetchMenus 覆盖本地排序。
+const flushOrderIfDirty = async () => {
+  if (!orderDirty.value) return
+  const payload = buildOrderPayload(menuTree.value)
+  if (payload.length) {
+    await reorderNavMenus(payload)
+    orderDirty.value = false
+  }
+}
+
+// 在本地树上就地更新某个节点的属性，不需要重新拉取。
+const patchTreeItem = (items: NavMenuItem[], id: number, patch: Partial<NavMenuItem>): boolean => {
+  for (const item of items) {
+    if (item.id === id) {
+      Object.assign(item, patch)
+      return true
+    }
+    if (item.children?.length && patchTreeItem(item.children, id, patch)) {
+      return true
+    }
+  }
+  return false
+}
+
 const handleDelete = async (item: NavMenuItem) => {
   if (!window.confirm(`确认删除菜单「${item.name}」及其子项吗？`)) return
   try {
+    await flushOrderIfDirty()
     await deleteNavMenu(item.id)
     message.success('已删除')
     await fetchMenus()
@@ -233,14 +258,29 @@ const handleSubmit = async () => {
 
   try {
     if (editingItem.value) {
+      const parentChanged = (editingItem.value.parentId ?? null) !== parentId
       await updateNavMenu(editingItem.value.id, payload)
+      if (parentChanged) {
+        // 父级变更是结构性变更，先保存排序再刷新。
+        await flushOrderIfDirty()
+        await fetchMenus()
+      } else {
+        // 仅属性变更，就地 patch，保留拖拽排序状态。
+        patchTreeItem(menuTree.value, editingItem.value.id, {
+          name: payload.name,
+          url: payload.url,
+          icon: payload.icon,
+        })
+      }
       message.success('菜单已更新')
     } else {
+      // 新建：结构性变更，先保存未提交的排序再拉取。
+      await flushOrderIfDirty()
       await createNavMenu(payload)
       message.success('菜单已创建')
+      await fetchMenus()
     }
     modalOpen.value = false
-    await fetchMenus()
   } catch (error) {
     message.error(error instanceof Error ? error.message : '保存失败')
   } finally {

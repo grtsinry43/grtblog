@@ -1040,6 +1040,11 @@ func (s *Service) resolveCommentAvatar(ctx context.Context, item *domaincomment.
 		return nil
 	}
 
+	// 优先使用 DB 中已存储的头像（如 AP 入站时保存的远程头像）
+	if stored := strings.TrimSpace(toValue(item.Avatar)); stored != "" {
+		return toPtr(stored)
+	}
+
 	email := strings.TrimSpace(toValue(item.Email))
 	if item.AuthorID != nil && s.userRepo != nil {
 		uid := *item.AuthorID

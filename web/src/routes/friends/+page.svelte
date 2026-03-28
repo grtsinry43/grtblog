@@ -7,6 +7,7 @@
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { authModalStore } from '$lib/shared/stores/authModalStore';
 	import PageHeader from '$lib/ui/common/PageHeader.svelte';
+	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
 
 	let { data } = $props();
 
@@ -45,8 +46,8 @@
 				</h2>
 
 				{#if data.applyConfig.requirements}
-					<div class="text-xs text-ink-500 dark:text-ink-400 space-y-3 font-serif whitespace-pre-line">
-						{data.applyConfig.requirements}
+					<div class="text-xs text-ink-500 dark:text-ink-400 space-y-3 font-serif">
+						<SafeMarkdownView content={data.applyConfig.requirements} />
 					</div>
 				{:else}
 					<ul class="text-xs text-ink-500 dark:text-ink-400 space-y-3 font-serif">
