@@ -214,19 +214,29 @@ func normalizeExtInfo(obj map[string]any) []byte {
 	if len(obj) == 0 {
 		return nil
 	}
-	// Marshal deterministic key order to avoid noisy updates.
+	// json.Marshal on map iterates keys in random order, so we manually
+	// build JSON with sorted keys to guarantee deterministic output.
 	keys := make([]string, 0, len(obj))
 	for key := range obj {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-	ordered := make(map[string]any, len(obj))
-	for _, key := range keys {
-		ordered[key] = obj[key]
+
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for i, key := range keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		keyJSON, _ := json.Marshal(key)
+		buf.Write(keyJSON)
+		buf.WriteByte(':')
+		valJSON, err := json.Marshal(obj[key])
+		if err != nil {
+			valJSON = []byte("null")
+		}
+		buf.Write(valJSON)
 	}
-	data, err := json.Marshal(ordered)
-	if err != nil {
-		return nil
-	}
-	return data
+	buf.WriteByte('}')
+	return buf.Bytes()
 }

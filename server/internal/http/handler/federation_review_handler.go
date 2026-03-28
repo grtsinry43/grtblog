@@ -2,12 +2,14 @@ package handler
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 
+	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	domainfed "github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
@@ -19,6 +21,7 @@ type FederationReviewHandler struct {
 	mentionRepo  domainfed.FederatedMentionRepository
 	instanceRepo domainfed.FederationInstanceRepository
 	outbound     *appfed.OutboundService
+	events       appEvent.Bus
 }
 
 func NewFederationReviewHandler(
@@ -26,12 +29,17 @@ func NewFederationReviewHandler(
 	mentionRepo domainfed.FederatedMentionRepository,
 	instanceRepo domainfed.FederationInstanceRepository,
 	outbound *appfed.OutboundService,
+	events appEvent.Bus,
 ) *FederationReviewHandler {
+	if events == nil {
+		events = appEvent.NopBus{}
+	}
 	return &FederationReviewHandler{
 		citationRepo: citationRepo,
 		mentionRepo:  mentionRepo,
 		instanceRepo: instanceRepo,
 		outbound:     outbound,
+		events:       events,
 	}
 }
 
@@ -111,7 +119,18 @@ func (h *FederationReviewHandler) ReviewCitation(c *fiber.Ctx) error {
 	}
 	item, err := h.citationRepo.GetByID(c.Context(), id)
 	if err == nil {
-		_ = h.sendResultCallback(c.Context(), "citation", item.SourceInstanceID, item.SourceRequestID, status, req.Reason)
+		if cbErr := h.sendResultCallback(c.Context(), "citation", item.SourceInstanceID, item.SourceRequestID, status, req.Reason); cbErr != nil {
+			log.Printf("[federation] 引用审核回调失败 citation_id=%d err=%v", id, cbErr)
+		}
+		_ = h.events.Publish(c.Context(), appEvent.Generic{
+			EventName: "federation.citation.reviewed",
+			At:        time.Now().UTC(),
+			Payload: map[string]any{
+				"CitationID":       item.ID,
+				"SourceInstanceID": item.SourceInstanceID,
+				"Status":           status,
+			},
+		})
 	}
 	return response.SuccessWithMessage[any](c, nil, "审核结果已更新")
 }
@@ -149,7 +168,19 @@ func (h *FederationReviewHandler) ReviewMention(c *fiber.Ctx) error {
 	}
 	item, err := h.mentionRepo.GetByID(c.Context(), id)
 	if err == nil {
-		_ = h.sendResultCallback(c.Context(), "mention", item.SourceInstanceID, item.SourceRequestID, status, req.Reason)
+		if cbErr := h.sendResultCallback(c.Context(), "mention", item.SourceInstanceID, item.SourceRequestID, status, req.Reason); cbErr != nil {
+			log.Printf("[federation] 提及审核回调失败 mention_id=%d err=%v", id, cbErr)
+		}
+		_ = h.events.Publish(c.Context(), appEvent.Generic{
+			EventName: "federation.mention.reviewed",
+			At:        time.Now().UTC(),
+			Payload: map[string]any{
+				"MentionID":        item.ID,
+				"SourceInstanceID": item.SourceInstanceID,
+				"MentionedUserID":  item.MentionedUserID,
+				"Status":           status,
+			},
+		})
 	}
 	return response.SuccessWithMessage[any](c, nil, "审核结果已更新")
 }

@@ -63,21 +63,34 @@ func (s *DeliveryService) DispatchFriendLink(ctx context.Context, target, messag
 }
 
 func (s *DeliveryService) DispatchCitation(ctx context.Context, ev CitationDetected, traceID *string) (*domainfed.OutboundDelivery, error) {
-	if err := s.ensureFederationTarget(ctx, ev.TargetInstance); err != nil {
-		return nil, err
-	}
+	targetType := s.resolveCitationTarget(ctx, ev.TargetInstance)
 	payload, _ := json.Marshal(ev)
 	articleID := ev.ArticleID
 	delivery := s.newDelivery(domainfed.DeliveryTypeCitation, &articleID, ev.TargetInstance, payload, traceID)
+
+	// RSS 友链：远端无联合端点，直接标记 approved（单向引用）
+	if targetType == "rss" {
+		delivery.Status = domainfed.DeliveryStatusApproved
+		if err := s.repo.Create(ctx, delivery); err != nil {
+			return nil, err
+		}
+		log.Printf("[federation] 引用目标为 RSS 友链，跳过发送 target=%s article_id=%d", ev.TargetInstance, ev.ArticleID)
+		s.publishStatus(ctx, delivery)
+		return delivery, nil
+	}
+
 	if err := s.repo.Create(ctx, delivery); err != nil {
 		return nil, err
 	}
+	// federation 友链或无友链：尝试发送签名请求
 	return s.sendCitation(ctx, delivery, ev)
 }
 
 func (s *DeliveryService) DispatchMention(ctx context.Context, ev MentionDetected, traceID *string) (*domainfed.OutboundDelivery, error) {
-	if err := s.ensureFederationTarget(ctx, ev.TargetInstance); err != nil {
-		return nil, err
+	targetType := s.resolveCitationTarget(ctx, ev.TargetInstance)
+	// RSS 友链无用户体系，提及无法送达
+	if targetType == "rss" {
+		return nil, fmt.Errorf("目标为 RSS 友链，不支持提及: %s", ev.TargetInstance)
 	}
 	payload, _ := json.Marshal(ev)
 	articleID := ev.ArticleID
@@ -85,6 +98,7 @@ func (s *DeliveryService) DispatchMention(ctx context.Context, ev MentionDetecte
 	if err := s.repo.Create(ctx, delivery); err != nil {
 		return nil, err
 	}
+	// federation 友链或无友链：尝试发送
 	return s.sendMention(ctx, delivery, ev)
 }
 
@@ -150,6 +164,18 @@ func (s *DeliveryService) HandleCallback(ctx context.Context, cmd CallbackResult
 		return nil, err
 	}
 	s.publishStatus(ctx, item)
+	// 友链审批通过后，发布事件驱动本地创建 Instance + FriendLink
+	if item.DeliveryType == domainfed.DeliveryTypeFriendLink && item.Status == domainfed.DeliveryStatusApproved {
+		_ = s.events.Publish(ctx, appEvent.Generic{
+			EventName: "federation.friendlink.approved",
+			At:        time.Now().UTC(),
+			Payload: map[string]any{
+				"TargetInstanceURL": item.TargetInstanceURL,
+				"RequestID":         item.RequestID,
+				"DeliveryID":        item.ID,
+			},
+		})
+	}
 	return item, nil
 }
 
@@ -193,7 +219,7 @@ func (s *DeliveryService) sendFriendLink(ctx context.Context, item *domainfed.Ou
 	if !s.beginSend(ctx, item) {
 		return item, nil
 	}
-	resp, raw, endpoint, err := s.outbound.SendFriendLinkRequest(ctx, item.TargetInstanceURL, message, rssURL)
+	resp, raw, endpoint, err := s.outbound.SendFriendLinkRequest(ctx, item.TargetInstanceURL, message, rssURL, item.RequestID)
 	return s.finishSend(ctx, item, resp, raw, endpoint, err)
 }
 
@@ -379,25 +405,27 @@ func canTransition(from, to string) bool {
 	return dst >= src
 }
 
-func (s *DeliveryService) ensureFederationTarget(ctx context.Context, target string) error {
+// resolveCitationTarget 判断引用目标类型：
+// "federation" — 有 active 的 federation 友链
+// "rss"        — 有 active 的 rss 友链
+// "unknown"    — 未知，尝试直接发送
+func (s *DeliveryService) resolveCitationTarget(ctx context.Context, target string) string {
 	if s.linkRepo == nil {
-		return errors.New("friend link repository not configured")
+		return "unknown"
 	}
 	targetHost, targetPort := parseHostPort(target)
 	targetHost = strings.ToLower(strings.TrimSpace(targetHost))
-	targetPort = strings.TrimSpace(targetPort)
 	if targetHost == "" {
-		return ErrTargetInstanceEmpty
+		return "unknown"
 	}
 	active := true
 	links, _, err := s.linkRepo.List(ctx, social.FriendLinkListOptions{
 		IsActive: &active,
-		Type:     social.FriendLinkTypeFederation,
 		Page:     1,
 		PageSize: 0,
 	})
 	if err != nil {
-		return err
+		return "unknown"
 	}
 	for i := range links {
 		linkHost, linkPort := parseHostPort(links[i].URL)
@@ -408,23 +436,15 @@ func (s *DeliveryService) ensureFederationTarget(ctx context.Context, target str
 		if targetPort != "" && strings.TrimSpace(linkPort) != targetPort {
 			continue
 		}
-		if links[i].InstanceID == nil || *links[i].InstanceID <= 0 {
-			return ErrFederationInstanceNotBound
+		switch strings.ToLower(strings.TrimSpace(links[i].Type)) {
+		case social.FriendLinkTypeFederation:
+			return "federation"
+		case social.FriendLinkTypeRSS:
+			return "rss"
+		default:
+			return "unknown"
 		}
-		if s.outbound == nil || s.outbound.instanceRepo == nil {
-			return errors.New("federation instance repository not configured")
-		}
-		instance, err := s.outbound.instanceRepo.GetByID(ctx, *links[i].InstanceID)
-		if err != nil {
-			if errors.Is(err, domainfed.ErrFederationInstanceNotFound) {
-				return ErrFederationInstanceNotBound
-			}
-			return err
-		}
-		if strings.TrimSpace(strings.ToLower(instance.Status)) != "active" {
-			return ErrFederationInstanceNotActive
-		}
-		return nil
 	}
-	return ErrTargetFriendLinkNotFederation
+	return "unknown"
 }
+

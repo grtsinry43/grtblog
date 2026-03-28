@@ -2,6 +2,7 @@ package contract
 
 // FederationFriendLinkRequestReq 联合友链申请请求。
 type FederationFriendLinkRequestReq struct {
+	RequestID    string `json:"request_id,omitempty"`
 	RequesterURL string `json:"requester_url"`
 	Message      string `json:"message,omitempty"`
 	RSSURL       string `json:"rss_url,omitempty"`

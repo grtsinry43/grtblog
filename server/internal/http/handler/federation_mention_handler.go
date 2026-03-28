@@ -14,6 +14,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
+	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
@@ -23,6 +24,7 @@ type FederationMentionHandler struct {
 	cfgSvc       *sysconfig.Service
 	instanceRepo federation.FederationInstanceRepository
 	mentionRepo  federation.FederatedMentionRepository
+	linkRepo     social.FriendLinkRepository
 	userRepo     identity.Repository
 	resolver     *fedinfra.Resolver
 	verifier     *fedinfra.Verifier
@@ -34,6 +36,7 @@ func NewFederationMentionHandler(
 	cfgSvc *sysconfig.Service,
 	instanceRepo federation.FederationInstanceRepository,
 	mentionRepo federation.FederatedMentionRepository,
+	linkRepo social.FriendLinkRepository,
 	userRepo identity.Repository,
 	resolver *fedinfra.Resolver,
 	verifier *fedinfra.Verifier,
@@ -47,6 +50,7 @@ func NewFederationMentionHandler(
 		cfgSvc:       cfgSvc,
 		instanceRepo: instanceRepo,
 		mentionRepo:  mentionRepo,
+		linkRepo:     linkRepo,
 		userRepo:     userRepo,
 		resolver:     resolver,
 		verifier:     verifier,
@@ -139,7 +143,7 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 		mentionType = "discussion"
 	}
 	status := "pending"
-	if h.isFriendLink(c.Context(), payload.SourceInstanceURL) {
+	if policyBool(policy.AutoApproveFriendlinkCitation, false) && h.isFriendLink(c.Context(), payload.SourceInstanceURL) {
 		status = "approved"
 	}
 
@@ -189,17 +193,9 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 }
 
 func (h *FederationMentionHandler) isFriendLink(ctx context.Context, baseURL string) bool {
-	if h.instanceRepo == nil {
+	if h.linkRepo == nil {
 		return false
 	}
-	trimmed := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	if trimmed == "" {
-		return false
-	}
-	// Keep mention approval criteria aligned with citation policy: friend-link instances skip manual review.
-	instance, err := h.instanceRepo.GetByBaseURL(ctx, trimmed)
-	if err != nil || instance == nil {
-		return false
-	}
-	return instance.Status == "active"
+	_, err := h.linkRepo.FindByURL(ctx, strings.TrimRight(strings.TrimSpace(baseURL), "/"))
+	return err == nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -85,6 +86,32 @@ func (w *SyncWorker) SyncOnce(ctx context.Context) {
 	// Clean up old posts: keep only the 10 most recent posts per friend link
 	_ = w.cacheRepo.CleanupOldPosts(ctx, 10)
 	_ = w.eventBus.Publish(ctx, FederatedPostsCached{At: time.Now().UTC()})
+}
+
+// SyncFriendLinkByURL 按 URL 查找友链并立即同步，用于审批后即时拉取。
+func (w *SyncWorker) SyncFriendLinkByURL(ctx context.Context, url string) {
+	if w == nil || w.linkRepo == nil {
+		return
+	}
+	url = strings.TrimRight(strings.TrimSpace(url), "/")
+	if url == "" {
+		return
+	}
+	link, err := w.linkRepo.FindByURL(ctx, url)
+	if err != nil {
+		log.Printf("[federation] SyncFriendLinkByURL: 查找友链失败 url=%s err=%v", url, err)
+		return
+	}
+	if !link.IsActive || strings.EqualFold(strings.TrimSpace(link.Type), social.FriendLinkTypeNoRSS) {
+		return
+	}
+	count, method, runErr := w.syncFriendLink(ctx, link)
+	_ = w.applyLinkSyncResult(ctx, link, count, runErr)
+	if runErr != nil {
+		log.Printf("[federation] SyncFriendLinkByURL: 同步失败 url=%s method=%s err=%v", url, method, runErr)
+	} else {
+		log.Printf("[federation] SyncFriendLinkByURL: 同步完成 url=%s method=%s count=%d", url, method, count)
+	}
 }
 
 func (w *SyncWorker) syncOnceDirect(ctx context.Context, now time.Time) {

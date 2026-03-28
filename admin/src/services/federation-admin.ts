@@ -18,6 +18,7 @@ import type {
   FederationOutboundDeliveryListResp,
   FederationOutboundDeliveryResp,
   FederationOutboundListReq,
+  FederationRemotePostListResp,
   FederationReviewDecisionReq,
   FederationReviewListResp,
 } from '@/types/federation'
@@ -130,6 +131,13 @@ export function listFederationInstancePosts(instanceId: number, query?: string, 
   return request<FederationCachedPostListResp>(`/admin/federation/instances/${instanceId}/posts`, {
     method: 'GET',
     query: { q: query || '', limit },
+  })
+}
+
+export function fetchRemotePosts(url: string, query?: string, page = 1, pageSize = 20) {
+  return request<FederationRemotePostListResp>('/admin/federation/remote/posts', {
+    method: 'GET',
+    query: { url, query: query || '', page, pageSize },
   })
 }
 

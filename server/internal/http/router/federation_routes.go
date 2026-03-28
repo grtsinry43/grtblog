@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 
 	appap "github.com/grtsinry43/grtblog-v2/server/internal/app/activitypub"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
@@ -45,23 +46,43 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
 	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, linkRepo, deps.EventBus)
 
+	wellKnownLimiter := limiter.New(limiter.Config{
+		Max:        120,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+	})
 	wellKnownHandler := handler.NewFederationWellKnownHandler(sysCfgSvc, deps.Config.App)
-	app.Get("/.well-known/blog-federation/manifest.json", wellKnownHandler.Manifest)
-	app.Get("/.well-known/blog-federation/public-key.json", wellKnownHandler.PublicKey)
-	app.Get("/.well-known/blog-federation/endpoints.json", wellKnownHandler.Endpoints)
+	app.Get("/.well-known/blog-federation/manifest.json", wellKnownLimiter, wellKnownHandler.Manifest)
+	app.Get("/.well-known/blog-federation/public-key.json", wellKnownLimiter, wellKnownHandler.PublicKey)
+	app.Get("/.well-known/blog-federation/endpoints.json", wellKnownLimiter, wellKnownHandler.Endpoints)
 	apSvc := appap.NewService(sysCfgSvc, apFollowerRepo, apOutboxRepo, contentRepo, thinkingRepo, commentRepo, userRepo, adminNotifSvc)
 	appap.RegisterSubscribers(deps.EventBus, apSvc)
 	apHandler := handler.NewActivityPubHandler(apSvc)
-	app.Get("/.well-known/nodeinfo", apHandler.NodeInfoDiscovery)
-	app.Get("/nodeinfo/2.0", apHandler.NodeInfo20)
-	app.Get("/.well-known/webfinger", apHandler.WebFinger)
-	app.Get("/ap/actor", apHandler.Actor)
-	app.Get("/ap/followers", apHandler.Followers)
-	app.Get("/ap/outbox", apHandler.Outbox)
-	app.Get("/ap/objects/:id", apHandler.Object)
-	app.Post("/ap/inbox", apHandler.Inbox)
+	app.Get("/.well-known/nodeinfo", wellKnownLimiter, apHandler.NodeInfoDiscovery)
+	app.Get("/nodeinfo/2.0", wellKnownLimiter, apHandler.NodeInfo20)
+	app.Get("/.well-known/webfinger", wellKnownLimiter, apHandler.WebFinger)
+	apLimiter := limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+	})
+	app.Get("/ap/actor", apLimiter, apHandler.Actor)
+	app.Get("/ap/followers", apLimiter, apHandler.Followers)
+	app.Get("/ap/outbox", apLimiter, apHandler.Outbox)
+	app.Get("/ap/objects/:id", apLimiter, apHandler.Object)
+	app.Post("/ap/inbox", apLimiter, apHandler.Inbox)
 
-	federationGroup := app.Group("/api/federation")
+	federationGroup := app.Group("/api/federation", limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+	}))
 	friendLinkHandler := handler.NewFederationFriendLinkHandler(sysCfgSvc, instanceRepo, linkRepo, appRepo, resolver, verifier, rateLimiter, deps.EventBus)
 	federationGroup.Post("/friendlinks/request", friendLinkHandler.RequestFriendLink)
 
@@ -74,7 +95,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	citationHandler := handler.NewFederationCitationHandler(sysCfgSvc, contentRepo, instanceRepo, citationRepo, linkRepo, resolver, verifier, rateLimiter, deps.EventBus)
 	federationGroup.Post("/citations/request", citationHandler.RequestCitation)
 
-	mentionHandler := handler.NewFederationMentionHandler(sysCfgSvc, instanceRepo, mentionRepo, userRepo, resolver, verifier, rateLimiter, deps.EventBus)
+	mentionHandler := handler.NewFederationMentionHandler(sysCfgSvc, instanceRepo, mentionRepo, linkRepo, userRepo, resolver, verifier, rateLimiter, deps.EventBus)
 	federationGroup.Post("/mentions/notify", mentionHandler.NotifyMention)
 
 	outboundResultHandler := handler.NewFederationOutboundResultHandler(deliverySvc, verifier)

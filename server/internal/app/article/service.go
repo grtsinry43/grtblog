@@ -324,6 +324,14 @@ func (s *Service) BatchSetPublished(ctx context.Context, cmd BatchSetPublishedCm
 				ShortURL: articleItem.ShortURL,
 				At:       now,
 			})
+			// 草稿→发布时检测联合信号
+			prevExtInfo := append([]byte(nil), articleItem.ExtInfo...)
+			publishFederationSignals(ctx, s.events, articleItem, articleItem.Content)
+			if !bytes.Equal(prevExtInfo, articleItem.ExtInfo) {
+				if err := s.repo.UpdateArticle(ctx, articleItem); err != nil {
+					return err
+				}
+			}
 		} else {
 			_ = s.events.Publish(ctx, ArticleUnpublished{
 				ID:       articleItem.ID,

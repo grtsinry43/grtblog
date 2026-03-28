@@ -44,7 +44,13 @@ func (h *FederationTimelineHandler) ListTimelinePosts(c *fiber.Ctx) error {
 		}
 	}
 	page := parseIntQuery(c, "page", 1)
+	if page < 1 {
+		page = 1
+	}
 	size := parseIntQuery(c, "per_page", 20)
+	if size < 1 {
+		size = 20
+	}
 	if size > 100 {
 		size = 100
 	}

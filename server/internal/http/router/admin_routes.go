@@ -138,6 +138,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 		persistence.NewFederatedMentionRepository(deps.DB),
 		instanceRepo,
 		outbound,
+		deps.EventBus,
 	)
 	activityPubSvc := appap.NewService(
 		sysCfgSvc,
@@ -164,6 +165,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Get("/federation/activitypub/outbox/:id", activityPubAdminHandler.GetOutbox)
 	admin.Post("/federation/activitypub/outbox/:id/retry", activityPubAdminHandler.RetryOutbox)
 	admin.Get("/federation/remote/check", federationAdminHandler.CheckRemote)
+	admin.Get("/federation/remote/posts", federationAdminHandler.FetchRemotePosts)
 	admin.Get("/federation/instances", federationAdminHandler.ListInstances)
 	admin.Get("/federation/instances/:id", federationAdminHandler.GetInstance)
 	admin.Get("/federation/instances/:id/posts", federationAdminHandler.ListInstancePosts)
@@ -183,7 +185,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	friendLinkAppRepo := persistence.NewFriendLinkApplicationRepository(deps.DB)
 	friendLinkSyncJobRepo := persistence.NewFriendLinkSyncJobRepository(deps.DB)
-	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo, identityRepo, deps.EventBus)
+	friendLinkAdminSvc := friendlink.NewAdminService(friendLinkAppRepo, friendLinkRepo, instanceRepo, identityRepo, outbound, deps.EventBus)
 	friendLinkAdminHandler := handler.NewFriendLinkAdminHandler(friendLinkAdminSvc, friendLinkSyncJobRepo)
 	admin.Get("/friend-links/applications", friendLinkAdminHandler.ListApplications)
 	admin.Put("/friend-links/applications/:id/approve", friendLinkAdminHandler.ApproveApplication)

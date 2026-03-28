@@ -3,6 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -384,6 +388,197 @@ func (h *FederationAdminHandler) CheckRemote(c *fiber.Ctx) error {
 		PublicKey: mapPublicKeyResp(publicKey),
 		Endpoints: mapEndpointsResp(endpoints),
 	})
+}
+
+// FetchRemotePosts 实时拉取任意远端实例的文章列表，用于引用选择器。
+// @Summary 拉取远端文章列表
+// @Tags FederationAdmin
+// @Produce json
+// @Param url query string true "远端实例地址"
+// @Param query query string false "搜索关键字"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(20)
+// @Success 200 {object} contract.FederationTimelineResp
+// @Security BearerAuth
+// @Router /admin/federation/remote/posts [get]
+// @Security JWTAuth
+func (h *FederationAdminHandler) FetchRemotePosts(c *fiber.Ctx) error {
+	target := strings.TrimSpace(c.Query("url"))
+	if target == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "url 不能为空")
+	}
+	if h.resolver == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "resolver 未初始化")
+	}
+	baseURL := normalizeInstanceURL(target)
+	if baseURL == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "url 格式无效")
+	}
+
+	keyword := strings.TrimSpace(c.Query("query"))
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "20"))
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 50 {
+		pageSize = 50
+	}
+
+	// 尝试拉取远端 endpoints
+	endpoints, err := h.resolver.FetchEndpoints(c.Context(), baseURL)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "拉取远端 endpoints 失败", err)
+	}
+	if endpoints == nil || endpoints.Endpoints == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "远端 endpoints 不可用")
+	}
+
+	// 构建时间线 URL
+	path := strings.TrimSpace(endpoints.Endpoints["timeline"])
+	if path == "" {
+		return response.NewBizErrorWithMsg(response.ServerError, "远端未提供 timeline 端点")
+	}
+	endpointBaseURL := strings.TrimSpace(endpoints.BaseURL)
+	if endpointBaseURL == "" {
+		endpointBaseURL = baseURL
+	}
+	timelineURL, err := resolveEndpointURL(endpointBaseURL, path)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "解析 timeline 端点失败", err)
+	}
+	q := timelineURL.Query()
+	q.Set("page", strconv.Itoa(page))
+	q.Set("per_page", strconv.Itoa(pageSize))
+	timelineURL.RawQuery = q.Encode()
+
+	// 拉取远端时间线
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequestWithContext(c.Context(), http.MethodGet, timelineURL.String(), nil)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "构建请求失败", err)
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "拉取远端时间线失败", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return response.NewBizErrorWithMsg(response.ServerError, fmt.Sprintf("远端返回 %d: %s", resp.StatusCode, string(body)))
+	}
+
+	var envelope struct {
+		Data struct {
+			Items []struct {
+				ID             string     `json:"id"`
+				URL            string     `json:"url"`
+				Title          string     `json:"title"`
+				Summary        string     `json:"summary"`
+				ContentPreview *string    `json:"content_preview"`
+				Author         any        `json:"author"`
+				PublishedAt    time.Time  `json:"published_at"`
+				UpdatedAt      *time.Time `json:"updated_at"`
+				CoverImage     *string    `json:"cover_image"`
+				Language       *string    `json:"language"`
+				AllowCitation  bool       `json:"allow_citation"`
+				AllowComment   bool       `json:"allow_comment"`
+			} `json:"items"`
+			Total int64 `json:"total"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "解析远端响应失败", err)
+	}
+
+	// 获取远端实例名
+	instanceName := baseURL
+	if manifest, err := h.resolver.FetchManifest(c.Context(), baseURL); err == nil && manifest != nil && manifest.Instance.Name != "" {
+		instanceName = manifest.Instance.Name
+	}
+
+	items := make([]contract.FederationPostResp, 0, len(envelope.Data.Items))
+	keywordLower := strings.ToLower(keyword)
+	for _, item := range envelope.Data.Items {
+		if strings.TrimSpace(item.URL) == "" || strings.TrimSpace(item.Title) == "" {
+			continue
+		}
+		// 客户端关键字过滤（远端可能不支持搜索参数）
+		if keywordLower != "" {
+			if !strings.Contains(strings.ToLower(item.Title), keywordLower) &&
+				!strings.Contains(strings.ToLower(item.Summary), keywordLower) {
+				continue
+			}
+		}
+		id := strings.TrimSpace(item.ID)
+		if id == "" {
+			id = item.URL
+		}
+		var authorName string
+		var authorAvatar *string
+		var authorURL *string
+		if raw, err := json.Marshal(item.Author); err == nil {
+			var a struct {
+				Name   string  `json:"name"`
+				Avatar *string `json:"avatar"`
+				URL    *string `json:"url"`
+			}
+			if json.Unmarshal(raw, &a) == nil {
+				authorName = a.Name
+				authorAvatar = a.Avatar
+				authorURL = a.URL
+			}
+		}
+		items = append(items, contract.FederationPostResp{
+			ID:             id,
+			URL:            item.URL,
+			Title:          item.Title,
+			Summary:        item.Summary,
+			ContentPreview: item.ContentPreview,
+			Author: contract.FederationPostAuthorResp{
+				Name:   authorName,
+				Avatar: authorAvatar,
+				URL:    authorURL,
+			},
+			InstanceName:  instanceName,
+			InstanceURL:   baseURL,
+			PublishedAt:   item.PublishedAt,
+			UpdatedAt:     item.UpdatedAt,
+			CoverImage:    item.CoverImage,
+			Language:      item.Language,
+			AllowCitation: item.AllowCitation,
+			AllowComment:  item.AllowComment,
+		})
+	}
+
+	total := envelope.Data.Total
+	if total < int64(len(items)) {
+		total = int64(len(items))
+	}
+	return response.Success(c, contract.FederationTimelineResp{
+		Items: items,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
+	})
+}
+
+func resolveEndpointURL(base, path string) (*url.URL, error) {
+	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+		return url.Parse(path)
+	}
+	parsed, err := url.Parse(strings.TrimSpace(base))
+	if err != nil {
+		return nil, err
+	}
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	parsed.Path = strings.TrimRight(parsed.Path, "/") + path
+	return parsed, nil
 }
 
 // ListInstances 查询联合实例列表。

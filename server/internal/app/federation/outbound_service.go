@@ -40,7 +40,7 @@ func NewOutboundService(cfgSvc *sysconfig.Service, resolver *fedinfra.Resolver, 
 	}
 }
 
-func (s *OutboundService) SendFriendLinkRequest(ctx context.Context, target string, message string, rssURL string) (*http.Response, []byte, string, error) {
+func (s *OutboundService) SendFriendLinkRequest(ctx context.Context, target string, message string, rssURL string, requestID string) (*http.Response, []byte, string, error) {
 	endpoint, err := s.resolveEndpoint(ctx, target, "friendlink_request")
 	if err != nil {
 		return nil, nil, endpoint, err
@@ -51,6 +51,7 @@ func (s *OutboundService) SendFriendLinkRequest(ctx context.Context, target stri
 	}
 
 	payload := contract.FederationFriendLinkRequestReq{
+		RequestID:    requestID,
 		RequesterURL: settings.InstanceURL,
 		Message:      message,
 		RSSURL:       rssURL,

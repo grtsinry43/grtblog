@@ -117,6 +117,85 @@ func RegisterSubscribers(bus appEvent.Bus, svc *Service, contentRepo content.Rep
 		return nil
 	}))
 
+	bus.Subscribe("federation.friendlink.approved", handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		if identityRepo == nil {
+			return nil
+		}
+		generic, ok := event.(appEvent.Generic)
+		if !ok {
+			return nil
+		}
+		admins, err := identityRepo.ListAdmins(ctx)
+		if err != nil || len(admins) == 0 {
+			return nil
+		}
+		target, _ := generic.Payload["TargetInstanceURL"].(string)
+		title := "联合友链请求已被对方通过"
+		contentText := fmt.Sprintf("向 %s 发起的联合友链请求已被对方审批通过。", strings.TrimSpace(target))
+		for _, admin := range admins {
+			if _, err := svc.Create(ctx, admin.ID, "federation.friendlink.approved", title, contentText, generic.Payload); err != nil {
+				return err
+			}
+		}
+		return nil
+	}))
+
+	bus.Subscribe("federation.citation.reviewed", handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		generic, ok := event.(appEvent.Generic)
+		if !ok {
+			return nil
+		}
+		status, _ := generic.Payload["Status"].(string)
+		citationID, _ := generic.Payload["CitationID"].(float64)
+		title := "联合引用审核完成"
+		action := "通过"
+		if status == "rejected" {
+			action = "拒绝"
+		}
+		contentText := fmt.Sprintf("联合引用 #%.0f 已被%s。", citationID, action)
+		if identityRepo == nil {
+			return nil
+		}
+		admins, err := identityRepo.ListAdmins(ctx)
+		if err != nil || len(admins) == 0 {
+			return nil
+		}
+		for _, admin := range admins {
+			if _, err := svc.Create(ctx, admin.ID, "federation.citation.reviewed", title, contentText, generic.Payload); err != nil {
+				return err
+			}
+		}
+		return nil
+	}))
+
+	bus.Subscribe("federation.mention.reviewed", handlerFunc(func(ctx context.Context, event appEvent.Event) error {
+		generic, ok := event.(appEvent.Generic)
+		if !ok {
+			return nil
+		}
+		status, _ := generic.Payload["Status"].(string)
+		mentionID, _ := generic.Payload["MentionID"].(float64)
+		title := "联合提及审核完成"
+		action := "通过"
+		if status == "rejected" {
+			action = "拒绝"
+		}
+		contentText := fmt.Sprintf("联合提及 #%.0f 已被%s。", mentionID, action)
+		if identityRepo == nil {
+			return nil
+		}
+		admins, err := identityRepo.ListAdmins(ctx)
+		if err != nil || len(admins) == 0 {
+			return nil
+		}
+		for _, admin := range admins {
+			if _, err := svc.Create(ctx, admin.ID, "federation.mention.reviewed", title, contentText, generic.Payload); err != nil {
+				return err
+			}
+		}
+		return nil
+	}))
+
 	bus.Subscribe("friendlink.application.created", handlerFunc(func(ctx context.Context, event appEvent.Event) error {
 		if identityRepo == nil {
 			return nil

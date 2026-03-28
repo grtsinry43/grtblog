@@ -181,6 +181,30 @@ export interface FederationCachedPostListResp {
     items: FederationCachedPostResp[]
 }
 
+export interface FederationRemotePostResp {
+    id: string
+    url: string
+    title: string
+    summary: string
+    content_preview?: string
+    author: { name: string; url?: string; avatar?: string }
+    instance_name: string
+    instance_url: string
+    published_at: string
+    updated_at?: string
+    cover_image?: string
+    language?: string
+    allow_citation: boolean
+    allow_comment: boolean
+}
+
+export interface FederationRemotePostListResp {
+    items: FederationRemotePostResp[]
+    total: number
+    page: number
+    size: number
+}
+
 export interface FederationAuthorResp {
     name: string
     instanceUrl: string

@@ -20,6 +20,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
@@ -57,6 +58,7 @@ type Dependencies struct {
 	OwnerStatus   *ownerstatus.Service
 	HealthState   *health.State
 	HealthChecker *health.Checker
+	FedSync       *appfed.SyncWorker
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -179,6 +181,7 @@ func Register(app *fiber.App, deps Dependencies) {
 		eventBus,
 	)
 	appfed.RegisterSubscribers(eventBus, fedDelivery)
+	friendlink.RegisterFederationSubscribers(eventBus, fedInstanceRepo, persistence.NewFriendLinkRepository(deps.DB), fedResolver, deps.FedSync)
 	adminNotifRepo := persistence.NewAdminNotificationRepository(deps.DB)
 	adminNotifSvc := adminnotification.NewService(adminNotifRepo, eventBus)
 	adminnotification.RegisterSubscribers(eventBus, adminNotifSvc, contentRepo, persistence.NewIdentityRepository(deps.DB))

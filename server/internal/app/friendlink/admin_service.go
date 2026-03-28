@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
+	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
+	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 )
 
 type AdminService struct {
@@ -18,10 +21,11 @@ type AdminService struct {
 	linkRepo     social.FriendLinkRepository
 	instanceRepo federation.FederationInstanceRepository
 	userRepo     identity.Repository
+	outbound     *appfed.OutboundService
 	events       appEvent.Bus
 }
 
-func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo social.FriendLinkRepository, instanceRepo federation.FederationInstanceRepository, userRepo identity.Repository, events appEvent.Bus) *AdminService {
+func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo social.FriendLinkRepository, instanceRepo federation.FederationInstanceRepository, userRepo identity.Repository, outbound *appfed.OutboundService, events appEvent.Bus) *AdminService {
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
@@ -30,6 +34,7 @@ func NewAdminService(appRepo social.FriendLinkApplicationRepository, linkRepo so
 		linkRepo:     linkRepo,
 		instanceRepo: instanceRepo,
 		userRepo:     userRepo,
+		outbound:     outbound,
 		events:       events,
 	}
 }
@@ -106,6 +111,7 @@ func (s *AdminService) ApproveApplication(ctx context.Context, id int64) (*socia
 		return nil, err
 	}
 	s.publishApplicationStatusEvent(ctx, "friendlink.application.approved", app)
+	s.sendFederationCallback(ctx, app, "approved", "")
 	return app, nil
 }
 
@@ -123,6 +129,7 @@ func (s *AdminService) RejectApplication(ctx context.Context, id int64) (*social
 		return nil, err
 	}
 	s.publishApplicationStatusEvent(ctx, "friendlink.application.rejected", app)
+	s.sendFederationCallback(ctx, app, "rejected", "")
 	return app, nil
 }
 
@@ -448,6 +455,41 @@ func (s *AdminService) activateFederationInstance(ctx context.Context, baseURL s
 	}
 	instance.Status = "active"
 	return s.instanceRepo.Update(ctx, instance)
+}
+
+// sendFederationCallback 向请求方实例发送审批结果回调。
+func (s *AdminService) sendFederationCallback(ctx context.Context, app *social.FriendLinkApplication, status string, reason string) {
+	if s.outbound == nil || app == nil {
+		return
+	}
+	if app.ApplyChannel != social.FriendLinkApplyChannelFederation {
+		return
+	}
+	if app.SourceRequestID == nil || strings.TrimSpace(*app.SourceRequestID) == "" {
+		return
+	}
+	target := strings.TrimSpace(app.URL)
+	if app.InstanceURL != nil && strings.TrimSpace(*app.InstanceURL) != "" {
+		target = strings.TrimSpace(*app.InstanceURL)
+	}
+	if target == "" {
+		return
+	}
+	outboundStatus := "approved"
+	if status == "rejected" {
+		outboundStatus = "rejected"
+	}
+	processedAt := time.Now().UTC().Format(time.RFC3339)
+	_, _, _, err := s.outbound.SendResultCallback(ctx, target, contract.FederationOutboundResultReq{
+		RequestID:   strings.TrimSpace(*app.SourceRequestID),
+		Type:        "friendlink",
+		Status:      outboundStatus,
+		Reason:      strings.TrimSpace(reason),
+		ProcessedAt: processedAt,
+	})
+	if err != nil {
+		log.Printf("[federation] 友链审批回调失败 target=%s request_id=%s err=%v", target, *app.SourceRequestID, err)
+	}
 }
 
 func fallbackName(name *string, fallback string) string {

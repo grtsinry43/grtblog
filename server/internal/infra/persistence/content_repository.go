@@ -907,7 +907,9 @@ func (r *ContentRepository) ListPublicArticlesForFederation(ctx context.Context,
 	offset := (page - 1) * pageSize
 
 	var articleModels []*model.Article
-	if err := query.Order("created_at DESC").
+	if err := query.
+		Select("id, short_url, title, summary, lead_in, cover, author_id, created_at, updated_at").
+		Order("created_at DESC").
 		Offset(offset).
 		Limit(pageSize).
 		Find(&articleModels).Error; err != nil {

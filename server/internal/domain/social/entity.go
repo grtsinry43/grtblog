@@ -73,6 +73,7 @@ type FriendLinkApplication struct {
 	Manifest          json.RawMessage
 	SignatureKeyID    *string
 	SignatureVerified bool
+	SourceRequestID   *string
 	UserID            *int64
 	Message           *string
 	Status            string

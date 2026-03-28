@@ -42,6 +42,7 @@ type FriendLinkApplication struct {
 	Manifest          datatypes.JSON `gorm:"column:manifest;type:jsonb"`
 	SignatureKeyID    *string        `gorm:"column:signature_key_id;type:text"`
 	SignatureVerified bool           `gorm:"column:signature_verified;not null"`
+	SourceRequestID   *string        `gorm:"column:source_request_id;size:64"`
 	UserID            *int64         `gorm:"column:user_id"`
 	Message           *string        `gorm:"column:message"`
 	Status            string         `gorm:"column:status;size:20"`

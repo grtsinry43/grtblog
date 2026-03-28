@@ -235,6 +235,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		ISR:           isrSvc,
 		HealthState:   healthState,
 		HealthChecker: healthChecker,
+		FedSync:       fedSync,
 	})
 
 	return &Server{

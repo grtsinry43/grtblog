@@ -207,6 +207,7 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 			Manifest:          manifestPayload,
 			SignatureKeyID:    toOptionalString(keyID),
 			SignatureVerified: true,
+			SourceRequestID:   toOptionalString(payload.RequestID),
 			Status:            social.FriendLinkAppStatusPending,
 		}
 		if err := h.applicationRepo.Create(ctx, app); err != nil {
@@ -224,6 +225,7 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 	app.Manifest = manifestPayload
 	app.SignatureKeyID = toOptionalString(keyID)
 	app.SignatureVerified = true
+	app.SourceRequestID = toOptionalString(payload.RequestID)
 	app.Status = social.FriendLinkAppStatusPending
 	if err := h.applicationRepo.Update(ctx, app); err != nil {
 		return nil, false, err
