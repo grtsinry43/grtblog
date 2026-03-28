@@ -27,6 +27,7 @@
 ## Preview
 
 <!-- preview:start -->
+- [v2.1.0-beta.2](/releases/v2.1.0-beta.2) - 2026-03-28 · preview · beta
 - [v2.1.0-beta.1](/releases/v2.1.0-beta.1) - 2026-03-28 · preview · beta
 - [v2.0.5-beta.1](/releases/v2.0.5-beta.1) - 2026-03-10 · preview · beta
 - [v2.0.0-rc.2](/releases/v2.0.0-rc.2) - 2026-03-06 · preview · rc
