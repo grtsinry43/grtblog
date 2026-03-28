@@ -14,10 +14,13 @@ type UploadFile struct {
 
 type Photo struct {
 	ID          int64
+	AlbumID     *int64
 	URL         string
-	Location    *string
-	Device      *string
-	Shade       *string
 	Description *string
+	Caption     *string
+	Exif        []byte
+	SortOrder   int
 	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   *time.Time
 }

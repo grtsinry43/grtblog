@@ -31,6 +31,7 @@ const (
 	CommentAreaTypeMoment   = "moment"
 	CommentAreaTypePage     = "page"
 	CommentAreaTypeThinking = "thinking"
+	CommentAreaTypeAlbum    = "album"
 )
 
 func BuildCommentAreaName(areaType, title string) string {

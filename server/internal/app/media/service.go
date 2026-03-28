@@ -6,12 +6,20 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"image"
+	_ "image/gif"
+	"image/jpeg"
+	_ "image/png"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/disintegration/imaging"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/media"
@@ -38,9 +46,22 @@ func NewService(repo media.Repository, uploadDir string, events appEvent.Bus) *S
 	}
 }
 
+const thumbnailMaxWidth = 1200
+const thumbnailDir = "thumbnails"
+const thumbnailQuality = 82
+
+// ImageMeta 图片元信息，上传图片时自动提取。
+type ImageMeta struct {
+	Width         int    `json:"width,omitempty"`
+	Height        int    `json:"height,omitempty"`
+	DominantColor string `json:"dominantColor,omitempty"` // hex, e.g. "#a3b2c1"
+}
+
 type UploadResult struct {
-	File    media.UploadFile
-	Created bool
+	File         media.UploadFile
+	Created      bool
+	ThumbnailURL string     // 缩略图公开路径（仅 picture 类型）
+	ImageMeta    *ImageMeta // 图片元信息（仅 picture 类型）
 }
 
 func (s *Service) Upload(ctx context.Context, file *multipart.FileHeader, fileType string) (*UploadResult, error) {
@@ -71,7 +92,8 @@ func (s *Service) Upload(ctx context.Context, file *multipart.FileHeader, fileTy
 	if existing != nil {
 		existingDisk := s.diskPathFromStored(existing.Path)
 		if fileExists(existingDisk) {
-			return &UploadResult{File: *existing, Created: false}, nil
+			thumbURL, meta := s.processImage(existingDisk, existing.Path, dir)
+			return &UploadResult{File: *existing, Created: false, ThumbnailURL: thumbURL, ImageMeta: meta}, nil
 		}
 		if err := s.saveFile(file, diskPath); err != nil {
 			return nil, err
@@ -82,7 +104,8 @@ func (s *Service) Upload(ctx context.Context, file *multipart.FileHeader, fileTy
 			}
 			existing.Path = storedPath
 		}
-		return &UploadResult{File: *existing, Created: false}, nil
+		thumbURL, meta := s.processImage(diskPath, storedPath, dir)
+		return &UploadResult{File: *existing, Created: false, ThumbnailURL: thumbURL, ImageMeta: meta}, nil
 	}
 
 	if err := s.saveFile(file, diskPath); err != nil {
@@ -110,7 +133,8 @@ func (s *Service) Upload(ctx context.Context, file *multipart.FileHeader, fileTy
 			"Size": record.Size,
 		},
 	})
-	return &UploadResult{File: *record, Created: true}, nil
+	thumbURL, meta := s.processImage(diskPath, storedPath, dir)
+	return &UploadResult{File: *record, Created: true, ThumbnailURL: thumbURL, ImageMeta: meta}, nil
 }
 
 type ListResult struct {
@@ -198,6 +222,113 @@ func (s *Service) ResolveDiskPath(storedPath string) (string, error) {
 		return "", errors.New("empty stored path")
 	}
 	return diskPath, nil
+}
+
+// processImage 为图片生成缩略图并提取元信息（尺寸 + 主色调）。
+func (s *Service) processImage(diskPath string, storedPath string, dir string) (thumbURL string, meta *ImageMeta) {
+	if dir != "pictures" {
+		return "", nil
+	}
+
+	f, err := os.Open(diskPath)
+	if err != nil {
+		log.Printf("[image] open failed for %s: %v", diskPath, err)
+		return "", nil
+	}
+	defer f.Close()
+
+	src, _, err := image.Decode(f)
+	if err != nil {
+		log.Printf("[image] decode failed for %s: %v", diskPath, err)
+		return "", nil
+	}
+
+	bounds := src.Bounds()
+	meta = &ImageMeta{
+		Width:         bounds.Dx(),
+		Height:        bounds.Dy(),
+		DominantColor: calcDominantColor(src),
+	}
+
+	// Generate thumbnail
+	thumbStoredPath := "/" + thumbnailDir + storedPath
+	thumbDiskPath := s.diskPathFromStored(thumbStoredPath)
+
+	if !fileExists(thumbDiskPath) {
+		thumb := imaging.Resize(src, thumbnailMaxWidth, 0, imaging.Lanczos)
+		if err := os.MkdirAll(filepath.Dir(thumbDiskPath), 0o755); err != nil {
+			log.Printf("[thumbnail] mkdir failed: %v", err)
+			return "", meta
+		}
+		out, err := os.Create(thumbDiskPath)
+		if err != nil {
+			log.Printf("[thumbnail] create failed: %v", err)
+			return "", meta
+		}
+		defer out.Close()
+		if err := jpeg.Encode(out, thumb, &jpeg.Options{Quality: thumbnailQuality}); err != nil {
+			log.Printf("[thumbnail] encode failed: %v", err)
+			return "", meta
+		}
+	}
+
+	return "/uploads" + thumbStoredPath, meta
+}
+
+// calcDominantColor 采样缩小后取平均色。
+func calcDominantColor(img image.Image) string {
+	small := imaging.Resize(img, 32, 0, imaging.Box)
+	bounds := small.Bounds()
+	var r, g, b uint64
+	var count uint64
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			cr, cg, cb, ca := small.At(x, y).RGBA()
+			if ca < 0x1000 {
+				continue
+			}
+			r += uint64(cr >> 8)
+			g += uint64(cg >> 8)
+			b += uint64(cb >> 8)
+			count++
+		}
+	}
+	if count == 0 {
+		return ""
+	}
+	return fmt.Sprintf("#%02x%02x%02x", r/count, g/count, b/count)
+}
+
+// ThumbnailURLFor 根据原图公开 URL 返回对应缩略图的公开 URL。
+// 如果缩略图不存在于磁盘，返回空字符串。
+func (s *Service) ThumbnailURLFor(publicURL string) string {
+	// publicURL = /uploads/pictures/2026-...
+	const prefix = "/uploads"
+	if !strings.HasPrefix(publicURL, prefix) {
+		return ""
+	}
+	storedPath := strings.TrimPrefix(publicURL, prefix) // /pictures/2026-...
+	thumbStoredPath := "/" + thumbnailDir + storedPath
+	thumbDiskPath := s.diskPathFromStored(thumbStoredPath)
+	if fileExists(thumbDiskPath) {
+		return prefix + thumbStoredPath
+	}
+	return ""
+}
+
+// ExtractImageMetaFromURL 根据本站公开 URL 提取图片元信息（尺寸+主色调）并确保缩略图存在。
+// 外链返回 nil。
+func (s *Service) ExtractImageMetaFromURL(publicURL string) (thumbURL string, meta *ImageMeta) {
+	const prefix = "/uploads"
+	if !strings.HasPrefix(publicURL, prefix) {
+		return "", nil
+	}
+	storedPath := strings.TrimPrefix(publicURL, prefix)
+	diskPath := s.diskPathFromStored(storedPath)
+	if !fileExists(diskPath) {
+		return "", nil
+	}
+	return s.processImage(diskPath, storedPath, "pictures")
 }
 
 func (s *Service) saveFile(file *multipart.FileHeader, path string) error {

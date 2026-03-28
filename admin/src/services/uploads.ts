@@ -2,11 +2,19 @@ import { request } from './http'
 
 export type FileType = 'picture' | 'file'
 
+export interface UploadImageMeta {
+  width?: number
+  height?: number
+  dominantColor?: string
+}
+
 export interface UploadFileResponse {
   id: number
   name: string
   path: string
   publicUrl: string
+  thumbnailUrl?: string
+  imageMeta?: UploadImageMeta | null
   type: FileType
   size: number
   createdAt: string

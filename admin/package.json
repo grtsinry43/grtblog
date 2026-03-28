@@ -43,6 +43,7 @@
     "chroma-js": "^3.2.0",
     "codemirror": "^6.0.2",
     "echarts": "^6.0.0",
+    "exifreader": "^4.37.0",
     "highlight.js": "^11.11.1",
     "lodash-es": "^4.17.23",
     "markdown-it": "^14.1.1",

@@ -7,15 +7,23 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
 
+type UploadImageMeta struct {
+	Width         int    `json:"width,omitempty"`
+	Height        int    `json:"height,omitempty"`
+	DominantColor string `json:"dominantColor,omitempty"`
+}
+
 type UploadFileResp struct {
-	ID         int64     `json:"id"`
-	Name       string    `json:"name"`
-	Path       string    `json:"path"`
-	PublicURL  string    `json:"publicUrl"`
-	Type       string    `json:"type"`
-	Size       int64     `json:"size"`
-	CreatedAt  time.Time `json:"createdAt"`
-	Duplicated bool      `json:"duplicated"`
+	ID           int64            `json:"id"`
+	Name         string           `json:"name"`
+	Path         string           `json:"path"`
+	PublicURL    string           `json:"publicUrl"`
+	ThumbnailURL string           `json:"thumbnailUrl,omitempty"`
+	ImageMeta    *UploadImageMeta `json:"imageMeta,omitempty"`
+	Type         string           `json:"type"`
+	Size         int64            `json:"size"`
+	CreatedAt    time.Time        `json:"createdAt"`
+	Duplicated   bool             `json:"duplicated"`
 }
 
 type UploadFileListResp struct {
@@ -47,19 +55,21 @@ type UploadRenameReq struct {
 	Name string `json:"name"`
 }
 
-func ToUploadFileResp(file media.UploadFile, duplicated bool) UploadFileResp {
+func ToUploadFileResp(file media.UploadFile, duplicated bool, thumbnailURL string, imgMeta *UploadImageMeta) UploadFileResp {
 	publicURL := ""
 	if file.Path != "" {
 		publicURL = "/uploads" + file.Path
 	}
 	return UploadFileResp{
-		ID:         file.ID,
-		Name:       file.Name,
-		Path:       file.Path,
-		PublicURL:  publicURL,
-		Type:       file.Type,
-		Size:       file.Size,
-		CreatedAt:  file.CreatedAt,
-		Duplicated: duplicated,
+		ID:           file.ID,
+		Name:         file.Name,
+		Path:         file.Path,
+		PublicURL:    publicURL,
+		ThumbnailURL: thumbnailURL,
+		ImageMeta:    imgMeta,
+		Type:         file.Type,
+		Size:         file.Size,
+		CreatedAt:    file.CreatedAt,
+		Duplicated:   duplicated,
 	}
 }

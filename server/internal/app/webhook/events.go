@@ -3,6 +3,7 @@ package webhook
 import (
 	"time"
 
+	appalbum "github.com/grtsinry43/grtblog-v2/server/internal/app/album"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/comment"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
@@ -46,6 +47,16 @@ func SampleEvent(name string) (appEvent.Event, error) {
 		return moment.MomentUnpublished{ID: 1, AuthorID: 1, Title: "Sample Moment", ShortURL: "sample-moment", At: now}, nil
 	case moment.MomentDeleted{}.Name():
 		return moment.MomentDeleted{ID: 1, AuthorID: 1, Title: "Sample Moment", ShortURL: "sample-moment", At: now}, nil
+	case appalbum.AlbumCreated{}.Name():
+		return appalbum.AlbumCreated{ID: 1, AuthorID: 1, Title: "Sample Album", ShortURL: "sample-album", Published: true, At: now}, nil
+	case appalbum.AlbumUpdated{}.Name():
+		return appalbum.AlbumUpdated{ID: 1, AuthorID: 1, Title: "Sample Album", ShortURL: "sample-album", Published: true, At: now}, nil
+	case appalbum.AlbumPublished{}.Name():
+		return appalbum.AlbumPublished{ID: 1, AuthorID: 1, Title: "Sample Album", ShortURL: "sample-album", At: now}, nil
+	case appalbum.AlbumUnpublished{}.Name():
+		return appalbum.AlbumUnpublished{ID: 1, AuthorID: 1, Title: "Sample Album", ShortURL: "sample-album", At: now}, nil
+	case appalbum.AlbumDeleted{}.Name():
+		return appalbum.AlbumDeleted{ID: 1, AuthorID: 1, Title: "Sample Album", ShortURL: "sample-album", At: now}, nil
 	case page.PageCreated{}.Name():
 		return page.PageCreated{ID: 1, Title: "Sample Page", ShortURL: "sample-page", Enabled: true, At: now}, nil
 	case page.PageUpdated{}.Name():

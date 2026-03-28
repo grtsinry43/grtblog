@@ -30,6 +30,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
+	albumdomain "github.com/grtsinry43/grtblog-v2/server/internal/domain/album"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/social"
@@ -417,6 +418,8 @@ var notFoundSentinels = []error{
 	comment.ErrCommentNotFound,
 	comment.ErrCommentAreaNotFound,
 	social.ErrFriendLinkNotFound,
+	albumdomain.ErrAlbumNotFound,
+	albumdomain.ErrPhotoNotFound,
 }
 
 func isNotFoundSentinel(err error) bool {

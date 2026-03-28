@@ -230,26 +230,56 @@ export const routeRecordRaw: MenuMixedOptions[] = [
       },
     ],
   },
-  // {
-  //   path: 'albums',
-  //   name: 'albumManagement',
-  //   icon: 'iconify ph--image',
-  //   label: '相册管理',
-  //   redirect: 'albums/list',
-  //   children: [
-  //     {
-  //       path: 'list',
-  //       name: 'albumList',
-  //       label: '相册列表',
-  //       icon: 'iconify ph--image',
-  //       meta: {
-  //         componentName: 'AlbumList',
-  //         showTab: true,
-  //       },
-  //       component: 'albums/index',
-  //     },
-  //   ],
-  // },
+  {
+    path: 'albums',
+    name: 'albumManagement',
+    icon: 'iconify ph--image',
+    label: '相册管理',
+    redirect: 'albums/list',
+    children: [
+      {
+        path: 'list',
+        name: 'albumList',
+        label: '相册列表',
+        icon: 'iconify ph--images',
+        meta: {
+          componentName: 'AlbumList',
+          showTab: true,
+        },
+        component: 'albums/index',
+      },
+      {
+        path: 'edit/new',
+        name: 'albumCreate',
+        label: '新建相册',
+        icon: 'iconify ph--pencil-simple-line',
+        meta: {
+          componentName: 'AlbumEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle() {
+            return '新建相册'
+          },
+        },
+        component: 'albums/edit',
+      },
+      {
+        path: 'edit/:id',
+        name: 'albumEdit',
+        label: '编辑相册',
+        show: false,
+        meta: {
+          componentName: 'AlbumEdit',
+          showTab: true,
+          enableMultiTab: true,
+          renderTabTitle({ id }) {
+            return `编辑相册${id ? `-${id}` : ''}`
+          },
+        },
+        component: 'albums/edit',
+      },
+    ],
+  },
   {
     path: 'comments',
     name: 'commentManagement',

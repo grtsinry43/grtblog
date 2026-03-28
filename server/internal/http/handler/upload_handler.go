@@ -50,7 +50,15 @@ func (h *UploadHandler) UploadFile(c *fiber.Ctx) error {
 		return response.NewBizErrorWithCause(response.ServerError, "文件上传失败", err)
 	}
 
-	resp := contract.ToUploadFileResp(result.File, !result.Created)
+	var imgMeta *contract.UploadImageMeta
+	if result.ImageMeta != nil {
+		imgMeta = &contract.UploadImageMeta{
+			Width:         result.ImageMeta.Width,
+			Height:        result.ImageMeta.Height,
+			DominantColor: result.ImageMeta.DominantColor,
+		}
+	}
+	resp := contract.ToUploadFileResp(result.File, !result.Created, result.ThumbnailURL, imgMeta)
 	msg := "上传成功"
 	if !result.Created {
 		msg = "文件已存在，返回已上传结果"
@@ -84,7 +92,8 @@ func (h *UploadHandler) ListUploads(c *fiber.Ctx) error {
 
 	items := make([]contract.UploadFileResp, len(result.Items))
 	for i, file := range result.Items {
-		items[i] = contract.ToUploadFileResp(file, false)
+		thumbURL := h.svc.ThumbnailURLFor("/uploads" + file.Path)
+		items[i] = contract.ToUploadFileResp(file, false, thumbURL, nil)
 	}
 
 	resp := contract.UploadFileListResp{
@@ -128,7 +137,8 @@ func (h *UploadHandler) RenameUpload(c *fiber.Ctx) error {
 		return response.NewBizErrorWithCause(response.ParamsError, "文件重命名失败", err)
 	}
 
-	return response.SuccessWithMessage(c, contract.ToUploadFileResp(*updated, false), "文件名已更新")
+	thumbURL := h.svc.ThumbnailURLFor("/uploads" + updated.Path)
+	return response.SuccessWithMessage(c, contract.ToUploadFileResp(*updated, false, thumbURL, nil), "文件名已更新")
 }
 
 // DeleteUpload godoc
