@@ -134,15 +134,16 @@ function thumbUrl(photo: PhotoItem): string {
 </script>
 
 <template>
-  <NSpin
-    :show="loading"
-    class="flex h-full min-h-0 flex-col"
-  >
-    <!-- ====== Sticky Header ====== -->
+  <div class="relative flex h-full min-h-0 flex-col">
+    <div
+      v-if="loading"
+      class="bg-naive-body/35 absolute inset-0 z-30 grid place-items-center backdrop-blur-[1px]"
+    >
+      <NSpin size="large" />
+    </div>
     <header
       class="z-10 flex shrink-0 flex-col gap-3 px-6 py-6 backdrop-blur sm:h-20 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-0"
     >
-      <!-- Left: Title -->
       <div class="flex min-w-0 flex-1 items-center gap-3">
         <NInput
           v-model:value="form.title"
@@ -153,9 +154,7 @@ function thumbUrl(photo: PhotoItem): string {
         />
       </div>
 
-      <!-- Right: Actions -->
       <div class="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3">
-        <!-- Short URL -->
         <div class="flex items-center gap-1 text-[11px] opacity-50">
           <div class="iconify ph--link-simple" />
           <span>/albums/</span>
@@ -166,7 +165,6 @@ function thumbUrl(photo: PhotoItem): string {
           />
         </div>
 
-        <!-- Publish toggle -->
         <NButtonGroup size="small">
           <NButton
             :type="form.isPublished ? 'default' : 'primary'"
@@ -184,7 +182,6 @@ function thumbUrl(photo: PhotoItem): string {
           </NButton>
         </NButtonGroup>
 
-        <!-- Metadata drawer toggle -->
         <NTooltip>
           <template #trigger>
             <NButton
@@ -199,7 +196,6 @@ function thumbUrl(photo: PhotoItem): string {
           元数据
         </NTooltip>
 
-        <!-- Save -->
         <NButton
           type="primary"
           :loading="saving"
@@ -211,11 +207,9 @@ function thumbUrl(photo: PhotoItem): string {
       </div>
     </header>
 
-    <!-- ====== Main Content ====== -->
     <main class="flex min-h-0 flex-1 overflow-hidden">
-      <div class="flex min-h-0 flex-1 flex-col px-6 pb-20 sm:px-10">
-        <!-- Description -->
-        <div class="mb-6">
+      <div class="flex min-h-0 flex-1 flex-col px-6 sm:px-10">
+        <div class="mb-6 shrink-0">
           <NInput
             v-model:value="form.description"
             type="textarea"
@@ -226,8 +220,7 @@ function thumbUrl(photo: PhotoItem): string {
           />
         </div>
 
-        <!-- ====== Photo Grid ====== -->
-        <div class="mb-4 flex items-center justify-between">
+        <div class="mb-4 flex shrink-0 items-center justify-between">
           <div class="flex items-center gap-2">
             <div class="iconify text-lg opacity-50 ph--images" />
             <span class="text-sm font-medium">照片</span>
@@ -286,116 +279,113 @@ function thumbUrl(photo: PhotoItem): string {
           </template>
         </NEmpty>
 
-        <!-- Photo cards -->
-        <ScrollContainer
+        <div
           v-else
-          class="min-h-0 flex-1"
-          wrapper-class="!p-0"
+          class="min-h-0 flex-1 overflow-hidden"
         >
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            <div
-              v-for="(photo, index) in photos"
-              :key="photo.id"
-              class="group overflow-hidden rounded-lg border border-current/5 transition-all hover:border-current/15 hover:shadow-sm"
-            >
-              <!-- Image -->
-              <div class="relative aspect-square overflow-hidden bg-current/3">
-                <NImage
-                  :src="thumbUrl(photo)"
-                  :preview-src="photo.url"
-                  object-fit="cover"
-                  :img-props="{ class: 'h-full w-full object-cover' }"
-                  class="h-full w-full"
-                />
-                <!-- Index badge (always visible) -->
-                <div
-                  class="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-[10px] font-medium text-white"
-                >
-                  {{ index + 1 }}
-                </div>
-              </div>
-
-              <!-- Info + Actions bar below image -->
-              <div class="px-2.5 py-2">
-                <!-- Caption / EXIF summary -->
-                <div
-                  class="min-h-[1.25rem] cursor-pointer truncate text-xs opacity-60"
-                  @click="openPhotoEdit(photo)"
-                >
-                  <template v-if="photo.caption">{{ photo.caption }}</template>
-                  <template v-else-if="exifDevice(photo.exif)">{{
-                    exifDevice(photo.exif)
-                  }}</template>
-                  <template v-else><span class="italic opacity-40">点击编辑信息</span></template>
+          <ScrollContainer
+            class="h-full"
+            wrapper-class="!p-0 !pr-1"
+          >
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <div
+                v-for="(photo, index) in photos"
+                :key="photo.id"
+                class="group overflow-hidden rounded-lg border border-current/5 transition-all hover:border-current/15 hover:shadow-sm"
+              >
+                <div class="relative aspect-square overflow-hidden bg-current/3">
+                  <NImage
+                    :src="thumbUrl(photo)"
+                    :preview-src="photo.url"
+                    object-fit="cover"
+                    :img-props="{ class: 'h-full w-full object-cover' }"
+                    class="h-full w-full"
+                  />
+                  <div
+                    class="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-[10px] font-medium text-white"
+                  >
+                    {{ index + 1 }}
+                  </div>
                 </div>
 
-                <!-- Action buttons -->
-                <div class="mt-1.5 flex items-center justify-between">
-                  <NSpace :size="2">
-                    <NTooltip>
+                <div class="px-2.5 py-2">
+                  <div
+                    class="min-h-[1.25rem] cursor-pointer truncate text-xs opacity-60"
+                    @click="openPhotoEdit(photo)"
+                  >
+                    <template v-if="photo.caption">{{ photo.caption }}</template>
+                    <template v-else-if="exifDevice(photo.exif)">{{
+                      exifDevice(photo.exif)
+                    }}</template>
+                    <template v-else><span class="italic opacity-40">点击编辑信息</span></template>
+                  </div>
+
+                  <div class="mt-1.5 flex items-center justify-between">
+                    <NSpace :size="2">
+                      <NTooltip>
+                        <template #trigger>
+                          <NButton
+                            quaternary
+                            circle
+                            size="tiny"
+                            :disabled="index === 0"
+                            @click="movePhoto(index, -1)"
+                          >
+                            <template #icon><div class="iconify ph--caret-left" /></template>
+                          </NButton>
+                        </template>
+                        前移
+                      </NTooltip>
+                      <NTooltip>
+                        <template #trigger>
+                          <NButton
+                            quaternary
+                            circle
+                            size="tiny"
+                            :disabled="index === photos.length - 1"
+                            @click="movePhoto(index, 1)"
+                          >
+                            <template #icon><div class="iconify ph--caret-right" /></template>
+                          </NButton>
+                        </template>
+                        后移
+                      </NTooltip>
+                      <NTooltip>
+                        <template #trigger>
+                          <NButton
+                            quaternary
+                            circle
+                            size="tiny"
+                            @click="openPhotoEdit(photo)"
+                          >
+                            <template #icon><div class="iconify ph--pencil-simple" /></template>
+                          </NButton>
+                        </template>
+                        编辑
+                      </NTooltip>
+                    </NSpace>
+                    <NPopconfirm @positive-click="deletePhoto(photo.id)">
                       <template #trigger>
                         <NButton
                           quaternary
                           circle
                           size="tiny"
-                          :disabled="index === 0"
-                          @click="movePhoto(index, -1)"
+                          type="error"
                         >
-                          <template #icon><div class="iconify ph--caret-left" /></template>
+                          <template #icon><div class="iconify ph--trash" /></template>
                         </NButton>
                       </template>
-                      前移
-                    </NTooltip>
-                    <NTooltip>
-                      <template #trigger>
-                        <NButton
-                          quaternary
-                          circle
-                          size="tiny"
-                          :disabled="index === photos.length - 1"
-                          @click="movePhoto(index, 1)"
-                        >
-                          <template #icon><div class="iconify ph--caret-right" /></template>
-                        </NButton>
-                      </template>
-                      后移
-                    </NTooltip>
-                    <NTooltip>
-                      <template #trigger>
-                        <NButton
-                          quaternary
-                          circle
-                          size="tiny"
-                          @click="openPhotoEdit(photo)"
-                        >
-                          <template #icon><div class="iconify ph--pencil-simple" /></template>
-                        </NButton>
-                      </template>
-                      编辑
-                    </NTooltip>
-                  </NSpace>
-                  <NPopconfirm @positive-click="deletePhoto(photo.id)">
-                    <template #trigger>
-                      <NButton
-                        quaternary
-                        circle
-                        size="tiny"
-                        type="error"
-                      >
-                        <template #icon><div class="iconify ph--trash" /></template>
-                      </NButton>
-                    </template>
-                    确定删除这张照片？
-                  </NPopconfirm>
+                      确定删除这张照片？
+                    </NPopconfirm>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </ScrollContainer>
+          </ScrollContainer>
+        </div>
       </div>
     </main>
 
-    <!-- ====== Metadata Drawer ====== -->
     <NDrawer
       v-model:show="showMeta"
       placement="right"
@@ -407,7 +397,6 @@ function thumbUrl(photo: PhotoItem): string {
         closable
       >
         <div class="flex flex-col gap-6">
-          <!-- Cover -->
           <div class="space-y-4">
             <div class="flex items-center gap-2 text-sm font-medium">
               <div class="iconify ph--image" />
@@ -418,7 +407,6 @@ function thumbUrl(photo: PhotoItem): string {
 
           <NDivider style="margin: 0" />
 
-          <!-- Properties -->
           <div class="space-y-4">
             <div class="flex items-center gap-2 text-sm font-medium">
               <div class="iconify ph--gear-six" />
@@ -439,7 +427,6 @@ function thumbUrl(photo: PhotoItem): string {
       </NDrawerContent>
     </NDrawer>
 
-    <!-- ====== Photo Edit Modal ====== -->
     <NModal
       v-model:show="showPhotoModal"
       preset="card"
@@ -447,7 +434,6 @@ function thumbUrl(photo: PhotoItem): string {
       style="width: 520px; max-width: 90vw"
     >
       <div class="flex flex-col gap-4">
-        <!-- EXIF info (read-only) -->
         <div
           v-if="editingPhoto?.exif"
           class="rounded-lg bg-current/3 p-3 text-xs"
@@ -489,7 +475,6 @@ function thumbUrl(photo: PhotoItem): string {
           </div>
         </div>
 
-        <!-- Editable fields -->
         <NForm
           label-placement="top"
           :show-feedback="false"
@@ -525,10 +510,9 @@ function thumbUrl(photo: PhotoItem): string {
       </template>
     </NModal>
 
-    <!-- ====== Image Picker Modal ====== -->
     <ImagePickerModal
       v-model:show="showPhotoPicker"
       @select="handlePickFromGallery"
     />
-  </NSpin>
+  </div>
 </template>
