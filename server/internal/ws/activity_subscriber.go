@@ -14,6 +14,7 @@ import (
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/moment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/page"
+	domainalbum "github.com/grtsinry43/grtblog-v2/server/internal/domain/album"
 	domaincomment "github.com/grtsinry43/grtblog-v2/server/internal/domain/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	domainthinking "github.com/grtsinry43/grtblog-v2/server/internal/domain/thinking"
@@ -22,13 +23,14 @@ import (
 const siteActivityType = "site.activity"
 
 type siteActivityPayload struct {
-	Type        string `json:"type"`
-	Event       string `json:"event"`
-	ContentType string `json:"contentType"`
-	Title       string `json:"title"`
-	Excerpt     string `json:"excerpt,omitempty"`
-	URL         string `json:"url"`
-	At          string `json:"at"`
+	Type          string `json:"type"`
+	Event         string `json:"event"`
+	ContentType   string `json:"contentType"`
+	Title         string `json:"title"`
+	Excerpt       string `json:"excerpt,omitempty"`
+	URL           string `json:"url"`
+	At            string `json:"at"`
+	CommentAreaID int64  `json:"commentAreaId,omitempty"`
 }
 
 func RegisterSiteActivitySubscriber(
@@ -37,6 +39,7 @@ func RegisterSiteActivitySubscriber(
 	contentRepo content.Repository,
 	thinkingRepo domainthinking.ThinkingRepository,
 	commentRepo domaincomment.CommentRepository,
+	albumRepo domainalbum.Repository,
 ) {
 	if bus == nil || manager == nil {
 		return
@@ -143,18 +146,19 @@ func RegisterSiteActivitySubscriber(
 		if !ok || !strings.EqualFold(strings.TrimSpace(created.Status), domaincomment.CommentStatusApproved) {
 			return nil
 		}
-		title, link, ok := resolveCommentTarget(ctx, contentRepo, thinkingRepo, commentRepo, created.AreaID)
+		title, link, ok := resolveCommentTarget(ctx, contentRepo, thinkingRepo, commentRepo, albumRepo, created.AreaID)
 		if !ok {
 			return nil
 		}
 		broadcastSiteActivity(manager, siteActivityPayload{
-			Type:        siteActivityType,
-			Event:       created.Name(),
-			ContentType: "comment",
-			Title:       title,
-			Excerpt:     summarizeActivityText(created.Content, 56),
-			URL:         link,
-			At:          normalizeActivityAt(created.At),
+			Type:          siteActivityType,
+			Event:         created.Name(),
+			ContentType:   "comment",
+			Title:         title,
+			Excerpt:       summarizeActivityText(created.Content, 56),
+			URL:           link,
+			At:            normalizeActivityAt(created.At),
+			CommentAreaID: created.AreaID,
 		})
 		return nil
 	}))
@@ -174,7 +178,7 @@ func RegisterSiteActivitySubscriber(
 			return nil
 		}
 
-		title, link, ok := resolveCommentTarget(ctx, contentRepo, thinkingRepo, commentRepo, areaID)
+		title, link, ok := resolveCommentTarget(ctx, contentRepo, thinkingRepo, commentRepo, albumRepo, areaID)
 		if !ok {
 			return nil
 		}
@@ -189,13 +193,14 @@ func RegisterSiteActivitySubscriber(
 		}
 
 		broadcastSiteActivity(manager, siteActivityPayload{
-			Type:        siteActivityType,
-			Event:       "comment.approved",
-			ContentType: "comment",
-			Title:       title,
-			Excerpt:     excerpt,
-			URL:         link,
-			At:          normalizeActivityAt(generic.At),
+			Type:          siteActivityType,
+			Event:         "comment.approved",
+			ContentType:   "comment",
+			Title:         title,
+			Excerpt:       excerpt,
+			URL:           link,
+			At:            normalizeActivityAt(generic.At),
+			CommentAreaID: areaID,
 		})
 		return nil
 	}))
@@ -206,6 +211,7 @@ func resolveCommentTarget(
 	contentRepo content.Repository,
 	thinkingRepo domainthinking.ThinkingRepository,
 	commentRepo domaincomment.CommentRepository,
+	albumRepo domainalbum.Repository,
 	areaID int64,
 ) (string, string, bool) {
 	if commentRepo == nil || areaID <= 0 {
@@ -254,6 +260,15 @@ func resolveCommentTarget(
 			return "", "", false
 		}
 		return formatThinkingTitle(targetID, item.Content), fmt.Sprintf("/thinkings/%d", targetID), true
+	case "album":
+		if albumRepo == nil {
+			return "", "", false
+		}
+		item, err := albumRepo.GetAlbumByID(ctx, targetID)
+		if err != nil || item == nil || !item.IsPublished || strings.TrimSpace(item.ShortURL) == "" {
+			return "", "", false
+		}
+		return normalizeActivityTitle(item.Title, "相册"), "/albums/" + url.PathEscape(strings.TrimSpace(item.ShortURL)), true
 	default:
 		return "", "", false
 	}

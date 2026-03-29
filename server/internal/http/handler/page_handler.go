@@ -481,6 +481,37 @@ func (h *PageHandler) BatchDeletePages(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "页面批量删除成功")
 }
 
+// GetPageMetrics godoc
+// @Summary 获取页面指标
+// @Tags Page
+// @Produce json
+// @Param id path int true "页面ID"
+// @Success 200 {object} contract.MetricsResp
+// @Router /pages/{id}/metrics [get]
+func (h *PageHandler) GetPageMetrics(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的页面ID")
+	}
+
+	metrics, err := h.svc.GetPageMetrics(c.Context(), id)
+	if err != nil {
+		if errors.Is(err, content.ErrPageNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "页面不存在")
+		}
+		return err
+	}
+
+	resp := contract.MetricsResp{}
+	if metrics != nil {
+		resp.Views = metrics.Views
+		resp.Likes = metrics.Likes
+		resp.Comments = metrics.Comments
+	}
+
+	return response.Success(c, resp)
+}
+
 func (h *PageHandler) toPageResp(ctx context.Context, pageItem *content.Page) (*contract.PageResp, error) {
 	metrics, err := h.svc.GetPageMetrics(ctx, pageItem.ID)
 	if err != nil {

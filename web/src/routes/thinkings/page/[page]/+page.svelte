@@ -2,23 +2,45 @@
 	import ThinkingItem from '$lib/features/thinking/components/ThinkingItem.svelte';
 	import Pagination from '$lib/ui/primitives/pagination/Pagination.svelte';
 	import { thinkingListCtx } from '$lib/features/thinking/context';
+	import { fetchBatchThinkingMetrics } from '$lib/features/analytics/api';
 	import PageHeader from '$lib/ui/common/PageHeader.svelte';
 	import StaggerList from '$lib/ui/animation/StaggerList.svelte';
 	import { scrollToAnchor } from '$lib/shared/dom/scroll-to-anchor';
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
+	import { get } from 'svelte/store';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
 
 	thinkingListCtx.mountModelData(() => data.thinkings);
+	const { updateModelData } = thinkingListCtx.useModelActions();
 
 	const items = thinkingListCtx.selectModelData((d) => d?.items || []);
 	const total = thinkingListCtx.selectModelData((d) => d?.total ?? 0);
 	const page = thinkingListCtx.selectModelData((d) => d?.page ?? 1);
 	const size = thinkingListCtx.selectModelData((d) => d?.size ?? 20);
+
+	onMount(async () => {
+		const currentItems = get(items);
+		if (!currentItems.length) return;
+		const ids = currentItems.map((i) => i.id);
+		const result = await fetchBatchThinkingMetrics(ids);
+		if (!result?.items?.length) return;
+		const metricsMap = new Map(result.items.map((m) => [m.id, m]));
+		updateModelData((prev) => {
+			if (!prev) return prev;
+			return {
+				...prev,
+				items: prev.items.map((item) => {
+					const m = metricsMap.get(item.id);
+					return m ? { ...item, views: m.views, likes: m.likes, comments: m.comments } : item;
+				})
+			};
+		});
+	});
 
 	const totalPages = $derived($size > 0 ? Math.max(1, Math.ceil($total / $size)) : 1);
 

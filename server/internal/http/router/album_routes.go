@@ -17,6 +17,7 @@ func registerAlbumPublicRoutes(v2 fiber.Router, deps Dependencies) {
 	publicGroup.Get("/", albumHandler.ListAlbums)                          // GET /api/v2/albums
 	publicGroup.Get("/:id", albumHandler.GetAlbum)                         // GET /api/v2/albums/:id
 	publicGroup.Get("/short/:shortUrl", albumHandler.GetAlbumByShortURL)   // GET /api/v2/albums/short/:shortUrl
+	publicGroup.Get("/:id/metrics", albumHandler.GetAlbumMetrics)          // GET /api/v2/albums/:id/metrics
 }
 
 func registerAlbumAuthRoutes(v2 fiber.Router, deps Dependencies) {

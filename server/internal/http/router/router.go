@@ -140,6 +140,7 @@ func Register(app *fiber.App, deps Dependencies) {
 		contentRepo,
 		persistence.NewThinkingRepository(deps.DB),
 		persistence.NewCommentRepository(deps.DB),
+		persistence.NewAlbumRepository(deps.DB),
 	)
 	htmlSnapshotSvc := deps.HTMLSnapshot
 	if htmlSnapshotSvc == nil {

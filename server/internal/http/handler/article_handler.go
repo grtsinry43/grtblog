@@ -1002,6 +1002,37 @@ func buildFediverseReplyURL(template string, articleURL string, objectURL string
 	return tpl + encodedArticle
 }
 
+// GetArticleMetrics godoc
+// @Summary 获取文章指标
+// @Tags Article
+// @Produce json
+// @Param id path int true "文章ID"
+// @Success 200 {object} contract.MetricsResp
+// @Router /articles/{id}/metrics [get]
+func (h *ArticleHandler) GetArticleMetrics(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的文章ID")
+	}
+
+	metrics, err := h.svc.GetArticleMetrics(c.Context(), id)
+	if err != nil {
+		if errors.Is(err, content.ErrArticleNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "文章不存在")
+		}
+		return err
+	}
+
+	resp := contract.MetricsResp{}
+	if metrics != nil {
+		resp.Views = metrics.Views
+		resp.Likes = metrics.Likes
+		resp.Comments = metrics.Comments
+	}
+
+	return response.Success(c, resp)
+}
+
 func (h *ArticleHandler) expandFederationContent(ctx context.Context, art *content.Article, contentStr string) string {
 	if contentStr == "" || art == nil {
 		return contentStr

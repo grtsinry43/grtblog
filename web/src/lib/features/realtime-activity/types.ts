@@ -15,4 +15,5 @@ export type SiteActivityPayload = {
 	excerpt?: string;
 	url: string;
 	at: string;
+	commentAreaId?: number;
 };

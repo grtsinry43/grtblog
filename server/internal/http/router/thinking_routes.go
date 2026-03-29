@@ -14,6 +14,8 @@ func registerThinkingPublicRoutes(v2 fiber.Router, deps Dependencies) {
 
 	publicGroup := v2.Group("/thinkings")
 	publicGroup.Get("/", thinkingHandler.ListThinkings)
+	publicGroup.Post("/metrics", thinkingHandler.BatchGetThinkingMetrics) // POST /api/v2/thinkings/metrics
+	publicGroup.Get("/:id/metrics", thinkingHandler.GetThinkingMetrics) // GET /api/v2/thinkings/123/metrics
 	publicGroup.Get("/:id", thinkingHandler.GetThinking)
 }
 

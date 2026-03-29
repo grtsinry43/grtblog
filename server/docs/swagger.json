@@ -2422,6 +2422,62 @@
                 }
             }
         },
+        "/admin/federation/remote/posts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "JWTAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FederationAdmin"
+                ],
+                "summary": "拉取远端文章列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "远端实例地址",
+                        "name": "url",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "搜索关键字",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.FederationTimelineResp"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/federation/reviews/pending": {
             "get": {
                 "security": [
@@ -4912,6 +4968,34 @@
                 }
             }
         },
+        "/albums/{id}/metrics": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Album"
+                ],
+                "summary": "获取相册指标",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "相册ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MetricsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/federation/citations/request": {
             "post": {
                 "consumes": [
@@ -5425,6 +5509,34 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.CheckArticleLatestResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/articles/{id}/metrics": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Article"
+                ],
+                "summary": "获取文章指标",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MetricsResp"
                         }
                     }
                 }
@@ -6293,6 +6405,34 @@
                 }
             }
         },
+        "/moments/{id}/metrics": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Moment"
+                ],
+                "summary": "获取手记指标",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "手记ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MetricsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/moments/{id}/same-period-articles": {
             "get": {
                 "produces": [
@@ -6695,6 +6835,34 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/contract.CheckPageLatestResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/pages/{id}/metrics": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Page"
+                ],
+                "summary": "获取页面指标",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页面ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MetricsResp"
                         }
                     }
                 }
@@ -7327,6 +7495,39 @@
                 }
             }
         },
+        "/thinkings/metrics": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Thinking"
+                ],
+                "summary": "批量获取思考指标",
+                "parameters": [
+                    {
+                        "description": "思考ID列表",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contract.BatchThinkingMetricsReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.BatchThinkingMetricsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/thinkings/{id}": {
             "get": {
                 "tags": [
@@ -7413,6 +7614,34 @@
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        },
+        "/thinkings/{id}/metrics": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Thinking"
+                ],
+                "summary": "获取思考指标",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "思考ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.MetricsResp"
+                        }
                     }
                 }
             }
@@ -8880,6 +9109,28 @@
                 }
             }
         },
+        "contract.BatchThinkingMetricsReq": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "contract.BatchThinkingMetricsResp": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.ThinkingMetricsItem"
+                    }
+                }
+            }
+        },
         "contract.BatchUpdateEmailSubscriptionStatusReq": {
             "type": "object",
             "properties": {
@@ -9489,6 +9740,9 @@
                 "title"
             ],
             "properties": {
+                "aiSummary": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -10268,6 +10522,9 @@
             "type": "object",
             "properties": {
                 "message": {
+                    "type": "string"
+                },
+                "request_id": {
                     "type": "string"
                 },
                 "requester_url": {
@@ -12609,6 +12866,23 @@
                 }
             }
         },
+        "contract.ThinkingMetricsItem": {
+            "type": "object",
+            "properties": {
+                "comments": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "views": {
+                    "type": "integer"
+                }
+            }
+        },
         "contract.ThinkingResp": {
             "type": "object",
             "properties": {
@@ -12946,6 +13220,9 @@
                 "title"
             ],
             "properties": {
+                "aiSummary": {
+                    "type": "string"
+                },
                 "allowComment": {
                     "type": "boolean"
                 },
@@ -13075,6 +13352,9 @@
                 "id": {
                     "type": "integer"
                 },
+                "imageMeta": {
+                    "$ref": "#/definitions/contract.UploadImageMeta"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -13086,6 +13366,9 @@
                 },
                 "size": {
                     "type": "integer"
+                },
+                "thumbnailUrl": {
+                    "type": "string"
                 },
                 "type": {
                     "type": "string"
@@ -13109,6 +13392,20 @@
                 },
                 "msg": {
                     "type": "string"
+                }
+            }
+        },
+        "contract.UploadImageMeta": {
+            "type": "object",
+            "properties": {
+                "dominantColor": {
+                    "type": "string"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "width": {
+                    "type": "integer"
                 }
             }
         },
@@ -13968,7 +14265,13 @@
                 "message": {
                     "type": "string"
                 },
+                "releaseNotesUrl": {
+                    "type": "string"
+                },
                 "repo": {
+                    "type": "string"
+                },
+                "source": {
                     "type": "string"
                 },
                 "status": {

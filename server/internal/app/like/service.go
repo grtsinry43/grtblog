@@ -117,7 +117,7 @@ func (s *Service) ImportLikeBatch(ctx context.Context, cmd ImportLikeBatchCmd) (
 func normalizeTargetType(raw string) (domainlike.TargetType, error) {
 	targetType := domainlike.TargetType(strings.ToLower(strings.TrimSpace(raw)))
 	switch targetType {
-	case domainlike.TargetArticle, domainlike.TargetMoment, domainlike.TargetPage, domainlike.TargetThinking:
+	case domainlike.TargetArticle, domainlike.TargetMoment, domainlike.TargetPage, domainlike.TargetThinking, domainlike.TargetAlbum:
 		return targetType, nil
 	default:
 		return "", domainlike.ErrInvalidTargetType

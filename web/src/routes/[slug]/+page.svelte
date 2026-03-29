@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { createPageLiveUpdate } from '$lib/features/page/live-update';
+	import { fetchContentMetrics } from '$lib/features/analytics/api';
 	import type { PageDetail as PageDetailModel } from '$lib/features/page/types';
 	import type { PageData } from './$types';
 	import PageDetail from '$lib/features/page/components/PageDetail.svelte';
@@ -24,6 +26,11 @@
 		});
 		liveUpdate.start(pageModel.id);
 		return () => liveUpdate.destroy();
+	});
+
+	onMount(async () => {
+		const m = await fetchContentMetrics('page', pageModel.id);
+		if (m) pageModel = { ...pageModel, metrics: m };
 	});
 </script>
 

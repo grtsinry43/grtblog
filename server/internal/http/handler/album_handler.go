@@ -492,6 +492,34 @@ func (h *AlbumHandler) ReorderPhotos(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "照片排序更新成功")
 }
 
+// GetAlbumMetrics godoc
+// @Summary 获取相册指标
+// @Tags Album
+// @Produce json
+// @Param id path int true "相册ID"
+// @Success 200 {object} contract.MetricsResp
+// @Router /albums/{id}/metrics [get]
+func (h *AlbumHandler) GetAlbumMetrics(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的相册ID")
+	}
+
+	metrics, err := h.svc.GetAlbumMetrics(c.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	resp := contract.MetricsResp{}
+	if metrics != nil {
+		resp.Views = metrics.Views
+		resp.Likes = metrics.Likes
+		resp.Comments = metrics.Comments
+	}
+
+	return response.Success(c, resp)
+}
+
 // --------------- Response mappers ---------------
 
 func (h *AlbumHandler) toAlbumResp(ctx context.Context, a *domainalbum.Album) (*contract.AlbumResp, error) {

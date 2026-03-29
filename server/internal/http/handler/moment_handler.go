@@ -720,6 +720,37 @@ func (h *MomentHandler) BatchDeleteMoments(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "手记批量删除成功")
 }
 
+// GetMomentMetrics godoc
+// @Summary 获取手记指标
+// @Tags Moment
+// @Produce json
+// @Param id path int true "手记ID"
+// @Success 200 {object} contract.MetricsResp
+// @Router /moments/{id}/metrics [get]
+func (h *MomentHandler) GetMomentMetrics(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的手记ID")
+	}
+
+	metrics, err := h.svc.GetMomentMetrics(c.Context(), id)
+	if err != nil {
+		if errors.Is(err, content.ErrMomentNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "手记不存在")
+		}
+		return err
+	}
+
+	resp := contract.MetricsResp{}
+	if metrics != nil {
+		resp.Views = metrics.Views
+		resp.Likes = metrics.Likes
+		resp.Comments = metrics.Comments
+	}
+
+	return response.Success(c, resp)
+}
+
 func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Moment) (*contract.MomentResp, error) {
 	topics, err := h.svc.GetMomentTopics(ctx, momentItem.ID)
 	if err != nil {

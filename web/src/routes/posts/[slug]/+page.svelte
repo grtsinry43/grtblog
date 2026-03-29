@@ -2,8 +2,10 @@
 	import { get } from 'svelte/store';
 	import PostDetail from '$lib/features/post/components/PostDetail.svelte';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { postDetailCtx } from '$lib/features/post/context';
 	import { createPostLiveUpdate } from '$lib/features/post/live-update';
+	import { fetchContentMetrics } from '$lib/features/analytics/api';
 	import ContentViewTracker from '$lib/features/analytics/components/ContentViewTracker.svelte';
 
 	let { data } = $props();
@@ -25,6 +27,13 @@
 		});
 		liveUpdate.start(postId);
 		return () => liveUpdate.destroy();
+	});
+
+	onMount(async () => {
+		const postId = get(postIdStore);
+		if (!postId) return;
+		const m = await fetchContentMetrics('article', postId);
+		if (m) updateModelData((prev) => (prev ? { ...prev, metrics: m } : prev));
 	});
 </script>
 

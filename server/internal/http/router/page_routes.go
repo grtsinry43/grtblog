@@ -17,6 +17,7 @@ func registerPagePublicRoutes(v2 fiber.Router, deps Dependencies) {
 	publicGroup.Get("/:id", pageHandler.GetPage)                       // GET /api/v2/pages/123
 	publicGroup.Get("/short/:shortUrl", pageHandler.GetPageByShortURL) // GET /api/v2/pages/short/abc123
 	publicGroup.Post("/:id/latest", pageHandler.CheckPageLatest)       // POST /api/v2/pages/123/latest
+	publicGroup.Get("/:id/metrics", pageHandler.GetPageMetrics)       // GET /api/v2/pages/123/metrics
 }
 
 func registerPageAuthRoutes(v2 fiber.Router, deps Dependencies) {

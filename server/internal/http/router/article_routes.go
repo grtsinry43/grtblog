@@ -18,6 +18,7 @@ func registerArticlePublicRoutes(v2 fiber.Router, deps Dependencies) {
 	publicGroup.Get("/:id/same-period-moments", articleHandler.ListSamePeriodMoments)
 	publicGroup.Get("/short/:shortUrl", articleHandler.GetArticleByShortURL) // GET /api/v2/articles/short/abc123
 	publicGroup.Post("/:id/latest", articleHandler.CheckArticleLatest)       // POST /api/v2/articles/123/latest
+	publicGroup.Get("/:id/metrics", articleHandler.GetArticleMetrics)       // GET /api/v2/articles/123/metrics
 
 	v2.Get("/categories/short/:shortUrl/articles", articleHandler.ListArticlesByCategoryShortURL)
 }

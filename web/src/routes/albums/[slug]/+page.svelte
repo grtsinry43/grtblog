@@ -1,10 +1,17 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { get } from 'svelte/store';
 	import PhotoGallery from '$lib/features/album/components/PhotoGallery.svelte';
 	import { albumDetailCtx } from '$lib/features/album/context';
+	import { fetchContentMetrics } from '$lib/features/analytics/api';
+	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
+	import ContentViewTracker from '$lib/features/analytics/components/ContentViewTracker.svelte';
+	import DetailActionBar from '$lib/ui/detail/DetailActionBar.svelte';
+	import DetailCommentSection from '$lib/ui/detail/DetailCommentSection.svelte';
+	import { detailHeroBgSrc } from '$lib/shared/stores/detailHeroBg';
 	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
 	import FadeIn from '$lib/ui/animation/FadeIn.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import type { PageData } from './$types';
 
 	type TransitionRect = {
@@ -29,8 +36,18 @@
 	let { data } = $props<{ data: PageData }>();
 
 	albumDetailCtx.mountModelData(() => data.album);
+	const { updateModelData } = albumDetailCtx.useModelActions();
 
 	const album = albumDetailCtx.selectModelData((d) => d);
+	const albumCoverStore = albumDetailCtx.selectModelData((d) => d?.cover ?? '');
+	const albumIdStore = albumDetailCtx.selectModelData((d) => d?.id ?? 0);
+	const metricsStore = albumDetailCtx.selectModelData((d) => d?.metrics ?? null);
+	const commentAreaIdStore = albumDetailCtx.selectModelData((d) => d?.commentAreaId ?? null);
+
+	$effect(() => {
+		detailHeroBgSrc.set($albumCoverStore);
+	});
+	onDestroy(() => detailHeroBgSrc.set(''));
 
 	const dateStr = $derived(
 		$album
@@ -166,8 +183,15 @@
 		].join(';');
 	});
 
-	onMount(() => {
+	onMount(async () => {
 		tryStartReturnTransition();
+
+		const albumId = get(albumIdStore);
+		if (albumId) {
+			const m = await fetchContentMetrics('album', albumId);
+			if (m) updateModelData((prev) => (prev ? { ...prev, metrics: m } : prev));
+		}
+
 		return () => {
 			clearReturnTransitionTimer();
 		};
@@ -234,6 +258,21 @@
 					</div>
 				</div>
 
+				<div
+					class="mt-4 flex flex-wrap items-center gap-3 text-[11px] font-mono tracking-[0.16em] text-ink-800/45 dark:text-ink-200/45 uppercase"
+				>
+					<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>
+					<span aria-hidden="true" class="opacity-40">·</span>
+					<ContentLikeButton
+						contentType="album"
+						contentId={$albumIdStore}
+						likes={$metricsStore?.likes ?? 0}
+						className="inline-flex items-center gap-1.5"
+					/>
+					<span aria-hidden="true" class="opacity-40">·</span>
+					<span class="flex items-center gap-1.5">评论 {$metricsStore?.comments ?? 0}</span>
+				</div>
+
 				<!-- Decorative line -->
 				<div class="mt-5 flex items-center gap-2 sm:mt-6">
 					<div class="h-px flex-1 bg-ink-200/60 dark:bg-ink-800/60" />
@@ -262,8 +301,23 @@
 				</p>
 			</div>
 		{/if}
+
+		<DetailActionBar
+			contentType="album"
+			contentId={$albumIdStore}
+			likes={$metricsStore?.likes ?? 0}
+			comments={$metricsStore?.comments ?? 0}
+			tone="jade"
+		/>
+
+		<DetailCommentSection
+			commentAreaId={$commentAreaIdStore}
+			commentsCount={$metricsStore?.comments ?? 0}
+			containerClass="mt-16 pt-10 border-t border-ink-200/50 dark:border-ink-700/30"
+		/>
 	</div>
 {/if}
+<ContentViewTracker contentType="album" contentId={$albumIdStore} />
 
 <style>
 	.album-route-preview {

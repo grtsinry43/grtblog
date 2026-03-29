@@ -251,6 +251,71 @@ func (h *ThinkingHandler) BatchDeleteThinkings(c *fiber.Ctx) error {
 	return response.SuccessWithMessage[any](c, nil, "思考批量删除成功")
 }
 
+// GetThinkingMetrics godoc
+// @Summary 获取思考指标
+// @Tags Thinking
+// @Produce json
+// @Param id path int true "思考ID"
+// @Success 200 {object} contract.MetricsResp
+// @Router /thinkings/{id}/metrics [get]
+func (h *ThinkingHandler) GetThinkingMetrics(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "无效的思考ID")
+	}
+
+	t, err := h.svc.FindByID(c.Context(), id)
+	if err != nil {
+		if errors.Is(err, domainthinking.ErrThinkingNotFound) {
+			return response.NewBizErrorWithMsg(response.NotFound, "思考不存在")
+		}
+		return err
+	}
+
+	return response.Success(c, contract.MetricsResp{
+		Views:    t.Metrics.Views,
+		Likes:    t.Metrics.Likes,
+		Comments: t.Metrics.Comments,
+	})
+}
+
+// BatchGetThinkingMetrics godoc
+// @Summary 批量获取思考指标
+// @Tags Thinking
+// @Accept json
+// @Produce json
+// @Param request body contract.BatchThinkingMetricsReq true "思考ID列表"
+// @Success 200 {object} contract.BatchThinkingMetricsResp
+// @Router /thinkings/metrics [post]
+func (h *ThinkingHandler) BatchGetThinkingMetrics(c *fiber.Ctx) error {
+	var req contract.BatchThinkingMetricsReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "请求体解析失败")
+	}
+	if len(req.IDs) == 0 {
+		return response.Success(c, contract.BatchThinkingMetricsResp{Items: []contract.ThinkingMetricsItem{}})
+	}
+	if len(req.IDs) > 50 {
+		return response.NewBizErrorWithMsg(response.ParamsError, "最多支持 50 条")
+	}
+
+	items := make([]contract.ThinkingMetricsItem, 0, len(req.IDs))
+	for _, id := range req.IDs {
+		t, err := h.svc.FindByID(c.Context(), id)
+		if err != nil {
+			continue
+		}
+		items = append(items, contract.ThinkingMetricsItem{
+			ID:       t.ID,
+			Views:    t.Metrics.Views,
+			Likes:    t.Metrics.Likes,
+			Comments: t.Metrics.Comments,
+		})
+	}
+
+	return response.Success(c, contract.BatchThinkingMetricsResp{Items: items})
+}
+
 func (h *ThinkingHandler) mapError(c *fiber.Ctx, err error) error {
 	switch {
 	case errors.Is(err, domainthinking.ErrThinkingNotFound):

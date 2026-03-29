@@ -38,6 +38,10 @@ func (r *LikeRepository) ExistsTarget(ctx context.Context, targetType domainlike
 		if err := q.Model(&model.Thinking{}).Where("id = ?", targetID).Count(&count).Error; err != nil {
 			return false, err
 		}
+	case domainlike.TargetAlbum:
+		if err := q.Model(&model.Album{}).Where("id = ? AND is_published = ?", targetID, true).Count(&count).Error; err != nil {
+			return false, err
+		}
 	default:
 		return false, domainlike.ErrInvalidTargetType
 	}

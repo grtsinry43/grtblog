@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { createQuery } from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { getCommentTree } from '$lib/features/comment/api';
 	import CommentForm from './CommentForm.svelte';
 	import CommentList from './CommentList.svelte';
 	import { MessageSquare, Globe, ChevronLeft, ChevronRight, Lock } from 'lucide-svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { browser } from '$app/environment';
+	import { onDestroy } from 'svelte';
 	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
+	import { realtimeWSCore } from '$lib/shared/ws/realtime-core';
+	import type { SiteActivityPayload } from '$lib/features/realtime-activity/types';
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { authModalStore } from '$lib/shared/stores/authModalStore';
 
@@ -52,6 +55,18 @@
 	commentAreaCtx.mountModelData(() => createInitialModel());
 	const { updateModelData } = commentAreaCtx.useModelActions();
 	const commentAreaModel = commentAreaCtx.selectModelData((data) => data);
+	const queryClient = useQueryClient();
+
+	// Invalidate comment queries when a new comment arrives for this area via WebSocket
+	const unsubscribeComment = realtimeWSCore.onContent((payload: unknown) => {
+		if (!payload || typeof payload !== 'object') return;
+		const p = payload as Partial<SiteActivityPayload>;
+		if (p.type !== 'site.activity') return;
+		if (p.event !== 'comment.created' && p.event !== 'comment.approved') return;
+		if (!p.commentAreaId || p.commentAreaId !== areaId) return;
+		queryClient.invalidateQueries({ queryKey: ['comments', areaId] });
+	});
+	onDestroy(() => unsubscribeComment());
 
 	const displayCount = $derived(commentsCount);
 

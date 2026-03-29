@@ -9,6 +9,7 @@ const (
 	TargetMoment   TargetType = "moment"
 	TargetPage     TargetType = "page"
 	TargetThinking TargetType = "thinking"
+	TargetAlbum    TargetType = "album"
 )
 
 type ContentLike struct {
