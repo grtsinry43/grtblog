@@ -108,7 +108,10 @@ function movePhoto(index: number, direction: -1 | 1) {
   const ids = photos.value.map((p) => p.id)
   const targetIndex = index + direction
   if (targetIndex < 0 || targetIndex >= ids.length) return
-  ;[ids[index], ids[targetIndex]] = [ids[targetIndex], ids[index]]
+  const a = ids[index]!
+  const b = ids[targetIndex]!
+  ids[index] = b
+  ids[targetIndex] = a
   handleReorder(ids)
 }
 

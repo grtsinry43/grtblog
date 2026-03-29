@@ -37,7 +37,8 @@ export async function extractExif(file: File): Promise<PhotoExif | null> {
     if (h) exif.imageHeight = Number(h)
 
     // 方向
-    if (tags.file?.Orientation?.value != null) exif.orientation = Number(tags.file.Orientation.value)
+    const orientation = (tags.file as Record<string, any>)?.Orientation?.value
+    if (orientation != null) exif.orientation = Number(orientation)
 
     return Object.keys(exif).length > 0 ? exif : null
   } catch {
