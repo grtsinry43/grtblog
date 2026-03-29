@@ -32,6 +32,7 @@ const (
 	CommentAreaTypePage     = "page"
 	CommentAreaTypeThinking = "thinking"
 	CommentAreaTypeAlbum    = "album"
+	defaultSummaryRuneLimit = 200
 )
 
 func BuildCommentAreaName(areaType, title string) string {
@@ -86,10 +87,15 @@ func GenerateTOC(markdown string) []content.TOCNode {
 }
 
 func BuildSummary(summary, content string) string {
-	if strings.TrimSpace(summary) != "" {
-		return summary
+	if trimmed := strings.TrimSpace(summary); trimmed != "" {
+		return trimmed
 	}
-	return truncateRunes(content, 200)
+
+	extracted := extractSummaryText(content)
+	if extracted == "" {
+		return ""
+	}
+	return truncateRunes(extracted, defaultSummaryRuneLimit)
 }
 
 func GenerateShortURLFromTitle(title string) string {
@@ -234,6 +240,81 @@ func slugifyHeading(input string) string {
 	slug = strings.Trim(slug, "-")
 	slug = strings.ToLower(slug)
 	return slug
+}
+
+func extractSummaryText(markdown string) string {
+	source := []byte(markdown)
+	doc := markdownParser.Parser().Parse(text.NewReader(source))
+
+	if summary := firstSummaryCandidate(doc, source); summary != "" {
+		return summary
+	}
+	return normalizeSummaryText(extractNodeText(doc, source, true))
+}
+
+func firstSummaryCandidate(node ast.Node, source []byte) string {
+	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+		if summary := summaryTextFromBlock(child, source); summary != "" {
+			return summary
+		}
+	}
+	return ""
+}
+
+func summaryTextFromBlock(node ast.Node, source []byte) string {
+	switch node.(type) {
+	case *ast.Heading, *ast.FencedCodeBlock, *ast.CodeBlock, *ast.HTMLBlock, *ast.ThematicBreak:
+		return ""
+	case *ast.Paragraph:
+		return normalizeSummaryText(extractNodeText(node, source, false))
+	case *ast.Blockquote, *ast.List, *ast.ListItem:
+		return firstSummaryCandidate(node, source)
+	default:
+		if node.HasChildren() {
+			return firstSummaryCandidate(node, source)
+		}
+		return normalizeSummaryText(extractNodeText(node, source, false))
+	}
+}
+
+func extractNodeText(node ast.Node, source []byte, includeHeadings bool) string {
+	var builder strings.Builder
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		switch typed := n.(type) {
+		case *ast.Image, *ast.FencedCodeBlock, *ast.CodeBlock, *ast.HTMLBlock:
+			return ast.WalkSkipChildren, nil
+		case *ast.Heading:
+			if !includeHeadings {
+				return ast.WalkSkipChildren, nil
+			}
+			if builder.Len() > 0 {
+				builder.WriteByte(' ')
+			}
+		case *ast.Paragraph, *ast.ListItem, *ast.Blockquote:
+			if n != node && builder.Len() > 0 {
+				builder.WriteByte(' ')
+			}
+		case *ast.Text:
+			value := strings.ReplaceAll(string(typed.Segment.Value(source)), "\n", " ")
+			builder.WriteString(value)
+			if typed.SoftLineBreak() || typed.HardLineBreak() {
+				builder.WriteByte(' ')
+			}
+		case *ast.String:
+			value := strings.ReplaceAll(string(typed.Value), "\n", " ")
+			builder.WriteString(value)
+		}
+		return ast.WalkContinue, nil
+	})
+	return builder.String()
+}
+
+func normalizeSummaryText(raw string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(raw)), " ")
 }
 
 func truncateRunes(input string, limit int) string {
