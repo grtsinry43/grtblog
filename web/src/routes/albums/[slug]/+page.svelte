@@ -183,22 +183,22 @@
 </svelte:head>
 
 {#if $album}
-	<div class="mx-auto w-full max-w-[1200px] px-6 py-16 md:px-0">
+	<div class="mx-auto w-full max-w-[1200px] px-3 py-5 sm:px-6 sm:py-10 md:px-0 md:py-16">
 		<!-- Header -->
 		<FadeIn y={12}>
-			<header class="mb-12 sm:mb-16">
+			<header class="mb-7 sm:mb-16">
 				<a
 					href="/albums"
-					class="mb-6 inline-flex items-center gap-1.5 text-xs tracking-wider text-ink-400 transition-colors hover:text-jade-600 dark:text-ink-500 dark:hover:text-jade-400"
+					class="mb-5 inline-flex items-center gap-1.5 rounded-full border border-ink-200/70 bg-white/85 px-3 py-1.5 text-[11px] tracking-wider text-ink-500 shadow-sm backdrop-blur-sm transition-colors hover:text-jade-600 dark:border-ink-800/70 dark:bg-ink-900/70 dark:text-ink-400 dark:hover:text-jade-400"
 				>
 					<span class="text-[10px]">&larr;</span>
 					<span>返回相册</span>
 				</a>
 
-				<div class="flex items-end justify-between gap-6">
+				<div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
 					<div>
 						<h1
-							class="font-serif text-3xl font-medium tracking-wide text-ink-900 sm:text-4xl dark:text-ink-100"
+							class="font-serif text-[2rem] font-medium tracking-wide text-ink-900 sm:text-4xl dark:text-ink-100"
 						>
 							{$album.title}
 						</h1>
@@ -207,6 +207,18 @@
 								{$album.description}
 							</p>
 						{/if}
+						<div class="mt-4 flex flex-wrap gap-2 sm:hidden">
+							<span
+								class="rounded-full border border-ink-200/70 bg-ink-50/80 px-2.5 py-1 font-mono text-[10px] tracking-wider text-ink-500 dark:border-ink-800/70 dark:bg-ink-900/70 dark:text-ink-400"
+							>
+								{dateStr}
+							</span>
+							<span
+								class="rounded-full border border-ink-200/70 bg-ink-50/80 px-2.5 py-1 font-mono text-[10px] tracking-wider text-ink-500 dark:border-ink-800/70 dark:bg-ink-900/70 dark:text-ink-400"
+							>
+								{$album.photoCount} photographs
+							</span>
+						</div>
 					</div>
 
 					<div class="hidden shrink-0 text-right sm:block">
@@ -222,7 +234,7 @@
 				</div>
 
 				<!-- Decorative line -->
-				<div class="mt-6 flex items-center gap-2">
+				<div class="mt-5 flex items-center gap-2 sm:mt-6">
 					<div class="h-px flex-1 bg-ink-200/60 dark:bg-ink-800/60" />
 					<div class="h-1 w-1 rounded-full bg-ink-300/40 dark:bg-ink-700/40" />
 				</div>

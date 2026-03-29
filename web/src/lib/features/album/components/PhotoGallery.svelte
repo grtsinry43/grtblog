@@ -131,18 +131,21 @@
 	});
 </script>
 
-<div class="space-y-12">
+<div class="space-y-8 sm:space-y-12">
 	{#each grouped as group}
 		<section>
-			<div class="mb-6 flex items-center gap-4">
-				<h3 class="font-serif text-sm tracking-widest text-ink-400 dark:text-ink-500">
+			<div class="mb-4 flex items-center gap-3 sm:mb-6 sm:gap-4">
+				<h3
+					class="font-serif text-[11px] tracking-[0.22em] text-ink-400 dark:text-ink-500 sm:text-sm sm:tracking-widest"
+				>
 					{group.label}
 				</h3>
 				<div class="h-px flex-1 bg-ink-200/50 dark:bg-ink-800/50"></div>
-				<span class="text-[11px] text-ink-400/60 dark:text-ink-600/60">{group.items.length} 张</span
+				<span class="text-[10px] text-ink-400/60 dark:text-ink-600/60 sm:text-[11px]"
+					>{group.items.length} 张</span
 				>
 			</div>
-			<div class="columns-2 gap-3 space-y-3 sm:columns-3 lg:columns-4">
+			<div class="columns-2 gap-2.5 space-y-2.5 sm:columns-3 sm:gap-3 sm:space-y-3 lg:columns-4">
 				{#each group.items as { photo, index } (photo.id)}
 					<a
 						href="/albums/{albumSlug}/photo/{photo.id}"
@@ -181,7 +184,7 @@
 						</div>
 						{#if photo.caption || deviceStr(photo.exif)}
 							<div
-								class="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-ink-950/70 to-transparent px-3 pb-3 pt-8 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0"
+								class="photo-card-meta absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-ink-950/70 to-transparent px-3 pb-3 pt-8 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0"
 							>
 								{#if photo.caption}
 									<p class="text-xs leading-relaxed text-white/90">{photo.caption}</p>
@@ -262,6 +265,12 @@
 		);
 		mix-blend-mode: screen;
 		pointer-events: none;
+	}
+	@media (hover: none) {
+		:global(.photo-card-meta) {
+			transform: translateY(0);
+			padding-top: 1.5rem;
+		}
 	}
 	@keyframes photo-thumb-sheen {
 		0% {

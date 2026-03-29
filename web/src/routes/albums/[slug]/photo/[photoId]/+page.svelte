@@ -30,6 +30,15 @@
 	const photo = $derived(data.photo);
 	const photoIndex = $derived(data.photoIndex);
 	const total = $derived(data.totalPhotos);
+	const mobileDateStr = $derived(
+		photo.exif?.dateTimeOriginal
+			? new Date(photo.exif.dateTimeOriginal).toLocaleDateString('zh-CN', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric'
+				})
+			: null
+	);
 
 	// === Image sources (SSR-safe, never blank) ===
 	const thumbSrc = $derived(photo.thumbnailUrl || photo.url);
@@ -42,15 +51,28 @@
 	const exifW = $derived(photo.exif?.imageWidth || 0);
 	const exifH = $derived(photo.exif?.imageHeight || 0);
 	const hasFixedFrame = $derived(exifW > 0 && exifH > 0);
+	let viewportWidth = $state(0);
+	const isMobileViewport = $derived(viewportWidth > 0 && viewportWidth < 1024);
 	const viewerFrameStyle = $derived.by(() => {
 		if (!hasFixedFrame) return '';
+		if (isMobileViewport) {
+			return `height: min(58svh, calc(100vh - 196px), calc((100vw - 20px) * ${exifH} / ${exifW})); max-width: calc(100vw - 20px); aspect-ratio: ${exifW}/${exifH};`;
+		}
 		return `width: min(92vw, 1100px, calc(82vh * ${exifW} / ${exifH})); aspect-ratio: ${exifW}/${exifH};`;
 	});
 	const thumbLayerStyle = $derived.by(() =>
-		hasFixedFrame ? 'width: 100%; height: 100%;' : 'max-height: 82vh; max-width: min(92vw, 1100px);'
+		hasFixedFrame
+			? 'width: 100%; height: 100%;'
+			: isMobileViewport
+				? 'max-height: min(58svh, calc(100vh - 196px)); max-width: calc(100vw - 20px);'
+				: 'max-height: 82vh; max-width: min(92vw, 1100px);'
 	);
 	const originalLayerStyle = $derived.by(() =>
-		hasFixedFrame ? 'width: 100%; height: 100%;' : 'max-height: 82vh; max-width: min(92vw, 1100px);'
+		hasFixedFrame
+			? 'width: 100%; height: 100%;'
+			: isMobileViewport
+				? 'max-height: min(58svh, calc(100vh - 196px)); max-width: calc(100vw - 20px);'
+				: 'max-height: 82vh; max-width: min(92vw, 1100px);'
 	);
 
 	let baseImgEl: HTMLImageElement;
@@ -385,6 +407,11 @@
 		return (b / 1048576).toFixed(2) + ' MB';
 	}
 
+	function updateViewport() {
+		if (!browser) return;
+		viewportWidth = window.innerWidth;
+	}
+
 	// === Fetch high-res with real progress ===
 	async function startHighResUpgrade(targetPhotoId: number, url: string) {
 		if (!browser || !hasDedicatedThumbnail || pendingHighResPhotoId === targetPhotoId) return;
@@ -657,11 +684,14 @@
 	}
 
 	onMount(() => {
+		updateViewport();
+		window.addEventListener('resize', updateViewport);
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('mouseup', handleMouseUp);
 	});
 	onDestroy(() => {
 		if (browser) {
+			window.removeEventListener('resize', updateViewport);
 			document.removeEventListener('mousemove', handleMouseMove);
 			document.removeEventListener('mouseup', handleMouseUp);
 			document.body.style.overflow = '';
@@ -709,13 +739,15 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="photo-viewer fixed inset-0 z-40 flex bg-ink-950 md:pl-24">
+<div
+	class="photo-viewer fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+4.5rem)] z-40 flex flex-col overflow-y-auto bg-ink-950 md:inset-y-0 md:left-24 md:top-0 md:pl-0 lg:flex-row lg:overflow-hidden"
+>
 	<!-- Image stage -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		bind:this={stageEl}
-		class="relative flex h-full w-full items-center justify-center touch-none overflow-hidden lg:overflow-visible"
+		class="relative flex min-h-[58svh] w-full shrink-0 items-center justify-center overflow-hidden px-2.5 pb-[5.25rem] pt-[3.5rem] touch-none sm:min-h-[64svh] sm:px-4 sm:pb-24 sm:pt-20 lg:h-full lg:min-h-0 lg:flex-1 lg:overflow-visible"
 		class:cursor-grab={scale > 1 && !isDragging}
 		class:cursor-grabbing={isDragging}
 		onmousedown={handleMouseDown}
@@ -724,7 +756,7 @@
 	>
 		<!-- Back -->
 		<button
-			class="absolute left-4 top-4 z-20 flex items-center gap-1.5 rounded-[3px] border border-white/8 bg-ink-900/75 px-3 py-1.5 text-[11px] text-white/50 backdrop-blur-2xl transition-colors hover:text-white"
+			class="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-full border border-white/10 bg-ink-900/78 px-3 py-2 text-[11px] text-white/65 backdrop-blur-2xl transition-colors hover:text-white sm:left-4 sm:top-4 sm:rounded-[3px] sm:px-3 sm:py-1.5"
 			onclick={goBack}
 		>
 			<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -737,12 +769,11 @@
 			>
 			返回
 		</button>
-
 		<!-- Nav prev -->
 		{#if photoIndex > 0}
 			<button
 				aria-label="上一张"
-				class="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/12 bg-ink-950/78 p-2.5 text-white/72 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all hover:border-jade-400/35 hover:bg-jade-500/14 hover:text-jade-200"
+				class="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/12 bg-ink-950/78 p-2 text-white/72 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all hover:border-jade-400/35 hover:bg-jade-500/14 hover:text-jade-200 sm:left-3 sm:p-2.5"
 				onclick={goPrev}
 			>
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -759,7 +790,7 @@
 		{#if photoIndex < total - 1}
 			<button
 				aria-label="下一张"
-				class="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/12 bg-ink-950/78 p-2.5 text-white/72 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all hover:border-jade-400/35 hover:bg-jade-500/14 hover:text-jade-200"
+				class="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/12 bg-ink-950/78 p-2 text-white/72 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all hover:border-jade-400/35 hover:bg-jade-500/14 hover:text-jade-200 sm:right-3 sm:p-2.5"
 				onclick={goNext}
 			>
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -843,7 +874,7 @@
 		<!-- Loading bubble (high-res progress) -->
 		{#if (hasDedicatedThumbnail && fetchingHighRes && !highResRendered) || (!hasDedicatedThumbnail && !thumbReady)}
 			<div
-				class="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-white/10 bg-black/80 px-4 py-3 shadow-2xl backdrop-blur-xl"
+				class="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-white/10 bg-black/80 px-4 py-3 shadow-2xl backdrop-blur-xl sm:bottom-8"
 			>
 				<div class="relative h-5 w-5 shrink-0">
 					<div class="absolute inset-0 rounded-full border-2 border-white/15"></div>
@@ -882,7 +913,7 @@
 
 		<!-- Toolbar -->
 		<div
-			class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 flex items-center gap-0.5 rounded-[3px] border border-white/8 bg-ink-900/75 px-2.5 py-1 backdrop-blur-2xl"
+			class="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-1/2 z-10 flex w-[calc(100vw-1.25rem)] max-w-max -translate-x-1/2 items-center justify-center gap-0.5 rounded-full border border-white/8 bg-ink-900/78 px-2 py-1.5 backdrop-blur-2xl sm:bottom-4 sm:w-auto sm:rounded-[3px] sm:px-2.5 sm:py-1"
 		>
 			<button
 				class="rounded-[3px] p-1.5 text-white/40 transition-colors hover:bg-jade-500/12 hover:text-jade-300"
@@ -953,6 +984,67 @@
 		</div>
 	</div>
 
+	<section
+		class="noise-surface shrink-0 border-t border-white/8 bg-ink-950/88 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 backdrop-blur-xl backdrop-saturate-150 lg:hidden"
+	>
+		<div class="mx-auto w-full max-w-3xl">
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<p class="font-mono text-[10px] uppercase tracking-[0.22em] text-white/28">
+						Photo Details
+					</p>
+					<p class="mt-2 font-serif text-[1.05rem] leading-snug text-white/92">
+						{photo.caption || album.title}
+					</p>
+					{#if mobileDateStr}
+						<p class="mt-1 font-mono text-[10px] tracking-[0.16em] text-white/38">
+							{mobileDateStr}
+						</p>
+					{/if}
+				</div>
+				<span
+					class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] tracking-[0.16em] text-white/38"
+					>{photoIndex + 1} / {total}</span
+				>
+			</div>
+
+			{#if photo.description}
+				<p class="mt-3 text-[13px] leading-relaxed text-white/62">{photo.description}</p>
+			{/if}
+
+			{#if exifRows.length > 0}
+				<div class="mt-4 grid grid-cols-1 gap-2.5 border-t border-white/6 pt-4">
+					{#each exifRows as row (`${row.icon}:${row.val}`)}
+						<div class="flex items-start gap-2.5 text-xs text-white/52">
+							<svg
+								class="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/20"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="1.5"
+									d={iconPaths[row.icon] || ''}
+								/>
+							</svg>
+							<span class={row.mono ? 'font-mono text-[11px]' : ''}>{row.val}</span>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<div
+				class="mt-4 flex items-center justify-between border-t border-white/6 pt-3 text-[10px] tracking-[0.18em] text-white/32"
+			>
+				<span>详细信息面板</span>
+				<a href="/albums/{album.shortUrl}" class="transition-colors hover:text-jade-300">返回相册</a
+				>
+			</div>
+		</div>
+	</section>
+
 	<!-- Side panel -->
 	<aside
 		class="photo-sidebar noise-surface relative z-20 hidden w-72 shrink-0 overflow-y-auto border-l border-white/8 bg-ink-950/90 p-5 backdrop-blur-xl backdrop-saturate-150 lg:block"
@@ -967,7 +1059,7 @@
 		{#if exifRows.length > 0}
 			<div class="mt-5 space-y-3 border-t border-white/8 pt-5">
 				<h4 class="font-mono text-[10px] uppercase tracking-widest text-white/25">EXIF</h4>
-				{#each exifRows as row}
+				{#each exifRows as row (`${row.icon}:${row.val}`)}
 					<div class="flex items-start gap-2.5 text-xs text-white/50">
 						<svg
 							class="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/20"

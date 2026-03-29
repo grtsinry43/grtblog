@@ -12,7 +12,7 @@
 	const albums = albumListCtx.selectModelData((d) => d?.items || []);
 </script>
 
-<div class="mx-auto w-full max-w-[1200px] px-6 py-16 md:px-0">
+<div class="mx-auto w-full max-w-[1200px] px-3.5 py-8 sm:px-6 sm:py-14 md:px-0 md:py-16">
 	<PageHeader
 		title="相册"
 		tag="Gallery"
@@ -22,7 +22,7 @@
 
 	{#if $albums.length > 0}
 		<StaggerList
-			class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 sm:gap-5"
+			class="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-2 lg:gap-6"
 			staggerDelay={80}
 			duration={500}
 			y={16}
