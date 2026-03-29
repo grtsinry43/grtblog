@@ -1,12 +1,17 @@
 <script module lang="ts">
 	const loadedPhotoSrcSet = new Set<string>();
+	const PHOTO_ROUTE_TRANSITION_KEY = 'album-photo-route-transition';
 </script>
 
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import type { PhotoItem } from '$lib/features/album/types';
 
-	let { photos, albumSlug = '' }: { photos: PhotoItem[]; albumSlug?: string } = $props();
+	let {
+		photos,
+		albumSlug = '',
+		hiddenPhotoId = null
+	}: { photos: PhotoItem[]; albumSlug?: string; hiddenPhotoId?: number | null } = $props();
 
 	/**
 	 * photoLazy action:
@@ -73,6 +78,38 @@
 		return photo.thumbnailUrl || photo.url;
 	}
 
+	function capturePhotoTransition(event: MouseEvent, photo: PhotoItem) {
+		if (!browser) return;
+
+		const currentTarget = event.currentTarget;
+		if (!(currentTarget instanceof HTMLElement)) return;
+
+		const image = currentTarget.querySelector('img');
+		if (!(image instanceof HTMLImageElement)) return;
+
+		const rect = image.getBoundingClientRect();
+		if (!rect.width || !rect.height) return;
+
+		const computed = getComputedStyle(currentTarget);
+		const radius = Number.parseFloat(computed.borderRadius || '0') || 0;
+
+		sessionStorage.setItem(
+			PHOTO_ROUTE_TRANSITION_KEY,
+			JSON.stringify({
+				at: Date.now(),
+				photoId: photo.id,
+				radius,
+				rect: {
+					height: rect.height,
+					left: rect.left,
+					top: rect.top,
+					width: rect.width
+				},
+				src: photoSrc(photo)
+			})
+		);
+	}
+
 	function isPhotoLoaded(photo: PhotoItem): boolean {
 		return browser && loadedPhotoSrcSet.has(photoSrc(photo));
 	}
@@ -110,30 +147,38 @@
 					<a
 						href="/albums/{albumSlug}/photo/{photo.id}"
 						class="group relative block w-full overflow-hidden rounded-[3px] break-inside-avoid transition-shadow duration-300 hover:shadow-float"
-						style="background-color: {photo.exif?.dominantColor || '#1c1917'}; {aspectStyle(
-							photo.exif
-						)}"
+						style="background-color: {photo.exif?.dominantColor || '#1c1917'};"
 						data-photo-card
+						data-photo-id={photo.id}
 						data-loaded={isPhotoLoaded(photo) ? 'true' : 'false'}
+						data-route-hidden={hiddenPhotoId === photo.id ? 'true' : 'false'}
+						data-sveltekit-preload-data="hover"
+						onclick={(event) => capturePhotoTransition(event, photo)}
 					>
 						<div
-							class="photo-thumb-tint absolute inset-0 z-0"
-							style="background:
-								radial-gradient(circle at 50% 30%, color-mix(in srgb, {photo.exif?.dominantColor ||
-								'#1c1917'} 78%, white 22%) 0%, transparent 58%),
-								linear-gradient(180deg, color-mix(in srgb, {photo.exif?.dominantColor ||
-								'#1c1917'} 88%, white 12%) 0%, {photo.exif?.dominantColor || '#1c1917'} 100%);"
-						></div>
-						<img
-							src={photoSrc(photo)}
-							alt={photo.caption || photo.description || ''}
-							class="photo-thumb-img relative z-10 w-full object-cover"
-							style="view-transition-name: photo-{photo.id}; {aspectStyle(photo.exif)}"
-							loading={index < 8 ? 'eager' : 'lazy'}
-							fetchpriority={index < 8 ? 'high' : 'auto'}
-							decoding="async"
-							use:photoLazy
-						/>
+							class="photo-thumb-frame relative isolate overflow-hidden"
+							style={aspectStyle(photo.exif)}
+						>
+							<div
+								class="photo-thumb-tint absolute inset-0 z-0"
+								style="background:
+										radial-gradient(circle at 50% 30%, color-mix(in srgb, {photo.exif?.dominantColor ||
+									'#1c1917'} 78%, white 22%) 0%, transparent 58%),
+										linear-gradient(180deg, color-mix(in srgb, {photo.exif?.dominantColor ||
+									'#1c1917'} 88%, white 12%) 0%, {photo.exif?.dominantColor || '#1c1917'} 100%);"
+							></div>
+							<div class="photo-thumb-sheen absolute inset-0 z-[1]"></div>
+							<img
+								src={photoSrc(photo)}
+								alt={photo.caption || photo.description || ''}
+								class="photo-thumb-img relative z-10 w-full object-cover"
+								style={aspectStyle(photo.exif)}
+								loading={index < 8 ? 'eager' : 'lazy'}
+								fetchpriority={index < 8 ? 'high' : 'auto'}
+								decoding="async"
+								use:photoLazy
+							/>
+						</div>
 						{#if photo.caption || deviceStr(photo.exif)}
 							<div
 								class="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-ink-950/70 to-transparent px-3 pb-3 pt-8 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0"
@@ -161,18 +206,21 @@
 	 * No attribute: cached / SSR — just visible, no animation
 	 */
 	:global(.photo-thumb-img[data-pending='true']) {
-		filter: blur(18px);
-		transform: scale(1.04);
+		filter: blur(26px) saturate(1.12);
+		transform: scale(1.06);
 		opacity: 0;
+	}
+	:global(.photo-thumb-img) {
+		transition:
+			transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+			filter 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+			opacity 0.5s ease;
+		will-change: transform, filter, opacity;
 	}
 	:global(.photo-thumb-img[data-revealed='true']) {
 		filter: blur(0);
 		transform: scale(1);
 		opacity: 1;
-		transition:
-			filter 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-			transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-			opacity 0.5s ease;
 	}
 	:global([data-photo-card][data-loaded='false'] .photo-thumb-tint) {
 		opacity: 1;
@@ -188,8 +236,42 @@
 			opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1),
 			transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 	}
+	:global([data-photo-card][data-loaded='false'] .photo-thumb-sheen) {
+		opacity: 1;
+		animation: photo-thumb-sheen 2.4s ease-in-out infinite;
+	}
+	:global([data-photo-card][data-loaded='true'] .photo-thumb-sheen) {
+		opacity: 0;
+		transition: opacity 0.45s ease;
+	}
+	:global([data-photo-card][data-route-hidden='true']) {
+		opacity: 0;
+		pointer-events: none;
+	}
 	:global(.group:hover .photo-thumb-img) {
 		transform: scale(1.03);
-		transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+	}
+	:global(.photo-thumb-sheen) {
+		background: linear-gradient(
+			115deg,
+			transparent 0%,
+			rgba(255, 255, 255, 0.05) 24%,
+			rgba(255, 255, 255, 0.18) 50%,
+			rgba(255, 255, 255, 0.05) 76%,
+			transparent 100%
+		);
+		mix-blend-mode: screen;
+		pointer-events: none;
+	}
+	@keyframes photo-thumb-sheen {
+		0% {
+			transform: translateX(-42%) scaleX(0.92);
+		}
+		50% {
+			transform: translateX(0%) scaleX(1);
+		}
+		100% {
+			transform: translateX(42%) scaleX(0.92);
+		}
 	}
 </style>

@@ -1,8 +1,29 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import PhotoGallery from '$lib/features/album/components/PhotoGallery.svelte';
 	import { albumDetailCtx } from '$lib/features/album/context';
 	import FadeIn from '$lib/ui/animation/FadeIn.svelte';
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
+
+	type TransitionRect = {
+		left: number;
+		top: number;
+		width: number;
+		height: number;
+	};
+
+	type PhotoRouteTransition = {
+		at: number;
+		photoId: number;
+		radius: number;
+		rect: TransitionRect;
+		src: string;
+	};
+
+	const PHOTO_ROUTE_RETURN_TRANSITION_KEY = 'album-photo-route-return-transition';
+	const PHOTO_ROUTE_TRANSITION_MAX_AGE = 6000;
+	const PHOTO_ROUTE_TRANSITION_DURATION = 360;
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -19,6 +40,137 @@
 				})
 			: ''
 	);
+
+	let returnTransition = $state<PhotoRouteTransition | null>(null);
+	let returnTransitionTarget = $state<TransitionRect | null>(null);
+	let returnTransitionActive = $state(false);
+	let hiddenPhotoId = $state<number | null>(null);
+	let returnTransitionTimer: number | null = null;
+
+	function clearReturnTransitionTimer() {
+		if (!browser || returnTransitionTimer == null) return;
+		window.clearTimeout(returnTransitionTimer);
+		returnTransitionTimer = null;
+	}
+
+	function resetReturnTransition() {
+		clearReturnTransitionTimer();
+		returnTransition = null;
+		returnTransitionTarget = null;
+		returnTransitionActive = false;
+		hiddenPhotoId = null;
+	}
+
+	function readReturnTransition(): PhotoRouteTransition | null {
+		if (!browser) return null;
+		const raw = sessionStorage.getItem(PHOTO_ROUTE_RETURN_TRANSITION_KEY);
+		if (!raw) return null;
+		sessionStorage.removeItem(PHOTO_ROUTE_RETURN_TRANSITION_KEY);
+
+		try {
+			const parsed = JSON.parse(raw) as Partial<PhotoRouteTransition>;
+			if (
+				typeof parsed.at !== 'number' ||
+				typeof parsed.photoId !== 'number' ||
+				typeof parsed.src !== 'string' ||
+				typeof parsed.radius !== 'number' ||
+				!parsed.rect
+			) {
+				return null;
+			}
+
+			if (Date.now() - parsed.at > PHOTO_ROUTE_TRANSITION_MAX_AGE) return null;
+
+			const rect = parsed.rect as Partial<TransitionRect>;
+			if (
+				typeof rect.left !== 'number' ||
+				typeof rect.top !== 'number' ||
+				typeof rect.width !== 'number' ||
+				typeof rect.height !== 'number'
+			) {
+				return null;
+			}
+
+			return {
+				at: parsed.at,
+				photoId: parsed.photoId,
+				radius: parsed.radius,
+				rect: {
+					height: rect.height,
+					left: rect.left,
+					top: rect.top,
+					width: rect.width
+				},
+				src: parsed.src
+			};
+		} catch {
+			return null;
+		}
+	}
+
+	function tryStartReturnTransition() {
+		const pending = readReturnTransition();
+		if (!browser || !pending) return;
+
+		let attempts = 0;
+		const resolveTarget = () => {
+			const target = document.querySelector<HTMLElement>(
+				`[data-photo-id="${pending.photoId}"] img`
+			);
+			const rect = target?.getBoundingClientRect();
+
+			if (rect && rect.width && rect.height) {
+				hiddenPhotoId = pending.photoId;
+				returnTransition = pending;
+				returnTransitionTarget = {
+					height: rect.height,
+					left: rect.left,
+					top: rect.top,
+					width: rect.width
+				};
+				returnTransitionActive = false;
+
+				requestAnimationFrame(() => {
+					returnTransitionActive = true;
+					clearReturnTransitionTimer();
+					returnTransitionTimer = window.setTimeout(
+						() => resetReturnTransition(),
+						PHOTO_ROUTE_TRANSITION_DURATION
+					);
+				});
+				return;
+			}
+
+			attempts += 1;
+			if (attempts < 12) {
+				requestAnimationFrame(resolveTarget);
+			}
+		};
+
+		requestAnimationFrame(resolveTarget);
+	}
+
+	const returnTransitionStyle = $derived.by(() => {
+		if (!returnTransition || !returnTransitionTarget) return '';
+
+		const frame = returnTransitionActive ? returnTransitionTarget : returnTransition.rect;
+		const radius = returnTransitionActive ? 3 : returnTransition.radius;
+
+		return [
+			`left:${frame.left}px`,
+			`top:${frame.top}px`,
+			`width:${frame.width}px`,
+			`height:${frame.height}px`,
+			`border-radius:${radius}px`
+		].join(';');
+	});
+
+	onMount(() => {
+		tryStartReturnTransition();
+		return () => {
+			clearReturnTransitionTimer();
+		};
+	});
 </script>
 
 <svelte:head>
@@ -79,7 +231,17 @@
 
 		<!-- Photo gallery -->
 		{#if $album.photos && $album.photos.length > 0}
-			<PhotoGallery photos={$album.photos} albumSlug={$album.shortUrl} />
+			{#if returnTransition && returnTransitionTarget}
+				<div class="album-route-preview" style={returnTransitionStyle}>
+					<img
+						src={returnTransition.src}
+						alt=""
+						class="h-full w-full object-cover"
+						draggable={false}
+					/>
+				</div>
+			{/if}
+			<PhotoGallery photos={$album.photos} albumSlug={$album.shortUrl} {hiddenPhotoId} />
 		{:else}
 			<div class="py-32 text-center">
 				<p class="font-serif text-lg tracking-wide text-ink-400/50 dark:text-ink-600/50">
@@ -89,3 +251,20 @@
 		{/if}
 	</div>
 {/if}
+
+<style>
+	.album-route-preview {
+		position: fixed;
+		z-index: 24;
+		overflow: hidden;
+		background: #000;
+		pointer-events: none;
+		transition:
+			left 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			top 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			width 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			height 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-radius 360ms cubic-bezier(0.16, 1, 0.3, 1);
+		will-change: left, top, width, height, border-radius;
+	}
+</style>

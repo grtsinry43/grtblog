@@ -4,6 +4,26 @@
 	import { onDestroy, onMount, untrack } from 'svelte';
 	import type { PageData } from './$types';
 
+	type TransitionRect = {
+		left: number;
+		top: number;
+		width: number;
+		height: number;
+	};
+
+	type PhotoRouteTransition = {
+		at: number;
+		photoId: number;
+		radius: number;
+		rect: TransitionRect;
+		src: string;
+	};
+
+	const PHOTO_ROUTE_TRANSITION_KEY = 'album-photo-route-transition';
+	const PHOTO_ROUTE_RETURN_TRANSITION_KEY = 'album-photo-route-return-transition';
+	const PHOTO_ROUTE_TRANSITION_MAX_AGE = 6000;
+	const PHOTO_ROUTE_TRANSITION_DURATION = 360;
+
 	let { data } = $props<{ data: PageData }>();
 
 	const album = $derived(data.album);
@@ -13,24 +33,48 @@
 
 	// === Image sources (SSR-safe, never blank) ===
 	const thumbSrc = $derived(photo.thumbnailUrl || photo.url);
-	let highResBlobUrl = $state<string | null>(null);
-	const displaySrc = $derived(highResBlobUrl || thumbSrc);
+	const hasDedicatedThumbnail = $derived(
+		Boolean(photo.thumbnailUrl && photo.thumbnailUrl !== photo.url)
+	);
+	const dominantColor = $derived(photo.exif?.dominantColor || '#1c1917');
 
 	// Fixed container size from EXIF — never changes regardless of img src
 	const exifW = $derived(photo.exif?.imageWidth || 0);
 	const exifH = $derived(photo.exif?.imageHeight || 0);
+	const hasFixedFrame = $derived(exifW > 0 && exifH > 0);
+	const viewerFrameStyle = $derived.by(() => {
+		if (!hasFixedFrame) return '';
+		return `width: min(92vw, 1100px, calc(82vh * ${exifW} / ${exifH})); aspect-ratio: ${exifW}/${exifH};`;
+	});
+	const thumbLayerStyle = $derived.by(() =>
+		hasFixedFrame ? 'width: 100%; height: 100%;' : 'max-height: 82vh; max-width: min(92vw, 1100px);'
+	);
+	const originalLayerStyle = $derived.by(() =>
+		hasFixedFrame ? 'width: 100%; height: 100%;' : 'max-height: 82vh; max-width: min(92vw, 1100px);'
+	);
 
-	let imgEl: HTMLImageElement;
+	let baseImgEl: HTMLImageElement;
+	let highResBlobUrl = $state<string | null>(null);
+	let thumbReady = $state(false);
+	let highResRendered = $state(false);
+	let thumbFadeOut = $state(false);
+	let hideBaseImage = $state(false);
+
+	let routeTransition = $state<PhotoRouteTransition | null>(null);
+	let routeTransitionTarget = $state<TransitionRect | null>(null);
+	let routeTransitionActive = $state(false);
+	let routeTransitionSettled = $state(false);
+	let routeTransitionTimer: number | null = null;
+	let highResRevealTimer: number | null = null;
 
 	// === High-res loading state ===
+	let fetchingHighRes = $state(false);
 	let loadProgress = $state(0);
 	let loadedBytes = $state(0);
 	let totalBytes = $state(0);
 	let abortController: AbortController | null = null;
-
-	const isLoadingHighRes = $derived(
-		!highResBlobUrl && photo.thumbnailUrl !== photo.url && photo.thumbnailUrl
-	);
+	let pendingHighResPhotoId: number | null = null;
+	let queuedHighResPhotoId: number | null = null;
 
 	// === Transform ===
 	let scale = $state(1);
@@ -40,33 +84,282 @@
 	let isDragging = $state(false);
 	let dragStart = { x: 0, y: 0 };
 	let stageEl: HTMLDivElement;
+	let frameEl: HTMLDivElement;
 	const zoomPercent = $derived(Math.round(scale * 100));
 
 	// === React to photo changes ===
 	let prevPhotoId: number | null = null;
+
+	function abortError(): DOMException {
+		return new DOMException('Aborted', 'AbortError');
+	}
+
+	function revokeHighResBlob() {
+		if (highResBlobUrl?.startsWith('blob:')) {
+			URL.revokeObjectURL(highResBlobUrl);
+		}
+		highResBlobUrl = null;
+	}
+
+	function clearRouteTransitionTimer() {
+		if (!browser || routeTransitionTimer == null) return;
+		window.clearTimeout(routeTransitionTimer);
+		routeTransitionTimer = null;
+	}
+
+	function clearHighResRevealTimer() {
+		if (!browser || highResRevealTimer == null) return;
+		window.clearTimeout(highResRevealTimer);
+		highResRevealTimer = null;
+	}
+
+	function resetRouteTransitionState() {
+		clearRouteTransitionTimer();
+		routeTransition = null;
+		routeTransitionTarget = null;
+		routeTransitionActive = false;
+		routeTransitionSettled = false;
+		hideBaseImage = false;
+	}
+
+	function readPendingRouteTransition(): PhotoRouteTransition | null {
+		if (!browser) return null;
+
+		const raw = sessionStorage.getItem(PHOTO_ROUTE_TRANSITION_KEY);
+		if (!raw) return null;
+		sessionStorage.removeItem(PHOTO_ROUTE_TRANSITION_KEY);
+
+		try {
+			const parsed = JSON.parse(raw) as Partial<PhotoRouteTransition>;
+			if (
+				typeof parsed.at !== 'number' ||
+				typeof parsed.photoId !== 'number' ||
+				typeof parsed.src !== 'string' ||
+				typeof parsed.radius !== 'number' ||
+				!parsed.rect
+			) {
+				return null;
+			}
+
+			if (Date.now() - parsed.at > PHOTO_ROUTE_TRANSITION_MAX_AGE) {
+				return null;
+			}
+
+			const rect = parsed.rect as Partial<TransitionRect>;
+			if (
+				typeof rect.left !== 'number' ||
+				typeof rect.top !== 'number' ||
+				typeof rect.width !== 'number' ||
+				typeof rect.height !== 'number'
+			) {
+				return null;
+			}
+
+			return {
+				at: parsed.at,
+				photoId: parsed.photoId,
+				radius: parsed.radius,
+				rect: {
+					height: rect.height,
+					left: rect.left,
+					top: rect.top,
+					width: rect.width
+				},
+				src: parsed.src
+			};
+		} catch {
+			return null;
+		}
+	}
+
+	function queueHighResLoad(targetPhotoId: number, url: string) {
+		if (!hasDedicatedThumbnail) return;
+		if (routeTransition || routeTransitionActive) {
+			queuedHighResPhotoId = targetPhotoId;
+			return;
+		}
+		void startHighResUpgrade(targetPhotoId, url);
+	}
+
+	function persistReturnTransition() {
+		if (!browser || !frameEl) return;
+
+		const rect = frameEl.getBoundingClientRect();
+		if (!rect.width || !rect.height) return;
+
+		sessionStorage.setItem(
+			PHOTO_ROUTE_RETURN_TRANSITION_KEY,
+			JSON.stringify({
+				at: Date.now(),
+				photoId: photo.id,
+				radius: 3,
+				rect: {
+					height: rect.height,
+					left: rect.left,
+					top: rect.top,
+					width: rect.width
+				},
+				src: thumbSrc
+			})
+		);
+	}
+
+	function finishRouteTransition() {
+		const queuedPhotoId = queuedHighResPhotoId;
+		resetRouteTransitionState();
+		queuedHighResPhotoId = null;
+
+		if (queuedPhotoId === photo.id && hasDedicatedThumbnail) {
+			void startHighResUpgrade(photo.id, photo.url);
+		}
+	}
+
+	function maybeFinishRouteTransition() {
+		if (!routeTransition || !routeTransitionSettled || !thumbReady) return;
+		finishRouteTransition();
+	}
+
+	function maybeStartRouteTransition() {
+		if (!browser || !frameEl) return;
+
+		const pending = readPendingRouteTransition();
+		if (!pending || pending.photoId !== photo.id) return;
+
+		const rect = frameEl.getBoundingClientRect();
+		if (!rect.width || !rect.height) return;
+
+		hideBaseImage = true;
+		routeTransition = pending;
+		routeTransitionTarget = {
+			height: rect.height,
+			left: rect.left,
+			top: rect.top,
+			width: rect.width
+		};
+		routeTransitionActive = false;
+		routeTransitionSettled = false;
+
+		requestAnimationFrame(() => {
+			routeTransitionActive = true;
+			clearRouteTransitionTimer();
+			routeTransitionTimer = window.setTimeout(() => {
+				routeTransitionSettled = true;
+				maybeFinishRouteTransition();
+			}, PHOTO_ROUTE_TRANSITION_DURATION);
+		});
+	}
+
+	const routeTransitionStyle = $derived.by(() => {
+		if (!routeTransition || !routeTransitionTarget) return '';
+
+		const frame = routeTransitionActive ? routeTransitionTarget : routeTransition.rect;
+		const radius = routeTransitionActive ? 3 : routeTransition.radius;
+
+		return [
+			`left:${frame.left}px`,
+			`top:${frame.top}px`,
+			`width:${frame.width}px`,
+			`height:${frame.height}px`,
+			`border-radius:${radius}px`
+		].join(';');
+	});
+
+	async function decodeImage(src: string, signal: AbortSignal) {
+		if (signal.aborted) throw abortError();
+
+		const image = new Image();
+		image.decoding = 'async';
+
+		const abortPromise = new Promise<never>((_, reject) => {
+			signal.addEventListener('abort', () => reject(abortError()), { once: true });
+		});
+
+		image.src = src;
+
+		if (typeof image.decode === 'function') {
+			await Promise.race([image.decode().catch(() => undefined), abortPromise]);
+			return;
+		}
+
+		await Promise.race([
+			new Promise<void>((resolve, reject) => {
+				image.onload = () => resolve();
+				image.onerror = () => reject(new Error('image decode failed'));
+			}),
+			abortPromise
+		]);
+	}
+
+	function finishHighResReveal(blobUrl: string, targetPhotoId: number) {
+		if (targetPhotoId !== photo.id) {
+			if (blobUrl.startsWith('blob:')) URL.revokeObjectURL(blobUrl);
+			return;
+		}
+
+		revokeHighResBlob();
+		highResBlobUrl = blobUrl;
+		loadProgress = 100;
+		loadedBytes = Math.max(loadedBytes, totalBytes);
+		highResRendered = false;
+		thumbFadeOut = false;
+	}
+
+	function handleOriginalImageLoad() {
+		if (!browser || !highResBlobUrl) return;
+
+		clearHighResRevealTimer();
+		requestAnimationFrame(() => {
+			highResRendered = true;
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					highResRevealTimer = window.setTimeout(() => {
+						thumbFadeOut = true;
+						highResRevealTimer = null;
+					}, 120);
+				});
+			});
+		});
+	}
 
 	$effect(() => {
 		const id = photo.id;
 		if (!browser || id === prevPhotoId) return;
 		prevPhotoId = id;
 		untrack(() => {
-			// Clean up old state
 			if (abortController) abortController.abort();
-			if (highResBlobUrl) URL.revokeObjectURL(highResBlobUrl);
-			highResBlobUrl = null;
+			revokeHighResBlob();
+			clearHighResRevealTimer();
+			thumbReady = false;
+			highResRendered = false;
+			thumbFadeOut = false;
+			fetchingHighRes = false;
 			loadProgress = 0;
 			loadedBytes = 0;
 			totalBytes = 0;
+			pendingHighResPhotoId = null;
+			queuedHighResPhotoId = null;
 			scale = 1;
 			rotation = 0;
 			tx = 0;
 			ty = 0;
-			// Start loading high-res if thumbnail exists
-			if (photo.thumbnailUrl && photo.thumbnailUrl !== photo.url) {
-				fetchHighRes(photo.url);
-			}
+			resetRouteTransitionState();
+
+			requestAnimationFrame(() => {
+				maybeStartRouteTransition();
+				if (baseImgEl?.complete && baseImgEl.naturalWidth > 0) handleBaseImageLoad();
+			});
 		});
 	});
+
+	function handleBaseImageLoad() {
+		thumbReady = true;
+		if (routeTransition) {
+			queuedHighResPhotoId = photo.id;
+			maybeFinishRouteTransition();
+			return;
+		}
+		queueHighResLoad(photo.id, photo.url);
+	}
 
 	// === EXIF helpers ===
 	function deviceStr(exif: typeof photo.exif) {
@@ -93,9 +386,14 @@
 	}
 
 	// === Fetch high-res with real progress ===
-	async function fetchHighRes(url: string) {
+	async function startHighResUpgrade(targetPhotoId: number, url: string) {
+		if (!browser || !hasDedicatedThumbnail || pendingHighResPhotoId === targetPhotoId) return;
+
+		pendingHighResPhotoId = targetPhotoId;
 		const ctrl = new AbortController();
 		abortController = ctrl;
+		fetchingHighRes = true;
+
 		try {
 			const res = await fetch(url, { signal: ctrl.signal });
 			if (!res.ok) throw new Error('fetch failed');
@@ -103,8 +401,9 @@
 			totalBytes = total;
 
 			if (!res.body) {
-				highResBlobUrl = url;
-				loadProgress = 100;
+				await decodeImage(url, ctrl.signal);
+				if (ctrl.signal.aborted) return;
+				finishHighResReveal(url, targetPhotoId);
 				return;
 			}
 
@@ -121,27 +420,31 @@
 			}
 			if (ctrl.signal.aborted) return;
 
-			const blob = new Blob(chunks);
+			const blob = new Blob(chunks as BlobPart[]);
 			const blobUrl = URL.createObjectURL(blob);
-			// Pre-decode to avoid blank frame
-			const img = new Image();
-			img.onload = () => {
-				if (ctrl.signal.aborted) {
-					URL.revokeObjectURL(blobUrl);
-					return;
-				}
-				highResBlobUrl = blobUrl;
-				loadProgress = 100;
-			};
-			img.onerror = () => URL.revokeObjectURL(blobUrl);
-			img.src = blobUrl;
-		} catch (e: any) {
-			if (e.name !== 'AbortError') console.error('fetchHighRes:', e);
+			await decodeImage(blobUrl, ctrl.signal);
+			if (ctrl.signal.aborted) {
+				URL.revokeObjectURL(blobUrl);
+				return;
+			}
+			finishHighResReveal(blobUrl, targetPhotoId);
+		} catch (e: unknown) {
+			if (!(e instanceof DOMException && e.name === 'AbortError')) {
+				console.error('fetchHighRes:', e);
+			}
+		} finally {
+			if (abortController === ctrl) {
+				abortController = null;
+			}
+			if (pendingHighResPhotoId === targetPhotoId) {
+				fetchingHighRes = false;
+			}
 		}
 	}
 
 	// === Navigation ===
 	function goBack() {
+		persistReturnTransition();
 		if (browser) {
 			const referrer = document.referrer;
 			const albumPath = `/albums/${album.shortUrl}`;
@@ -291,7 +594,11 @@
 			if (touchMoved && !isTouchDrag && scale <= 1 && e.changedTouches.length === 1) {
 				const dx = e.changedTouches[0].clientX - swipeX0;
 				if (Math.abs(dx) > 60) {
-					dx > 0 ? goPrev() : goNext();
+					if (dx > 0) {
+						goPrev();
+					} else {
+						goNext();
+					}
 				}
 			}
 			isTouchDrag = false;
@@ -359,8 +666,10 @@
 			document.removeEventListener('mouseup', handleMouseUp);
 			document.body.style.overflow = '';
 		}
+		clearRouteTransitionTimer();
+		clearHighResRevealTimer();
 		if (abortController) abortController.abort();
-		if (highResBlobUrl) URL.revokeObjectURL(highResBlobUrl);
+		revokeHighResBlob();
 	});
 
 	// EXIF sidebar rows
@@ -400,13 +709,13 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="photo-viewer fixed inset-0 z-40 flex md:pl-24 bg-ink-950">
+<div class="photo-viewer fixed inset-0 z-40 flex bg-ink-950 md:pl-24">
 	<!-- Image stage -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		bind:this={stageEl}
-		class="relative flex flex-1 items-center justify-center touch-none overflow-hidden"
+		class="relative flex h-full w-full items-center justify-center touch-none overflow-hidden lg:overflow-visible"
 		class:cursor-grab={scale > 1 && !isDragging}
 		class:cursor-grabbing={isDragging}
 		onmousedown={handleMouseDown}
@@ -433,7 +742,7 @@
 		{#if photoIndex > 0}
 			<button
 				aria-label="上一张"
-				class="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/5 p-2.5 text-white/30 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
+				class="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/12 bg-ink-950/78 p-2.5 text-white/72 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all hover:border-jade-400/35 hover:bg-jade-500/14 hover:text-jade-200"
 				onclick={goPrev}
 			>
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -450,7 +759,7 @@
 		{#if photoIndex < total - 1}
 			<button
 				aria-label="下一张"
-				class="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/5 p-2.5 text-white/30 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
+				class="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/12 bg-ink-950/78 p-2.5 text-white/72 shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all hover:border-jade-400/35 hover:bg-jade-500/14 hover:text-jade-200"
 				onclick={goNext}
 			>
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -470,26 +779,69 @@
 			CSS max-* + object-contain lock the display size regardless of actual src resolution.
 			Thumbnail 1200px and original 4000px both render at identical visual size.
 		-->
+		{#if routeTransition && routeTransitionTarget}
+			<div class="viewer-route-preview" style={routeTransitionStyle}>
+				<img
+					src={routeTransition.src}
+					alt=""
+					class="h-full w-full object-cover"
+					draggable={false}
+				/>
+			</div>
+		{/if}
 		<div
 			class="relative"
 			style="transform: translate({tx}px, {ty}px) rotate({rotation}deg) scale({scale}); transition: transform {isDragging
 				? '0ms'
 				: '180ms'} cubic-bezier(0.4, 0, 0.2, 1);"
 		>
-			<img
-				bind:this={imgEl}
-				src={displaySrc}
-				alt={photo.caption || ''}
-				width={exifW || undefined}
-				height={exifH || undefined}
-				class="pointer-events-none select-none rounded-[3px] object-contain"
-				style="view-transition-name: photo-{photo.id}; max-height: 82vh; max-width: min(92vw, 1100px);"
-				draggable={false}
-			/>
+			<div
+				bind:this={frameEl}
+				class="viewer-photo-frame"
+				class:viewer-photo-frame-route-hidden={routeTransition !== null}
+				data-thumb-ready={thumbReady ? 'true' : 'false'}
+				data-original-ready={(hasDedicatedThumbnail ? highResRendered : thumbReady)
+					? 'true'
+					: 'false'}
+				style={viewerFrameStyle}
+			>
+				<div
+					class="viewer-photo-backdrop"
+					style="background:
+						radial-gradient(circle at 50% 26%, color-mix(in srgb, {dominantColor} 74%, white 26%) 0%, transparent 58%),
+						linear-gradient(180deg, color-mix(in srgb, {dominantColor} 88%, white 12%) 0%, {dominantColor} 100%);"
+				></div>
+				<img
+					bind:this={baseImgEl}
+					src={thumbSrc}
+					alt={photo.caption || ''}
+					class="viewer-photo-layer viewer-photo-thumb pointer-events-none select-none rounded-[3px] object-contain"
+					class:viewer-photo-layer-ready={thumbReady}
+					class:viewer-photo-layer-hidden={thumbFadeOut || hideBaseImage}
+					style={thumbLayerStyle}
+					draggable={false}
+					loading="eager"
+					decoding="sync"
+					fetchpriority="high"
+					onload={handleBaseImageLoad}
+				/>
+				{#if highResBlobUrl}
+					<img
+						src={highResBlobUrl}
+						alt={photo.caption || ''}
+						class="viewer-photo-layer viewer-photo-original pointer-events-none select-none rounded-[3px] object-contain"
+						class:viewer-photo-layer-ready={highResRendered}
+						style={originalLayerStyle}
+						draggable={false}
+						decoding="async"
+						onload={handleOriginalImageLoad}
+					/>
+				{/if}
+			</div>
 		</div>
 
 		<!-- Loading bubble (high-res progress) -->
-		{#if isLoadingHighRes && loadProgress > 0 && loadProgress < 100}
+		{#if (hasDedicatedThumbnail && fetchingHighRes && !highResRendered) || (!hasDedicatedThumbnail && !thumbReady)}
 			<div
 				class="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-white/10 bg-black/80 px-4 py-3 shadow-2xl backdrop-blur-xl"
 			>
@@ -501,18 +853,27 @@
 				</div>
 				<div class="flex min-w-[120px] flex-col">
 					<div class="mb-1 flex items-end justify-between">
-						<span class="text-[11px] font-medium tracking-wide text-white/80">加载原图</span>
-						<span class="font-mono text-[10px] text-jade-400">{loadProgress}%</span>
+						<span class="text-[11px] font-medium tracking-wide text-white/80"
+							>{hasDedicatedThumbnail ? '加载原图' : '加载照片'}</span
+						>
+						<span class="font-mono text-[10px] text-jade-400"
+							>{totalBytes > 0 ? `${loadProgress}%` : '···'}</span
+						>
 					</div>
 					{#if totalBytes > 0}
 						<span class="mb-1 block font-mono text-[9px] text-white/35"
 							>{formatBytes(loadedBytes)} / {formatBytes(totalBytes)}</span
 						>
+					{:else if loadedBytes > 0}
+						<span class="mb-1 block font-mono text-[9px] text-white/35"
+							>已接收 {formatBytes(loadedBytes)}</span
+						>
 					{/if}
 					<div class="h-[3px] w-full overflow-hidden rounded-full bg-white/10">
 						<div
 							class="h-full rounded-full bg-gradient-to-r from-jade-500 to-jade-400 transition-[width] duration-200 ease-out"
-							style="width: {loadProgress}%"
+							class:animate-pulse={totalBytes <= 0}
+							style="width: {totalBytes > 0 ? Math.max(loadProgress, 6) : 38}%"
 						></div>
 					</div>
 				</div>
@@ -594,7 +955,7 @@
 
 	<!-- Side panel -->
 	<aside
-		class="photo-sidebar hidden w-72 shrink-0 overflow-y-auto border-l border-white/5 bg-ink-950/80 p-5 backdrop-blur-sm lg:block"
+		class="photo-sidebar noise-surface relative z-20 hidden w-72 shrink-0 overflow-y-auto border-l border-white/8 bg-ink-950/90 p-5 backdrop-blur-xl backdrop-saturate-150 lg:block"
 	>
 		{#if photo.caption}
 			<p class="font-serif text-sm leading-relaxed text-white/90">{photo.caption}</p>
@@ -652,6 +1013,77 @@
 </div>
 
 <style>
+	.viewer-route-preview {
+		position: fixed;
+		z-index: 14;
+		overflow: hidden;
+		background: #000;
+		pointer-events: none;
+		transition:
+			left 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			top 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			width 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			height 360ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-radius 360ms cubic-bezier(0.16, 1, 0.3, 1);
+		will-change: left, top, width, height, border-radius;
+	}
+	.viewer-photo-frame {
+		position: relative;
+		display: grid;
+		place-items: center;
+		isolation: isolate;
+		overflow: hidden;
+		border-radius: 3px;
+	}
+	.viewer-photo-frame-route-hidden {
+		visibility: hidden;
+	}
+	.viewer-photo-backdrop {
+		grid-area: 1 / 1;
+		width: 100%;
+		height: 100%;
+		opacity: 1;
+		pointer-events: none;
+		transition:
+			opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+			transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+		transform: scale(1);
+	}
+	.viewer-photo-layer {
+		grid-area: 1 / 1;
+		display: block;
+		transition:
+			opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+			filter 0.75s cubic-bezier(0.23, 1, 0.32, 1),
+			transform 0.75s cubic-bezier(0.23, 1, 0.32, 1);
+		will-change: opacity, filter, transform;
+	}
+	.viewer-photo-thumb {
+		z-index: 1;
+		opacity: 0;
+		filter: blur(28px) saturate(1.12);
+		transform: scale(1.035);
+	}
+	.viewer-photo-original {
+		z-index: 2;
+		opacity: 0;
+	}
+	.viewer-photo-layer-ready {
+		opacity: 1;
+		filter: blur(0);
+		transform: scale(1);
+	}
+	.viewer-photo-layer-hidden {
+		opacity: 0;
+	}
+	.viewer-photo-frame[data-thumb-ready='true'] .viewer-photo-backdrop {
+		opacity: 0;
+		transform: scale(1.03);
+	}
+	.viewer-photo-frame[data-original-ready='true'] .viewer-photo-backdrop {
+		opacity: 0;
+		transform: scale(1.06);
+	}
 	.photo-sidebar {
 		animation: pv-sidebar-in 0.4s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 	}

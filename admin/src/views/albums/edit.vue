@@ -19,11 +19,20 @@ import {
   NTooltip,
 } from 'naive-ui'
 import { ref, watch } from 'vue'
-import { useAlbumForm } from './composables/useAlbumForm'
-import { uploadFile } from '@/services/uploads'
-import { extractExif, exifDevice, exifShootingInfo, exifLocation } from './composables/usePhotoUtils'
+
+import { ScrollContainer } from '@/components'
 import ImageInput from '@/components/image-picker/ImageInput.vue'
 import ImagePickerModal from '@/components/image-picker/ImagePickerModal.vue'
+import { uploadFile } from '@/services/uploads'
+
+import { useAlbumForm } from './composables/useAlbumForm'
+import {
+  extractExif,
+  exifDevice,
+  exifShootingInfo,
+  exifLocation,
+} from './composables/usePhotoUtils'
+
 import type { PhotoItem } from '@/services/albums'
 
 const {
@@ -50,7 +59,14 @@ const photoForm = ref({
   caption: '',
 })
 watch(
-  () => [form.title, form.description, form.cover, form.shortUrl, form.isPublished, form.allowComment],
+  () => [
+    form.title,
+    form.description,
+    form.cover,
+    form.shortUrl,
+    form.isPublished,
+    form.allowComment,
+  ],
   () => markDirty(),
   { deep: true },
 )
@@ -62,10 +78,7 @@ async function handlePhotoUpload(e: Event) {
   try {
     const items: { url: string; exif?: Record<string, unknown> | null }[] = []
     for (const file of Array.from(input.files)) {
-      const [res, exif] = await Promise.all([
-        uploadFile(file, 'picture'),
-        extractExif(file),
-      ])
+      const [res, exif] = await Promise.all([uploadFile(file, 'picture'), extractExif(file)])
       // Merge backend imageMeta (width/height/dominantColor) into exif
       const merged = { ...(exif || {}) }
       if (res.imageMeta) {
@@ -121,7 +134,10 @@ function thumbUrl(photo: PhotoItem): string {
 </script>
 
 <template>
-  <NSpin :show="loading" class="flex h-full min-h-0 flex-col">
+  <NSpin
+    :show="loading"
+    class="flex h-full min-h-0 flex-col"
+  >
     <!-- ====== Sticky Header ====== -->
     <header
       class="z-10 flex shrink-0 flex-col gap-3 px-6 py-6 backdrop-blur sm:h-20 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-0"
@@ -145,7 +161,7 @@ function thumbUrl(photo: PhotoItem): string {
           <span>/albums/</span>
           <input
             v-model="form.shortUrl"
-            class="w-20 border-b border-current/20 bg-transparent outline-none transition-colors focus:border-current/50 sm:w-28"
+            class="w-20 border-b border-current/20 bg-transparent transition-colors outline-none focus:border-current/50 sm:w-28"
             placeholder="auto"
           />
         </div>
@@ -171,7 +187,12 @@ function thumbUrl(photo: PhotoItem): string {
         <!-- Metadata drawer toggle -->
         <NTooltip>
           <template #trigger>
-            <NButton quaternary circle size="small" @click="showMeta = !showMeta">
+            <NButton
+              quaternary
+              circle
+              size="small"
+              @click="showMeta = !showMeta"
+            >
               <template #icon><div class="iconify ph--sliders-horizontal" /></template>
             </NButton>
           </template>
@@ -179,7 +200,11 @@ function thumbUrl(photo: PhotoItem): string {
         </NTooltip>
 
         <!-- Save -->
-        <NButton type="primary" :loading="saving" @click="save">
+        <NButton
+          type="primary"
+          :loading="saving"
+          @click="save"
+        >
           <template #icon><div class="iconify ph--floppy-disk" /></template>
           {{ isEdit ? '保存' : '创建' }}
         </NButton>
@@ -188,7 +213,7 @@ function thumbUrl(photo: PhotoItem): string {
 
     <!-- ====== Main Content ====== -->
     <main class="flex min-h-0 flex-1 overflow-hidden">
-      <div class="flex-1 overflow-auto px-6 pb-20 sm:px-10">
+      <div class="flex min-h-0 flex-1 flex-col px-6 pb-20 sm:px-10">
         <!-- Description -->
         <div class="mb-6">
           <NInput
@@ -204,18 +229,35 @@ function thumbUrl(photo: PhotoItem): string {
         <!-- ====== Photo Grid ====== -->
         <div class="mb-4 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <div class="iconify ph--images text-lg opacity-50" />
+            <div class="iconify text-lg opacity-50 ph--images" />
             <span class="text-sm font-medium">照片</span>
-            <NTag v-if="photos.length > 0" size="small" round :bordered="false">
+            <NTag
+              v-if="photos.length > 0"
+              size="small"
+              round
+              :bordered="false"
+            >
               {{ photos.length }}
             </NTag>
           </div>
-          <NSpace v-if="isEdit" size="small">
-            <NButton size="small" quaternary @click="showPhotoPicker = true">
+          <NSpace
+            v-if="isEdit"
+            size="small"
+          >
+            <NButton
+              size="small"
+              quaternary
+              @click="showPhotoPicker = true"
+            >
               <template #icon><div class="iconify ph--folder-open" /></template>
               图库
             </NButton>
-            <NButton size="small" :loading="uploading" tag="label" style="cursor: pointer">
+            <NButton
+              size="small"
+              :loading="uploading"
+              tag="label"
+              style="cursor: pointer"
+            >
               <template #icon><div class="iconify ph--upload-simple" /></template>
               上传
               <input
@@ -240,90 +282,130 @@ function thumbUrl(photo: PhotoItem): string {
           class="py-16"
         >
           <template #icon>
-            <div class="iconify ph--camera text-4xl opacity-20" />
+            <div class="iconify text-4xl opacity-20 ph--camera" />
           </template>
         </NEmpty>
 
         <!-- Photo cards -->
-        <div
+        <ScrollContainer
           v-else
-          class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          class="min-h-0 flex-1"
+          wrapper-class="!p-0"
         >
-          <div
-            v-for="(photo, index) in photos"
-            :key="photo.id"
-            class="group overflow-hidden rounded-lg border border-current/5 transition-all hover:border-current/15 hover:shadow-sm"
-          >
-            <!-- Image -->
-            <div class="relative aspect-square overflow-hidden bg-current/3">
-              <NImage
-                :src="thumbUrl(photo)"
-                :preview-src="photo.url"
-                object-fit="cover"
-                :img-props="{ class: 'h-full w-full object-cover' }"
-                class="h-full w-full"
-              />
-              <!-- Index badge (always visible) -->
-              <div class="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-[10px] font-medium text-white">
-                {{ index + 1 }}
-              </div>
-            </div>
-
-            <!-- Info + Actions bar below image -->
-            <div class="px-2.5 py-2">
-              <!-- Caption / EXIF summary -->
-              <div class="min-h-[1.25rem] cursor-pointer truncate text-xs opacity-60" @click="openPhotoEdit(photo)">
-                <template v-if="photo.caption">{{ photo.caption }}</template>
-                <template v-else-if="exifDevice(photo.exif)">{{ exifDevice(photo.exif) }}</template>
-                <template v-else><span class="italic opacity-40">点击编辑信息</span></template>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div
+              v-for="(photo, index) in photos"
+              :key="photo.id"
+              class="group overflow-hidden rounded-lg border border-current/5 transition-all hover:border-current/15 hover:shadow-sm"
+            >
+              <!-- Image -->
+              <div class="relative aspect-square overflow-hidden bg-current/3">
+                <NImage
+                  :src="thumbUrl(photo)"
+                  :preview-src="photo.url"
+                  object-fit="cover"
+                  :img-props="{ class: 'h-full w-full object-cover' }"
+                  class="h-full w-full"
+                />
+                <!-- Index badge (always visible) -->
+                <div
+                  class="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-[10px] font-medium text-white"
+                >
+                  {{ index + 1 }}
+                </div>
               </div>
 
-              <!-- Action buttons -->
-              <div class="mt-1.5 flex items-center justify-between">
-                <NSpace :size="2">
-                  <NTooltip>
+              <!-- Info + Actions bar below image -->
+              <div class="px-2.5 py-2">
+                <!-- Caption / EXIF summary -->
+                <div
+                  class="min-h-[1.25rem] cursor-pointer truncate text-xs opacity-60"
+                  @click="openPhotoEdit(photo)"
+                >
+                  <template v-if="photo.caption">{{ photo.caption }}</template>
+                  <template v-else-if="exifDevice(photo.exif)">{{
+                    exifDevice(photo.exif)
+                  }}</template>
+                  <template v-else><span class="italic opacity-40">点击编辑信息</span></template>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="mt-1.5 flex items-center justify-between">
+                  <NSpace :size="2">
+                    <NTooltip>
+                      <template #trigger>
+                        <NButton
+                          quaternary
+                          circle
+                          size="tiny"
+                          :disabled="index === 0"
+                          @click="movePhoto(index, -1)"
+                        >
+                          <template #icon><div class="iconify ph--caret-left" /></template>
+                        </NButton>
+                      </template>
+                      前移
+                    </NTooltip>
+                    <NTooltip>
+                      <template #trigger>
+                        <NButton
+                          quaternary
+                          circle
+                          size="tiny"
+                          :disabled="index === photos.length - 1"
+                          @click="movePhoto(index, 1)"
+                        >
+                          <template #icon><div class="iconify ph--caret-right" /></template>
+                        </NButton>
+                      </template>
+                      后移
+                    </NTooltip>
+                    <NTooltip>
+                      <template #trigger>
+                        <NButton
+                          quaternary
+                          circle
+                          size="tiny"
+                          @click="openPhotoEdit(photo)"
+                        >
+                          <template #icon><div class="iconify ph--pencil-simple" /></template>
+                        </NButton>
+                      </template>
+                      编辑
+                    </NTooltip>
+                  </NSpace>
+                  <NPopconfirm @positive-click="deletePhoto(photo.id)">
                     <template #trigger>
-                      <NButton quaternary circle size="tiny" :disabled="index === 0" @click="movePhoto(index, -1)">
-                        <template #icon><div class="iconify ph--caret-left" /></template>
+                      <NButton
+                        quaternary
+                        circle
+                        size="tiny"
+                        type="error"
+                      >
+                        <template #icon><div class="iconify ph--trash" /></template>
                       </NButton>
                     </template>
-                    前移
-                  </NTooltip>
-                  <NTooltip>
-                    <template #trigger>
-                      <NButton quaternary circle size="tiny" :disabled="index === photos.length - 1" @click="movePhoto(index, 1)">
-                        <template #icon><div class="iconify ph--caret-right" /></template>
-                      </NButton>
-                    </template>
-                    后移
-                  </NTooltip>
-                  <NTooltip>
-                    <template #trigger>
-                      <NButton quaternary circle size="tiny" @click="openPhotoEdit(photo)">
-                        <template #icon><div class="iconify ph--pencil-simple" /></template>
-                      </NButton>
-                    </template>
-                    编辑
-                  </NTooltip>
-                </NSpace>
-                <NPopconfirm @positive-click="deletePhoto(photo.id)">
-                  <template #trigger>
-                    <NButton quaternary circle size="tiny" type="error">
-                      <template #icon><div class="iconify ph--trash" /></template>
-                    </NButton>
-                  </template>
-                  确定删除这张照片？
-                </NPopconfirm>
+                    确定删除这张照片？
+                  </NPopconfirm>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ScrollContainer>
       </div>
     </main>
 
     <!-- ====== Metadata Drawer ====== -->
-    <NDrawer v-model:show="showMeta" placement="right" :width="380">
-      <NDrawerContent title="相册设置" :native-scrollbar="false" closable>
+    <NDrawer
+      v-model:show="showMeta"
+      placement="right"
+      :width="380"
+    >
+      <NDrawerContent
+        title="相册设置"
+        :native-scrollbar="false"
+        closable
+      >
         <div class="flex flex-col gap-6">
           <!-- Cover -->
           <div class="space-y-4">
@@ -342,7 +424,12 @@ function thumbUrl(photo: PhotoItem): string {
               <div class="iconify ph--gear-six" />
               <span>属性</span>
             </div>
-            <NForm label-placement="left" label-width="auto" :show-feedback="false" class="space-y-3">
+            <NForm
+              label-placement="left"
+              label-width="auto"
+              :show-feedback="false"
+              class="space-y-3"
+            >
               <NFormItem label="允许评论">
                 <NSwitch v-model:value="form.allowComment" />
               </NFormItem>
@@ -361,26 +448,40 @@ function thumbUrl(photo: PhotoItem): string {
     >
       <div class="flex flex-col gap-4">
         <!-- EXIF info (read-only) -->
-        <div v-if="editingPhoto?.exif" class="rounded-lg bg-current/3 p-3 text-xs">
+        <div
+          v-if="editingPhoto?.exif"
+          class="rounded-lg bg-current/3 p-3 text-xs"
+        >
           <div class="mb-2 flex items-center gap-1.5 text-sm font-medium opacity-70">
             <div class="iconify ph--info" />
             EXIF 信息
           </div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 opacity-60">
             <div v-if="exifDevice(editingPhoto.exif)">
-              <span class="iconify ph--camera mr-1 inline-block align-[-2px]" />{{ exifDevice(editingPhoto.exif) }}
+              <span class="mr-1 iconify inline-block align-[-2px] ph--camera" />{{
+                exifDevice(editingPhoto.exif)
+              }}
             </div>
             <div v-if="editingPhoto.exif.lensModel">
-              <span class="iconify ph--aperture mr-1 inline-block align-[-2px]" />{{ editingPhoto.exif.lensModel }}
+              <span class="mr-1 iconify inline-block align-[-2px] ph--aperture" />{{
+                editingPhoto.exif.lensModel
+              }}
             </div>
-            <div v-if="exifShootingInfo(editingPhoto.exif)" class="col-span-2">
+            <div
+              v-if="exifShootingInfo(editingPhoto.exif)"
+              class="col-span-2"
+            >
               {{ exifShootingInfo(editingPhoto.exif) }}
             </div>
             <div v-if="exifLocation(editingPhoto.exif)">
-              <span class="iconify ph--map-pin mr-1 inline-block align-[-2px]" />{{ exifLocation(editingPhoto.exif) }}
+              <span class="mr-1 iconify inline-block align-[-2px] ph--map-pin" />{{
+                exifLocation(editingPhoto.exif)
+              }}
             </div>
             <div v-if="editingPhoto.exif.dateTimeOriginal">
-              <span class="iconify ph--clock mr-1 inline-block align-[-2px]" />{{ editingPhoto.exif.dateTimeOriginal }}
+              <span class="mr-1 iconify inline-block align-[-2px] ph--clock" />{{
+                editingPhoto.exif.dateTimeOriginal
+              }}
             </div>
             <div v-if="editingPhoto.exif.imageWidth && editingPhoto.exif.imageHeight">
               {{ editingPhoto.exif.imageWidth }} × {{ editingPhoto.exif.imageHeight }}
@@ -389,9 +490,16 @@ function thumbUrl(photo: PhotoItem): string {
         </div>
 
         <!-- Editable fields -->
-        <NForm label-placement="top" :show-feedback="false" class="space-y-3">
+        <NForm
+          label-placement="top"
+          :show-feedback="false"
+          class="space-y-3"
+        >
           <NFormItem label="说明文字">
-            <NInput v-model:value="photoForm.caption" placeholder="给照片加一句话..." />
+            <NInput
+              v-model:value="photoForm.caption"
+              placeholder="给照片加一句话..."
+            />
           </NFormItem>
           <NFormItem label="详细描述">
             <NInput
@@ -406,7 +514,10 @@ function thumbUrl(photo: PhotoItem): string {
       <template #footer>
         <NSpace justify="end">
           <NButton @click="showPhotoModal = false">取消</NButton>
-          <NButton type="primary" @click="savePhotoEdit">
+          <NButton
+            type="primary"
+            @click="savePhotoEdit"
+          >
             <template #icon><div class="iconify ph--check" /></template>
             保存
           </NButton>

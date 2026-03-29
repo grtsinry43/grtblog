@@ -39,6 +39,24 @@
 		}
 	}
 
+	function isAlbumDetailPath(pathname: string | null | undefined) {
+		return typeof pathname === 'string' && /^\/albums\/[^/]+$/.test(pathname);
+	}
+
+	function isAlbumPhotoPath(pathname: string | null | undefined) {
+		return typeof pathname === 'string' && /^\/albums\/[^/]+\/photo\/[^/]+$/.test(pathname);
+	}
+
+	function shouldSkipNativeViewTransition(
+		fromPath: string | null | undefined,
+		toPath: string | null | undefined
+	) {
+		return (
+			(isAlbumDetailPath(fromPath) && isAlbumPhotoPath(toPath)) ||
+			(isAlbumPhotoPath(fromPath) && isAlbumDetailPath(toPath))
+		);
+	}
+
 	/**
 	 * Avoid back animation and LCP delay caused by lang time animation.
 	 * reference: https://innei.in/posts/design/page-transition-animation-and-lcp
@@ -50,6 +68,9 @@
 
 	onNavigate((navigation) => {
 		if (typeof document === 'undefined' || !document.startViewTransition) return;
+		const fromPath = navigation.from?.url.pathname;
+		const toPath = navigation.to?.url.pathname;
+		if (shouldSkipNativeViewTransition(fromPath, toPath)) return;
 		const startViewTransition = document.startViewTransition.bind(document);
 
 		return new Promise((resolve) => {
@@ -155,9 +176,14 @@
 	const avatarOrigin = $derived.by(() => {
 		const url = resolveHomeThemeConfig($websiteInfoStore).hero?.avatarUrl;
 		if (!url) return null;
-		try { return new URL(url).origin; } catch { return null; }
+		try {
+			return new URL(url).origin;
+		} catch {
+			return null;
+		}
 	});
-	const normalizeIconUrl = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+	const normalizeIconUrl = (value: unknown): string =>
+		typeof value === 'string' ? value.trim() : '';
 	const inferIconMimeType = (iconUrl: string): string | null => {
 		const lower = iconUrl.toLowerCase();
 		const cleaned = lower.split('#')[0]?.split('?')[0] || lower;
@@ -200,10 +226,14 @@
 			}
 		};
 		img.src = src;
-		return () => { cancelled = true; };
+		return () => {
+			cancelled = true;
+		};
 	});
 	const resolvedFavicon = $derived(circularFaviconUrl || siteFavicon);
-	const resolvedFaviconType = $derived(circularFaviconUrl ? 'image/png' : (siteFaviconType || undefined));
+	const resolvedFaviconType = $derived(
+		circularFaviconUrl ? 'image/png' : siteFaviconType || undefined
+	);
 
 	const seoMeta = $derived.by(() =>
 		resolveSeoMeta({
@@ -296,7 +326,10 @@
 	<link rel="apple-touch-icon" href={resolvedFavicon} />
 	<title>{seoMeta.title}</title>
 	<link rel="canonical" href={seoMeta.canonicalUrl} />
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+	<meta
+		name="viewport"
+		content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+	/>
 	<meta name="description" content={seoMeta.description} />
 	<meta name="keywords" content={seoMeta.keywords} />
 	<meta name="robots" content={seoMeta.robots} />
