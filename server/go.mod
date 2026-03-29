@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/MarceloPetrucio/go-scalar-api-reference v0.0.0-20240521013641-ce5d2efe0e06
 	github.com/aclr/feeds v1.2.0
+	github.com/disintegration/imaging v1.6.2
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/google/uuid v1.6.0
 	github.com/jinzhu/copier v0.4.0
@@ -23,7 +24,6 @@ require (
 require (
 	github.com/PuerkitoBio/goquery v1.11.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
-	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.1 // indirect

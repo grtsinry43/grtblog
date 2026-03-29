@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import PhotoGallery from '$lib/features/album/components/PhotoGallery.svelte';
 	import { albumDetailCtx } from '$lib/features/album/context';
+	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
 	import FadeIn from '$lib/ui/animation/FadeIn.svelte';
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
@@ -203,9 +204,9 @@
 							{$album.title}
 						</h1>
 						{#if $album.description}
-							<p class="mt-3 max-w-xl text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-								{$album.description}
-							</p>
+							<div class="mt-3 max-w-xl text-sm leading-relaxed text-ink-500 dark:text-ink-400">
+								<SafeMarkdownView content={$album.description} />
+							</div>
 						{/if}
 						<div class="mt-4 flex flex-wrap gap-2 sm:hidden">
 							<span
