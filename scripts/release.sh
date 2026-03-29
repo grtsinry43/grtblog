@@ -521,8 +521,8 @@ if [[ "$CHANNEL" == "stable" ]]; then
 else
   info "GitHub Actions will build and publish preview images"
   info "targets: GHCR only"
-  info "GitHub Release: will NOT be created for ${VERSION}"
-  info "distribution: Git tag + GHCR preview images"
+  info "GitHub Release: will be created as prerelease for ${VERSION}"
+  info "distribution: Git tag + GHCR preview images + GitHub prerelease"
   info "image tags: ${VERSION#v}, preview, ${STAGE}"
 fi
 
