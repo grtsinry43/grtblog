@@ -28,6 +28,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/observability"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/ownerstatus"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/telemetry"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/webhook"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
@@ -56,9 +57,10 @@ type Dependencies struct {
 	HTMLSnapshot  *htmlsnapshot.Service
 	ISR           *isr.Service
 	OwnerStatus   *ownerstatus.Service
-	HealthState   *health.State
-	HealthChecker *health.Checker
-	FedSync       *appfed.SyncWorker
+	HealthState    *health.State
+	HealthChecker  *health.Checker
+	FedSync        *appfed.SyncWorker
+	ErrorCollector *telemetry.Collector
 }
 
 // Register wires up all HTTP endpoints with middlewares.
