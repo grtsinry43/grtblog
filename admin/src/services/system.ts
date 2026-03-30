@@ -105,3 +105,16 @@ export function getSystemUpdateCheck(force = false) {
     query: { force },
   })
 }
+
+export function completeUpgradeGuide(version: string) {
+  return request<null>('/admin/system/complete-upgrade-guide', {
+    method: 'POST',
+    body: JSON.stringify({ version }),
+  })
+}
+
+export function completeAllUpgradeGuides() {
+  return request<null>('/admin/system/complete-all-upgrade-guides', {
+    method: 'POST',
+  })
+}

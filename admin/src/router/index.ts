@@ -20,6 +20,14 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/sign-in/index.vue'),
   },
   {
+    path: '/upgrade-guide',
+    name: 'upgradeGuide',
+    meta: {
+      title: '升级引导',
+    },
+    component: () => import('@/views/upgrade-guide/index.vue'),
+  },
+  {
     name: 'errorPage',
     path: '/:pathMatch(.*)*',
     meta: {

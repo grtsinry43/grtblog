@@ -3,6 +3,7 @@ import { acceptHMRUpdate, defineStore, storeToRefs } from 'pinia'
 import { ref } from 'vue'
 
 import router from '@/router'
+import { resetUpgradeGuideCheck } from '@/router/guard'
 import { resolveMenu, resolveRoute } from '@/router/helper'
 import { routeRecordRaw } from '@/router/record'
 import { getAccessInfo } from '@/services/auth'
@@ -162,6 +163,7 @@ export const useUserStore = defineStore('userStore', () => {
 
     token.value = null
     user.value = createEmptyUser()
+    resetUpgradeGuideCheck()
 
     if (router.hasRoute('layout')) {
       router.removeRoute('layout')

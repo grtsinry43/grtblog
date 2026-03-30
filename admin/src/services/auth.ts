@@ -54,6 +54,7 @@ export interface SetupStateResponse {
   websiteInfoReady: boolean
   missingWebsiteInfoKeys: string[]
   needsSetup: boolean
+  pendingUpgradeGuides: string[]
 }
 
 export function getSetupState() {

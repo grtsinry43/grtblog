@@ -69,6 +69,7 @@ type SetupStateResp struct {
 	WebsiteInfoReady       bool     `json:"websiteInfoReady"`
 	MissingWebsiteInfoKeys []string `json:"missingWebsiteInfoKeys"`
 	NeedsSetup             bool     `json:"needsSetup"`
+	PendingUpgradeGuides   []string `json:"pendingUpgradeGuides"`
 }
 
 // TurnstileStateResp 返回 Turnstile 配置状态。

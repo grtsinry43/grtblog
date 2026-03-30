@@ -26,6 +26,12 @@ async function getCachedSetupState(force = false) {
   return state
 }
 
+// Reset when user logs out so the guide is re-checked on next login.
+let upgradeGuideChecked = false
+export function resetUpgradeGuideCheck() {
+  upgradeGuideChecked = false
+}
+
 export function setupRouterGuard(router: Router) {
   const { resolveMenuRoute, cleanup, refreshAccessInfo } = useUserStore()
 
@@ -86,6 +92,25 @@ export function setupRouterGuard(router: Router) {
       return false
     }
 
+    // Allow upgrade guide page through if user has token
+    if (to.name === 'upgradeGuide') {
+      if (!token.value) {
+        next({ name: 'signIn' })
+        return false
+      }
+      if (user.value.id === null) {
+        try {
+          await refreshAccessInfo()
+        } catch {
+          cleanup()
+          next({ name: 'signIn' })
+          return false
+        }
+      }
+      next()
+      return false
+    }
+
     if (!token.value) {
       try {
         const setupState = await getCachedSetupState()
@@ -113,6 +138,23 @@ export function setupRouterGuard(router: Router) {
         cleanup()
         next()
         return false
+      }
+    }
+
+    // Check upgrade guide once per session after login.
+    // Set flag before await to prevent concurrent navigations from double-redirecting.
+    // Reset on error so it retries on the next navigation.
+    if (token.value && !upgradeGuideChecked) {
+      upgradeGuideChecked = true
+      try {
+        const setupState = await getCachedSetupState(true)
+        if (setupState.pendingUpgradeGuides?.length > 0 && user.value.isAdmin) {
+          next({ name: 'upgradeGuide' })
+          return false
+        }
+      } catch (error) {
+        upgradeGuideChecked = false
+        console.error('Error checking upgrade guide state:', error)
       }
     }
 

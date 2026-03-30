@@ -17,9 +17,11 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/hitokoto"
 	applike "github.com/grtsinry43/grtblog-v2/server/internal/app/like"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/setupstate"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
+	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence"
 	"github.com/grtsinry43/grtblog-v2/server/internal/ws"
@@ -207,6 +209,26 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/global-notifications", globalNotificationHandler.Create)
 	admin.Put("/global-notifications/:id", globalNotificationHandler.Update)
 	admin.Delete("/global-notifications/:id", globalNotificationHandler.Delete)
+
+	setupSvc := setupstate.NewService(identityRepo, sysCfgSvc)
+	admin.Post("/system/complete-upgrade-guide", func(c *fiber.Ctx) error {
+		var body struct {
+			Version string `json:"version"`
+		}
+		if err := c.BodyParser(&body); err != nil || body.Version == "" {
+			return response.NewBizErrorWithMsg(response.ParamsError, "version 不能为空")
+		}
+		if err := setupSvc.CompleteUpgradeGuide(c.Context(), body.Version); err != nil {
+			return response.NewBizErrorWithMsg(response.ServerError, "完成升级引导失败")
+		}
+		return response.SuccessWithMessage[any](c, nil, "升级引导已完成")
+	})
+	admin.Post("/system/complete-all-upgrade-guides", func(c *fiber.Ctx) error {
+		if err := setupSvc.CompleteAllUpgradeGuides(c.Context()); err != nil {
+			return response.NewBizErrorWithMsg(response.ServerError, "完成升级引导失败")
+		}
+		return response.SuccessWithMessage[any](c, nil, "升级引导已完成")
+	})
 
 	logHandler := handler.NewAdminLogHandler("storage/logs/app.log", 200)
 	systemHandler := handler.NewSystemHandler(deps.Config.App, deps.DB, deps.Redis, deps.EventBus, deps.HealthState)

@@ -25,8 +25,12 @@ import router from '@/router'
 import { getSetupState, login, register } from '@/services/auth'
 import { ApiError } from '@/services/http'
 import { bootstrapObservabilityPages } from '@/services/observability'
+import { completeAllUpgradeGuides } from '@/services/system'
 import { updateWebsiteInfo } from '@/services/website-info'
 import { useUserStore, usePreferencesStore } from '@/stores'
+import { applyEnabledFeatures } from '@/views/upgrade-guide/apply-features'
+import FeatureToggleList from '@/views/upgrade-guide/FeatureToggleList.vue'
+import { getAllGuides } from '@/views/upgrade-guide/registry'
 import ThemeColorPopover from '@/views/sign-in/components/ThemeColorPopover.vue'
 
 import type { FormItemRule } from 'naive-ui'
@@ -95,6 +99,10 @@ const form = reactive({
   description: '',
   keywords: '',
 })
+
+// Feature toggles from the upgrade guide registry
+const allGuides = getAllGuides()
+const featureStates = reactive<Record<string, boolean>>({})
 
 const requiredTrimmedRule = (message: string): FormItemRule => ({
   validator: (_rule, value: string) => !!(value || '').trim(),
@@ -172,11 +180,16 @@ function goToSignIn() {
   })
 }
 
+const totalSteps = 3
+
 async function handleNextStep() {
   try {
-    await formRef.value?.validate()
-    if (currentStep.value === 1) {
-      currentStep.value = 2
+    // Step 3 (federation) has no required fields, skip validation
+    if (currentStep.value < 3) {
+      await formRef.value?.validate()
+    }
+    if (currentStep.value < totalSteps) {
+      currentStep.value++
     } else {
       await submitSetup()
     }
@@ -229,6 +242,20 @@ async function submitSetup() {
         updateWebsiteInfo('keywords', { value: keywords }),
       ]
       await Promise.all(tasks)
+    }
+
+    // Apply feature configs from registry
+    try {
+      await applyEnabledFeatures(allGuides, featureStates, normalizePublicURL(form.publicUrl))
+    } catch {
+      message.warning('部分功能配置失败，可在设置中手动配置')
+    }
+
+    // Mark all upgrade guides as completed for fresh install
+    try {
+      await completeAllUpgradeGuides()
+    } catch {
+      // Non-critical
     }
 
     let bootstrapFailed = false
@@ -336,7 +363,7 @@ onMounted(() => {
               <div
                 class="mt-20 flex items-center gap-4 text-[10px] font-medium tracking-widest text-neutral-400 uppercase"
               >
-                <span>GRTBLOG V2.0.0</span>
+                <span>GRTBLOG V2.1.0</span>
                 <span class="h-0.5 w-0.5 rounded-full bg-neutral-300"></span>
                 <span>DESIGNED FOR CREATORS</span>
               </div>
@@ -353,23 +380,24 @@ onMounted(() => {
                   <div
                     class="text-[10px] font-bold tracking-widest whitespace-nowrap text-neutral-400 uppercase"
                   >
-                    Step {{ currentStep }} / 2
+                    Step {{ currentStep }} / {{ totalSteps }}
                   </div>
                   <NSteps
                     :current="currentStep"
                     size="small"
-                    class="ml-4 w-24"
+                    class="ml-4 w-36"
                   >
+                    <NStep />
                     <NStep />
                     <NStep />
                   </NSteps>
                 </div>
 
                 <NH2 class="m-0 text-2xl font-bold tracking-tight">
-                  {{ currentStep === 1 ? '创建管理员' : '站点基本信息' }}
+                  {{ currentStep === 1 ? '创建管理员' : currentStep === 2 ? '站点基本信息' : '新功能配置' }}
                 </NH2>
                 <p class="mt-2 text-[13px] leading-relaxed text-neutral-500">
-                  {{ currentStep === 1 ? '请设置您的超级管理员账户。' : '完善站点的基础元数据。' }}
+                  {{ currentStep === 1 ? '请设置您的超级管理员账户。' : currentStep === 2 ? '完善站点的基础元数据。' : '选择要启用的新功能，也可以稍后在设置中配置。' }}
                 </p>
               </div>
 
@@ -449,7 +477,7 @@ onMounted(() => {
                   </div>
                   <!-- Step 2: Site Info -->
                   <div
-                    v-else
+                    v-else-if="currentStep === 2"
                     key="step2"
                     class="space-y-0.5"
                   >
@@ -496,6 +524,17 @@ onMounted(() => {
                       </NInput>
                     </NFormItem>
                   </div>
+                  <!-- Step 3: Features from registry -->
+                  <div
+                    v-else
+                    key="step3"
+                  >
+                    <FeatureToggleList
+                      :guides="allGuides"
+                      :primary-color-rgb="primaryColorRgb"
+                      v-model:states="featureStates"
+                    />
+                  </div>
                 </Transition>
               </NForm>
 
@@ -519,7 +558,7 @@ onMounted(() => {
                   @click="handleNextStep"
                   class="min-w-25 shadow-sm"
                 >
-                  {{ currentStep === 2 ? '开始使用' : '继续' }}
+                  {{ currentStep === totalSteps ? '开始使用' : '继续' }}
                 </NButton>
               </div>
             </div>
@@ -576,7 +615,7 @@ onMounted(() => {
               <div
                 class="mt-20 flex items-center gap-4 text-[10px] font-medium tracking-widest text-neutral-400 uppercase"
               >
-                <span>GRTBLOG V2.0.0</span>
+                <span>GRTBLOG V2.1.0</span>
                 <span class="h-0.5 w-0.5 rounded-full bg-neutral-300"></span>
                 <span>DESIGNED FOR CREATORS</span>
               </div>

@@ -333,12 +333,17 @@ func (h *AuthHandler) SetupState(c *fiber.Ctx) error {
 	if err != nil {
 		return response.NewBizErrorWithMsg(response.ServerError, "获取初始化状态失败")
 	}
+	pending := state.PendingUpgradeGuides
+	if pending == nil {
+		pending = []string{}
+	}
 	return response.Success(c, contract.SetupStateResp{
 		HasUser:                state.HasUser,
 		HasAdmin:               state.HasAdmin,
 		WebsiteInfoReady:       state.WebsiteInfoReady,
 		MissingWebsiteInfoKeys: state.MissingWebsiteInfoKeys,
 		NeedsSetup:             state.NeedsSetup,
+		PendingUpgradeGuides:   pending,
 	})
 }
 
