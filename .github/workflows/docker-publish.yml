@@ -107,6 +107,8 @@ jobs:
           build-args: |
             APP_VERSION=${{ needs.prepare.outputs.version }}
             BUILD_COMMIT=${{ github.sha }}
+          provenance: false
+          sbom: false
           outputs: type=image,"name=${{ env.GHCR_REGISTRY }}/${{ env.GHCR_OWNER }}/${{ matrix.image.name }}",push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.image.name }}-${{ env.PLATFORM_PAIR }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ env.PLATFORM_PAIR }}

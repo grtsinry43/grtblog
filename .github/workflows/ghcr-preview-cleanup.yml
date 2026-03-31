@@ -12,6 +12,7 @@ permissions:
 env:
   GHCR_OWNER: grtsinry43
   KEEP_PER_LINE: "5"
+  UNTAGGED_MIN_AGE_DAYS: "3"
 
 jobs:
   cleanup:
@@ -24,13 +25,26 @@ jobs:
           - grtblog-renderer
 
     steps:
-      - name: Delete old preview package versions
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build cleanup plan
+        env:
+          PACKAGE_NAME: ${{ matrix.package }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
             const owner = process.env.GHCR_OWNER;
-            const packageName = '${{ matrix.package }}';
+            const packageName = process.env.PACKAGE_NAME;
             const keepPerLine = Number(process.env.KEEP_PER_LINE || '5');
 
             function parseSemverTag(tag) {
@@ -75,6 +89,7 @@ jobs:
 
             const lineBuckets = new Map();
             const preserveIds = new Set();
+            const preserveRefs = new Set();
 
             for (const version of versions) {
               const tags = version.metadata?.container?.tags || [];
@@ -82,11 +97,13 @@ jobs:
 
               if (tags.some((tag) => ['latest', 'stable', 'preview', 'beta', 'rc', 'alpha'].includes(tag))) {
                 preserveIds.add(version.id);
+                tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
                 continue;
               }
 
               if (tags.some((tag) => isStableTag(tag))) {
                 preserveIds.add(version.id);
+                tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
                 continue;
               }
 
@@ -110,20 +127,126 @@ jobs:
               });
               for (const entry of bucket.slice(0, keepPerLine)) {
                 preserveIds.add(entry.id);
+                preserveRefs.add(`ghcr.io/${owner}/${packageName}:${entry.tag}`);
               }
             }
 
-            const deletions = versions.filter((version) => {
+            fs.mkdirSync('.github/.tmp', { recursive: true });
+            fs.writeFileSync(
+              `.github/.tmp/ghcr-cleanup-${packageName}.json`,
+              JSON.stringify({
+                owner,
+                packageName,
+                keepPerLine,
+                versions,
+                preserveIds: [...preserveIds],
+                preserveRefs: [...preserveRefs],
+              }, null, 2),
+            );
+
+            core.info(
+              `package=${packageName} total_versions=${versions.length} preserved_versions=${preserveIds.size} preserved_refs=${preserveRefs.size}`,
+            );
+
+      - name: Resolve referenced digests
+        env:
+          PACKAGE_NAME: ${{ matrix.package }}
+        run: |
+          set -euo pipefail
+
+          plan_file=".github/.tmp/ghcr-cleanup-${PACKAGE_NAME}.json"
+          refs_json=$(jq -c '.preserveRefs' "$plan_file")
+          digest_file=".github/.tmp/ghcr-referenced-digests-${PACKAGE_NAME}.txt"
+          : > "$digest_file"
+
+          jq -r '.[]' <<<"$refs_json" | while IFS= read -r ref; do
+            [ -n "$ref" ] || continue
+            raw_json="$(docker buildx imagetools inspect --raw "$ref" 2>/dev/null || true)"
+            if [ -z "$raw_json" ]; then
+              echo "skip unresolved ref: $ref"
+              continue
+            fi
+
+            jq -r '
+              .digest? // empty,
+              (.manifests[]?.digest // empty),
+              (.subject?.digest // empty)
+            ' <<<"$raw_json" >> "$digest_file"
+          done
+
+          sort -u "$digest_file" -o "$digest_file"
+
+      - name: Delete old preview package versions
+        env:
+          PACKAGE_NAME: ${{ matrix.package }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const owner = process.env.GHCR_OWNER;
+            const packageName = process.env.PACKAGE_NAME;
+            const minAgeDays = Number(process.env.UNTAGGED_MIN_AGE_DAYS || '3');
+            const now = Date.now();
+            const minAgeMs = minAgeDays * 24 * 60 * 60 * 1000;
+
+            function parseSemverTag(tag) {
+              const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(String(tag || '').trim());
+              if (!match) return null;
+              return {
+                major: Number(match[1]),
+                minor: Number(match[2]),
+                patch: Number(match[3]),
+                prerelease: match[4] || '',
+              };
+            }
+
+            function prereleaseLineKey(tag) {
+              const parsed = parseSemverTag(tag);
+              if (!parsed || !parsed.prerelease) return null;
+              const parts = parsed.prerelease.split('.');
+              const stage = parts[0] || 'preview';
+              return `${parsed.major}.${parsed.minor}.${parsed.patch}-${stage}`;
+            }
+
+            const plan = JSON.parse(fs.readFileSync(`.github/.tmp/ghcr-cleanup-${packageName}.json`, 'utf8'));
+            const preserveIds = new Set(plan.preserveIds || []);
+            const referencedDigests = new Set(
+              fs.existsSync(`.github/.tmp/ghcr-referenced-digests-${packageName}.txt`)
+                ? fs
+                    .readFileSync(`.github/.tmp/ghcr-referenced-digests-${packageName}.txt`, 'utf8')
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .filter(Boolean)
+                : [],
+            );
+
+            const deletions = plan.versions.filter((version) => {
               if (preserveIds.has(version.id)) return false;
+
               const tags = version.metadata?.container?.tags || [];
-              return tags.some((tag) => prereleaseLineKey(tag));
+              if (tags.length > 0) {
+                return tags.some((tag) => prereleaseLineKey(tag));
+              }
+
+              if (referencedDigests.has(String(version.name || '').trim())) {
+                return false;
+              }
+
+              const updatedAt = Date.parse(version.updated_at || version.created_at || 0);
+              if (!Number.isFinite(updatedAt)) return false;
+              return now - updatedAt >= minAgeMs;
             });
 
-            core.info(`package=${packageName} total_versions=${versions.length} delete_candidates=${deletions.length}`);
+            core.info(
+              `package=${packageName} referenced_digests=${referencedDigests.size} delete_candidates=${deletions.length}`,
+            );
 
             for (const version of deletions) {
               const tags = version.metadata?.container?.tags || [];
-              core.info(`Deleting ${packageName} version_id=${version.id} tags=${tags.join(',')}`);
+              core.info(
+                `Deleting ${packageName} version_id=${version.id} name=${version.name} tags=${tags.join(',') || '(untagged)'}`,
+              );
               await github.request('DELETE /users/{username}/packages/container/{package_name}/versions/{package_version_id}', {
                 username: owner,
                 package_name: packageName,
