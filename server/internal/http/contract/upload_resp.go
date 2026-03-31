@@ -33,6 +33,15 @@ type UploadFileListResp struct {
 	Size  int              `json:"size"`
 }
 
+type UploadSyncResp struct {
+	Scanned           int `json:"scanned"`
+	Indexed           int `json:"indexed"`
+	Created           int `json:"created"`
+	Updated           int `json:"updated"`
+	Deleted           int `json:"deleted"`
+	SkippedDuplicates int `json:"skippedDuplicates"`
+}
+
 // UploadFileRespEnvelope 用于 swagger 展示。
 type UploadFileRespEnvelope struct {
 	Code   int            `json:"code"`
@@ -49,6 +58,14 @@ type UploadFileListRespEnvelope struct {
 	Msg    string             `json:"msg"`
 	Data   UploadFileListResp `json:"data"`
 	Meta   response.Meta      `json:"meta"`
+}
+
+type UploadSyncRespEnvelope struct {
+	Code   int            `json:"code"`
+	BizErr string         `json:"bizErr"`
+	Msg    string         `json:"msg"`
+	Data   UploadSyncResp `json:"data"`
+	Meta   response.Meta  `json:"meta"`
 }
 
 type UploadRenameReq struct {

@@ -56,6 +56,19 @@ func (r *UploadFileRepository) Create(ctx context.Context, file *media.UploadFil
 	return nil
 }
 
+func (r *UploadFileRepository) Update(ctx context.Context, file *media.UploadFile) error {
+	return r.db.WithContext(ctx).
+		Model(&model.UploadFile{}).
+		Where("id = ?", file.ID).
+		Updates(map[string]any{
+			"name": file.Name,
+			"path": file.Path,
+			"type": file.Type,
+			"size": file.Size,
+			"hash": file.Hash,
+		}).Error
+}
+
 func (r *UploadFileRepository) UpdatePath(ctx context.Context, id int64, path string) error {
 	return r.db.WithContext(ctx).
 		Model(&model.UploadFile{}).
@@ -90,6 +103,21 @@ func (r *UploadFileRepository) List(ctx context.Context, offset int, limit int) 
 		files[i] = mapUploadFileToDomain(rec)
 	}
 	return files, total, nil
+}
+
+func (r *UploadFileRepository) ListAll(ctx context.Context) ([]media.UploadFile, error) {
+	var records []model.UploadFile
+	if err := r.db.WithContext(ctx).
+		Order("id ASC").
+		Find(&records).Error; err != nil {
+		return nil, err
+	}
+
+	files := make([]media.UploadFile, len(records))
+	for i, rec := range records {
+		files[i] = mapUploadFileToDomain(rec)
+	}
+	return files, nil
 }
 
 func (r *UploadFileRepository) DeleteByID(ctx context.Context, id int64) error {

@@ -14,6 +14,7 @@ require (
 	github.com/mozillazg/go-pinyin v0.21.0
 	github.com/oschwald/geoip2-golang/v2 v2.1.0
 	github.com/redis/go-redis/v9 v9.18.0
+	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8
 	golang.org/x/crypto v0.48.0
 	golang.org/x/oauth2 v0.36.0

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { UnifiedTimelineItem } from '../types';
+	import type { TimelineItemType, UnifiedTimelineItem } from '../types';
 	import { ArrowUpRight, MessageSquare, Newspaper, Zap } from 'lucide-svelte';
 
 	let { item } = $props<{
@@ -12,14 +12,17 @@
 	const isSummary = $derived(item.type === 'yearSummary');
 	const aspectRatio = $derived(isSummary ? 'aspect-[3/2]' : 'aspect-[2/1]');
 
-	const iconMap = {
+	type TimelineIcon = typeof Newspaper;
+	type TimelineIconMap = Record<TimelineItemType, TimelineIcon>;
+
+	const iconMap: TimelineIconMap = {
 		post: Newspaper,
 		moment: Zap,
 		thinking: MessageSquare,
 		yearSummary: ArrowUpRight
 	};
 
-	const Icon = $derived(iconMap[item.type]);
+	const Icon = $derived.by(() => iconMap[item.type as TimelineItemType]);
 
 	const formattedDate = $derived(
 		new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit' }).format(item.publishedAt)

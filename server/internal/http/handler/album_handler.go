@@ -364,17 +364,17 @@ func (h *AlbumHandler) AddPhotos(c *fiber.Ctx) error {
 			_ = json.Unmarshal([]byte(*p.Exif), &exifMap)
 		}
 
-		// If missing dimensions or dominantColor, extract from local file
-		_, hasWidth := exifMap["imageWidth"]
-		_, hasColor := exifMap["dominantColor"]
-		if (!hasWidth || !hasColor) && h.mediaSvc != nil {
-			_, meta := h.mediaSvc.ExtractImageMetaFromURL(p.URL)
+		if h.mediaSvc != nil {
+			_, meta, extractedExif := h.mediaSvc.ExtractPhotoMetadataFromURL(p.URL)
+			mergeMissingExifFields(exifMap, extractedExif)
 			if meta != nil {
-				if !hasWidth && meta.Width > 0 {
+				if _, ok := exifMap["imageWidth"]; !ok && meta.Width > 0 {
 					exifMap["imageWidth"] = meta.Width
+				}
+				if _, ok := exifMap["imageHeight"]; !ok && meta.Height > 0 {
 					exifMap["imageHeight"] = meta.Height
 				}
-				if !hasColor && meta.DominantColor != "" {
+				if _, ok := exifMap["dominantColor"]; !ok && meta.DominantColor != "" {
 					exifMap["dominantColor"] = meta.DominantColor
 				}
 			}
@@ -428,9 +428,29 @@ func (h *AlbumHandler) UpdatePhoto(c *fiber.Ctx) error {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
 
-	var exifBytes []byte
+	exifMap := map[string]any{}
 	if req.Exif != nil {
-		exifBytes = []byte(*req.Exif)
+		_ = json.Unmarshal([]byte(*req.Exif), &exifMap)
+	}
+	if h.mediaSvc != nil {
+		_, meta, extractedExif := h.mediaSvc.ExtractPhotoMetadataFromURL(req.URL)
+		mergeMissingExifFields(exifMap, extractedExif)
+		if meta != nil {
+			if _, ok := exifMap["imageWidth"]; !ok && meta.Width > 0 {
+				exifMap["imageWidth"] = meta.Width
+			}
+			if _, ok := exifMap["imageHeight"]; !ok && meta.Height > 0 {
+				exifMap["imageHeight"] = meta.Height
+			}
+			if _, ok := exifMap["dominantColor"]; !ok && meta.DominantColor != "" {
+				exifMap["dominantColor"] = meta.DominantColor
+			}
+		}
+	}
+
+	var exifBytes []byte
+	if len(exifMap) > 0 {
+		exifBytes, _ = json.Marshal(exifMap)
 	}
 	updated, err := h.svc.UpdatePhoto(c.Context(), appalbum.UpdatePhotoCmd{
 		ID:          photoID,
@@ -609,4 +629,16 @@ func (h *AlbumHandler) mapPhotoResp(p *domainalbum.Photo) contract.PhotoResp {
 		resp.ThumbnailURL = h.mediaSvc.ThumbnailURLFor(p.URL)
 	}
 	return resp
+}
+
+func mergeMissingExifFields(dst map[string]any, src map[string]any) {
+	if len(src) == 0 {
+		return
+	}
+	for key, value := range src {
+		if _, exists := dst[key]; exists {
+			continue
+		}
+		dst[key] = value
+	}
 }
