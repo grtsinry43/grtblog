@@ -11,7 +11,7 @@ permissions:
 
 env:
   GHCR_OWNER: grtsinry43
-  KEEP_PER_LINE: "5"
+  KEEP_PREVIEW_COUNT: "5"
   UNTAGGED_MIN_AGE_DAYS: "3"
 
 jobs:
@@ -45,7 +45,7 @@ jobs:
             const fs = require('fs');
             const owner = process.env.GHCR_OWNER;
             const packageName = process.env.PACKAGE_NAME;
-            const keepPerLine = Number(process.env.KEEP_PER_LINE || '5');
+            const keepPreviewCount = Number(process.env.KEEP_PREVIEW_COUNT || '5');
 
             function parseSemverTag(tag) {
               const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(String(tag || '').trim());
@@ -87,7 +87,7 @@ jobs:
               per_page: 100,
             });
 
-            const lineBuckets = new Map();
+            const previewVersions = [];
             const preserveIds = new Set();
             const preserveRefs = new Set();
 
@@ -95,7 +95,7 @@ jobs:
               const tags = version.metadata?.container?.tags || [];
               if (tags.length === 0) continue;
 
-              if (tags.some((tag) => ['latest', 'stable', 'preview', 'beta', 'rc', 'alpha'].includes(tag))) {
+              if (tags.some((tag) => ['latest', 'stable'].includes(tag))) {
                 preserveIds.add(version.id);
                 tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
                 continue;
@@ -107,28 +107,35 @@ jobs:
                 continue;
               }
 
-              const exactPreviewTag = tags.find((tag) => prereleaseLineKey(tag));
-              if (!exactPreviewTag) {
+              const exactPreviewTags = tags.filter((tag) => prereleaseLineKey(tag));
+              if (exactPreviewTags.length === 0) {
+                if (tags.some((tag) => ['preview', 'beta', 'rc', 'alpha'].includes(tag))) {
+                  preserveIds.add(version.id);
+                  tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
+                  continue;
+                }
+
                 preserveIds.add(version.id);
                 continue;
               }
 
-              const bucketKey = prereleaseLineKey(exactPreviewTag);
-              const bucket = lineBuckets.get(bucketKey) || [];
-              bucket.push({ id: version.id, tag: exactPreviewTag, updated_at: version.updated_at });
-              lineBuckets.set(bucketKey, bucket);
+              previewVersions.push({
+                id: version.id,
+                tags,
+                sortTag: exactPreviewTags[0],
+                updated_at: version.updated_at,
+              });
             }
 
-            for (const bucket of lineBuckets.values()) {
-              bucket.sort((a, b) => {
-                const semverCmp = compareSemverTagDesc(a.tag, b.tag);
-                if (semverCmp !== 0) return semverCmp;
-                return String(b.updated_at).localeCompare(String(a.updated_at));
-              });
-              for (const entry of bucket.slice(0, keepPerLine)) {
-                preserveIds.add(entry.id);
-                preserveRefs.add(`ghcr.io/${owner}/${packageName}:${entry.tag}`);
-              }
+            previewVersions.sort((a, b) => {
+              const updatedCmp = String(b.updated_at).localeCompare(String(a.updated_at));
+              if (updatedCmp !== 0) return updatedCmp;
+              return compareSemverTagDesc(a.sortTag, b.sortTag);
+            });
+
+            for (const entry of previewVersions.slice(0, keepPreviewCount)) {
+              preserveIds.add(entry.id);
+              entry.tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
             }
 
             fs.mkdirSync('.github/.tmp', { recursive: true });
@@ -137,7 +144,7 @@ jobs:
               JSON.stringify({
                 owner,
                 packageName,
-                keepPerLine,
+                keepPreviewCount,
                 versions,
                 preserveIds: [...preserveIds],
                 preserveRefs: [...preserveRefs],
