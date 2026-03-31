@@ -12,6 +12,7 @@ permissions:
 env:
   GHCR_OWNER: grtsinry43
   KEEP_PREVIEW_COUNT: "5"
+  KEEP_STABLE_PATCHES_PER_MINOR: "2"
   UNTAGGED_MIN_AGE_DAYS: "3"
 
 jobs:
@@ -46,6 +47,7 @@ jobs:
             const owner = process.env.GHCR_OWNER;
             const packageName = process.env.PACKAGE_NAME;
             const keepPreviewCount = Number(process.env.KEEP_PREVIEW_COUNT || '5');
+            const keepStablePatchesPerMinor = Number(process.env.KEEP_STABLE_PATCHES_PER_MINOR || '2');
 
             function parseSemverTag(tag) {
               const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(String(tag || '').trim());
@@ -61,6 +63,12 @@ jobs:
             function isStableTag(tag) {
               const parsed = parseSemverTag(tag);
               return Boolean(parsed && !parsed.prerelease);
+            }
+
+            function stableMinorKey(tag) {
+              const parsed = parseSemverTag(tag);
+              if (!parsed || parsed.prerelease) return null;
+              return `${parsed.major}.${parsed.minor}`;
             }
 
             function prereleaseLineKey(tag) {
@@ -88,6 +96,7 @@ jobs:
             });
 
             const previewVersions = [];
+            const stableBuckets = new Map();
             const preserveIds = new Set();
             const preserveRefs = new Set();
 
@@ -101,9 +110,17 @@ jobs:
                 continue;
               }
 
-              if (tags.some((tag) => isStableTag(tag))) {
-                preserveIds.add(version.id);
-                tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
+              const stableTags = tags.filter((tag) => isStableTag(tag));
+              if (stableTags.length > 0) {
+                const bucketKey = stableMinorKey(stableTags[0]);
+                const bucket = stableBuckets.get(bucketKey) || [];
+                bucket.push({
+                  id: version.id,
+                  tags,
+                  sortTag: stableTags[0],
+                  updated_at: version.updated_at,
+                });
+                stableBuckets.set(bucketKey, bucket);
                 continue;
               }
 
@@ -116,6 +133,7 @@ jobs:
                 }
 
                 preserveIds.add(version.id);
+                tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
                 continue;
               }
 
@@ -125,6 +143,19 @@ jobs:
                 sortTag: exactPreviewTags[0],
                 updated_at: version.updated_at,
               });
+            }
+
+            for (const bucket of stableBuckets.values()) {
+              bucket.sort((a, b) => {
+                const semverCmp = compareSemverTagDesc(a.sortTag, b.sortTag);
+                if (semverCmp !== 0) return semverCmp;
+                return String(b.updated_at).localeCompare(String(a.updated_at));
+              });
+
+              for (const entry of bucket.slice(0, keepStablePatchesPerMinor)) {
+                preserveIds.add(entry.id);
+                entry.tags.forEach((tag) => preserveRefs.add(`ghcr.io/${owner}/${packageName}:${tag}`));
+              }
             }
 
             previewVersions.sort((a, b) => {
@@ -145,6 +176,7 @@ jobs:
                 owner,
                 packageName,
                 keepPreviewCount,
+                keepStablePatchesPerMinor,
                 versions,
                 preserveIds: [...preserveIds],
                 preserveRefs: [...preserveRefs],
@@ -233,7 +265,9 @@ jobs:
 
               const tags = version.metadata?.container?.tags || [];
               if (tags.length > 0) {
-                return tags.some((tag) => prereleaseLineKey(tag));
+                if (tags.some((tag) => prereleaseLineKey(tag))) return true;
+                if (tags.some((tag) => isStableTag(tag))) return true;
+                return false;
               }
 
               if (referencedDigests.has(String(version.name || '').trim())) {
