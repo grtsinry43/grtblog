@@ -8,6 +8,7 @@
 	import { Sun } from 'lucide-svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import TagList from '$lib/features/tag/components/TagList.svelte';
+	import { RollingNumber } from '$lib/ui/animation';
 
 	interface Props {
 		moment: MomentDetail;
@@ -58,7 +59,7 @@
 			<div
 				class="flex flex-wrap items-center gap-3 text-[11px] font-mono tracking-[0.16em] text-ink-800/45 dark:text-ink-200/45 uppercase"
 			>
-				<span class="flex items-center gap-1.5">浏览 {moment.metrics?.views ?? 0}</span>
+				<span class="flex items-center gap-1.5">浏览 <RollingNumber value={moment.metrics?.views ?? 0} /></span>
 				<span aria-hidden="true" class="opacity-40">·</span>
 				<ContentLikeButton
 					contentType="moment"
@@ -67,7 +68,7 @@
 					className="inline-flex items-center gap-1.5"
 				/>
 				<span aria-hidden="true" class="opacity-40">·</span>
-				<span class="flex items-center gap-1.5">评论 {moment.metrics?.comments ?? 0}</span>
+				<span class="flex items-center gap-1.5">评论 <RollingNumber value={moment.metrics?.comments ?? 0} /></span>
 			</div>
 
 			<TagList tags={moment.topics} />

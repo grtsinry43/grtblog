@@ -3,6 +3,7 @@
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import type { TrackLikeContentType } from '$lib/features/analytics/types';
 	import { toast } from 'svelte-sonner';
+	import { RollingNumber } from '$lib/ui/animation';
 
 	interface Props {
 		contentType: TrackLikeContentType;
@@ -61,7 +62,7 @@
 		onclick={scrollToComments}
 	>
 		<MessageCircle size={14} />
-		<span>评论 {comments}</span>
+		<span>评论 <RollingNumber value={comments} /></span>
 	</button>
 
 	<span aria-hidden="true" class="h-4 w-px bg-ink-200/60 dark:bg-ink-700/40"></span>
