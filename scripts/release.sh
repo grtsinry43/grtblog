@@ -61,6 +61,7 @@ Example:
   scripts/release.sh v2.1.0-beta.1
   scripts/release.sh v2.1.0-rc.1 --notes-only
   scripts/release.sh v2.1.0-rc.1 --continue
+  scripts/release.sh v2.1.0-special.april-fools-2026
   scripts/release.sh v1.2.3 --push
 
 What it does:
@@ -83,6 +84,7 @@ Fast path:
 Behavior by channel:
   - stable: for GitHub Release + GHCR + Docker Hub
   - preview: for Git tag + GHCR only
+  - special: treated as preview, for one-off event releases (e.g. april-fools)
 EOF
 }
 
@@ -136,8 +138,8 @@ if [[ "$NOTES_ONLY" == "true" && "$CONTINUE_RELEASE" == "true" ]]; then
   exit 1
 fi
 
-if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
-  warn "Version must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-(alpha|beta|rc).N"
+if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+|-special\..+)?$ ]]; then
+  warn "Version must match vMAJOR.MINOR.PATCH, vMAJOR.MINOR.PATCH-(alpha|beta|rc).N, or vMAJOR.MINOR.PATCH-special.<label>"
   next_step "received: ${VERSION}"
   exit 1
 fi
@@ -147,6 +149,9 @@ STAGE="stable"
 if [[ "$VERSION" =~ -(alpha|beta|rc)\.[0-9]+$ ]]; then
   CHANNEL="preview"
   STAGE="${BASH_REMATCH[1]}"
+elif [[ "$VERSION" =~ -special\..+$ ]]; then
+  CHANNEL="preview"
+  STAGE="special"
 fi
 
 section "Release Plan"

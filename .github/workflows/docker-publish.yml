@@ -46,6 +46,11 @@ jobs:
             echo "stage=${BASH_REMATCH[4]}" >> "$GITHUB_OUTPUT"
             echo "major=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
             echo "minor=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+          elif [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)-special\.(.+)$ ]]; then
+            echo "channel=preview" >> "$GITHUB_OUTPUT"
+            echo "stage=special" >> "$GITHUB_OUTPUT"
+            echo "major=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            echo "minor=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
           else
             echo "Unsupported tag format: $REF_NAME" >&2
             exit 1
