@@ -1,6 +1,7 @@
 import { NFormItem, NInput, NInputNumber, NSelect, NSwitch, NTag } from 'naive-ui'
 import { defineComponent, type PropType } from 'vue'
 
+import ImageInput from '@/components/image-picker/ImageInput.vue'
 import type { SysConfigItem } from '@/services/sysconfig'
 
 export default defineComponent({
@@ -79,7 +80,14 @@ export default defineComponent({
         case 'string':
         default: {
           const metaInputType = (item.meta as any)?.inputType
-          if (metaInputType === 'textarea') {
+          if (metaInputType === 'image') {
+            control = (
+              <ImageInput
+                value={valueMap[item.key] || null}
+                onUpdate:value={(v: string | null) => { valueMap[item.key] = v ?? '' }}
+              />
+            )
+          } else if (metaInputType === 'textarea') {
             control = (
               <NInput
                 v-model:value={valueMap[item.key]}

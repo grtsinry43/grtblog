@@ -76,8 +76,8 @@ type ActivityPubSettings struct {
 	AcceptInboundComment   bool
 	MentionToAdmin         bool
 	PublishTypes           json.RawMessage
-	PublishTemplate        string
-	FediverseReplyTemplate string
+	PublishTemplate  string
+	ActorHeaderImage string
 }
 
 // ActivityPubSettings returns aggregated ActivityPub config from sys_config.
@@ -98,7 +98,7 @@ func (s *Service) ActivityPubSettings(ctx context.Context) (ActivityPubSettings,
 		"activitypub.mentionToAdmin",
 		"activitypub.publishTypes",
 		"activitypub.publishTemplate",
-		"activitypub.fediverseReplyTemplate",
+		"activitypub.actorHeaderImage",
 	}
 	items, err := s.repo.List(ctx, keys)
 	if err != nil {
@@ -127,7 +127,7 @@ func (s *Service) ActivityPubSettings(ctx context.Context) (ActivityPubSettings,
 		MentionToAdmin:         cfgParseBool(lookup["activitypub.mentionToAdmin"], true),
 		PublishTypes:           cfgParseJSON(lookup["activitypub.publishTypes"], json.RawMessage(`["article","moment","thinking"]`)),
 		PublishTemplate:        cfgParseString(lookup["activitypub.publishTemplate"], defaultActivityPubPublishTemplate),
-		FediverseReplyTemplate: cfgParseString(lookup["activitypub.fediverseReplyTemplate"], ""),
+		ActorHeaderImage: cfgParseString(lookup["activitypub.actorHeaderImage"], ""),
 	}, nil
 }
 
