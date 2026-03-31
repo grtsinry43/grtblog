@@ -5,6 +5,7 @@
 	import { trackContentLike } from '$lib/features/analytics/api';
 	import type { TrackLikeContentType } from '$lib/features/analytics/types';
 	import { getOrCreateVisitorId, syncVisitorId } from '$lib/shared/visitor/visitor-id';
+	import { RollingNumber } from '$lib/ui/animation';
 
 	interface Props {
 		contentType: TrackLikeContentType;
@@ -76,5 +77,5 @@
 	aria-label={liked ? '已点赞' : '点赞'}
 >
 	<Heart size={12} class={liked ? 'fill-current' : ''} />
-	<span>喜欢 {likes}</span>
+	<span>喜欢 <RollingNumber value={likes} /></span>
 </button>

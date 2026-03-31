@@ -171,7 +171,7 @@ const leftPanelFeatures = computed(() => {
 
 const latestVersion = computed(() => {
   if (guides.value.length === 0) return ''
-  return guides.value[guides.value.length - 1].version
+  return guides.value[guides.value.length - 1]!.version
 })
 </script>
 
