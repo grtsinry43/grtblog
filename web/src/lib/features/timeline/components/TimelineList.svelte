@@ -22,7 +22,6 @@
 	let scrollY = $state(0);
 
 	let containerRef: HTMLDivElement | undefined = $state();
-
 	// Advanced blur toggle (off by default for performance)
 	let highQuality = $state(false);
 
@@ -87,6 +86,87 @@
 			yearStats: data.yearStats[currentYear] || { posts: 0, moments: 0, thinkings: 0 }
 		};
 	});
+
+	const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+	const timelineScrollRange = $derived(Math.max(0, verticalHeight - innerHeight));
+
+	function scrollTimelineByDeltaX(deltaX: number) {
+		if (!containerRef || deltaX === 0) return;
+		const nextScrollY = clamp(scrollY + -deltaX * SCROLL_RATIO, containerRef.offsetTop, containerRef.offsetTop + timelineScrollRange);
+		window.scrollTo({
+			top: nextScrollY,
+			behavior: 'auto'
+		});
+	}
+
+	function timelineGestureAction(node: HTMLDivElement) {
+		let touchActive = false;
+		let touchStartX = 0;
+		let touchStartY = 0;
+		let lastTouchX = 0;
+		let lockAxis: 'x' | 'y' | null = null;
+
+		const isTimelineInView = () => {
+			if (!containerRef) return false;
+			const start = containerRef.offsetTop;
+			const end = start + timelineScrollRange;
+			return scrollY >= start && scrollY <= end;
+		};
+
+		const handleWheel = (event: WheelEvent) => {
+			if (!isTimelineInView()) return;
+			const horizontalIntent = Math.abs(event.deltaX) > 0 || Math.abs(event.deltaX) > Math.abs(event.deltaY);
+			if (!horizontalIntent) return;
+			event.preventDefault();
+			scrollTimelineByDeltaX(event.deltaX !== 0 ? event.deltaX : event.deltaY);
+		};
+
+		const handleTouchStart = (event: TouchEvent) => {
+			if (event.touches.length !== 1) return;
+			touchActive = true;
+			lockAxis = null;
+			touchStartX = lastTouchX = event.touches[0].clientX;
+			touchStartY = event.touches[0].clientY;
+		};
+
+		const handleTouchMove = (event: TouchEvent) => {
+			if (!touchActive || event.touches.length !== 1 || !isTimelineInView()) return;
+			const touch = event.touches[0];
+			const totalDx = touch.clientX - touchStartX;
+			const totalDy = touch.clientY - touchStartY;
+			if (!lockAxis) {
+				if (Math.abs(totalDx) < 8 && Math.abs(totalDy) < 8) return;
+				lockAxis = Math.abs(totalDx) > Math.abs(totalDy) ? 'x' : 'y';
+			}
+			if (lockAxis !== 'x') return;
+			event.preventDefault();
+			const deltaX = touch.clientX - lastTouchX;
+			lastTouchX = touch.clientX;
+			scrollTimelineByDeltaX(deltaX);
+		};
+
+		const handleTouchEnd = () => {
+			touchActive = false;
+			lockAxis = null;
+		};
+
+		node.addEventListener('wheel', handleWheel, { passive: false });
+		node.addEventListener('touchstart', handleTouchStart, { passive: true });
+		node.addEventListener('touchmove', handleTouchMove, { passive: false });
+		node.addEventListener('touchend', handleTouchEnd);
+		node.addEventListener('touchcancel', handleTouchEnd);
+
+		return {
+			destroy() {
+				node.removeEventListener('wheel', handleWheel);
+				node.removeEventListener('touchstart', handleTouchStart);
+				node.removeEventListener('touchmove', handleTouchMove);
+				node.removeEventListener('touchend', handleTouchEnd);
+				node.removeEventListener('touchcancel', handleTouchEnd);
+			}
+		};
+	}
 </script>
 
 <svelte:window bind:innerHeight bind:innerWidth bind:scrollY />
@@ -97,7 +177,10 @@
 	</div>
 {:else}
 <div bind:this={containerRef} class="relative w-full" style="height: {verticalHeight}px;">
-	<div class="sticky top-0 h-screen w-full overflow-hidden bg-ink-50 dark:bg-ink-950">
+	<div
+		use:timelineGestureAction
+		class="sticky top-0 h-screen w-full overflow-hidden bg-ink-50 dark:bg-ink-950 touch-pan-y"
+	>
 		<!-- Ambient Background -->
 		<div class="pointer-events-none absolute inset-0 z-0 opacity-40">
 			<!-- Fine Grid -->

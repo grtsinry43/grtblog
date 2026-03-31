@@ -123,7 +123,6 @@ func (s *Service) BatchDelete(ctx context.Context, cmd BatchDeleteCmd) error {
 }
 
 func (s *Service) FindByID(ctx context.Context, id int64) (*domainthinking.Thinking, error) {
-	_ = s.repo.IncView(ctx, id)
 	return s.repo.FindByID(ctx, id)
 }
 
