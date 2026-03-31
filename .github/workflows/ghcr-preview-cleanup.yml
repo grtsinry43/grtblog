@@ -240,6 +240,11 @@ jobs:
               };
             }
 
+            function isStableTag(tag) {
+              const parsed = parseSemverTag(tag);
+              return Boolean(parsed && !parsed.prerelease);
+            }
+
             function prereleaseLineKey(tag) {
               const parsed = parseSemverTag(tag);
               if (!parsed || !parsed.prerelease) return null;
