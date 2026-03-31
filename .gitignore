@@ -17,5 +17,8 @@ Thumbs.db
 logs/
 *.log
 
+# Local export artifacts
+exports/
+
 # Prevent committing built server binary
 /server/api
