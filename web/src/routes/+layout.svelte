@@ -31,7 +31,6 @@
 	import { getProfile } from '$lib/features/auth/api';
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { get } from 'svelte/store';
-	import AprilFoolsPrank from '$lib/features/april-fools/AprilFoolsPrank.svelte';
 
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
@@ -445,7 +444,6 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <Toaster />
-<AprilFoolsPrank />
 {#snippet globalNotificationFallback()}
 	<div></div>
 {/snippet}
