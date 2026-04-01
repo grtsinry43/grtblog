@@ -27,7 +27,6 @@
 ## Preview
 
 <!-- preview:start -->
-- [v2.1.0-special.april-fools-2026](/releases/v2.1.0-special.april-fools-2026) - 2026-03-31 · preview · special
 - [v2.1.0-beta.9](/releases/v2.1.0-beta.9) - 2026-03-31 · preview · beta
 - [v2.1.0-beta.8](/releases/v2.1.0-beta.8) - 2026-03-31 · preview · beta
 - [v2.1.0-beta.7](/releases/v2.1.0-beta.7) - 2026-03-31 · preview · beta
