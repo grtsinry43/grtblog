@@ -1571,8 +1571,9 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 		if moment == nil || !moment.IsPublished {
 			return nil, errors.New("moment is not published")
 		}
+		siteTZ := s.cfgSvc.Timezone(ctx)
 		sourceURL := strings.TrimRight(baseURL, "/") + "/moments/" +
-			moment.CreatedAt.UTC().Format("2006/01/02") + "/" + moment.ShortURL
+			moment.CreatedAt.In(siteTZ).Format("2006/01/02") + "/" + moment.ShortURL
 		objectID := ""
 		if moment.ActivityPubObjectID != nil && strings.TrimSpace(*moment.ActivityPubObjectID) != "" {
 			objectID = strings.TrimSpace(*moment.ActivityPubObjectID)

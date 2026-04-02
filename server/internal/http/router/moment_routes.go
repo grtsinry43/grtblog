@@ -46,5 +46,5 @@ func newMomentHandler(deps Dependencies) *handler.MomentHandler {
 	commentRepo := persistence.NewCommentRepository(deps.DB)
 	identityRepo := persistence.NewIdentityRepository(deps.DB)
 	momentSvc := moment.NewService(contentRepo, commentRepo, deps.EventBus)
-	return handler.NewMomentHandler(momentSvc, contentRepo, commentRepo, identityRepo)
+	return handler.NewMomentHandler(momentSvc, contentRepo, commentRepo, identityRepo, deps.SysConfig)
 }

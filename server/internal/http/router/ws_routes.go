@@ -55,7 +55,7 @@ func (l *wsIPLimiter) Release(ip string) {
 func registerWSRoutes(v2 fiber.Router, manager *ws.Manager, deps Dependencies) {
 	contentRepo := persistence.NewContentRepository(deps.DB)
 	thinkingRepo := persistence.NewThinkingRepository(deps.DB)
-	presenceResolver := ws.NewPresenceTitleResolver(contentRepo, thinkingRepo)
+	presenceResolver := ws.NewPresenceTitleResolver(contentRepo, thinkingRepo, deps.SysConfig)
 	presenceHub := ws.NewPresenceHub(manager, presenceResolver)
 	wsHandler := handler.NewWSHandler(manager, deps.Analytics, presenceHub, deps.OwnerStatus)
 	userRepo := persistence.NewIdentityRepository(deps.DB)
