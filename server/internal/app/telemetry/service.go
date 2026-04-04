@@ -28,6 +28,10 @@ type Service struct {
 	startedAt    time.Time
 	reporter     *Reporter
 	reporterOnce sync.Once
+
+	// Cached at construction time (constant per process lifetime).
+	deployMode string
+	instanceID string
 }
 
 // NewService creates a telemetry Service. All dependencies are optional;
@@ -41,12 +45,14 @@ func NewService(
 	sysCfg *sysconfig.Service,
 ) *Service {
 	svc := &Service{
-		collector: collector,
-		db:        db,
-		httpStats: httpStats,
-		renderer:  renderer,
-		sysCfg:    sysCfg,
-		startedAt: time.Now(),
+		collector:  collector,
+		db:         db,
+		httpStats:  httpStats,
+		renderer:   renderer,
+		sysCfg:     sysCfg,
+		startedAt:  time.Now(),
+		deployMode: detectDeployMode(),
+		instanceID: anonymousInstanceID(),
 	}
 	if wsManager != nil {
 		svc.wsManager.Store(wsManager)
@@ -63,6 +69,7 @@ func (s *Service) Collector() *Collector {
 }
 
 // Reporter returns the background reporter (created lazily on first call).
+// Run must be called separately by the server bootstrap (in a goroutine).
 func (s *Service) Reporter() *Reporter {
 	if s == nil {
 		return nil
@@ -96,10 +103,14 @@ func (s *Service) FullSnapshot(ctx context.Context) *FullTelemetrySnapshot {
 
 	now := s.collector.now().UTC()
 
+	// Use a bounded context for all DB/sysconfig queries.
+	queryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	snap := &FullTelemetrySnapshot{
 		GeneratedAt: now,
-		Instance:    s.buildInstanceInfo(ctx),
-		Metrics:     s.buildMetrics(ctx, now),
+		Instance:    s.buildInstanceInfo(queryCtx),
+		Metrics:     s.buildMetrics(queryCtx, now),
 	}
 
 	// Error digests from P0 collector.
@@ -125,9 +136,10 @@ func (s *Service) FullSnapshot(ctx context.Context) *FullTelemetrySnapshot {
 
 // buildInstanceInfo gathers anonymous environment metadata + feature flags.
 func (s *Service) buildInstanceInfo(ctx context.Context) InstanceInfo {
-	info := buildInstanceInfo() // reuse base from snapshot.go
+	info := buildInstanceInfo()
+	info.InstanceID = s.instanceID
 	info.UptimeSeconds = int64(time.Since(s.startedAt).Seconds())
-	info.DeployMode = detectDeployMode()
+	info.DeployMode = s.deployMode
 	info.Features = s.detectFeatures(ctx)
 	return info
 }
@@ -136,7 +148,7 @@ func (s *Service) buildInstanceInfo(ctx context.Context) InstanceInfo {
 func (s *Service) buildMetrics(ctx context.Context, now time.Time) RuntimeMetrics {
 	m := RuntimeMetrics{}
 
-	// Traffic: 24h window from HTTPStats.
+	// Traffic: 24h window from HTTPStats (in-memory, no DB).
 	if s.httpStats != nil {
 		window := 24 * time.Hour
 		snap := s.httpStats.Snapshot(window)
@@ -148,7 +160,7 @@ func (s *Service) buildMetrics(ctx context.Context, now time.Time) RuntimeMetric
 		}
 	}
 
-	// ISR / rendering metrics.
+	// ISR / rendering metrics (in-memory, no DB).
 	if s.renderer != nil {
 		rs := s.renderer.MetricsSnapshot()
 		m.ISR = ISRMetrics{
@@ -160,7 +172,7 @@ func (s *Service) buildMetrics(ctx context.Context, now time.Time) RuntimeMetric
 		}
 	}
 
-	// Realtime / WebSocket (atomic load, safe for concurrent access).
+	// Realtime / WebSocket (in-memory, no DB).
 	if mgr := s.wsManager.Load(); mgr != nil {
 		wsSnap := mgr.Snapshot()
 		m.Realtime = RealtimeMetrics{
@@ -186,9 +198,6 @@ func (s *Service) detectFeatures(ctx context.Context) FeatureFlags {
 	if s.sysCfg == nil {
 		return flags
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
 
 	fed, err := s.sysCfg.FederationSettings(ctx)
 	if err == nil {
@@ -235,18 +244,18 @@ func (s *Service) queryContentCounts(ctx context.Context) ContentMetrics {
 }
 
 // queryFederationCounts counts outbound deliveries in the last 24h.
+// Uses PostgreSQL FILTER clause for efficient single-pass aggregation.
 func (s *Service) queryFederationCounts(ctx context.Context, now time.Time) FederationMetrics {
 	var m FederationMetrics
 	since := now.Add(-24 * time.Hour)
 
-	// Single query for total + failure counts.
 	type deliveryCounts struct {
 		Total    int64
 		Failures int64
 	}
 	var counts deliveryCounts
 	if err := s.db.WithContext(ctx).Table("federation_outbound_delivery").
-		Select("COUNT(*) AS total, COUNT(*) FILTER (WHERE status NOT IN ('accepted', 'approved')) AS failures").
+		Select("COUNT(*) AS total, COUNT(*) FILTER (WHERE status NOT IN ('accepted','approved')) AS failures").
 		Where("created_at >= ?", since).
 		Scan(&counts).Error; err != nil {
 		log.Printf("[telemetry] federation delivery count query failed: %v", err)

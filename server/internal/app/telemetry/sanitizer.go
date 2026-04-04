@@ -134,6 +134,10 @@ func stripModulePrefix(s string) string {
 
 // stripArgs removes the trailing argument list from a function signature.
 // "(*Service).Foo(0xc000123456, {0xc000...})" → "(*Service).Foo"
+//
+// For Go stack frames the outermost balanced parens are always the arg list.
+// Receiver notation like "(*Service)" is an inner pair with depth > 0 and
+// is preserved automatically.
 func stripArgs(s string) string {
 	depth := 0
 	for i := len(s) - 1; i >= 0; i-- {
@@ -143,10 +147,6 @@ func stripArgs(s string) string {
 		case '(':
 			depth--
 			if depth == 0 {
-				// Check if this is a receiver like (*Service)
-				if i > 0 && (s[i-1] == '.' || s[i-1] == '*') {
-					continue
-				}
 				return strings.TrimSpace(s[:i])
 			}
 		}
