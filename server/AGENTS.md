@@ -6,7 +6,7 @@
 - `configs/`: runtime configuration files (e.g., app and auth settings).
 - `migrations/`: Goose SQL migrations using `NNNN_description.sql` naming.
 - `docs/`: generated OpenAPI artifacts (`swagger.json`).
-- `storage/`: default SQLite database location for local use.
+- `storage/`: runtime data (logs, uploads, HTML snapshots, GeoIP databases).
 
 ## Build, Test, and Development Commands
 - `go mod tidy`: sync Go module dependencies.
@@ -35,6 +35,11 @@
 - Follow the observed Conventional Commits style (e.g., `feat: ...`, `feat(server): ...`, `fix: ...`).
 - PRs should include a clear summary, rationale, and any required config or migration notes.
 - If you change API handlers or models, update `docs/swagger.json` via `make docs` and mention it in the PR.
+
+## Database
+- The only supported database is **PostgreSQL 17+**. SQLite support was removed; do not write cross-dialect SQL workarounds.
+- Raw SQL may use PostgreSQL-specific syntax (e.g., `FILTER (WHERE ...)`, `jsonb` operators) when needed.
+- Prefer GORM model-based queries where possible; use raw SQL only for aggregations or features not expressible through GORM's query builder.
 
 ## Security & Configuration Tips
 - Runtime behavior is controlled via env vars like `APP_PORT`, `DB_DRIVER`, `DB_DSN`, `AUTH_SECRET`, and `AUTH_DEFAULT_ROLES`.
