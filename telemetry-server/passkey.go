@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -180,7 +181,7 @@ func (ps *PasskeyService) RegisterFinishHandler() fiber.Handler {
 			Value:    token,
 			Expires:  expiresAt,
 			HTTPOnly: true,
-			Secure:   true,
+			Secure:   ps.isSecureOrigin(),
 			SameSite: "Lax",
 		})
 
@@ -275,7 +276,7 @@ func (ps *PasskeyService) LoginFinishHandler() fiber.Handler {
 			Value:    token,
 			Expires:  expiresAt,
 			HTTPOnly: true,
-			Secure:   true,
+			Secure:   ps.isSecureOrigin(),
 			SameSite: "Lax",
 		})
 
@@ -300,6 +301,11 @@ func (ps *PasskeyService) loadAdminUser(ctx context.Context) (*adminUser, error)
 		user.credentials = append(user.credentials, cred)
 	}
 	return user, nil
+}
+
+// isSecureOrigin returns true if the configured RP origin uses HTTPS.
+func (ps *PasskeyService) isSecureOrigin() bool {
+	return strings.HasPrefix(ps.cfg.WebAuthnOrigin, "https://")
 }
 
 // mustRandomHex generates n random bytes and returns them as hex string.

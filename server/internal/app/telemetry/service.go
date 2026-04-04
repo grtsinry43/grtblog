@@ -54,7 +54,7 @@ func NewService(
 		sysCfg:          sysCfg,
 		startedAt:       time.Now(),
 		deployMode:      detectDeployMode(),
-		instanceID:      anonymousInstanceID(),
+		instanceID:      anonymousInstanceID(defaultEndpoint),
 		defaultEndpoint: defaultEndpoint,
 	}
 	if wsManager != nil {
