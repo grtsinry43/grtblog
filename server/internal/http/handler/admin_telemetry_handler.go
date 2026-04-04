@@ -9,30 +9,31 @@ import (
 
 // AdminTelemetryHandler exposes error telemetry data to the admin dashboard.
 type AdminTelemetryHandler struct {
-	collector *telemetry.Collector
+	svc *telemetry.Service
 }
 
-func NewAdminTelemetryHandler(collector *telemetry.Collector) *AdminTelemetryHandler {
-	return &AdminTelemetryHandler{collector: collector}
+func NewAdminTelemetryHandler(svc *telemetry.Service) *AdminTelemetryHandler {
+	return &AdminTelemetryHandler{svc: svc}
 }
 
-// GetSnapshot returns the full telemetry snapshot for audit / preview.
+// GetSnapshot returns the full telemetry snapshot (environment + metrics + errors).
 // GET /api/v2/admin/telemetry/snapshot
 func (h *AdminTelemetryHandler) GetSnapshot(c *fiber.Ctx) error {
-	if h == nil || h.collector == nil {
-		return response.NewBizErrorWithMsg(response.ServerError, "telemetry collector 未初始化")
+	if h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "telemetry service 未初始化")
 	}
-	snap := telemetry.BuildSnapshot(h.collector)
+	snap := h.svc.FullSnapshot(c.UserContext())
 	return response.Success(c, snap)
 }
 
 // GetStats returns lightweight summary numbers.
 // GET /api/v2/admin/telemetry/stats
 func (h *AdminTelemetryHandler) GetStats(c *fiber.Ctx) error {
-	if h == nil || h.collector == nil {
-		return response.NewBizErrorWithMsg(response.ServerError, "telemetry collector 未初始化")
+	if h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "telemetry service 未初始化")
 	}
-	unique, total := h.collector.Stats()
+	collector := h.svc.Collector()
+	unique, total := collector.Stats()
 	return response.Success(c, fiber.Map{
 		"uniqueErrors": unique,
 		"totalCount":   total,
@@ -42,9 +43,9 @@ func (h *AdminTelemetryHandler) GetStats(c *fiber.Ctx) error {
 // ResetErrors clears all collected error digests.
 // POST /api/v2/admin/telemetry/reset
 func (h *AdminTelemetryHandler) ResetErrors(c *fiber.Ctx) error {
-	if h == nil || h.collector == nil {
-		return response.NewBizErrorWithMsg(response.ServerError, "telemetry collector 未初始化")
+	if h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "telemetry service 未初始化")
 	}
-	h.collector.Reset()
+	h.svc.Collector().Reset()
 	return response.SuccessWithMessage[any](c, nil, "error telemetry reset")
 }

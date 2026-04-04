@@ -11,9 +11,12 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
 )
 
-// TelemetrySnapshot is the full payload that could be sent to a remote
-// collection endpoint (P2+), or displayed in the admin dashboard for
-// audit purposes.
+// ---------------------------------------------------------------------------
+// P0: Error-only snapshot (backward compatible)
+// ---------------------------------------------------------------------------
+
+// TelemetrySnapshot is the P0 error-only payload.
+// Kept for backward compatibility with the existing admin endpoint.
 type TelemetrySnapshot struct {
 	GeneratedAt time.Time        `json:"generatedAt"`
 	Instance    InstanceInfo     `json:"instance"`
@@ -22,24 +25,7 @@ type TelemetrySnapshot struct {
 	Summary     ErrorSummaryInfo `json:"summary"`
 }
 
-// InstanceInfo contains anonymous, non-PII environment metadata.
-type InstanceInfo struct {
-	InstanceID string `json:"instanceId"` // SHA-256 of hostname; not reversible
-	Version    string `json:"version"`
-	GoVersion  string `json:"goVersion"`
-	OS         string `json:"os"`
-	Arch       string `json:"arch"`
-}
-
-// ErrorSummaryInfo provides high-level aggregates.
-type ErrorSummaryInfo struct {
-	UniqueErrors int   `json:"uniqueErrors"`
-	TotalErrors  int64 `json:"totalErrors"`
-	UniquePanics int   `json:"uniquePanics"`
-	TotalPanics  int64 `json:"totalPanics"`
-}
-
-// BuildSnapshot creates an audit-ready snapshot from the collector's current state.
+// BuildSnapshot creates an error-only snapshot (P0 compat).
 func BuildSnapshot(c *Collector) TelemetrySnapshot {
 	all := c.Snapshot()
 
@@ -74,7 +60,104 @@ func BuildSnapshot(c *Collector) TelemetrySnapshot {
 	}
 }
 
-// buildInstanceInfo gathers anonymous environment info.
+// ---------------------------------------------------------------------------
+// P1: Full snapshot (environment + metrics + errors)
+// ---------------------------------------------------------------------------
+
+// FullTelemetrySnapshot is the comprehensive payload including environment
+// info, feature flags, runtime metrics, and error digests.
+type FullTelemetrySnapshot struct {
+	GeneratedAt time.Time        `json:"generatedAt"`
+	Instance    InstanceInfo     `json:"instance"`
+	Metrics     RuntimeMetrics   `json:"metrics"`
+	Errors      []ErrorDigest    `json:"errors"`
+	Panics      []ErrorDigest    `json:"panics"`
+	Summary     ErrorSummaryInfo `json:"summary"`
+}
+
+// InstanceInfo contains anonymous, non-PII environment metadata.
+type InstanceInfo struct {
+	InstanceID     string       `json:"instanceId"`
+	Version        string       `json:"version"`
+	GoVersion      string       `json:"goVersion"`
+	OS             string       `json:"os"`
+	Arch           string       `json:"arch"`
+	UptimeSeconds  int64        `json:"uptimeSeconds,omitempty"`
+	DeployMode     string       `json:"deployMode,omitempty"`     // "docker" | "binary" | "unknown"
+	Features       FeatureFlags `json:"features,omitempty"`
+}
+
+// FeatureFlags captures which optional features are enabled.
+// Only booleans; no secrets, keys, or PII.
+type FeatureFlags struct {
+	FederationEnabled  bool `json:"federationEnabled"`
+	ActivityPubEnabled bool `json:"activityPubEnabled"`
+	CommentsDisabled   bool `json:"commentsDisabled"`
+	EmailEnabled       bool `json:"emailEnabled"`
+	TurnstileEnabled   bool `json:"turnstileEnabled"`
+}
+
+// RuntimeMetrics contains aggregated operational metrics.
+type RuntimeMetrics struct {
+	Content    ContentMetrics    `json:"content"`
+	Traffic    TrafficMetrics    `json:"traffic"`
+	ISR        ISRMetrics        `json:"isr"`
+	Federation FederationMetrics `json:"federation"`
+	Realtime   RealtimeMetrics   `json:"realtime"`
+}
+
+// ContentMetrics reports anonymous content volume.
+type ContentMetrics struct {
+	ArticlesTotal    int64 `json:"articlesTotal"`
+	MomentsTotal     int64 `json:"momentsTotal"`
+	CommentsTotal    int64 `json:"commentsTotal"`
+	FriendLinksTotal int64 `json:"friendLinksTotal"`
+}
+
+// TrafficMetrics reports aggregated request statistics.
+type TrafficMetrics struct {
+	Window       string  `json:"window"`
+	RequestTotal int64   `json:"requestTotal"`
+	ErrorRate5xx float64 `json:"errorRate5xx"`
+	P95LatencyMS float64 `json:"p95LatencyMs"`
+}
+
+// ISRMetrics reports rendering pipeline statistics.
+type ISRMetrics struct {
+	RenderTotal   int64   `json:"renderTotal"`
+	RenderSuccess int64   `json:"renderSuccess"`
+	RenderFailed  int64   `json:"renderFailed"`
+	AvgRenderMS   float64 `json:"avgRenderMs"`
+	P95RenderMS   float64 `json:"p95RenderMs"`
+}
+
+// FederationMetrics reports federation delivery statistics (24h window).
+type FederationMetrics struct {
+	OutboundTotal    int64 `json:"outboundTotal"`
+	OutboundFailures int64 `json:"outboundFailures"`
+	ActiveInstances  int64 `json:"activeInstances"`
+}
+
+// RealtimeMetrics reports WebSocket connection statistics.
+type RealtimeMetrics struct {
+	WSConnectionsCurrent int64 `json:"wsConnectionsCurrent"`
+	WSRooms              int   `json:"wsRooms"`
+	BroadcastTotal       int64 `json:"broadcastTotal"`
+}
+
+// ErrorSummaryInfo provides high-level error aggregates.
+type ErrorSummaryInfo struct {
+	UniqueErrors int   `json:"uniqueErrors"`
+	TotalErrors  int64 `json:"totalErrors"`
+	UniquePanics int   `json:"uniquePanics"`
+	TotalPanics  int64 `json:"totalPanics"`
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+// buildInstanceInfo gathers anonymous environment info (base fields only).
 func buildInstanceInfo() InstanceInfo {
 	return InstanceInfo{
 		InstanceID: anonymousInstanceID(),
@@ -85,17 +168,26 @@ func buildInstanceInfo() InstanceInfo {
 	}
 }
 
-// anonymousInstanceID generates a stable, non-reversible identifier based on the
-// hostname. This allows correlating reports from the same instance over time
-// without revealing the actual hostname.
+// anonymousInstanceID generates a stable, non-reversible identifier based on
+// the hostname.
 func anonymousInstanceID() string {
 	hostname, _ := os.Hostname()
 	if hostname == "" {
 		hostname = "unknown"
 	}
-	// Add a static salt so the hash isn't trivially rainbow-tabled.
 	h := sha256.Sum256([]byte("grtblog-telemetry:" + hostname))
 	return fmt.Sprintf("%x", h[:8]) // 16-char hex
+}
+
+// detectDeployMode infers whether the process is running inside Docker.
+func detectDeployMode() string {
+	// /.dockerenv is created by Docker; /run/.containerenv by Podman.
+	for _, marker := range []string{"/.dockerenv", "/run/.containerenv"} {
+		if _, err := os.Stat(marker); err == nil {
+			return "docker"
+		}
+	}
+	return "binary"
 }
 
 // FormatSnapshotText produces a human-readable summary for CLI / log output.
@@ -113,7 +205,7 @@ func FormatSnapshotText(snap TelemetrySnapshot) string {
 	if len(snap.Errors) > 0 {
 		b.WriteString("── Errors ──\n")
 		for i, d := range snap.Errors {
-			if i >= 20 { // cap display
+			if i >= 20 {
 				fmt.Fprintf(&b, "  ... and %d more\n", len(snap.Errors)-20)
 				break
 			}
