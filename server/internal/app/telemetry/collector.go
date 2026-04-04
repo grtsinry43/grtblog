@@ -75,7 +75,7 @@ func (c *Collector) Record(rec ErrorRecord) {
 	}
 
 	rec.Message = SanitiseMessage(rec.Message)
-	fp := Fingerprint(rec.BizCode, rec.Location)
+	fp := Fingerprint(string(rec.Kind)+":"+rec.BizCode, rec.Location)
 
 	now := c.now()
 	c.mu.Lock()

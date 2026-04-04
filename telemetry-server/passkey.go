@@ -179,6 +179,7 @@ func (ps *PasskeyService) RegisterFinishHandler() fiber.Handler {
 		c.Cookie(&fiber.Cookie{
 			Name:     sessionCookieName,
 			Value:    token,
+			Path:     "/",
 			Expires:  expiresAt,
 			HTTPOnly: true,
 			Secure:   ps.isSecureOrigin(),
@@ -274,6 +275,7 @@ func (ps *PasskeyService) LoginFinishHandler() fiber.Handler {
 		c.Cookie(&fiber.Cookie{
 			Name:     sessionCookieName,
 			Value:    token,
+			Path:     "/",
 			Expires:  expiresAt,
 			HTTPOnly: true,
 			Secure:   ps.isSecureOrigin(),
