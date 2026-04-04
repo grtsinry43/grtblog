@@ -45,6 +45,7 @@ func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *
 	uploadHandler := handler.NewUploadHandler(uploadSvc)
 	v2.Post("/upload", authMiddleware, adminMiddleware, uploadHandler.UploadFile)
 	v2.Get("/uploads", authMiddleware, adminMiddleware, uploadHandler.ListUploads)
+	v2.Post("/uploads/sync", authMiddleware, adminMiddleware, uploadHandler.SyncUploads)
 	v2.Put("/upload/:id", authMiddleware, adminMiddleware, uploadHandler.RenameUpload)
 	v2.Delete("/upload/:id", authMiddleware, adminMiddleware, uploadHandler.DeleteUpload)
 	v2.Get("/upload/:id/download", authMiddleware, adminMiddleware, uploadHandler.DownloadUpload)

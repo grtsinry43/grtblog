@@ -7,8 +7,10 @@ type Repository interface {
 	FindByHash(ctx context.Context, hash string) (*UploadFile, error)
 	FindByID(ctx context.Context, id int64) (*UploadFile, error)
 	Create(ctx context.Context, file *UploadFile) error
+	Update(ctx context.Context, file *UploadFile) error
 	UpdatePath(ctx context.Context, id int64, path string) error
 	UpdateName(ctx context.Context, id int64, name string) error
 	List(ctx context.Context, offset int, limit int) ([]UploadFile, int64, error)
+	ListAll(ctx context.Context) ([]UploadFile, error)
 	DeleteByID(ctx context.Context, id int64) error
 }

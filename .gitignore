@@ -17,6 +17,9 @@ Thumbs.db
 logs/
 *.log
 
+# Local export artifacts
+exports/
+
 # Prevent committing built server binaries
 /server/api
 /telemetry-server/telemetry-server

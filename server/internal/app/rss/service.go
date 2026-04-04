@@ -138,14 +138,16 @@ func (s *Service) Build(ctx context.Context, requestBaseURL string, limit int) (
 		if err != nil {
 			return nil, err
 		}
+		siteTZ := s.sysCfg.Timezone(ctx)
 		for _, moment := range moments {
 			if moment == nil {
 				continue
 			}
+			localCreated := moment.CreatedAt.In(siteTZ)
 			momentPath := fmt.Sprintf("/moments/%s/%s/%s/%s",
-				moment.CreatedAt.Format("2006"),
-				moment.CreatedAt.Format("01"),
-				moment.CreatedAt.Format("02"),
+				localCreated.Format("2006"),
+				localCreated.Format("01"),
+				localCreated.Format("02"),
 				moment.ShortURL,
 			)
 			coverURL := resolveMediaURL(baseURL, firstCSVValue(moment.Image))

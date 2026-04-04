@@ -1074,6 +1074,28 @@ func validateEnumValue(values []string, value string) error {
 	return fmt.Errorf("invalid enum value")
 }
 
+// Timezone 返回站点配置的时区，默认 Asia/Shanghai。
+// 约定 key：site.timezone（IANA 时区名称）
+func (s *Service) Timezone(ctx context.Context) *time.Location {
+	const (
+		key          = "site.timezone"
+		defaultValue = "Asia/Shanghai"
+	)
+	name := defaultValue
+	if s != nil && s.repo != nil {
+		if cfg, err := s.repo.GetByKey(ctx, key); err == nil {
+			if v := strings.TrimSpace(cfg.Value); v != "" {
+				name = v
+			}
+		}
+	}
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		loc, _ = time.LoadLocation(defaultValue)
+	}
+	return loc
+}
+
 // GetConfigValue 返回指定 key 的 sys_config 值（字符串）。
 // 如果 key 不存在返回 domainconfig.ErrSysConfigNotFound。
 func (s *Service) GetConfigValue(ctx context.Context, key string) (string, error) {

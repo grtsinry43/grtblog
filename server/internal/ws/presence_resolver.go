@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	domainthinking "github.com/grtsinry43/grtblog-v2/server/internal/domain/thinking"
 )
@@ -22,12 +23,14 @@ const (
 type PresenceTitleResolver struct {
 	contentRepo  content.Repository
 	thinkingRepo domainthinking.ThinkingRepository
+	sysCfg       *sysconfig.Service
 }
 
-func NewPresenceTitleResolver(contentRepo content.Repository, thinkingRepo domainthinking.ThinkingRepository) *PresenceTitleResolver {
+func NewPresenceTitleResolver(contentRepo content.Repository, thinkingRepo domainthinking.ThinkingRepository, sysCfg *sysconfig.Service) *PresenceTitleResolver {
 	return &PresenceTitleResolver{
 		contentRepo:  contentRepo,
 		thinkingRepo: thinkingRepo,
+		sysCfg:       sysCfg,
 	}
 }
 
@@ -172,7 +175,8 @@ func (r *PresenceTitleResolver) resolveMoment(pathname string) PresenceResolvedV
 	if view.Title == "" {
 		view.Title = "手记"
 	}
-	view.URL = buildMomentPath(item.ShortURL, item.CreatedAt)
+	siteTZ := r.sysCfg.Timezone(context.Background())
+	view.URL = buildMomentPath(item.ShortURL, item.CreatedAt.In(siteTZ))
 	return view
 }
 

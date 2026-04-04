@@ -21,7 +21,6 @@ type ArticleResp struct {
 	CategoryShortURL           string       `json:"categoryShortUrl,omitempty"`
 	CommentID                  *int64       `json:"commentAreaId,omitempty"`
 	ShortURL                   string       `json:"shortUrl"`
-	FediverseReplyURL          *string      `json:"fediverseReplyUrl,omitempty"`
 	FediverseObjectURL         *string      `json:"fediverseObjectUrl,omitempty"`
 	IsPublished                bool         `json:"isPublished"`
 	IsTop                      bool         `json:"isTop"`

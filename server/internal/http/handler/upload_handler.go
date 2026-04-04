@@ -105,6 +105,30 @@ func (h *UploadHandler) ListUploads(c *fiber.Ctx) error {
 	return response.Success(c, resp)
 }
 
+// SyncUploads godoc
+// @Summary 同步磁盘文件到上传索引
+// @Tags Upload
+// @Produce json
+// @Success 200 {object} contract.UploadSyncRespEnvelope
+// @Security BearerAuth
+// @Router /uploads/sync [post]
+func (h *UploadHandler) SyncUploads(c *fiber.Ctx) error {
+	result, err := h.svc.SyncIndex(c.Context())
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "同步文件索引失败", err)
+	}
+
+	resp := contract.UploadSyncResp{
+		Scanned:           result.Scanned,
+		Indexed:           result.Indexed,
+		Created:           result.Created,
+		Updated:           result.Updated,
+		Deleted:           result.Deleted,
+		SkippedDuplicates: result.SkippedDuplicates,
+	}
+	return response.SuccessWithMessage(c, resp, "文件索引同步完成")
+}
+
 // RenameUpload godoc
 // @Summary 修改上传文件名
 // @Tags Upload

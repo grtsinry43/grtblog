@@ -46,7 +46,6 @@ export type PostDetail = {
 	toc?: TOCNode[];
 	authorId: number;
 	shortUrl: string;
-	fediverseReplyUrl?: string | null;
 	fediverseObjectUrl?: string | null;
 	cover?: string;
 	categoryId?: number | null;

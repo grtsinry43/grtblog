@@ -7836,6 +7836,30 @@
                 }
             }
         },
+        "/uploads/sync": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "同步磁盘文件到上传索引",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contract.UploadSyncRespEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/website-info": {
             "get": {
                 "security": [
@@ -8909,9 +8933,6 @@
                     "type": "object"
                 },
                 "fediverseObjectUrl": {
-                    "type": "string"
-                },
-                "fediverseReplyUrl": {
                     "type": "string"
                 },
                 "id": {
@@ -13413,6 +13434,49 @@
             "type": "object",
             "properties": {
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.UploadSyncResp": {
+            "type": "object",
+            "properties": {
+                "created": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "integer"
+                },
+                "indexed": {
+                    "type": "integer"
+                },
+                "scanned": {
+                    "type": "integer"
+                },
+                "skippedDuplicates": {
+                    "type": "integer"
+                },
+                "updated": {
+                    "type": "integer"
+                }
+            }
+        },
+        "contract.UploadSyncRespEnvelope": {
+            "type": "object",
+            "properties": {
+                "bizErr": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/contract.UploadSyncResp"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.Meta"
+                },
+                "msg": {
                     "type": "string"
                 }
             }

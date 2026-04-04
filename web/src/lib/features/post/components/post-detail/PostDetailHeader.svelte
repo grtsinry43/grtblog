@@ -11,6 +11,7 @@
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import TagList from '$lib/features/tag/components/TagList.svelte';
 	import { buildCategoryPath } from '$lib/shared/utils/content-path';
+	import { RollingNumber } from '$lib/ui/animation';
 
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
@@ -98,7 +99,7 @@
 					{formatDateCN($createdAtStore)}{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN($contentUpdatedAtStore)}）</span>{/if}
 				</span>
 				<span class="flex items-center gap-1.5"><Clock size={12} /> {formatReadingTime(readingTime)}</span>
-				<span class="flex items-center gap-1.5">浏览 {$metricsStore?.views ?? 0}</span>
+				<span class="flex items-center gap-1.5">浏览 <RollingNumber value={$metricsStore?.views ?? 0} /></span>
 				<span aria-hidden="true" class="opacity-40">·</span>
 				<ContentLikeButton
 					contentType="article"
@@ -107,7 +108,7 @@
 					className="inline-flex items-center gap-1.5"
 				/>
 				<span aria-hidden="true" class="opacity-40">·</span>
-				<span class="flex items-center gap-1.5">评论 {$metricsStore?.comments ?? 0}</span>
+				<span class="flex items-center gap-1.5">评论 <RollingNumber value={$metricsStore?.comments ?? 0} /></span>
 			</div>
 
 			<TagList tags={$tagsStore} />

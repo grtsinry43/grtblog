@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -821,9 +820,7 @@ func (h *ArticleHandler) toArticleResp(ctx context.Context, article *content.Art
 	resp.TOC = mapTOCNodes(article.TOC)
 	resp.ExtInfo = jsonRawFromBytes(article.ExtInfo)
 	resp.AllowComment = h.allowCommentByAreaID(ctx, article.CommentID)
-	fediverseReplyURL, fediverseObjectURL := h.buildFediverseReplyLinks(ctx, article)
-	resp.FediverseReplyURL = fediverseReplyURL
-	resp.FediverseObjectURL = fediverseObjectURL
+	resp.FediverseObjectURL = h.buildFediverseObjectURL(ctx, article)
 
 	if article.CategoryID != nil {
 		category, catErr := h.contentRepo.GetCategoryByID(ctx, *article.CategoryID)
@@ -941,65 +938,22 @@ func (h *ArticleHandler) allowCommentByAreaID(ctx context.Context, areaID *int64
 	return !area.IsClosed
 }
 
-func (h *ArticleHandler) buildFediverseReplyLinks(ctx context.Context, article *content.Article) (*string, *string) {
+func (h *ArticleHandler) buildFediverseObjectURL(ctx context.Context, article *content.Article) *string {
 	if h.apCfgSvc == nil || article == nil {
-		return nil, nil
+		return nil
 	}
 	settings, err := h.apCfgSvc.ActivityPubSettings(ctx)
 	if err != nil || !settings.Enabled {
-		return nil, nil
+		return nil
 	}
-	baseURL := strings.TrimRight(strings.TrimSpace(settings.InstanceURL), "/")
-	if baseURL == "" {
-		return nil, nil
+	if article.ActivityPubObjectID == nil {
+		return nil
 	}
-	shortURL := strings.Trim(strings.TrimSpace(article.ShortURL), "/")
-	if shortURL == "" {
-		return nil, nil
-	}
-
-	articleURL := baseURL + "/posts/" + shortURL
-	objectURL := ""
-	if article.ActivityPubObjectID != nil {
-		objectURL = strings.TrimSpace(*article.ActivityPubObjectID)
-	}
+	objectURL := strings.TrimSpace(*article.ActivityPubObjectID)
 	if objectURL == "" {
-		return nil, nil
+		return nil
 	}
-	objectPtr := &objectURL
-
-	replyTemplate := strings.TrimSpace(settings.FediverseReplyTemplate)
-	if replyTemplate == "" {
-		return nil, objectPtr
-	}
-	replyURL := buildFediverseReplyURL(replyTemplate, articleURL, objectURL)
-	replyURL = strings.TrimSpace(replyURL)
-	if replyURL == "" {
-		return nil, objectPtr
-	}
-	return &replyURL, objectPtr
-}
-
-func buildFediverseReplyURL(template string, articleURL string, objectURL string) string {
-	tpl := strings.TrimSpace(template)
-	if tpl == "" {
-		return ""
-	}
-	encodedArticle := url.QueryEscape(strings.TrimSpace(articleURL))
-	encodedObject := url.QueryEscape(strings.TrimSpace(objectURL))
-	replaced := false
-	if strings.Contains(tpl, "{url}") {
-		tpl = strings.ReplaceAll(tpl, "{url}", encodedArticle)
-		replaced = true
-	}
-	if strings.Contains(tpl, "{object}") {
-		tpl = strings.ReplaceAll(tpl, "{object}", encodedObject)
-		replaced = true
-	}
-	if replaced {
-		return tpl
-	}
-	return tpl + encodedArticle
+	return &objectURL
 }
 
 // GetArticleMetrics godoc

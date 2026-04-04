@@ -1,9 +1,6 @@
 import { ref, reactive, watch, type Component, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { showFederationBetaDialog } from '@/utils/federation-beta'
-import { isFederationEnabled } from '@/utils/federation-gate'
-
 import SiteInfoTab from '../components/tabs/SiteInfoTab.vue'
 import ThemeExtendTab from '../components/tabs/ThemeExtendTab.vue'
 import SecurityTab from '../components/tabs/SecurityTab.vue'
@@ -32,7 +29,7 @@ export const settingsTabs: SettingsTab[] = [
   { key: 'content', label: '内容与评论', icon: 'iconify ph--article', component: ContentTab },
   { key: 'email', label: '邮件', icon: 'iconify ph--envelope', component: EmailTab },
   { key: 'webhook', label: 'Webhook', icon: 'iconify ph--webhooks-logo', component: WebhookTab },
-  { key: 'federation', label: '联合 Beta', icon: 'iconify ph--circles-three', component: FederationTab },
+  { key: 'federation', label: '联合', icon: 'iconify ph--circles-three', component: FederationTab },
   { key: 'ai', label: 'AI', icon: 'iconify ph--robot', component: AiTab },
   { key: 'api-tokens', label: 'API Tokens', icon: 'iconify ph--key', component: ApiTokensTab },
   { key: 'telemetry', label: '遥测', icon: 'iconify ph--chart-line-up', component: TelemetryTab },
@@ -61,16 +58,8 @@ export function useSettingsTabs() {
     }
   })
 
-  async function switchTab(tabKey: string) {
+  function switchTab(tabKey: string) {
     if (tabKey === activeTab.value) return
-
-    if (isFederationEnabled && tabKey === 'federation') {
-      const confirmed = await showFederationBetaDialog()
-      if (!confirmed) {
-        return
-      }
-    }
-
     activeTab.value = tabKey
   }
 

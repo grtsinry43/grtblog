@@ -14,6 +14,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/moment"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/contract"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/middleware"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
@@ -24,14 +25,16 @@ type MomentHandler struct {
 	contentRepo content.Repository
 	commentRepo domaincomment.CommentRepository
 	userRepo    identity.Repository
+	sysCfg      *sysconfig.Service
 }
 
-func NewMomentHandler(svc *moment.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository) *MomentHandler {
+func NewMomentHandler(svc *moment.Service, contentRepo content.Repository, commentRepo domaincomment.CommentRepository, userRepo identity.Repository, sysCfg *sysconfig.Service) *MomentHandler {
 	return &MomentHandler{
 		svc:         svc,
 		contentRepo: contentRepo,
 		commentRepo: commentRepo,
 		userRepo:    userRepo,
+		sysCfg:      sysCfg,
 	}
 }
 
@@ -762,6 +765,7 @@ func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Mo
 		return nil, err
 	}
 
+	siteTZ := h.sysCfg.Timezone(ctx)
 	resp := contract.MomentResp{
 		ID:                         momentItem.ID,
 		Title:                      momentItem.Title,
@@ -784,7 +788,7 @@ func (h *MomentHandler) toMomentResp(ctx context.Context, momentItem *content.Mo
 		IsOriginal:                 momentItem.IsOriginal,
 		ExtInfo:                    jsonRawFromBytes(momentItem.ExtInfo),
 		ContentUpdatedAt:           momentItem.ContentUpdatedAt,
-		CreatedAt:                  momentItem.CreatedAt,
+		CreatedAt:                  momentItem.CreatedAt.In(siteTZ),
 		UpdatedAt:                  momentItem.UpdatedAt,
 	}
 
@@ -829,6 +833,7 @@ func (h *MomentHandler) toMomentListItemResp(ctx context.Context, momentItem *co
 		return nil, err
 	}
 
+	siteTZ := h.sysCfg.Timezone(ctx)
 	resp := contract.MomentListItemResp{
 		ID:               momentItem.ID,
 		Title:            momentItem.Title,
@@ -840,7 +845,7 @@ func (h *MomentHandler) toMomentListItemResp(ctx context.Context, momentItem *co
 		IsOriginal:       momentItem.IsOriginal,
 		IsPublished:      momentItem.IsPublished,
 		ContentUpdatedAt: momentItem.ContentUpdatedAt,
-		CreatedAt:        momentItem.CreatedAt,
+		CreatedAt:        momentItem.CreatedAt.In(siteTZ),
 		UpdatedAt:        momentItem.UpdatedAt,
 		Topics:           []string{},
 		Image:            splitImages(momentItem.Image),

@@ -15,7 +15,6 @@ import { provide, ref } from 'vue'
 import { RouterView } from 'vue-router'
 
 import Noise from '@/components/Noise.vue'
-import FederationBetaProvider from '@/components/FederationBetaProvider.vue'
 import { getConfigProviderProps } from '@/composables'
 import { usePreferencesStore } from '@/stores'
 
@@ -77,15 +76,13 @@ provide(layoutInjectionKey, {
         <NNotificationProvider placement="top-right">
           <NMessageProvider>
             <NDialogProvider>
-              <FederationBetaProvider>
-                <RouterView />
-                <NWatermark
-                  v-if="watermark.show"
-                  fullscreen
-                  v-bind="watermark"
-                />
-                <Noise v-if="noise.show" />
-              </FederationBetaProvider>
+              <RouterView />
+              <NWatermark
+                v-if="watermark.show"
+                fullscreen
+                v-bind="watermark"
+              />
+              <Noise v-if="noise.show" />
             </NDialogProvider>
           </NMessageProvider>
         </NNotificationProvider>

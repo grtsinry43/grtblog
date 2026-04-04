@@ -284,6 +284,10 @@ func (s *Service) ActorDocument(ctx context.Context, baseURL string) (*ActorDocu
 		name = "grtblog"
 	}
 	profile := s.resolveLocalActorProfile(ctx, baseURL)
+	// Dedicated header image config takes precedence over auto-resolved og_image
+	if headerImg := strings.TrimSpace(settings.ActorHeaderImage); headerImg != "" {
+		profile.ImageURL = resolveRelativeURL(baseURL, headerImg)
+	}
 	pubKey := strings.TrimSpace(settings.PublicKey)
 	if pubKey == "" {
 		return nil, errors.New("public key not configured")
@@ -1557,7 +1561,6 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 			"type":      "Note",
 			"url":       sourceURL,
 			"content":   renderFederatedHTML(publishTemplate, article.Title, summary, sourceURL, sourceType),
-			"name":      strings.TrimSpace(article.Title),
 			"published": now,
 		}, nil
 	case "moment":
@@ -1568,8 +1571,9 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 		if moment == nil || !moment.IsPublished {
 			return nil, errors.New("moment is not published")
 		}
+		siteTZ := s.cfgSvc.Timezone(ctx)
 		sourceURL := strings.TrimRight(baseURL, "/") + "/moments/" +
-			moment.CreatedAt.UTC().Format("2006/01/02") + "/" + moment.ShortURL
+			moment.CreatedAt.In(siteTZ).Format("2006/01/02") + "/" + moment.ShortURL
 		objectID := ""
 		if moment.ActivityPubObjectID != nil && strings.TrimSpace(*moment.ActivityPubObjectID) != "" {
 			objectID = strings.TrimSpace(*moment.ActivityPubObjectID)
@@ -1590,7 +1594,6 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 			"type":      "Note",
 			"url":       sourceURL,
 			"content":   renderFederatedHTML(publishTemplate, moment.Title, summary, sourceURL, sourceType),
-			"name":      strings.TrimSpace(moment.Title),
 			"published": now,
 		}, nil
 	case "thinking":
@@ -1622,7 +1625,6 @@ func (s *Service) buildObjectForSource(ctx context.Context, baseURL string, sour
 			"type":      "Note",
 			"url":       sourceURL,
 			"content":   renderFederatedHTML(publishTemplate, "思考", summary, sourceURL, sourceType),
-			"name":      "思考",
 			"published": now,
 		}, nil
 	default:
