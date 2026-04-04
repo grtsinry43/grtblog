@@ -61,6 +61,7 @@ type Server struct {
 	fedDeliver    *appfed.DeliveryService
 	cleanupSvc    *cleanup.Service
 	healthChecker *health.Checker
+	telemetrySvc  *telemetry.Service
 	version       string
 }
 
@@ -283,6 +284,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		fedDeliver:    fedDeliver,
 		cleanupSvc:    cleanup.NewService(persistence.NewCleanupRepository(db)),
 		healthChecker: healthChecker,
+		telemetrySvc:  telemetrySvc,
 		version:       buildinfo.Version(),
 	}
 }
@@ -326,6 +328,10 @@ func (s *Server) Start() error {
 	}
 	// 启动数据清理定时任务（每 6 小时执行一次）
 	go s.cleanupSvc.Run(s.ctx, 6*time.Hour)
+	// 启动遥测上报后台任务
+	if s.telemetrySvc != nil {
+		go s.telemetrySvc.Reporter().Run(s.ctx)
+	}
 
 	addr := fmt.Sprintf(":%s", s.cfg.App.Port)
 	return s.app.Listen(addr)

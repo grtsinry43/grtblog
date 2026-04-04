@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"log"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,13 +19,15 @@ import (
 // unified telemetry snapshot. It reads from existing subsystems
 // (HTTPStats, htmlsnapshot, sysconfig, DB) without duplicating their logic.
 type Service struct {
-	collector *Collector
-	db        *gorm.DB
-	httpStats *metrics.HTTPStats
-	renderer  *htmlsnapshot.Service
-	wsManager atomic.Pointer[ws.Manager]
-	sysCfg    *sysconfig.Service
-	startedAt time.Time
+	collector    *Collector
+	db           *gorm.DB
+	httpStats    *metrics.HTTPStats
+	renderer     *htmlsnapshot.Service
+	wsManager    atomic.Pointer[ws.Manager]
+	sysCfg       *sysconfig.Service
+	startedAt    time.Time
+	reporter     *Reporter
+	reporterOnce sync.Once
 }
 
 // NewService creates a telemetry Service. All dependencies are optional;
@@ -57,6 +60,17 @@ func (s *Service) Collector() *Collector {
 		return nil
 	}
 	return s.collector
+}
+
+// Reporter returns the background reporter (created lazily on first call).
+func (s *Service) Reporter() *Reporter {
+	if s == nil {
+		return nil
+	}
+	s.reporterOnce.Do(func() {
+		s.reporter = NewReporter(s)
+	})
+	return s.reporter
 }
 
 // SetWSManager allows late injection of the WebSocket manager, which may be
