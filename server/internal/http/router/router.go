@@ -28,6 +28,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/observability"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/ownerstatus"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/telemetry"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/webhook"
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/handler"
@@ -56,9 +57,10 @@ type Dependencies struct {
 	HTMLSnapshot  *htmlsnapshot.Service
 	ISR           *isr.Service
 	OwnerStatus   *ownerstatus.Service
-	HealthState   *health.State
-	HealthChecker *health.Checker
-	FedSync       *appfed.SyncWorker
+	HealthState    *health.State
+	HealthChecker  *health.Checker
+	FedSync        *appfed.SyncWorker
+	Telemetry      *telemetry.Service
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -100,6 +102,11 @@ func Register(app *fiber.App, deps Dependencies) {
 	ws.RegisterNotificationSubscriber(eventBus, wsManager)
 	ws.RegisterGlobalNotificationSubscriber(eventBus, wsManager)
 	ws.RegisterHealthSubscriber(eventBus, wsManager)
+
+	// Late-inject wsManager into telemetry (created before router).
+	if deps.Telemetry != nil {
+		deps.Telemetry.SetWSManager(wsManager)
+	}
 
 	// Create health checker (will be started by server.Start).
 	if deps.HealthChecker == nil {

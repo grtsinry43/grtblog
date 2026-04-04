@@ -251,6 +251,14 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/observability/pages/bootstrap", observabilityHandler.BootstrapPages)
 	admin.Post("/observability/pages/invalidate", observabilityHandler.InvalidatePages)
 
+	// Telemetry: anonymous error collection for self-improvement
+	telemetryHandler := handler.NewAdminTelemetryHandler(deps.Telemetry)
+	admin.Get("/telemetry/snapshot", telemetryHandler.GetSnapshot)
+	admin.Get("/telemetry/stats", telemetryHandler.GetStats)
+	admin.Post("/telemetry/reset", telemetryHandler.ResetErrors)
+	admin.Get("/telemetry/report-history", telemetryHandler.GetReportHistory)
+	admin.Post("/telemetry/report-now", telemetryHandler.ReportNow)
+
 	// AI 功能
 	aiHandler := handler.NewAIHandler(aiSvc)
 	admin.Get("/ai/providers", aiHandler.ListProviders)
