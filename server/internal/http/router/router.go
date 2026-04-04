@@ -60,7 +60,7 @@ type Dependencies struct {
 	HealthState    *health.State
 	HealthChecker  *health.Checker
 	FedSync        *appfed.SyncWorker
-	ErrorCollector *telemetry.Collector
+	Telemetry      *telemetry.Service
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -102,6 +102,11 @@ func Register(app *fiber.App, deps Dependencies) {
 	ws.RegisterNotificationSubscriber(eventBus, wsManager)
 	ws.RegisterGlobalNotificationSubscriber(eventBus, wsManager)
 	ws.RegisterHealthSubscriber(eventBus, wsManager)
+
+	// Late-inject wsManager into telemetry (created before router).
+	if deps.Telemetry != nil {
+		deps.Telemetry.SetWSManager(wsManager)
+	}
 
 	// Create health checker (will be started by server.Start).
 	if deps.HealthChecker == nil {

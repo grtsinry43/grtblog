@@ -247,23 +247,25 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		return err
 	})
 
+	telemetrySvc := telemetry.NewService(errorCollector, db, httpStats, htmlSnapshotSvc, nil, sysCfgSvc)
+
 	// 注册路由
 	router.Register(app, router.Dependencies{
-		DB:             db,
-		Config:         cfg,
-		JWTManager:     jwtManager,
-		Turnstile:      turnstileClient,
-		SysConfig:      sysCfgSvc,
-		EventBus:       eventBus,
-		Redis:          redisClient,
-		Analytics:      analyticsSvc,
-		HTTPStats:      httpStats,
-		HTMLSnapshot:   htmlSnapshotSvc,
-		ISR:            isrSvc,
-		HealthState:    healthState,
-		HealthChecker:  healthChecker,
-		FedSync:        fedSync,
-		ErrorCollector: errorCollector,
+		DB:            db,
+		Config:        cfg,
+		JWTManager:    jwtManager,
+		Turnstile:     turnstileClient,
+		SysConfig:     sysCfgSvc,
+		EventBus:      eventBus,
+		Redis:         redisClient,
+		Analytics:     analyticsSvc,
+		HTTPStats:     httpStats,
+		HTMLSnapshot:  htmlSnapshotSvc,
+		ISR:           isrSvc,
+		HealthState:   healthState,
+		HealthChecker: healthChecker,
+		FedSync:       fedSync,
+		Telemetry:     telemetrySvc,
 	})
 
 	return &Server{
