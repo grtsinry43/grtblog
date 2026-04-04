@@ -1,0 +1,161 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "活跃实例 (7d)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT COUNT(DISTINCT instance_id) AS \"value\" FROM telemetry_report WHERE received_at >= NOW() - INTERVAL '7 days'",
+        "format": "table",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "green", "value": null}] } } }
+    },
+    {
+      "title": "上报总数",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT COUNT(*) AS \"value\" FROM telemetry_report",
+        "format": "table",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "blue", "value": null}] } } }
+    },
+    {
+      "title": "错误总数 (7d)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT COALESCE(SUM(error_count), 0) AS \"value\" FROM telemetry_report WHERE received_at >= NOW() - INTERVAL '7 days'",
+        "format": "table",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "orange", "value": null}, {"color": "red", "value": 100}] } } }
+    },
+    {
+      "title": "Panic 总数 (7d)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT COALESCE(SUM(panic_count), 0) AS \"value\" FROM telemetry_report WHERE received_at >= NOW() - INTERVAL '7 days'",
+        "format": "table",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}] } } }
+    },
+    {
+      "title": "版本分布",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 4 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT version, COUNT(*) AS count FROM (SELECT DISTINCT ON (instance_id) version FROM telemetry_report WHERE received_at >= NOW() - INTERVAL '7 days' ORDER BY instance_id, received_at DESC) sub GROUP BY version ORDER BY count DESC",
+        "format": "table",
+        "refId": "A"
+      }],
+      "options": { "legend": { "displayMode": "table", "placement": "right" } }
+    },
+    {
+      "title": "部署模式",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 4 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT deploy_mode, COUNT(*) AS count FROM (SELECT DISTINCT ON (instance_id) deploy_mode FROM telemetry_report WHERE received_at >= NOW() - INTERVAL '7 days' ORDER BY instance_id, received_at DESC) sub GROUP BY deploy_mode ORDER BY count DESC",
+        "format": "table",
+        "refId": "A"
+      }],
+      "options": { "legend": { "displayMode": "table", "placement": "right" } }
+    },
+    {
+      "title": "功能采纳率",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 4 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "WITH latest AS (SELECT DISTINCT ON (instance_id) features FROM telemetry_report WHERE received_at >= NOW() - INTERVAL '7 days' ORDER BY instance_id, received_at DESC) SELECT unnest(ARRAY['Federation','ActivityPub','Email','Turnstile']) AS feature, unnest(ARRAY[COUNT(*) FILTER (WHERE features->>'federationEnabled'='true'), COUNT(*) FILTER (WHERE features->>'activityPubEnabled'='true'), COUNT(*) FILTER (WHERE features->>'emailEnabled'='true'), COUNT(*) FILTER (WHERE features->>'turnstileEnabled'='true')]) AS count FROM latest",
+        "format": "table",
+        "refId": "A"
+      }]
+    },
+    {
+      "title": "每日上报趋势",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT DATE_TRUNC('day', received_at) AS time, COUNT(*) AS reports, COUNT(DISTINCT instance_id) AS instances FROM telemetry_report WHERE $__timeFilter(received_at) GROUP BY 1 ORDER BY 1",
+        "format": "time_series",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 30 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "instances" }, "properties": [{ "id": "custom.drawStyle", "value": "line" }] }
+        ]
+      }
+    },
+    {
+      "title": "Top 10 错误 (7d)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT d.fingerprint, d.biz_code, d.location, (array_agg(d.sample_message ORDER BY d.count DESC))[1] AS sample_message, SUM(d.count) AS total_count, COUNT(DISTINCT r.instance_id) AS instances FROM telemetry_error_digest d JOIN telemetry_report r ON r.id = d.report_id WHERE r.received_at >= NOW() - INTERVAL '7 days' GROUP BY d.fingerprint, d.biz_code, d.location ORDER BY total_count DESC LIMIT 10",
+        "format": "table",
+        "refId": "A"
+      }]
+    },
+    {
+      "title": "OS / 架构分布",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 20 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT os || '/' || arch AS platform, COUNT(*) AS count FROM (SELECT DISTINCT ON (instance_id) os, arch FROM telemetry_report WHERE received_at >= NOW() - INTERVAL '7 days' ORDER BY instance_id, received_at DESC) sub GROUP BY platform ORDER BY count DESC",
+        "format": "table",
+        "refId": "A"
+      }],
+      "options": { "legend": { "displayMode": "table", "placement": "right" } }
+    },
+    {
+      "title": "错误趋势",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 20 },
+      "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+      "targets": [{
+        "datasource": { "uid": "telemetry-pg", "type": "postgres" },
+        "rawSql": "SELECT DATE_TRUNC('day', r.received_at) AS time, SUM(d.count) AS errors FROM telemetry_error_digest d JOIN telemetry_report r ON r.id = d.report_id WHERE $__timeFilter(r.received_at) GROUP BY 1 ORDER BY 1",
+        "format": "time_series",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" }, "custom": { "fillOpacity": 15 } } }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["telemetry", "grtblog"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "title": "GrtBlog Telemetry",
+  "uid": "grtblog-telemetry"
+}

@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: Telemetry PostgreSQL
+    uid: telemetry-pg
+    type: postgres
+    url: postgres:5432
+    database: grtblog_telemetry
+    user: postgres
+    secureJsonData:
+      password: $POSTGRES_PASSWORD
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1700
+    isDefault: true
+    editable: true
