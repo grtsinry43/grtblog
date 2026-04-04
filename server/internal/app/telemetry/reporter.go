@@ -65,6 +65,10 @@ func NewReporter(svc *Service) *Reporter {
 		svc: svc,
 		client: &http.Client{
 			Timeout: reportTimeout,
+			// Block redirects to prevent SSRF bypass via 30x to internal targets.
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 		history: make([]ReportRecord, 0, maxHistorySize),
 	}

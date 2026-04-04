@@ -105,7 +105,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 				errorCollector.Record(telemetry.ErrorRecord{
 					Kind:    telemetry.KindBiz,
 					BizCode: ae.Biz.BizErr,
-					Location: fmt.Sprintf("%s %s", c.Method(), c.Path()),
+					Location: fmt.Sprintf("%s %s", c.Method(), c.Route().Path),
 					Message: ae.Error(),
 				})
 				return response.ErrorWithMsg[any](c, ae.Biz, ae.Message)
@@ -119,7 +119,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 					errorCollector.Record(telemetry.ErrorRecord{
 						Kind:    telemetry.KindHTTP,
 						BizCode: fmt.Sprintf("HTTP_%d", fe.Code),
-						Location: fmt.Sprintf("%s %s", c.Method(), c.Path()),
+						Location: fmt.Sprintf("%s %s", c.Method(), c.Route().Path),
 						Message: fe.Message,
 					})
 				}
@@ -140,13 +140,16 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 			}
 
 			// 3. 其他未识别错误，统一视为服务器内部错误
+			// Skip telemetry if already recorded by panic recovery (avoid double-counting).
 			logRequestError(c, "unhandled", fmt.Sprintf("err=%v", err))
-			errorCollector.Record(telemetry.ErrorRecord{
-				Kind:    telemetry.KindUnhandled,
-				BizCode: "SERVER_ERROR",
-				Location: fmt.Sprintf("%s %s", c.Method(), c.Path()),
-				Message: err.Error(),
-			})
+			if c.Locals("panicRecorded") == nil {
+				errorCollector.Record(telemetry.ErrorRecord{
+					Kind:    telemetry.KindUnhandled,
+					BizCode: "SERVER_ERROR",
+					Location: fmt.Sprintf("%s %s", c.Method(), c.Route().Path),
+					Message: err.Error(),
+				})
+			}
 			return response.ErrorFromBiz[any](c, response.ServerError)
 		},
 	})
@@ -166,6 +169,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 				Location: telemetry.NormaliseStack(stack),
 				Message:  fmt.Sprintf("%v", e),
 			})
+			c.Locals("panicRecorded", true)
 		},
 	}))
 
