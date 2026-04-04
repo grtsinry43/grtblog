@@ -49,3 +49,26 @@ func (h *AdminTelemetryHandler) ResetErrors(c *fiber.Ctx) error {
 	h.svc.Collector().Reset()
 	return response.SuccessWithMessage[any](c, nil, "error telemetry reset")
 }
+
+// GetReportHistory returns recent upload attempt records.
+// GET /api/v2/admin/telemetry/report-history
+func (h *AdminTelemetryHandler) GetReportHistory(c *fiber.Ctx) error {
+	if h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "telemetry service 未初始化")
+	}
+	reporter := h.svc.Reporter()
+	return response.Success(c, fiber.Map{
+		"history": reporter.History(),
+	})
+}
+
+// ReportNow triggers an immediate telemetry upload.
+// POST /api/v2/admin/telemetry/report-now
+func (h *AdminTelemetryHandler) ReportNow(c *fiber.Ctx) error {
+	if h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "telemetry service 未初始化")
+	}
+	reporter := h.svc.Reporter()
+	rec := reporter.ReportNow(c.UserContext())
+	return response.Success(c, rec)
+}

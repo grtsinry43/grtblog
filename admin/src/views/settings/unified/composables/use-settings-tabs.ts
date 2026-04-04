@@ -13,6 +13,7 @@ import WebhookTab from '../components/tabs/WebhookTab.vue'
 import FederationTab from '../components/tabs/FederationTab.vue'
 import AiTab from '../components/tabs/AiTab.vue'
 import ApiTokensTab from '../components/tabs/ApiTokensTab.vue'
+import TelemetryTab from '../components/tabs/TelemetryTab.vue'
 import AdvancedTab from '../components/tabs/AdvancedTab.vue'
 
 export interface SettingsTab {
@@ -34,6 +35,7 @@ export const settingsTabs: SettingsTab[] = [
   { key: 'federation', label: '联合 Beta', icon: 'iconify ph--circles-three', component: FederationTab },
   { key: 'ai', label: 'AI', icon: 'iconify ph--robot', component: AiTab },
   { key: 'api-tokens', label: 'API Tokens', icon: 'iconify ph--key', component: ApiTokensTab },
+  { key: 'telemetry', label: '遥测', icon: 'iconify ph--chart-line-up', component: TelemetryTab },
   { key: 'advanced', label: '高级', icon: 'iconify ph--gear', component: AdvancedTab },
 ]
 

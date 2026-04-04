@@ -256,6 +256,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Get("/telemetry/snapshot", telemetryHandler.GetSnapshot)
 	admin.Get("/telemetry/stats", telemetryHandler.GetStats)
 	admin.Post("/telemetry/reset", telemetryHandler.ResetErrors)
+	admin.Get("/telemetry/report-history", telemetryHandler.GetReportHistory)
+	admin.Post("/telemetry/report-now", telemetryHandler.ReportNow)
 
 	// AI 功能
 	aiHandler := handler.NewAIHandler(aiSvc)
