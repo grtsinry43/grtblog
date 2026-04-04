@@ -45,15 +45,17 @@ const loadingToggle = ref(false)
 async function fetchData() {
   loading.value = true
   try {
-    const [snap, history, configs] = await Promise.all([
+    const [snap, history, configTree] = await Promise.all([
       getTelemetrySnapshot(),
       getTelemetryReportHistory(),
-      listSysConfigs(),
+      listSysConfigs(['telemetry.enabled']),
     ])
     snapshot.value = snap
     reportHistory.value = history.history || []
-    const enabledCfg = configs.find((c: any) => c.key === 'telemetry.enabled')
-    enabled.value = enabledCfg?.value === 'true'
+    // listSysConfigs returns a tree — find the key in root items or nested group items.
+    const enabledCfg = configTree.items?.find((c) => c.key === 'telemetry.enabled')
+      ?? configTree.groups.flatMap((g) => g.items ?? []).find((c) => c.key === 'telemetry.enabled')
+    enabled.value = enabledCfg?.value === 'true' || enabledCfg?.value === true
   } catch {
     message.error('加载遥测数据失败')
   } finally {
@@ -156,7 +158,7 @@ onMounted(() => fetchData())
       </template>
       <p class="text-sm opacity-60">
         匿名收集脱敏后的错误摘要和运行指标，帮助改进 GrtBlog。不包含任何个人信息、文章内容或访客数据。
-        您可以在下方预览将要上报的完整数据。
+        您可以在下方预览将要上报的完整数据。GrtBlog 是开源项目，遥测相关的所有代码均可在 GitHub 上查看、审计和提出问题。
       </p>
     </NCard>
 
