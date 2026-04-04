@@ -23,7 +23,7 @@ func TestService_FullSnapshot_NilDeps(t *testing.T) {
 		Message: "nil pointer",
 	})
 
-	svc := NewService(collector, nil, nil, nil, nil, nil)
+	svc := NewService(collector, nil, nil, nil, nil, nil, "")
 	snap := svc.FullSnapshot(context.Background())
 
 	if snap == nil {
@@ -58,7 +58,7 @@ func TestService_FullSnapshot_NilDeps(t *testing.T) {
 
 func TestService_FullSnapshot_NilCollector(t *testing.T) {
 	// FullSnapshot must degrade gracefully when collector is nil.
-	svc := NewService(nil, nil, nil, nil, nil, nil)
+	svc := NewService(nil, nil, nil, nil, nil, nil, "")
 	snap := svc.FullSnapshot(context.Background())
 
 	if snap == nil {
@@ -81,7 +81,7 @@ func TestService_DetectDeployMode(t *testing.T) {
 }
 
 func TestService_SetWSManager_Concurrent(t *testing.T) {
-	svc := NewService(NewCollector(time.Hour), nil, nil, nil, nil, nil)
+	svc := NewService(NewCollector(time.Hour), nil, nil, nil, nil, nil, "")
 
 	// Should not panic on nil.
 	svc.SetWSManager(nil)

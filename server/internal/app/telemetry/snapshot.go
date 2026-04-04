@@ -160,7 +160,7 @@ type ErrorSummaryInfo struct {
 // buildInstanceInfo gathers anonymous environment info (base fields only).
 func buildInstanceInfo() InstanceInfo {
 	return InstanceInfo{
-		InstanceID: anonymousInstanceID(),
+		InstanceID: anonymousInstanceID(""),
 		Version:    buildinfo.Version(),
 		GoVersion:  runtime.Version(),
 		OS:         runtime.GOOS,
@@ -169,13 +169,14 @@ func buildInstanceInfo() InstanceInfo {
 }
 
 // anonymousInstanceID generates a stable, non-reversible identifier based on
-// the hostname.
-func anonymousInstanceID() string {
+// the hostname and an optional extra salt (e.g. DB DSN) to distinguish
+// multiple installations on the same host.
+func anonymousInstanceID(extraSalt string) string {
 	hostname, _ := os.Hostname()
 	if hostname == "" {
 		hostname = "unknown"
 	}
-	h := sha256.Sum256([]byte("grtblog-telemetry:" + hostname))
+	h := sha256.Sum256([]byte("grtblog-telemetry:" + hostname + ":" + extraSalt))
 	return fmt.Sprintf("%x", h[:8]) // 16-char hex
 }
 
