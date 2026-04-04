@@ -14,7 +14,7 @@ defineProps<{
 const states = defineModel<Record<string, boolean>>('states', { required: true })
 
 function toggle(featureId: string, value: boolean) {
-  states.value = { ...states.value, [featureId]: value }
+  states.value[featureId] = value
 }
 </script>
 

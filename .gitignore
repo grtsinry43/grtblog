@@ -17,5 +17,6 @@ Thumbs.db
 logs/
 *.log
 
-# Prevent committing built server binary
+# Prevent committing built server binaries
 /server/api
+/telemetry-server/telemetry-server
