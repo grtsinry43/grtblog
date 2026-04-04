@@ -27,9 +27,10 @@ type AppConfig struct {
 	TrustedProxies      []string
 	TrustedProxyCheck   bool
 	IPValidation        bool
-	UpdateCheckEnabled  bool
-	UpdateCheckRepo     string
-	UpdateCheckChannel  string
+	UpdateCheckEnabled       bool
+	UpdateCheckRepo          string
+	UpdateCheckChannel       string
+	TelemetryDefaultEndpoint string
 }
 
 // DatabaseConfig captures everything required to boot GORM.
@@ -92,7 +93,8 @@ func Load() Config {
 			IPValidation:       getEnvAsBool("APP_IP_VALIDATION", true),
 			UpdateCheckEnabled: getEnvAsBool("APP_UPDATE_CHECK_ENABLED", true),
 			UpdateCheckRepo:    strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog-v2")),
-			UpdateCheckChannel: strings.TrimSpace(getEnv("APP_UPDATE_CHANNEL", "stable")),
+			UpdateCheckChannel:       strings.TrimSpace(getEnv("APP_UPDATE_CHANNEL", "stable")),
+			TelemetryDefaultEndpoint: strings.TrimSpace(getEnv("TELEMETRY_DEFAULT_ENDPOINT", "")),
 		},
 		Database: DatabaseConfig{
 			Driver:      strings.ToLower(getEnv("DB_DRIVER", "postgres")),

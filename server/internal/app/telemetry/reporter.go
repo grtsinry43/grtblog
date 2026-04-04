@@ -231,13 +231,18 @@ func (r *Reporter) upload(ctx context.Context, endpoint string, body []byte) Rep
 }
 
 // readConfigSafe reads config with a bounded timeout to prevent stalling.
+// If sysconfig endpoint is empty, falls back to the built-in default endpoint.
 func (r *Reporter) readConfigSafe(ctx context.Context) ReporterConfig {
 	if r.svc == nil || r.svc.sysCfg == nil {
 		return ReporterConfig{}
 	}
 	timedCtx, cancel := context.WithTimeout(ctx, configTimeout)
 	defer cancel()
-	return r.svc.sysCfg.TelemetryReporterConfig(timedCtx)
+	cfg := r.svc.sysCfg.TelemetryReporterConfig(timedCtx)
+	if cfg.Endpoint == "" {
+		cfg.Endpoint = r.svc.defaultEndpoint
+	}
+	return cfg
 }
 
 // pushHistory appends a record to the ring buffer.

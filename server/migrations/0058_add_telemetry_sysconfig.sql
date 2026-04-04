@@ -19,7 +19,7 @@ WHERE config_key = 'telemetry.enabled';
 UPDATE sys_config
 SET group_path    = 'telemetry',
     label         = '上报端点',
-    description   = '接收遥测数据的 HTTPS 地址（留空则不进行远程上报）',
+    description   = '接收遥测数据的 HTTPS 地址（留空使用内置默认端点，填写后覆盖默认值）',
     value_type    = 'string',
     default_value = '',
     sort          = 20,

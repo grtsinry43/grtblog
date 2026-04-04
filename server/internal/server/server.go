@@ -248,7 +248,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		return err
 	})
 
-	telemetrySvc := telemetry.NewService(errorCollector, db, httpStats, htmlSnapshotSvc, nil, sysCfgSvc)
+	telemetrySvc := telemetry.NewService(errorCollector, db, httpStats, htmlSnapshotSvc, nil, sysCfgSvc, cfg.App.TelemetryDefaultEndpoint)
 
 	// 注册路由
 	router.Register(app, router.Dependencies{

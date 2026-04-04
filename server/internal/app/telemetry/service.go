@@ -30,8 +30,9 @@ type Service struct {
 	reporterOnce sync.Once
 
 	// Cached at construction time (constant per process lifetime).
-	deployMode string
-	instanceID string
+	deployMode      string
+	instanceID      string
+	defaultEndpoint string // fallback when sysconfig telemetry.endpoint is empty
 }
 
 // NewService creates a telemetry Service. All dependencies are optional;
@@ -43,16 +44,18 @@ func NewService(
 	renderer *htmlsnapshot.Service,
 	wsManager *ws.Manager,
 	sysCfg *sysconfig.Service,
+	defaultEndpoint string,
 ) *Service {
 	svc := &Service{
-		collector:  collector,
-		db:         db,
-		httpStats:  httpStats,
-		renderer:   renderer,
-		sysCfg:     sysCfg,
-		startedAt:  time.Now(),
-		deployMode: detectDeployMode(),
-		instanceID: anonymousInstanceID(),
+		collector:       collector,
+		db:              db,
+		httpStats:       httpStats,
+		renderer:        renderer,
+		sysCfg:          sysCfg,
+		startedAt:       time.Now(),
+		deployMode:      detectDeployMode(),
+		instanceID:      anonymousInstanceID(),
+		defaultEndpoint: defaultEndpoint,
 	}
 	if wsManager != nil {
 		svc.wsManager.Store(wsManager)
