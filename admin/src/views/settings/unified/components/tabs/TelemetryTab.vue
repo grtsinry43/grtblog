@@ -11,6 +11,7 @@ import {
   NPopconfirm,
   NScrollbar,
   NSpace,
+  NSpin,
   NStatistic,
   NSwitch,
   NTag,
@@ -54,7 +55,7 @@ async function fetchData() {
     reportHistory.value = history.history || []
     // listSysConfigs returns a tree — find the key in root items or nested group items.
     const enabledCfg = configTree.items?.find((c) => c.key === 'telemetry.enabled')
-      ?? configTree.groups.flatMap((g) => g.items ?? []).find((c) => c.key === 'telemetry.enabled')
+      ?? (configTree.groups ?? []).flatMap((g) => g.items ?? []).find((c) => c.key === 'telemetry.enabled')
     enabled.value = enabledCfg?.value === 'true' || enabledCfg?.value === true
   } catch {
     message.error('加载遥测数据失败')
@@ -64,13 +65,15 @@ async function fetchData() {
 }
 
 async function toggleEnabled(val: boolean) {
+  const prev = enabled.value
   loadingToggle.value = true
+  enabled.value = val // optimistic update
   try {
     await updateSysConfigs([{ key: 'telemetry.enabled', value: String(val) }])
-    enabled.value = val
     message.success(val ? '遥测已启用' : '遥测已禁用')
     await fetchData()
   } catch {
+    enabled.value = prev // rollback on failure
     message.error('切换失败')
   } finally {
     loadingToggle.value = false
@@ -161,6 +164,8 @@ onMounted(() => fetchData())
         您可以在下方预览将要上报的完整数据。GrtBlog 是开源项目，遥测相关的所有代码均可在 GitHub 上查看、审计和提出问题。
       </p>
     </NCard>
+
+    <NSpin v-if="loading && !snapshot" class="py-8" />
 
     <!-- Summary stats -->
     <div v-if="snapshot" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
