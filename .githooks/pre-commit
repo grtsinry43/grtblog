@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+max_size_bytes=$((512 * 1024))
+
+staged_files=()
+while IFS= read -r -d '' path; do
+  staged_files+=("$path")
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if (( ${#staged_files[@]} > 0 )); then
+  binary_files=()
+  oversized_files=()
+
+  for path in "${staged_files[@]}"; do
+    [[ -z "$path" ]] && continue
+
+    if ! git cat-file -e ":$path" 2>/dev/null; then
+      continue
+    fi
+
+    if ! git show ":$path" | LC_ALL=C grep -q .; then
+      binary_files+=("$path")
+    fi
+
+    file_size="$(git cat-file -s ":$path")"
+    if (( file_size > max_size_bytes )); then
+      oversized_files+=("$path ($(awk "BEGIN { printf \"%.2f\", $file_size / 1024 / 1024 }") MB)")
+    fi
+  done
+
+  if (( ${#binary_files[@]} > 0 )); then
+    echo "[pre-commit] Blocked: binary files are not allowed in commits." >&2
+    printf '  - %s\n' "${binary_files[@]}" >&2
+    exit 1
+  fi
+
+  if (( ${#oversized_files[@]} > 0 )); then
+    echo "[pre-commit] Blocked: files larger than 0.5 MB are staged." >&2
+    printf '  - %s\n' "${oversized_files[@]}" >&2
+    exit 1
+  fi
+fi
+
+cd "$repo_root/admin"
+echo "[pre-commit] Running admin type-check..."
+pnpm type-check
+
+cd "$repo_root/web"
+echo "[pre-commit] Running web build..."
+pnpm build
+
+cd "$repo_root/server"
+echo "[pre-commit] Running server go build..."
+go build ./...
+
+cd "$repo_root/server"
+echo "[pre-commit] Running server go vet..."
+go vet ./...

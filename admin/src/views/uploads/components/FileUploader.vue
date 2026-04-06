@@ -4,7 +4,7 @@ import { NButton, NDropdown, NIcon, NSpace, NUpload } from 'naive-ui'
 import { h } from 'vue'
 
 import type { FileType } from '@/services/uploads'
-import type { DropdownOption, UploadFileInfo } from 'naive-ui'
+import type { DropdownOption, UploadCustomRequestOptions } from 'naive-ui'
 
 defineProps<{
   uploadType: FileType
@@ -13,7 +13,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'update:uploadType': [value: FileType]
-  upload: [payload: { file: UploadFileInfo }]
+  upload: [payload: UploadCustomRequestOptions]
 }>()
 
 const typeOptions: DropdownOption[] = [
@@ -45,7 +45,7 @@ function getTypeLabel(value: FileType) {
       multiple
       :accept="uploadType === 'picture' ? 'image/*' : undefined"
       :show-file-list="false"
-      :custom-request="(p: any) => emit('upload', p)"
+      :custom-request="(options) => emit('upload', options)"
       :disabled="uploading"
     >
       <NButton type="primary" :loading="uploading">
