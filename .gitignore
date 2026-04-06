@@ -23,3 +23,5 @@ exports/
 # Prevent committing built server binaries
 /server/api
 /telemetry-server/telemetry-server
+
+.claude/

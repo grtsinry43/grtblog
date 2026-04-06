@@ -10,7 +10,6 @@ import {
   NDataTable,
   NIcon,
   NImage,
-  NSpace,
   NTag,
 } from 'naive-ui'
 import { computed, h } from 'vue'
@@ -32,29 +31,48 @@ const emit = defineEmits<{
   preview: [url: string]
 }>()
 
+const actionCellStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
+  flexWrap: 'nowrap',
+  whiteSpace: 'nowrap',
+} as const
+
+const previewCellStyle = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+} as const
+
 const columns = computed<DataTableColumns<UploadFileResponse>>(() => [
   {
     title: '预览',
     key: 'preview',
-    width: 80,
+    width: 68,
     render: (row) => {
       if (row.type === 'picture') {
         return h(
           'div',
           {
-            style: { cursor: 'pointer', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+            style: { ...previewCellStyle, cursor: 'pointer', height: '40px' },
             onClick: () => emit('preview', row.publicUrl),
           },
-          h(NImage, { src: row.publicUrl, width: 50, height: 50, objectFit: 'cover', style: 'border-radius: 4px', previewDisabled: true }),
+          h(NImage, { src: row.publicUrl, width: 40, height: 40, objectFit: 'cover', style: 'border-radius: 4px', previewDisabled: true }),
         )
       }
-      return h(NIcon, { size: 32, color: '#18a058' }, { default: () => h(Document24Regular) })
+      return h(
+        'div',
+        { style: previewCellStyle },
+        h(NIcon, { size: 24, color: '#18a058' }, { default: () => h(Document24Regular) }),
+      )
     },
   },
   {
     title: '文件名',
     key: 'name',
-    minWidth: 200,
+    minWidth: 180,
     ellipsis: { tooltip: true },
   },
   {
@@ -67,21 +85,21 @@ const columns = computed<DataTableColumns<UploadFileResponse>>(() => [
   {
     title: '大小',
     key: 'size',
-    width: 120,
+    width: 96,
     render: (row) => formatFileSize(row.size),
   },
   {
     title: '上传时间',
     key: 'createdAt',
-    width: 180,
+    width: 168,
     render: (row) => formatDate(row.createdAt),
   },
   {
     title: '操作',
     key: 'actions',
-    width: 240,
+    width: 320,
     render: (row) =>
-      h(NSpace, { size: 'small' }, {
+      h('div', { style: actionCellStyle }, {
         default: () => [
           h(NButton, { size: 'small', quaternary: true, onClick: () => emit('copyUrl', row) }, {
             icon: () => h(NIcon, null, { default: () => h(Copy24Regular) }),
@@ -104,11 +122,26 @@ const columns = computed<DataTableColumns<UploadFileResponse>>(() => [
 
 <template>
   <NDataTable
+    class="file-table"
     :columns="columns"
     :data="files"
     :loading="loading"
     :bordered="false"
     :single-line="false"
+    size="small"
     :scroll-x="900"
   />
 </template>
+
+<style scoped>
+.file-table :deep(.n-data-table-th),
+.file-table :deep(.n-data-table-td) {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.file-table :deep(.n-button) {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+</style>

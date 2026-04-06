@@ -1,18 +1,8 @@
 <script setup lang="ts">
-import { CloudArrowUp24Regular } from '@vicons/fluent'
-import {
-  NCard,
-  NEmpty,
-  NIcon,
-  NImage,
-  NModal,
-  NPagination,
-  NTree,
-  NUpload,
-  useMessage,
-} from 'naive-ui'
+import { NButton, NCard, NEmpty, NImage, NModal, NPagination, NProgress, NTag, NTabs, NTabPane, useMessage } from 'naive-ui'
 
 import { ScrollContainer } from '@/components'
+import { formatFileSize } from '@/utils/format'
 import { useFileList } from './composables/use-file-list'
 import FileTable from './components/FileTable.vue'
 import FileUploader from './components/FileUploader.vue'
@@ -23,21 +13,23 @@ const message = useMessage()
 const {
   loading,
   uploading,
+  syncing,
   page,
   pageSize,
   total,
   uploadType,
-  treeSelectedKeys,
+  activeFilter,
+  uploadTasks,
   renameModalVisible,
   newFileName,
   deleteModalVisible,
   deletingFile,
   previewVisible,
   previewImageUrl,
-  isEmpty,
   filteredFiles,
-  treeData,
+  isEmpty,
   handleUpload,
+  handleSync,
   handleCopyUrl,
   openRenameModal,
   handleRename,
@@ -47,60 +39,75 @@ const {
   handlePageChange,
   handlePageSizeChange,
   openPreview,
-  handleTreeSelect,
 } = useFileList(message)
 </script>
 
 <template>
   <ScrollContainer wrapper-class="p-4">
-    <NCard title="文件管理" :bordered="false">
-      <template #header-extra>
-        <FileUploader
-          :upload-type="uploadType"
-          :uploading="uploading"
-          @update:upload-type="uploadType = $event"
-          @upload="handleUpload"
-        />
-      </template>
-
-      <div class="upload-area">
-        <NUpload
-          :show-file-list="false"
-          :custom-request="handleUpload"
-          :disabled="uploading"
-          directory-dnd
-        >
-          <div class="upload-dragger">
-            <div class="upload-icon">
-              <NIcon size="48" :depth="3"><CloudArrowUp24Regular /></NIcon>
-            </div>
-            <div class="upload-text">
-              <p class="upload-hint">点击或拖拽文件到此区域上传</p>
-              <p class="upload-description">
-                当前类型：{{ uploadType === 'picture' ? '图片' : '文件' }}
-              </p>
-            </div>
+    <div class="page-layout">
+      <NCard :bordered="false">
+        <div class="header-row">
+          <div class="header-main">
+            <div class="page-title">文件管理</div>
+            <NTabs v-model:value="activeFilter" size="small" animated>
+              <NTabPane name="all" tab="全部" />
+              <NTabPane name="picture" tab="图片" />
+              <NTabPane name="file" tab="文件" />
+            </NTabs>
           </div>
-        </NUpload>
-      </div>
-
-      <div v-if="isEmpty" class="empty-container">
-        <NEmpty description="暂无文件" />
-      </div>
-
-      <div v-else class="content-layout">
-        <div class="tree-panel">
-          <div class="tree-title">文件树</div>
-          <NTree
-            :data="treeData"
-            :selected-keys="treeSelectedKeys"
-            block-line
-            default-expand-all
-            @update:selected-keys="handleTreeSelect"
-          />
+          <div class="header-actions">
+            <NButton secondary :loading="syncing" @click="handleSync">
+              同步索引
+            </NButton>
+            <FileUploader
+              :upload-type="uploadType"
+              :uploading="uploading"
+              @update:upload-type="uploadType = $event"
+              @upload="handleUpload"
+            />
+          </div>
         </div>
+      </NCard>
 
-        <div class="table-panel">
+      <NCard v-if="isEmpty" :bordered="false">
+        <div class="empty-container">
+          <NEmpty description="暂无文件" />
+        </div>
+      </NCard>
+
+      <NCard v-if="uploadTasks.length > 0" :bordered="false" title="上传进度">
+        <div class="upload-task-list">
+          <div v-for="task in uploadTasks" :key="task.id" class="upload-task-item">
+            <div class="upload-task-meta">
+              <div class="upload-task-main">
+                <span class="upload-task-name">{{ task.name }}</span>
+                <NTag size="small" :type="task.type === 'picture' ? 'success' : 'info'" :bordered="false">
+                  {{ task.type === 'picture' ? '图片' : '文件' }}
+                </NTag>
+                <NTag
+                  size="small"
+                  :type="task.status === 'success' ? 'success' : task.status === 'error' ? 'error' : 'warning'"
+                  :bordered="false"
+                >
+                  {{ task.status === 'success' ? '完成' : task.status === 'error' ? '失败' : '上传中' }}
+                </NTag>
+              </div>
+              <span class="upload-task-size">{{ formatFileSize(task.size) }}</span>
+            </div>
+            <NProgress
+              type="line"
+              :percentage="task.percentage"
+              :status="task.status === 'error' ? 'error' : task.status === 'success' ? 'success' : 'info'"
+              :show-indicator="true"
+              :processing="task.status === 'uploading'"
+            />
+            <div v-if="task.error" class="upload-task-error">{{ task.error }}</div>
+          </div>
+        </div>
+      </NCard>
+
+      <NCard v-else :bordered="false" content-style="padding: 0;">
+        <div class="table-card-body">
           <FileTable
             :files="filteredFiles"
             :loading="loading"
@@ -123,8 +130,8 @@ const {
             />
           </div>
         </div>
-      </div>
-    </NCard>
+      </NCard>
+    </div>
 
     <RenameModal
       :visible="renameModalVisible"
@@ -157,72 +164,84 @@ const {
 </template>
 
 <style scoped>
-
-.upload-area {
-  margin-bottom: 24px;
+.page-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.upload-dragger {
-  padding: 40px 20px;
-  background: transparent;
-  border: 2px dashed var(--n-border-color);
-  border-radius: 8px;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.upload-dragger:hover {
-  border-color: var(--n-border-color);
-  background: rgba(0, 0, 0, 0.03);
+.header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 
-.upload-icon {
-  margin-bottom: 12px;
-  color: var(--n-text-color-disabled);
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
 }
 
-.upload-hint {
-  font-size: 16px;
-  color: var(--n-text-color);
-  margin: 0 0 8px;
-}
-
-.upload-description {
-  font-size: 14px;
-  color: var(--n-text-color-disabled);
-  margin: 0;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .empty-container {
   padding: 60px 0;
 }
 
-.content-layout {
+.upload-task-list {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.tree-panel {
-  width: 220px;
-  min-width: 200px;
-  padding: 12px;
-  border: 1px solid var(--n-border-color);
-  border-radius: 8px;
-  background: transparent;
-  height: fit-content;
+.upload-task-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.tree-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--n-text-color);
-  margin-bottom: 8px;
+.upload-task-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.table-panel {
-  flex: 1;
+.upload-task-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
+}
+
+.upload-task-name {
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.upload-task-size {
+  flex-shrink: 0;
+  color: var(--n-text-color-3);
+  font-size: 12px;
+}
+
+.upload-task-error {
+  color: var(--n-error-color);
+  font-size: 12px;
 }
 
 .pagination-container {
@@ -232,6 +251,10 @@ const {
   padding: 16px 0;
 }
 
+.table-card-body {
+  padding: 0 16px;
+}
+
 .preview-container {
   display: flex;
   justify-content: center;
@@ -239,12 +262,22 @@ const {
 }
 
 @media (max-width: 900px) {
-  .content-layout {
+  .header-row {
     flex-direction: column;
+    align-items: stretch;
   }
 
-  .tree-panel {
-    width: 100%;
+  .header-actions {
+    flex-wrap: wrap;
+  }
+
+  .upload-task-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .upload-task-name {
+    max-width: 100%;
   }
 }
 </style>
