@@ -217,7 +217,9 @@
 				{/if}
 			</div>
 			<div class="min-w-0 flex-1 leading-tight">
-				<div class="text-[11px] tracking-wider text-ink-800/55 dark:text-ink-200/55">账号评论身份</div>
+				<div class="text-[11px] tracking-wider text-ink-800/55 dark:text-ink-200/55">
+					账号评论身份
+				</div>
 				<div class="mt-1 truncate text-sm font-medium text-ink-900 dark:text-ink-100">
 					{loginDisplayName}
 				</div>
@@ -336,7 +338,7 @@
 				class="min-h-[140px] rounded-sm border border-ink-200/70 bg-ink-50/60 px-4 py-3 text-sm leading-loose text-ink-900 dark:border-ink-700/60 dark:bg-ink-800/30 dark:text-ink-100"
 			>
 				{#if hasPreviewContent}
-					<SafeMarkdownView content={content} />
+					<SafeMarkdownView {content} />
 				{:else}
 					<div class="text-ink-500 dark:text-ink-400">暂无预览内容</div>
 				{/if}
@@ -355,39 +357,40 @@
 		<!-- Footer Actions -->
 		<div class="flex items-end justify-between mt-6 gap-4">
 			<div class="flex flex-col items-start gap-2">
-					<div class="flex items-center gap-3">
-						<ClientOnly>
-							<CommentEmojiPickerClient onPick={handlePickEmoji} />
-						</ClientOnly>
-						{#if isConfirmingClearDraft}
-							<span class="flex items-center gap-2 text-[10px] font-serif tracking-wider">
-								<button
-									type="button"
-									onclick={handleClearDraft}
-									class="text-red-500 hover:text-red-600 transition-colors"
-								>
-									确认清空
-								</button>
-								<button
-									type="button"
-									onclick={handleCancelClearDraft}
-									class="text-ink-800/40 dark:text-ink-200/40 hover:text-ink-700 dark:hover:text-ink-200 transition-colors"
-								>
-									取消
-								</button>
-							</span>
-						{:else}
+				<div class="flex items-center gap-3">
+					<ClientOnly>
+						<CommentEmojiPickerClient onPick={handlePickEmoji} />
+					</ClientOnly>
+					{#if isConfirmingClearDraft}
+						<span class="flex items-center gap-2 text-[10px] font-serif tracking-wider">
 							<button
 								type="button"
-								onclick={handleStartClearDraft}
-								class="text-[10px] text-ink-800/40 dark:text-ink-200/40 hover:text-ink-700 dark:hover:text-ink-200 transition-colors font-serif tracking-wider"
+								onclick={handleClearDraft}
+								class="text-red-500 hover:text-red-600 transition-colors"
 							>
-								清空草稿
+								确认清空
 							</button>
-						{/if}
-					</div>
+							<button
+								type="button"
+								onclick={handleCancelClearDraft}
+								class="text-ink-800/40 dark:text-ink-200/40 hover:text-ink-700 dark:hover:text-ink-200 transition-colors"
+							>
+								取消
+							</button>
+						</span>
+					{:else}
+						<button
+							type="button"
+							onclick={handleStartClearDraft}
+							class="text-[10px] text-ink-800/40 dark:text-ink-200/40 hover:text-ink-700 dark:hover:text-ink-200 transition-colors font-serif tracking-wider"
+						>
+							清空草稿
+						</button>
+					{/if}
+				</div>
 				<div class="text-[10px] text-ink-800/40 dark:text-ink-200/40 font-serif tracking-wider">
-					支持 <span class="font-mono">Markdown</span> 语法，使用 <span class="font-mono">Enter</span>
+					支持 <span class="font-mono">Markdown</span> 语法，使用
+					<span class="font-mono">Enter</span>
 					换行
 					<span class="ml-2 font-mono">{contentCount}/{commentContentMaxLength}</span>
 					{#if $requireModerationStore}

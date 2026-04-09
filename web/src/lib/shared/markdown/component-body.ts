@@ -35,7 +35,10 @@ export const extractPlainTextFromNodes = (nodes?: SvmdNode[]) => {
 	if (!nodes?.length) return '';
 	const buffer: string[] = [];
 	collectText(nodes, buffer);
-	return buffer.join('').replace(/\n{3,}/g, '\n\n').trim();
+	return buffer
+		.join('')
+		.replace(/\n{3,}/g, '\n\n')
+		.trim();
 };
 
 export const extractImageUrlsFromNodes = (nodes?: SvmdNode[]) => {

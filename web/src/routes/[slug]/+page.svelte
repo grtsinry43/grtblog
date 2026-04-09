@@ -9,7 +9,7 @@
 	import ContentViewTracker from '$lib/features/analytics/components/ContentViewTracker.svelte';
 
 	let { data }: { data: PageData } = $props();
-	let pageModel = $state<PageDetailModel>(data.page);
+	let pageModel = $derived(data.page as PageDetailModel);
 
 	$effect(() => {
 		if (!browser) return;

@@ -39,6 +39,7 @@
 			isEnabled: payload.isEnabled ?? true,
 			isBuiltin: payload.isBuiltin ?? false,
 			metrics: payload.metrics,
+			contentUpdatedAt: payload.updatedAt ?? nowIso,
 			createdAt: payload.createdAt ?? nowIso,
 			updatedAt: payload.updatedAt ?? nowIso
 		};

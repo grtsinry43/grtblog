@@ -7,14 +7,12 @@
 		args: {
 			variant: 'glass',
 			hover: true,
-			class: '',
-			content: 'Card content'
+			class: ''
 		},
 		argTypes: {
 			variant: { control: 'select', options: ['glass', 'solid', 'seamless'] },
 			hover: { control: 'boolean' },
-			class: { control: 'text' },
-			content: { control: 'text' }
+			class: { control: 'text' }
 		}
 	});
 </script>
@@ -22,7 +20,7 @@
 <Story name="Default">
 	{#snippet template(args)}
 		<Card variant={args.variant} hover={args.hover} class={args.class}>
-			<div class="p-4 text-sm text-ink-600 dark:text-ink-300">{args.content}</div>
+			<div class="p-4 text-sm text-ink-600 dark:text-ink-300">Card content</div>
 		</Card>
 	{/snippet}
 </Story>

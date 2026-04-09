@@ -15,6 +15,8 @@ export const getFriendTimeline = async (
 		page: String(page),
 		pageSize: String(pageSize)
 	});
-	const result = await api<FriendTimelineListResponse>(`/public/friend-timeline?${query.toString()}`);
+	const result = await api<FriendTimelineListResponse>(
+		`/public/friend-timeline?${query.toString()}`
+	);
 	return result ?? { items: [], total: 0, page, size: pageSize };
 };

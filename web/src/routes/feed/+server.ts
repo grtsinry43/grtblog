@@ -52,7 +52,8 @@ function buildProxyRequestHeaders(event: Parameters<RequestHandler>[0]): Headers
 
 	const clientAddress = event.getClientAddress();
 	const xRealIP = (event.request.headers.get('x-real-ip') || '').trim() || clientAddress;
-	const xForwardedFor = (event.request.headers.get('x-forwarded-for') || '').trim() || clientAddress;
+	const xForwardedFor =
+		(event.request.headers.get('x-forwarded-for') || '').trim() || clientAddress;
 
 	if (xRealIP) {
 		headers.set('x-real-ip', xRealIP);

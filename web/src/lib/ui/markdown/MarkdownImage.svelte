@@ -131,7 +131,9 @@
 			use:imageLazy={{ src: safeSrc, blur: imageInfo()?.blur }}
 		/>
 	{:else}
-		<span class="md-caption block rounded-sm border border-ink-200/80 bg-ink-100/60 px-3 py-2 text-xs text-ink-600 dark:border-ink-700/70 dark:bg-ink-800/40 dark:text-ink-300">
+		<span
+			class="md-caption block rounded-sm border border-ink-200/80 bg-ink-100/60 px-3 py-2 text-xs text-ink-600 dark:border-ink-700/70 dark:bg-ink-800/40 dark:text-ink-300"
+		>
 			图片地址不受支持，已拦截显示
 		</span>
 	{/if}

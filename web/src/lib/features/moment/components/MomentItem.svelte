@@ -3,7 +3,7 @@
 	import type { MomentSummary } from '$lib/features/moment/types';
 	import { ArrowRight, Pin } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
-	import { buildMomentPath, buildColumnPath } from '$lib/shared/utils/content-path';
+	import { buildMomentPath } from '$lib/shared/utils/content-path';
 	import { isDifferentDay } from '$lib/shared/utils/date';
 
 	interface Props {
@@ -67,8 +67,11 @@
 		<!-- Image strip -->
 		{#if moment.image && moment.image.length > 0}
 			<div class="moment-img-zone relative shrink-0">
-				<div class="moment-img-strip flex overflow-x-auto overflow-y-hidden" onclick={(e) => e.stopPropagation()}>
-					{#each moment.image as src, i}
+				<div
+					class="moment-img-strip flex overflow-x-auto overflow-y-hidden"
+					onclick={(e) => e.stopPropagation()}
+				>
+					{#each moment.image as src, i (`${moment.id}-${i}-${src}`)}
 						<img
 							{src}
 							alt="{moment.title} - {i + 1}"
@@ -90,8 +93,12 @@
 		{/if}
 
 		<!-- Vertical Column Label — always visible, floats over images -->
-		<div class="absolute top-0 right-6 h-16 w-8 bg-jade-500/5 dark:bg-jade-500/10 border-x border-jade-500/10 flex items-center justify-center pt-2 z-10">
-			<span class="[writing-mode:vertical-rl] text-[9px] font-serif font-bold text-jade-700 dark:text-jade-400 tracking-[0.2em] opacity-80 uppercase">
+		<div
+			class="absolute top-0 right-6 h-16 w-8 bg-jade-500/5 dark:bg-jade-500/10 border-x border-jade-500/10 flex items-center justify-center pt-2 z-10"
+		>
+			<span
+				class="[writing-mode:vertical-rl] text-[9px] font-serif font-bold text-jade-700 dark:text-jade-400 tracking-[0.2em] opacity-80 uppercase"
+			>
 				{columnLabel}
 			</span>
 		</div>
@@ -102,10 +109,14 @@
 				<div class="flex flex-col gap-1">
 					<div class="flex items-center gap-2">
 						<span class="font-mono text-[10px] text-ink-400 dark:text-ink-500 tracking-wider">
-							{formattedDate}{#if showUpdated}<span class="text-ink-300 dark:text-ink-600 ml-1">（更新于 {formattedUpdatedDate}）</span>{/if}
+							{formattedDate}{#if showUpdated}<span class="text-ink-300 dark:text-ink-600 ml-1"
+									>（更新于 {formattedUpdatedDate}）</span
+								>{/if}
 						</span>
 						{#if moment.isTop}
-							<span class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400">
+							<span
+								class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
+							>
 								<Pin size={9} strokeWidth={2} class="rotate-45" />
 							</span>
 						{/if}
@@ -123,14 +134,20 @@
 				</h3>
 
 				{#if moment.summary}
-					<p class="text-[13px] text-ink-600 dark:text-ink-400 font-serif leading-loose {hasImages ? 'line-clamp-2' : 'line-clamp-4'} opacity-80">
+					<p
+						class="text-[13px] text-ink-600 dark:text-ink-400 font-serif leading-loose {hasImages
+							? 'line-clamp-2'
+							: 'line-clamp-4'} opacity-80"
+					>
 						{moment.summary}
 					</p>
 				{/if}
 			</div>
 
 			<!-- Bottom Actions/Decor -->
-			<div class="mt-auto pt-4 shrink-0 border-t border-ink-100 dark:border-ink-800/50 flex items-center justify-between">
+			<div
+				class="mt-auto pt-4 shrink-0 border-t border-ink-100 dark:border-ink-800/50 flex items-center justify-between"
+			>
 				<div class="flex items-center gap-3 text-[10px] font-mono text-ink-400">
 					<span class="flex items-center gap-1">
 						浏览 {moment.views}
@@ -141,7 +158,9 @@
 					</span>
 				</div>
 
-				<div class="opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-x-2 group-hover:translate-x-0">
+				<div
+					class="opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-x-2 group-hover:translate-x-0"
+				>
 					<ArrowRight size={14} class="text-jade-600" />
 				</div>
 			</div>
@@ -188,7 +207,13 @@
 	.moment-blur-1 {
 		backdrop-filter: blur(2px);
 		-webkit-backdrop-filter: blur(2px);
-		-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 25.1%, transparent 50%);
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			transparent 0%,
+			black 25%,
+			black 25.1%,
+			transparent 50%
+		);
 		mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 25.1%, transparent 50%);
 	}
 
@@ -196,8 +221,20 @@
 	.moment-blur-2 {
 		backdrop-filter: blur(6px);
 		-webkit-backdrop-filter: blur(6px);
-		-webkit-mask-image: linear-gradient(to bottom, transparent 20%, black 50%, black 50.1%, transparent 75%);
-		mask-image: linear-gradient(to bottom, transparent 20%, black 50%, black 50.1%, transparent 75%);
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			transparent 20%,
+			black 50%,
+			black 50.1%,
+			transparent 75%
+		);
+		mask-image: linear-gradient(
+			to bottom,
+			transparent 20%,
+			black 50%,
+			black 50.1%,
+			transparent 75%
+		);
 	}
 
 	/* Layer 3: heavy blur toward the bottom */
@@ -235,7 +272,8 @@
 	.moment-img {
 		filter: blur(12px);
 		transform: scale(1.05);
-		transition: filter 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+		transition:
+			filter 0.7s cubic-bezier(0.4, 0, 0.2, 1),
 			transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 

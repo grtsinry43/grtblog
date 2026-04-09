@@ -37,7 +37,9 @@
 	>
 		<span>{post.title}</span>
 		{#if post.isTop}
-			<span class="inline-flex shrink-0 items-center gap-0.5 ml-1.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400">
+			<span
+				class="inline-flex shrink-0 items-center gap-0.5 ml-1.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
+			>
 				<Pin size={9} strokeWidth={2} class="rotate-45" />
 			</span>
 		{/if}
@@ -56,7 +58,9 @@
 		<div class="flex items-center gap-1.5">
 			<Calendar size={14} strokeWidth={1.5} />
 			<span>{formatDate(post.createdAt)}</span>
-			{#if showUpdated}<span class="text-ink-300 dark:text-ink-600">（更新于 {formatDate(post.contentUpdatedAt)}）</span>{/if}
+			{#if showUpdated}<span class="text-ink-300 dark:text-ink-600"
+					>（更新于 {formatDate(post.contentUpdatedAt)}）</span
+				>{/if}
 		</div>
 
 		<!-- Category -->

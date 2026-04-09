@@ -59,6 +59,7 @@
 			isTop: payload.isTop ?? false,
 			isHot: payload.isHot ?? false,
 			isOriginal: payload.isOriginal ?? true,
+			contentUpdatedAt: payload.updatedAt ?? nowIso,
 			createdAt: payload.createdAt ?? nowIso,
 			updatedAt: payload.updatedAt ?? nowIso
 		}));

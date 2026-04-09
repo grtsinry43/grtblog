@@ -108,7 +108,6 @@
 	let touchStartTy = 0;
 	let touchStartMid = { x: 0, y: 0 };
 	let isTouchDragging = false;
-	let touchMoved = false;
 
 	const getTouchDist = (t: TouchList) => {
 		const dx = t[1].clientX - t[0].clientX;
@@ -121,7 +120,6 @@
 	});
 
 	const handleTouchStart = (e: TouchEvent) => {
-		touchMoved = false;
 		if (e.touches.length === 2) {
 			e.preventDefault();
 			touchStartDist = getTouchDist(e.touches);
@@ -136,17 +134,28 @@
 	};
 
 	const handleTouchMove = (e: TouchEvent) => {
-		touchMoved = true;
 		if (e.touches.length === 2) {
 			e.preventDefault();
 			const dist = getTouchDist(e.touches);
 			const mid = getTouchMid(e.touches);
-			const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, touchStartScale * (dist / touchStartDist)));
+			const newScale = Math.max(
+				MIN_SCALE,
+				Math.min(MAX_SCALE, touchStartScale * (dist / touchStartDist))
+			);
 			// pan to keep midpoint stable
-			tx = touchStartTx + (mid.x - touchStartMid.x) + (touchStartMid.x - window.innerWidth / 2) * (1 - newScale / touchStartScale);
-			ty = touchStartTy + (mid.y - touchStartMid.y) + (touchStartMid.y - window.innerHeight / 2) * (1 - newScale / touchStartScale);
+			tx =
+				touchStartTx +
+				(mid.x - touchStartMid.x) +
+				(touchStartMid.x - window.innerWidth / 2) * (1 - newScale / touchStartScale);
+			ty =
+				touchStartTy +
+				(mid.y - touchStartMid.y) +
+				(touchStartMid.y - window.innerHeight / 2) * (1 - newScale / touchStartScale);
 			scale = newScale;
-			if (scale <= 1) { tx = 0; ty = 0; }
+			if (scale <= 1) {
+				tx = 0;
+				ty = 0;
+			}
 		} else if (e.touches.length === 1 && isTouchDragging) {
 			tx = e.touches[0].clientX - dragStart.x;
 			ty = e.touches[0].clientY - dragStart.y;
@@ -185,6 +194,13 @@
 				e.preventDefault();
 				rotate();
 				break;
+		}
+	};
+
+	const handleStageKeydown = (e: KeyboardEvent) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			handleStageClick(e as unknown as MouseEvent);
 		}
 	};
 
@@ -305,13 +321,16 @@
 	{/if}
 
 	<!-- Image stage -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="ip-stage"
 		class:ip-dragging={isDragging}
 		class:ip-grab={scale > 1}
+		role="button"
+		tabindex="0"
+		aria-label="图片预览区域"
 		onmousedown={handleMouseDown}
 		onclick={handleStageClick}
+		onkeydown={handleStageKeydown}
 		use:wheelAction
 	>
 		<img

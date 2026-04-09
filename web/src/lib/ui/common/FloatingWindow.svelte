@@ -64,11 +64,7 @@
 	function triggerOutsidePulse() {
 		if (!windowEl) return;
 		windowEl.animate(
-			[
-				{ transform: 'scale(1)' },
-				{ transform: 'scale(1.025)' },
-				{ transform: 'scale(1)' }
-			],
+			[{ transform: 'scale(1)' }, { transform: 'scale(1.025)' }, { transform: 'scale(1)' }],
 			{ duration: 280, easing: 'cubic-bezier(0.18, 0.89, 0.32, 1.28)' }
 		);
 	}
@@ -125,11 +121,7 @@
 {#if hasBeenOpened}
 	<!-- Backdrop for mobile -->
 	{#if isVisible && isMobile}
-		<div
-			class="fixed inset-0 z-[998]"
-			onclick={() => windowStore.close()}
-			aria-hidden="true"
-		></div>
+		<div class="fixed inset-0 z-[998]" onclick={() => windowStore.close()} aria-hidden="true"></div>
 	{/if}
 
 	<div
@@ -148,9 +140,14 @@
 	>
 		<!-- Paper-like Handle for mobile drawer -->
 		{#if isMobile}
-			<div class="w-full flex justify-center pt-3 pb-1" onclick={() => windowStore.close()}>
+			<button
+				type="button"
+				class="w-full flex justify-center pt-3 pb-1"
+				onclick={() => windowStore.close()}
+				aria-label="关闭窗口"
+			>
 				<div class="w-12 h-1.5 rounded-full bg-ink-300/50 dark:bg-ink-700/50"></div>
-			</div>
+			</button>
 		{/if}
 
 		<!-- Window Header -->

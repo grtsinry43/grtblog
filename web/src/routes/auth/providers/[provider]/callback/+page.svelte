@@ -97,6 +97,8 @@
 		{#if errorText}
 			<p class="mt-3 text-sm text-cinnabar-600 dark:text-cinnabar-400">{errorText}</p>
 		{/if}
-		<p class="mt-3 text-xs text-ink-500 dark:text-ink-400">如果页面没有自动关闭，请返回原页面继续操作。</p>
+		<p class="mt-3 text-xs text-ink-500 dark:text-ink-400">
+			如果页面没有自动关闭，请返回原页面继续操作。
+		</p>
 	</div>
 </section>

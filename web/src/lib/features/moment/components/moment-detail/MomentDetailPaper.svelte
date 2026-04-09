@@ -18,8 +18,7 @@
 		onContentRootChange: (node: HTMLElement | null) => void;
 	}
 
-	let { moment, dateStr, dateNo, onActiveAnchorChange, onContentRootChange }: Props =
-		$props();
+	let { moment, dateStr, dateNo, onActiveAnchorChange, onContentRootChange }: Props = $props();
 
 	const showUpdated = $derived(isDifferentDay(moment.createdAt, moment.contentUpdatedAt));
 </script>
@@ -38,13 +37,17 @@
 	<div class="relative z-10">
 		<header class="mb-12 flex flex-col gap-6">
 			<div class="flex items-start justify-between gap-3 border-b border-ink-800/10 pb-4">
-				<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-ink-800/40 dark:text-ink-200/40">
+				<div
+					class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-ink-800/40 dark:text-ink-200/40"
+				>
 					<span>NO. {dateNo}</span>
 					<span>—</span>
 					<span class="font-serif text-cinnabar-500">手记</span>
 					<span>—</span>
 					<span>{dateStr}</span>
-					{#if showUpdated}<span class="text-ink-400/70">（更新于 {formatDateCN(moment.contentUpdatedAt)}）</span>{/if}
+					{#if showUpdated}<span class="text-ink-400/70"
+							>（更新于 {formatDateCN(moment.contentUpdatedAt)}）</span
+						>{/if}
 				</div>
 				<div class="shrink-0 text-ink-800/40 dark:text-ink-200/40">
 					<Sun size={18} stroke-width={1.5} />
@@ -59,7 +62,9 @@
 			<div
 				class="flex flex-wrap items-center gap-3 text-[11px] font-mono tracking-[0.16em] text-ink-800/45 dark:text-ink-200/45 uppercase"
 			>
-				<span class="flex items-center gap-1.5">浏览 <RollingNumber value={moment.metrics?.views ?? 0} /></span>
+				<span class="flex items-center gap-1.5"
+					>浏览 <RollingNumber value={moment.metrics?.views ?? 0} /></span
+				>
 				<span aria-hidden="true" class="opacity-40">·</span>
 				<ContentLikeButton
 					contentType="moment"
@@ -68,10 +73,12 @@
 					className="inline-flex items-center gap-1.5"
 				/>
 				<span aria-hidden="true" class="opacity-40">·</span>
-				<span class="flex items-center gap-1.5">评论 <RollingNumber value={moment.metrics?.comments ?? 0} /></span>
+				<span class="flex items-center gap-1.5"
+					>评论 <RollingNumber value={moment.metrics?.comments ?? 0} /></span
+				>
 			</div>
 
-			<TagList tags={moment.topics} />
+			<TagList tags={moment.topics ?? []} />
 		</header>
 
 		{#if moment.aiSummary}

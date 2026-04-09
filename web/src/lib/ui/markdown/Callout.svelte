@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
+	type CalloutType = 'info' | 'warning' | 'error' | 'success' | 'quote' | 'idea';
+
 	let {
 		children,
 		type = 'info',
 		title = ''
 	} = $props<{
-		type?: 'info' | 'warning' | 'error' | 'success' | 'quote' | 'idea';
+		type?: CalloutType;
 		title?: string;
 		children?: Snippet;
 	}>();
@@ -54,9 +56,18 @@
 			borderClass: 'border-jade-200/60 dark:border-jade-800/40',
 			barClass: 'bg-jade-400'
 		}
-	};
+	} satisfies Record<
+		CalloutType,
+		{
+			icon: string;
+			colorClass: string;
+			bgClass: string;
+			borderClass: string;
+			barClass: string;
+		}
+	>;
 
-	const config = $derived(configs[type] || configs.info);
+	const config = $derived(configs[type as CalloutType] ?? configs.info);
 </script>
 
 <div
@@ -86,5 +97,3 @@
 		</div>
 	</div>
 </div>
-
-

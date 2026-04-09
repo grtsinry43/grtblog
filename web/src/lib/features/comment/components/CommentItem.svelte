@@ -1,8 +1,8 @@
 <script lang="ts">
-import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
-import type { CommentNode } from '$lib/features/comment/types';
-import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
-import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'lucide-svelte';
+	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
+	import type { CommentNode } from '$lib/features/comment/types';
+	import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
+	import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'lucide-svelte';
 	import CommentItem from './CommentItem.svelte';
 	import CommentForm from './CommentForm.svelte';
 	import CommentVerifiedIcon from './CommentVerifiedIcon.svelte';
@@ -218,7 +218,10 @@ import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'l
 
 			<span class="text-[10px] text-ink-400 font-mono ml-auto flex items-center gap-1.5">
 				{#if floor}
-					<span class="opacity-0 group-hover:opacity-100 transition-opacity text-ink-300 dark:text-ink-600">#{floor}</span>
+					<span
+						class="opacity-0 group-hover:opacity-100 transition-opacity text-ink-300 dark:text-ink-600"
+						>#{floor}</span
+					>
 				{/if}
 				{relativeTime}
 				{#if comment.isEdited}

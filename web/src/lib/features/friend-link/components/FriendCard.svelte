@@ -1,5 +1,4 @@
 <script lang="ts">
-	/* eslint-disable svelte/no-navigation-without-resolve */
 	import type { FriendLink } from '../types';
 	import { ExternalLink } from 'lucide-svelte';
 

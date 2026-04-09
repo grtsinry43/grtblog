@@ -22,7 +22,7 @@
 		<label class="inline-flex items-center gap-2 text-[12px] text-ink-600/90 dark:text-ink-300/90">
 			<input
 				type="checkbox"
-				checked={checked}
+				{checked}
 				onchange={handleChange}
 				class="h-3.5 w-3.5 rounded border-ink-300 text-jade-600 focus:ring-jade-500 dark:border-ink-600 dark:bg-ink-900"
 			/>

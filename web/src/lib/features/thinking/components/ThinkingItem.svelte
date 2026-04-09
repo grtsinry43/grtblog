@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { ThinkingItem } from '$lib/features/thinking/types';
-	import { formatRelativeTime } from '$lib/shared/utils/date';
 	import { MessageCircle, Eye } from 'lucide-svelte';
 	import MarkdownView from '$lib/shared/markdown/MarkdownView.svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
@@ -32,7 +31,9 @@
 >
 	<!-- Date Column -->
 	<div class="flex-shrink-0 w-20 pt-1 border-r border-jade-500/20 pr-4 text-right">
-		<div class="text-[10px] font-mono text-ink-400 dark:text-ink-500 uppercase tracking-widest leading-none mb-1">
+		<div
+			class="text-[10px] font-mono text-ink-400 dark:text-ink-500 uppercase tracking-widest leading-none mb-1"
+		>
 			{new Date(item.createdAt).getMonth() + 1}.{new Date(item.createdAt).getDate()}
 		</div>
 		<div class="text-[9px] font-serif text-jade-600/70 dark:text-jade-400/70 italic">
@@ -55,7 +56,11 @@
 				onclick={openCommentsWindow}
 				class="flex items-center gap-1.5 text-[11px] text-ink-400 hover:text-jade-600 dark:hover:text-jade-400 transition-colors group/btn"
 			>
-				<MessageCircle size={14} strokeWidth={1.5} class="group-hover/btn:scale-110 transition-transform" />
+				<MessageCircle
+					size={14}
+					strokeWidth={1.5}
+					class="group-hover/btn:scale-110 transition-transform"
+				/>
 				<span>{item.comments || '评论'}</span>
 			</button>
 			<ContentLikeButton
@@ -64,7 +69,9 @@
 				likes={item.likes}
 				className="text-[11px] text-ink-400 hover:text-cinnabar-500 transition-colors"
 			/>
-			<div class="flex items-center gap-1.5 text-[11px] text-ink-300 dark:text-ink-600 ml-auto cursor-default font-mono">
+			<div
+				class="flex items-center gap-1.5 text-[11px] text-ink-300 dark:text-ink-600 ml-auto cursor-default font-mono"
+			>
 				<Eye size={14} strokeWidth={1.5} />
 				<span>{item.views}</span>
 			</div>

@@ -67,16 +67,22 @@
 </script>
 
 <div class="pt-16 pb-20 max-w-4xl mx-auto">
-	<PageHeader 
-		title="思考" 
-		tag="Thoughts" 
-		subtitle="在喧嚣中寻觅一丝宁静" 
+	<PageHeader
+		title="思考"
+		tag="Thoughts"
+		subtitle="在喧嚣中寻觅一丝宁静"
 		description="记录深思熟虑后的感悟，或是对世界的细微观察。"
 	/>
 
 	<div class="min-h-[500px] px-4 sm:px-0">
 		{#if $items.length > 0}
-			<StaggerList class="space-y-2" staggerDelay={60} duration={450} y={12} key={`thinkings-${$page}`}>
+			<StaggerList
+				class="space-y-2"
+				staggerDelay={60}
+				duration={450}
+				y={12}
+				key={`thinkings-${$page}`}
+			>
 				{#each $items as item (item.id)}
 					<ThinkingItem {item} />
 				{/each}
@@ -85,7 +91,9 @@
 			<div
 				class="flex flex-col items-center justify-center py-32 text-ink-400 dark:text-ink-500 font-serif"
 			>
-				<div class="w-12 h-12 mb-4 border-2 border-dashed border-ink-200 dark:border-ink-800 rounded-full flex items-center justify-center opacity-50">
+				<div
+					class="w-12 h-12 mb-4 border-2 border-dashed border-ink-200 dark:border-ink-800 rounded-full flex items-center justify-center opacity-50"
+				>
 					<div class="w-2 h-2 rounded-full bg-ink-200 dark:bg-ink-800"></div>
 				</div>
 				<p>暂无手记...</p>
@@ -98,9 +106,7 @@
 			<Pagination current={$page} total={totalPages} {onPageChange} />
 		</div>
 	{:else}
-		<div class="mt-12 text-center text-xs text-ink-300 dark:text-ink-600 font-mono">
-			没有更多了
-		</div>
+		<div class="mt-12 text-center text-xs text-ink-300 dark:text-ink-600 font-mono">没有更多了</div>
 	{/if}
 </div>
 

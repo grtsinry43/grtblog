@@ -1,4 +1,4 @@
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { windowStore } from './windowStore.svelte';
 
 export type AuthModalState = {

@@ -52,6 +52,11 @@ function scrollToBottom() {
   }
 }
 
+function handleResumeAutoScroll() {
+  scrollToBottom()
+  isAutoScroll.value = true
+}
+
 function handleScroll(e: Event) {
   const target = e.target as HTMLElement
   // Simple check: if we are near bottom (within 50px), enable auto-scroll, otherwise disable.
@@ -176,10 +181,7 @@ watch(logInstRef, (val) => {
               type="primary"
               secondary
               round
-              @click="
-                scrollToBottom()
-                isAutoScroll = true
-              "
+              @click="handleResumeAutoScroll"
             >
               <template #icon><NIcon :component="Play16Filled" /></template>
               回到底部

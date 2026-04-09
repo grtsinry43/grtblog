@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { SlideIn, StaggerList } from '$lib/ui/animation';
-	import { Quote, Code2, Gamepad2, Coffee, Library, Zap, Sparkles, Github } from 'lucide-svelte';
+	import { Quote, Code2, Gamepad2, Coffee, Library, Zap, Sparkles, GitBranch } from 'lucide-svelte';
 	import type {
 		HomeGitHubStats,
 		HomeInspirationIconName,
@@ -21,7 +21,7 @@
 		library: Library,
 		zap: Zap,
 		sparkles: Sparkles,
-		github: Github
+		github: GitBranch
 	};
 
 	const defaultNowItems = [
@@ -201,12 +201,9 @@
 
 			<div class="space-y-4">
 				{#each nowItems as item (item.id)}
+					{@const ItemIcon = resolveIcon(item.icon, Code2)}
 					<div class="flex items-start gap-3">
-						<svelte:component
-							this={resolveIcon(item.icon, Code2)}
-							size={16}
-							class="mt-0.5 text-ink-400"
-						/>
+						<ItemIcon size={16} class="mt-0.5 text-ink-400" />
 						<div>
 							<div class="text-[10px] font-mono text-ink-400 uppercase">{item.label}</div>
 							<div class="text-sm font-medium">{item.value}</div>
@@ -219,21 +216,24 @@
 		<div
 			class="col-span-1 md:col-span-1 lg:col-span-1 row-span-1 bento-card flex items-center justify-center group"
 		>
-			<div class="text-center">
-				<svelte:component
-					this={energyIcon}
-					size={24}
-					class="mx-auto mb-2 text-amber-400 transition-transform group-hover:scale-125 duration-500"
-				/>
-				<div class="text-xs font-mono">{energyLabel}</div>
-			</div>
+			{#if energyIcon}
+				{@const EnergyIcon = energyIcon}
+				<div class="text-center">
+					<EnergyIcon
+						size={24}
+						class="mx-auto mb-2 text-amber-400 transition-transform group-hover:scale-125 duration-500"
+					/>
+					<div class="text-xs font-mono">{energyLabel}</div>
+				</div>
+			{/if}
 		</div>
 
 		{#each statItems as stat (stat.id)}
+			{@const StatIcon = resolveIcon(stat.icon, Library)}
 			<div
 				class="col-span-1 md:col-span-1 lg:col-span-1 row-span-1 bento-card p-4 flex flex-col justify-between hover:border-jade-200 dark:hover:border-jade-900/50 transition-colors"
 			>
-				<svelte:component this={resolveIcon(stat.icon, Library)} size={18} class="text-ink-400" />
+				<StatIcon size={18} class="text-ink-400" />
 				<div>
 					<div
 						class="text-2xl font-serif {isStatMissing(stat, wordStats, githubStats)
@@ -267,7 +267,7 @@
 					<div
 						class="w-8 h-8 rounded-full bg-ink-100 dark:bg-ink-800 flex items-center justify-center transition-colors hover:bg-jade-100 dark:hover:bg-jade-900/30"
 					>
-						<svelte:component this={Icon} size={14} />
+						<Icon size={14} />
 					</div>
 				{/each}
 			</div>

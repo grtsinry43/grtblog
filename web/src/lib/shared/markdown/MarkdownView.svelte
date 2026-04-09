@@ -29,7 +29,7 @@
 					}
 					index += 1;
 				}
-				if (node.kind !== 'text' && node.children?.length) {
+				if ('children' in node && node.children?.length) {
 					walk(node.children);
 				}
 			}

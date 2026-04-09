@@ -8,9 +8,7 @@
 		extractUrlsFromBodyText
 	} from '$lib/shared/markdown/component-body';
 
-	let {
-		node
-	} = $props<{
+	let { node } = $props<{
 		node?: SvmdComponentNode;
 	}>();
 
@@ -115,7 +113,7 @@
 			class="gallery-container scrollbar-hide flex w-full snap-x snap-mandatory overflow-x-auto"
 			style="height: {height};"
 		>
-			{#each displayList as url}
+			{#each displayList as url, index (`${index}-${url}`)}
 				<div
 					class="flex h-full w-full shrink-0 snap-center items-center justify-center bg-ink-50/20 dark:bg-black/10"
 				>
@@ -140,7 +138,13 @@
 				class="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-ink-200/50 bg-white/80 p-2.5 text-ink-900 opacity-0 shadow-xl backdrop-blur-sm transition-all group-hover:opacity-100 hover:scale-110 hover:bg-white hover:text-jade-600 dark:border-ink-700/50 dark:bg-ink-800/80 dark:text-ink-100 dark:hover:bg-ink-800 dark:hover:text-jade-400"
 				aria-label="Previous"
 			>
-				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+				<svg
+					class="h-5 w-5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+				>
 					<path d="M15 18l-6-6 6-6" />
 				</svg>
 			</button>
@@ -149,7 +153,13 @@
 				class="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-ink-200/50 bg-white/80 p-2.5 text-ink-900 opacity-0 shadow-xl backdrop-blur-sm transition-all group-hover:opacity-100 hover:scale-110 hover:bg-white hover:text-jade-600 dark:border-ink-700/50 dark:bg-ink-800/80 dark:text-ink-100 dark:hover:bg-ink-800 dark:hover:text-jade-400"
 				aria-label="Next"
 			>
-				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+				<svg
+					class="h-5 w-5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+				>
 					<path d="M9 18l6-6-6-6" />
 				</svg>
 			</button>
@@ -159,7 +169,9 @@
 	<!-- 底部描述栏 -->
 	<div class="mt-4 flex items-end justify-between gap-4 px-1">
 		<div class="flex flex-col gap-0.5">
-			<span class="text-[10px] font-bold uppercase tracking-[0.2em] text-jade-600 dark:text-jade-400">
+			<span
+				class="text-[10px] font-bold uppercase tracking-[0.2em] text-jade-600 dark:text-jade-400"
+			>
 				{caption || 'Gallery'}
 			</span>
 			<span class="text-[10px] font-medium uppercase tracking-wider text-ink-400">
@@ -173,7 +185,7 @@
 
 		{#if urlList.length > 1}
 			<div class="flex gap-1.5 pb-1">
-				{#each urlList as _, i}
+				{#each urlList as url, i (`${i}-${url}`)}
 					<button
 						onclick={() => {
 							if (!scrollContainer) return;

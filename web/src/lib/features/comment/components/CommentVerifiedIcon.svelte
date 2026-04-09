@@ -2,8 +2,10 @@
 	import { BadgeCheck } from 'lucide-svelte';
 	import { Tooltip } from '$lib/ui/primitives';
 
+	type VerifiedType = 'owner' | 'friend' | 'author';
+
 	let { type, content } = $props<{
-		type: 'owner' | 'friend' | 'author';
+		type: VerifiedType;
 		content: string;
 	}>();
 
@@ -11,12 +13,16 @@
 		owner: 'text-blue-500 dark:text-blue-400',
 		friend: 'text-jade-500 dark:text-jade-400',
 		author: 'text-purple-500 dark:text-purple-400'
-	};
+	} satisfies Record<VerifiedType, string>;
 </script>
 
 <Tooltip {content}>
 	<span class="inline-flex items-center justify-center hover:opacity-80 transition-opacity">
-		<BadgeCheck size={15} fill="currentColor" class="{colors[type]} verified-icon" />
+		<BadgeCheck
+			size={15}
+			fill="currentColor"
+			class={`${colors[type as VerifiedType]} verified-icon`}
+		/>
 		<span class="sr-only">{content}</span>
 	</span>
 </Tooltip>

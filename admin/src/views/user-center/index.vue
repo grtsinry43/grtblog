@@ -198,7 +198,7 @@ const {
       :cropper-img="cropperImg"
       :is-uploading="isUploading"
       @update:visible="showCropper = $event"
-      @confirm="handleConfirmCrop"
+      @confirm="handleConfirmCrop($event)"
     />
   </ScrollContainer>
 </template>

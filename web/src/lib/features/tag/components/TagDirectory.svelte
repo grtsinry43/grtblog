@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import type { PublicTag } from '../types';
-	import { Hash, BookText, ArrowUpRight } from 'lucide-svelte';
+	import { BookText, ArrowUpRight } from 'lucide-svelte';
 
 	let { tags = [] }: { tags: PublicTag[] } = $props();
 
@@ -34,10 +34,10 @@
 	></div>
 
 	<div class="relative space-y-6">
-		<PageHeader 
-			title="标签档案馆" 
-			tag="Tags" 
-			subtitle="万物皆有其名" 
+		<PageHeader
+			title="标签档案馆"
+			tag="Tags"
+			subtitle="万物皆有其名"
 			description="按主题整理公开文章。点击任意标签即可打开内容弹窗，快速查看相关文章与手记。"
 			className="mb-8"
 		/>

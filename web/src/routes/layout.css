@@ -179,7 +179,7 @@ body {
 }
 
 /* Only animate on forward client-side navigation */
-:root[data-nav-type="forward"] .article-enter {
+:root[data-nav-type='forward'] .article-enter {
 	animation: article-enter 0.8s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
@@ -239,7 +239,7 @@ body {
 }
 
 /* Only animate on forward client-side navigation */
-:root[data-nav-type="forward"] .animate-sheet-enter {
+:root[data-nav-type='forward'] .animate-sheet-enter {
 	animation: sheet-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -360,7 +360,7 @@ button {
 }
 
 /* Back navigation: disable per-card morph so moment-sheet handles the exit */
-:root[data-nav-type="back"] .moment-vt {
+:root[data-nav-type='back'] .moment-vt {
 	view-transition-name: none !important;
 }
 
@@ -372,12 +372,12 @@ button {
 }
 
 /* Forward: slide-in entry */
-:root[data-nav-type="forward"]::view-transition-new(moment-sheet) {
+:root[data-nav-type='forward']::view-transition-new(moment-sheet) {
 	animation: sheet-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Back: paper sink-out exit (moment only) */
-:root[data-nav-type="back"]::view-transition-old(moment-sheet) {
+:root[data-nav-type='back']::view-transition-old(moment-sheet) {
 	animation: sheet-sink-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
@@ -394,4 +394,3 @@ button {
 		transform: translateY(-15px);
 	}
 }
-

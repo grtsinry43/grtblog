@@ -2,27 +2,26 @@
 	import { type Snippet } from 'svelte';
 	import { Button } from 'bits-ui';
 
-	type Props = Omit<Button.RootProps, 'children' | 'class' | 'type' | 'href'> & {
+	type ActionResult = {
+		update?: (params?: unknown) => void;
+		destroy?: () => void;
+	};
+
+	type Props = {
 		variant?: 'primary' | 'secondary' | 'ghost' | 'icon';
 		size?: 'sm' | 'md' | 'lg';
 		fullWidth?: boolean;
 		content?: Snippet;
 		children?: Snippet;
 		icon?: Snippet;
-		action?: (
-			node: HTMLElement,
-			params?: unknown
-		) => {
-			update?: (params?: unknown) => void;
-			destroy?: () => void;
-		};
+		action?: (node: HTMLElement, params?: unknown) => ActionResult | void;
 		actionOptions?: unknown;
 		loading?: boolean;
 		disabled?: boolean;
 		class?: string;
 		type?: 'button' | 'submit' | 'reset';
 		href?: string;
-	};
+	} & Record<string, unknown>;
 
 	const baseClasses =
 		'inline-flex items-center justify-center gap-2 rounded-[var(--radius-default)] transition-all duration-300 outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 text-[13px] font-normal tracking-wide';
@@ -43,7 +42,7 @@
 	const cx = (...parts: Array<string | false | null | undefined>) =>
 		parts.filter(Boolean).join(' ');
 
-	const noopAction = () => ({});
+	const noopAction = (): ActionResult => ({});
 
 	let {
 		variant = 'primary',
@@ -86,17 +85,7 @@
 	);
 </script>
 
-<Button.Root
-	bind:ref={element}
-	class={classes}
-	{href}
-	type={type ?? 'button'}
-	disabled={isDisabled}
-	aria-disabled={isDisabled || undefined}
-	aria-busy={loading || undefined}
-	tabindex={isDisabled ? -1 : undefined}
-	{...restProps}
->
+{#snippet inner()}
 	{#if loading}
 		<span
 			class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
@@ -110,4 +99,32 @@
 	{:else if children}
 		{@render children()}
 	{/if}
-</Button.Root>
+{/snippet}
+
+{#if href}
+	<Button.Root
+		bind:ref={element}
+		class={classes}
+		{href}
+		disabled={isDisabled}
+		aria-disabled={isDisabled || undefined}
+		aria-busy={loading || undefined}
+		tabindex={isDisabled ? -1 : undefined}
+		{...restProps}
+	>
+		{@render inner()}
+	</Button.Root>
+{:else}
+	<Button.Root
+		bind:ref={element}
+		class={classes}
+		type={type ?? 'button'}
+		disabled={isDisabled}
+		aria-disabled={isDisabled || undefined}
+		aria-busy={loading || undefined}
+		tabindex={isDisabled ? -1 : undefined}
+		{...restProps}
+	>
+		{@render inner()}
+	</Button.Root>
+{/if}

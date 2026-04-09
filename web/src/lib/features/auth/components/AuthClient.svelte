@@ -19,7 +19,11 @@
 		LoginResp,
 		OAuthProvider
 	} from '$lib/features/auth/types';
-	import { openOAuthPopup, saveOAuthFlowMeta, waitForOAuthPopupResult } from '$lib/features/auth/oauth-flow';
+	import {
+		openOAuthPopup,
+		saveOAuthFlowMeta,
+		waitForOAuthPopupResult
+	} from '$lib/features/auth/oauth-flow';
 	import { setToken } from '$lib/shared/token';
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { AuthCtx } from '$lib/features/auth/context';
@@ -93,10 +97,6 @@
 		turnstileToken = '';
 	};
 
-	const handleClose = () => {
-		authModalStore.close();
-	};
-
 	const loginMutation = createMutation<LoginResp, Error, LoginReq>(() => ({
 		mutationFn: async (payload) => login(payload)
 	}));
@@ -120,7 +120,6 @@
 		gcTime: Infinity,
 		refetchOnWindowFocus: false
 	}));
-
 
 	const executeLogin = async (payload: LoginReq) => loginMutation.mutateAsync(payload);
 
@@ -164,7 +163,6 @@
 			});
 		}
 	};
-
 
 	const handleTurnstileToken = (value: string) => {
 		turnstileToken = value;

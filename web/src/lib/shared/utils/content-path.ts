@@ -26,8 +26,7 @@ const parseDateParts = (
 	};
 };
 
-export const buildPostPath = (slug: string): `/${string}` =>
-	`/posts/${encodeURIComponent(slug)}`;
+export const buildPostPath = (slug: string): `/${string}` => `/posts/${encodeURIComponent(slug)}`;
 
 export const buildPagePath = (slug: string): `/${string}` => `/${encodeURIComponent(slug)}`;
 

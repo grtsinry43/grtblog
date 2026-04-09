@@ -121,20 +121,20 @@
 			class="md-codeblock__header flex items-center justify-between border-b border-ink-900/15 px-3 py-0.5 text-[11px] uppercase tracking-[0.08em] opacity-75 dark:border-white/15"
 		>
 			<span class="md-codeblock__lang">{dataLang || 'text'}</span>
-				<button
-					type="button"
-					class="inline-flex items-center justify-center rounded-sm p-1 text-ink-500 transition-colors hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-100"
-					onclick={copyCode}
-					aria-label={copied ? '已复制' : '复制代码'}
-					title={copied ? '已复制' : '复制代码'}
-				>
-					{#if copied}
-						<Check size={14} />
-					{:else}
-						<Copy size={14} />
-					{/if}
-				</button>
-			</div>
+			<button
+				type="button"
+				class="inline-flex items-center justify-center rounded-sm p-1 text-ink-500 transition-colors hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-100"
+				onclick={copyCode}
+				aria-label={copied ? '已复制' : '复制代码'}
+				title={copied ? '已复制' : '复制代码'}
+			>
+				{#if copied}
+					<Check size={14} />
+				{:else}
+					<Copy size={14} />
+				{/if}
+			</button>
+		</div>
 		<div class="md-codeblock__body">
 			<div
 				class={`code-wrap ${measured ? 'is-measured' : ''}`}

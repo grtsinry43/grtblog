@@ -4,7 +4,7 @@
 	import Loading from '$lib/ui/common/Loading.svelte';
 	import { formatDateDotted } from '$lib/shared/utils/date';
 
-	let { tagId, tagName }: { tagId: number; tagName: string } = $props();
+	let { tagId }: { tagId: number } = $props();
 
 	let contents = $state<TagContents | null>(null);
 	let loading = $state(true);
@@ -45,7 +45,7 @@
 						>
 					</div>
 					<div class="flex flex-col">
-						{#each contents.articles as article}
+						{#each contents.articles as article (article.id)}
 							<a
 								href="/posts/{article.shortUrl}"
 								class="group flex items-baseline justify-between gap-4 border-b border-ink-100/30 py-2 dark:border-ink-800/20"
@@ -73,7 +73,7 @@
 						>
 					</div>
 					<div class="flex flex-col">
-						{#each contents.moments as moment}
+						{#each contents.moments as moment (moment.id)}
 							<a
 								href="/moments/{moment.shortUrl}"
 								class="group flex items-baseline justify-between gap-4 border-b border-ink-100/30 py-2 dark:border-ink-800/20"

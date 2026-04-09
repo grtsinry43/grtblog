@@ -1,7 +1,6 @@
 <script lang="ts">
-	/* eslint-disable svelte/no-navigation-without-resolve */
-	import { resolve } from '$app/paths';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
+	import { resolveHref } from '$lib/shared/utils/resolve-path';
 
 	const { icon, name, href } = $props<{
 		icon: string;
@@ -18,7 +17,7 @@
 
 <div class="social-item-container hover:text-jade-600 cursor-pointer">
 	<a
-		href={href.startsWith('/') ? resolve(href) : href}
+		href={href.startsWith('/') ? resolveHref(href) : href}
 		data-sveltekit-preload-data={shouldDisablePreloadData(href) ? 'off' : undefined}
 		class="flex items-center gap-2"
 		target="_blank"

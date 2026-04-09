@@ -184,14 +184,16 @@
 		].join(';');
 	});
 
-	onMount(async () => {
+	onMount(() => {
 		tryStartReturnTransition();
 
-		const albumId = get(albumIdStore);
-		if (albumId) {
-			const m = await fetchContentMetrics('album', albumId);
-			if (m) updateModelData((prev) => (prev ? { ...prev, metrics: m } : prev));
-		}
+		void (async () => {
+			const albumId = get(albumIdStore);
+			if (albumId) {
+				const m = await fetchContentMetrics('album', albumId);
+				if (m) updateModelData((prev) => (prev ? { ...prev, metrics: m } : prev));
+			}
+		})();
 
 		return () => {
 			clearReturnTransitionTimer();
@@ -262,7 +264,9 @@
 				<div
 					class="mt-4 flex flex-wrap items-center gap-3 text-[11px] font-mono tracking-[0.16em] text-ink-800/45 dark:text-ink-200/45 uppercase"
 				>
-					<span class="flex items-center gap-1.5">浏览 <RollingNumber value={$metricsStore?.views ?? 0} /></span>
+					<span class="flex items-center gap-1.5"
+						>浏览 <RollingNumber value={$metricsStore?.views ?? 0} /></span
+					>
 					<span aria-hidden="true" class="opacity-40">·</span>
 					<ContentLikeButton
 						contentType="album"
@@ -271,13 +275,15 @@
 						className="inline-flex items-center gap-1.5"
 					/>
 					<span aria-hidden="true" class="opacity-40">·</span>
-					<span class="flex items-center gap-1.5">评论 <RollingNumber value={$metricsStore?.comments ?? 0} /></span>
+					<span class="flex items-center gap-1.5"
+						>评论 <RollingNumber value={$metricsStore?.comments ?? 0} /></span
+					>
 				</div>
 
 				<!-- Decorative line -->
 				<div class="mt-5 flex items-center gap-2 sm:mt-6">
-					<div class="h-px flex-1 bg-ink-200/60 dark:bg-ink-800/60" />
-					<div class="h-1 w-1 rounded-full bg-ink-300/40 dark:bg-ink-700/40" />
+					<div class="h-px flex-1 bg-ink-200/60 dark:bg-ink-800/60"></div>
+					<div class="h-1 w-1 rounded-full bg-ink-300/40 dark:bg-ink-700/40"></div>
 				</div>
 			</header>
 		</FadeIn>

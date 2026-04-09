@@ -86,7 +86,7 @@
 	import '@fontsource/noto-serif-sc/500.css';
 	import '@fontsource/noto-serif-sc/600.css';
 	import '@fontsource/noto-serif-sc/700.css';
-	import '@fontsource-variable/victor-mono';
+	import '@fontsource-variable/victor-mono/index.css';
 	import { websiteInfoCtx } from '$lib/features/website-info/context.js';
 	import { resolveSeoMeta } from '$lib/shared/seo/metadata';
 	import { resolveHomeThemeConfig } from '$lib/features/home/theme';
@@ -97,6 +97,13 @@
 		type DetailPanelRelatedMoment,
 		type DetailPanelRelatedPost
 	} from '$lib/shared/detail-panel/context';
+
+	type ThinkingWindowData = {
+		areaId?: number | null;
+		commentsCount?: number;
+		thinkingId?: number;
+		activityPubObjectId?: string | null;
+	};
 
 	let { children, data } = $props();
 	let showRouteLoading = $state(false);
@@ -234,6 +241,7 @@
 	const resolvedFaviconType = $derived(
 		circularFaviconUrl ? 'image/png' : siteFaviconType || undefined
 	);
+	const thinkingWindowData = $derived((windowStore.data ?? {}) as ThinkingWindowData);
 
 	const seoMeta = $derived.by(() =>
 		resolveSeoMeta({
@@ -318,7 +326,7 @@
 
 <svelte:head>
 	{#if avatarOrigin}
-		<link rel="preconnect" href={avatarOrigin} crossorigin />
+		<link rel="preconnect" href={avatarOrigin} crossorigin="anonymous" />
 		<link rel="dns-prefetch" href={avatarOrigin} />
 	{/if}
 	<link rel="icon" href={resolvedFavicon} type={resolvedFaviconType} />
@@ -427,10 +435,10 @@
 		<PresencePagesWindow />
 	{:else if windowStore.kind === 'thinking-comments'}
 		<ThinkingCommentsWindow
-			areaId={windowStore.data?.areaId}
-			commentsCount={windowStore.data?.commentsCount ?? 0}
-			thinkingId={Number(windowStore.data?.thinkingId) || 0}
-			activityPubObjectId={windowStore.data?.activityPubObjectId ?? null}
+			areaId={thinkingWindowData.areaId ?? null}
+			commentsCount={thinkingWindowData.commentsCount ?? 0}
+			thinkingId={thinkingWindowData.thinkingId ?? 0}
+			activityPubObjectId={thinkingWindowData.activityPubObjectId ?? null}
 		/>
 	{:else if windowStore.kind === 'user-center'}
 		<QueryRoot

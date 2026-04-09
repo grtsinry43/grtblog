@@ -36,9 +36,7 @@
 	const websiteNameStore = websiteInfoCtx.selectModelData(
 		(data) => data?.website_name || '墨 手记'
 	);
-	const siteAvatar = $derived(
-		resolveHomeThemeConfig($websiteInfoStore).hero?.avatarUrl || ''
-	);
+	const siteAvatar = $derived(resolveHomeThemeConfig($websiteInfoStore).hero?.avatarUrl || '');
 	const detailKindStore = detailPanelCtx.selectModelData((data) => data?.kind ?? null);
 	const detailTitleStore = detailPanelCtx.selectModelData((data) => data?.title ?? '');
 	const detailTocStore = detailPanelCtx.selectModelData((data) => data?.toc ?? []);
@@ -186,39 +184,41 @@
 		<div class="relative z-10 flex h-[3.25rem] items-center justify-between px-3">
 			<!-- Left: Avatar & Title -->
 			<div class="flex items-center gap-3 overflow-hidden">
-					<button
-						onclick={(e) => {
-							e.stopPropagation();
-							isMobileMenuOpen = !isMobileMenuOpen;
-						}}
-						class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
+				<button
+					onclick={(e) => {
+						e.stopPropagation();
+						isMobileMenuOpen = !isMobileMenuOpen;
+					}}
+					class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90"
+				>
+					<div
+						class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700"
 					>
-						<div class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-ink-100 dark:border-ink-700">
-							{#if siteAvatar}
-								<img
-									src={siteAvatar}
-									alt="Author"
-									width="32"
-									height="32"
-									class="h-full w-full object-cover"
-								/>
-							{:else}
-								<div class="h-full w-full bg-ink-200 dark:bg-ink-700"></div>
-							{/if}
-						</div>
-						<span class="absolute bottom-0 right-0 flex h-2.5 w-2.5">
-							<span
-								class="absolute inline-flex h-full w-full rounded-full opacity-75 {ownerOnline
-									? 'bg-jade-400'
-									: 'bg-ink-300 dark:bg-ink-600'}"
-							></span>
-							<span
-								class="relative inline-flex h-2.5 w-2.5 rounded-full border border-white dark:border-ink-900 {ownerOnline
-									? 'bg-jade-500'
-									: 'bg-ink-400 dark:bg-ink-500'}"
-							></span>
-						</span>
-					</button>
+						{#if siteAvatar}
+							<img
+								src={siteAvatar}
+								alt="Author"
+								width="32"
+								height="32"
+								class="h-full w-full object-cover"
+							/>
+						{:else}
+							<div class="h-full w-full bg-ink-200 dark:bg-ink-700"></div>
+						{/if}
+					</div>
+					<span class="absolute bottom-0 right-0 flex h-2.5 w-2.5">
+						<span
+							class="absolute inline-flex h-full w-full rounded-full opacity-75 {ownerOnline
+								? 'bg-jade-400'
+								: 'bg-ink-300 dark:bg-ink-600'}"
+						></span>
+						<span
+							class="relative inline-flex h-2.5 w-2.5 rounded-full border border-white dark:border-ink-900 {ownerOnline
+								? 'bg-jade-500'
+								: 'bg-ink-400 dark:bg-ink-500'}"
+						></span>
+					</span>
+				</button>
 
 				<div
 					class="relative min-w-0 flex-1 flex flex-col justify-center py-0.5 transition-all duration-300"
@@ -265,33 +265,37 @@
 				transition:fly={{ y: -12, duration: 380, easing: cubicOut, opacity: 0 }}
 				class="no-scrollbar relative z-10 flex max-h-[75vh] flex-col overflow-y-auto px-2 pb-6 pt-0"
 			>
-				<div class="mb-3 rounded-default border border-ink-200 bg-white/70 px-3 py-2 dark:border-ink-700 dark:bg-ink-900/60">
-						<div class="flex items-center justify-between gap-2">
-							<div class="text-xs font-medium text-ink-700 dark:text-ink-200">
-								{ownerOnline ? '站长在线中' : '站长暂时离线'}
-							</div>
-							<span
-								class="rounded-full px-2 py-0.5 text-[10px] {adminPanelOnline
-									? 'bg-jade-100 text-jade-700 dark:bg-jade-900/40 dark:text-jade-300'
-									: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300'}"
-							>
-								Admin {adminPanelOnline ? '在线' : '离线'}
-							</span>
+				<div
+					class="mb-3 rounded-default border border-ink-200 bg-white/70 px-3 py-2 dark:border-ink-700 dark:bg-ink-900/60"
+				>
+					<div class="flex items-center justify-between gap-2">
+						<div class="text-xs font-medium text-ink-700 dark:text-ink-200">
+							{ownerOnline ? '站长在线中' : '站长暂时离线'}
 						</div>
-						<div class="mt-1 text-[11px] text-ink-500 dark:text-ink-400">
-							{#if ownerOnline}
-								正在使用 {ownerStatus.process || '未知应用'}
-							{:else}
-								暂无实时活动
-							{/if}
-							· {formatOwnerTime(ownerStatus.timestamp)}
-						</div>
-						{#if ownerStatus.extend}
-							<p class="mt-1 text-[11px] leading-4 text-ink-500 dark:text-ink-400">{ownerStatus.extend}</p>
-						{/if}
+						<span
+							class="rounded-full px-2 py-0.5 text-[10px] {adminPanelOnline
+								? 'bg-jade-100 text-jade-700 dark:bg-jade-900/40 dark:text-jade-300'
+								: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300'}"
+						>
+							Admin {adminPanelOnline ? '在线' : '离线'}
+						</span>
 					</div>
+					<div class="mt-1 text-[11px] text-ink-500 dark:text-ink-400">
+						{#if ownerOnline}
+							正在使用 {ownerStatus.process || '未知应用'}
+						{:else}
+							暂无实时活动
+						{/if}
+						· {formatOwnerTime(ownerStatus.timestamp)}
+					</div>
+					{#if ownerStatus.extend}
+						<p class="mt-1 text-[11px] leading-4 text-ink-500 dark:text-ink-400">
+							{ownerStatus.extend}
+						</p>
+					{/if}
+				</div>
 
-					<div class="flex flex-col gap-1">
+				<div class="flex flex-col gap-1">
 					{#if !isHomePage}
 						<a
 							href={resolvePath('/')}

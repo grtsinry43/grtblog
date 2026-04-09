@@ -99,7 +99,7 @@ export const safeMarkdownComponents: SvmdComponentMap = {
 	td: MarkdownTd,
 	a: MarkdownLink,
 	img: MarkdownImage,
-	code: MarkdownCodeBlock,
+	code: MarkdownCodeBlock
 };
 
 export const safeMarkdownParseOptions: SvmdParseOptions = {

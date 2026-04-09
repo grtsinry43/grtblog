@@ -8,7 +8,7 @@ export const load: PageServerLoad = async (event) => {
 	const { fetch, params, url } = event;
 	const rawPage = Number(params.page ?? '1');
 	const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
-	
+
 	if (page <= TRACKED_FRIEND_TIMELINE_PAGES) {
 		trackISRDeps(event, `friend-timeline:list:page:${page}`);
 	}

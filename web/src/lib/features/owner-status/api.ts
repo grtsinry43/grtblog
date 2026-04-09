@@ -5,4 +5,3 @@ export async function getOwnerStatus(fetcher?: typeof fetch): Promise<OwnerStatu
 	const api = getApi(fetcher);
 	return api('/onlineStatus', { method: 'GET' });
 }
-

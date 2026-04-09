@@ -26,6 +26,6 @@
 
 <Story name="Primary">
 	{#snippet template(args)}
-		<Button {...args}>{args.children}</Button>
+		<Button {...args}>{args['children']}</Button>
 	{/snippet}
 </Story>

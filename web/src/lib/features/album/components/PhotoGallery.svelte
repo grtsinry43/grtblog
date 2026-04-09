@@ -1,5 +1,7 @@
 <script module lang="ts">
-	const loadedPhotoSrcSet = new Set<string>();
+	import { SvelteSet } from 'svelte/reactivity';
+
+	const loadedPhotoSrcSet = new SvelteSet<string>();
 	const PHOTO_ROUTE_TRANSITION_KEY = 'album-photo-route-transition';
 </script>
 
@@ -117,22 +119,21 @@
 	// Timeline grouping by month
 	type MonthGroup = { label: string; items: { photo: PhotoItem; index: number }[] };
 	const grouped: MonthGroup[] = $derived.by(() => {
-		const map = new Map<string, { photo: PhotoItem; index: number }[]>();
+		const groupedByLabel: Record<string, { photo: PhotoItem; index: number }[]> = {};
 		photos.forEach((photo, index) => {
 			const raw = photo.exif?.dateTimeOriginal || photo.createdAt;
 			const d = new Date(raw);
 			const key = isNaN(d.getTime())
 				? '未知时间'
 				: d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
-			if (!map.has(key)) map.set(key, []);
-			map.get(key)!.push({ photo, index });
+			(groupedByLabel[key] ??= []).push({ photo, index });
 		});
-		return Array.from(map.entries()).map(([label, items]) => ({ label, items }));
+		return Object.entries(groupedByLabel).map(([label, items]) => ({ label, items }));
 	});
 </script>
 
 <div class="space-y-8 sm:space-y-12">
-	{#each grouped as group}
+	{#each grouped as group (group.label)}
 		<section>
 			<div class="mb-4 flex items-center gap-3 sm:mb-6 sm:gap-4">
 				<h3

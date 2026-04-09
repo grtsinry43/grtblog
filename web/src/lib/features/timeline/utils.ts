@@ -14,7 +14,7 @@ export const flattenAndLayoutTimeline = (
 	months: { year: string; month: number; x: number; stats: TimelineStats }[];
 	yearStats: Record<string, TimelineStats>;
 } => {
-	let items: UnifiedTimelineItem[] = [];
+	const items: UnifiedTimelineItem[] = [];
 
 	Object.entries(data).forEach(([year, yearData]) => {
 		if (yearData.yearSummary) {

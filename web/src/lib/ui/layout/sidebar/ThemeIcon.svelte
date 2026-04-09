@@ -21,7 +21,7 @@
 	const labelMap: Record<Theme, string> = {
 		light: '浅色模式',
 		dark: '深色模式',
-		system: '跟随系统',
+		system: '跟随系统'
 	};
 
 	const toggleTheme = async (event: MouseEvent) => {

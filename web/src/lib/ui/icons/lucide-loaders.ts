@@ -1,4 +1,4 @@
-import type { ComponentType } from 'svelte';
+import type { Component } from 'svelte';
 import Moon from 'lucide-svelte/icons/moon';
 import Sun from 'lucide-svelte/icons/sun';
 import BookOpen from 'lucide-svelte/icons/book-open';
@@ -15,10 +15,12 @@ import Terminal from 'lucide-svelte/icons/terminal';
 import Coffee from 'lucide-svelte/icons/coffee';
 import Sparkles from 'lucide-svelte/icons/sparkles';
 import Code from 'lucide-svelte/icons/code';
+import GitBranch from 'lucide-svelte/icons/git-branch';
 import List from 'lucide-svelte/icons/list';
-import { Github, Mail, Rss } from 'lucide-svelte';
+import Mail from 'lucide-svelte/icons/mail';
+import Rss from 'lucide-svelte/icons/rss';
 
-export type LucideIconComponent = ComponentType<{
+export type LucideIconComponent = Component<{
 	size?: number;
 	strokeWidth?: number;
 	class?: string;
@@ -43,7 +45,7 @@ const lucideIcons = {
 	sparkles: Sparkles,
 	code: Code,
 	list: List,
-	github: Github,
+	github: GitBranch,
 	mail: Mail,
 	rss: Rss
 } as const;

@@ -82,8 +82,7 @@ export const GET: RequestHandler = async ({ params, fetch, url }) => {
 	});
 
 	// If the page has a content image (e.g. article cover), no generated OG image is needed
-	const hasContentImage =
-		seo.ogImage && seo.ogImageType === null && seo.ogImageWidth === null;
+	const hasContentImage = seo.ogImage && seo.ogImageType === null && seo.ogImageWidth === null;
 	if (hasContentImage) {
 		return new Response(null, { status: 204 });
 	}

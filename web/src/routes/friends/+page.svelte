@@ -21,10 +21,10 @@
 </script>
 
 <div class="friends-page max-w-5xl mx-auto py-10 space-y-16">
-	<PageHeader 
-		title="友情链接" 
-		tag="Friends" 
-		subtitle="青山一道同云雨，明月何曾是两乡" 
+	<PageHeader
+		title="友情链接"
+		tag="Friends"
+		subtitle="青山一道同云雨，明月何曾是两乡"
 		description="志同道合者的数字家园，感谢在这个广袤网络中的相遇。"
 	/>
 

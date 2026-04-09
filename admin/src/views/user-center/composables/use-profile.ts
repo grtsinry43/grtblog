@@ -1,5 +1,4 @@
 import { computed, onMounted, reactive, ref } from 'vue'
-import { cropper } from 'vue-picture-cropper'
 
 import { changePassword, getAccessInfo, getOAuthBindings, updateProfile } from '@/services/auth'
 import { listOAuthProviders } from '@/services/oauth-providers'
@@ -155,14 +154,9 @@ export function useProfile(message: {
     return false
   }
 
-  const handleConfirmCrop = async () => {
-    if (!cropper) return
-    const result = cropper.getFile()
-    if (!result) return
+  const handleConfirmCrop = async (file: File) => {
     isUploading.value = true
     try {
-      const file = await result
-      if (!file) return
       const res = await uploadFile(file, 'picture')
       profileForm.avatar = res.publicUrl
       showCropper.value = false

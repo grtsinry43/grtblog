@@ -379,8 +379,7 @@ export const resolveHomeThemeConfig = (
 		mottoLinesAlign:
 			parseHeroAlignMode(heroRaw.mottoLinesAlign) ?? defaultThemeConfig.hero?.mottoLinesAlign,
 		socials: parseSocials(heroRaw.socials) ?? defaultThemeConfig.hero?.socials,
-		socialsAlign:
-			parseHeroAlignMode(heroRaw.socialsAlign) ?? defaultThemeConfig.hero?.socialsAlign
+		socialsAlign: parseHeroAlignMode(heroRaw.socialsAlign) ?? defaultThemeConfig.hero?.socialsAlign
 	};
 
 	const activity = {

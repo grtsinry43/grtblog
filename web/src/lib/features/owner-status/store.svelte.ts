@@ -94,4 +94,3 @@ class OwnerStatusStore {
 }
 
 export const ownerStatusStore = new OwnerStatusStore();
-

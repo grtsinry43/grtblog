@@ -53,13 +53,7 @@
 </script>
 
 <div class={wrapperClasses}>
-	<textarea
-		bind:value
-		{rows}
-		maxlength={maxLength}
-		{placeholder}
-		{oninput}
-		class={textareaClasses}
+	<textarea bind:value {rows} maxlength={maxLength} {placeholder} {oninput} class={textareaClasses}
 	></textarea>
 </div>
 

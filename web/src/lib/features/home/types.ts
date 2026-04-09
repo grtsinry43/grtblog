@@ -1,9 +1,6 @@
 export type HomeSubscriptionPreference = 'posts' | 'moments' | 'thinkings';
 
-export type PublicEmailEventName =
-	| 'article.published'
-	| 'moment.published'
-	| 'thinking.created';
+export type PublicEmailEventName = 'article.published' | 'moment.published' | 'thinking.created';
 
 export type SubscribeEmailPayload = {
 	email: string;

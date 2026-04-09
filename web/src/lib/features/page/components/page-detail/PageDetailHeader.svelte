@@ -35,8 +35,12 @@
 				<Calendar size={12} />
 				{formatDateCN(page.createdAt)}
 			</span>
-			<span class="flex items-center gap-1.5"><Clock size={12} /> {formatReadingTime(readingTime)}</span>
-			<span class="flex items-center gap-1.5">浏览 <RollingNumber value={page.metrics?.views ?? 0} /></span>
+			<span class="flex items-center gap-1.5"
+				><Clock size={12} /> {formatReadingTime(readingTime)}</span
+			>
+			<span class="flex items-center gap-1.5"
+				>浏览 <RollingNumber value={page.metrics?.views ?? 0} /></span
+			>
 			<span aria-hidden="true" class="opacity-40">·</span>
 			<ContentLikeButton
 				contentType="page"
@@ -45,7 +49,9 @@
 				className="inline-flex items-center gap-1.5"
 			/>
 			<span aria-hidden="true" class="opacity-40">·</span>
-			<span class="flex items-center gap-1.5">评论 <RollingNumber value={page.metrics?.comments ?? 0} /></span>
+			<span class="flex items-center gap-1.5"
+				>评论 <RollingNumber value={page.metrics?.comments ?? 0} /></span
+			>
 		</div>
 	</div>
 </header>

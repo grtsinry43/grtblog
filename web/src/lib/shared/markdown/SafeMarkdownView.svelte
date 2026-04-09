@@ -14,5 +14,9 @@
 </script>
 
 <div class="markdown-preview w-full break-words [overflow-wrap:anywhere]">
-	<SvmdChildren {nodes} components={safeMarkdownComponents} renderOptions={safeMarkdownRenderOptions} />
+	<SvmdChildren
+		{nodes}
+		components={safeMarkdownComponents}
+		renderOptions={safeMarkdownRenderOptions}
+	/>
 </div>

@@ -2,7 +2,12 @@ import { iconToSVG, replaceIDs } from '@iconify/utils';
 import github from '@iconify/icons-simple-icons/github';
 import bilibili from '@iconify/icons-simple-icons/bilibili';
 import leetcode from '@iconify/icons-simple-icons/leetcode';
-import type { IconifyIcon } from '@iconify/types';
+
+type IconifyIconLike = {
+	body: string;
+	width?: number;
+	height?: number;
+};
 
 export type SiteKey = 'github' | 'bilibili' | 'leetcode' | 'internal';
 
@@ -12,7 +17,7 @@ export const isSiteKey = (value: string): value is SiteKey => siteKeys.has(value
 
 const iconCache = new Map<SiteKey, string>();
 
-const toDataUrl = (icon: IconifyIcon) => {
+const toDataUrl = (icon: IconifyIconLike) => {
 	const render = iconToSVG(icon, { width: '1em', height: '1em' });
 	const body = replaceIDs(render.body);
 	const attrs: Record<string, string> = {

@@ -1,1 +1,1 @@
-export * from '$shared/markdown/components'
+export * from '$shared/markdown/components';

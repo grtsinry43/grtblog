@@ -10,9 +10,10 @@
 
 	onMount(() => {
 		// Only auto-open if explicitly requested by redirect AND not shown before
-		const isRedirect = new URLSearchParams(window.location.search).get('redirect_from') === 'statistics';
+		const isRedirect =
+			new URLSearchParams(window.location.search).get('redirect_from') === 'statistics';
 		const hasShown = localStorage.getItem(STORAGE_KEY);
-		
+
 		if (isRedirect && !hasShown) {
 			isOpen = true;
 		}
@@ -56,12 +57,12 @@
 						<div class="blob blob-1"></div>
 						<div class="blob blob-2"></div>
 						<div class="blob blob-3"></div>
-						
+
 						<!-- Transitioning Data Lines -->
 						<div class="data-lines">
 							<!-- Horizontal Axis Line (Static guide) -->
 							<div class="timeline-axis"></div>
-							
+
 							<div class="line l1"></div>
 							<div class="line l2"></div>
 							<div class="line l3"></div>
@@ -76,12 +77,15 @@
 					</div>
 				</div>
 
-				<h3 class="mb-3 font-serif text-2xl font-bold tracking-tight text-ink-900 dark:text-ink-100">
+				<h3
+					class="mb-3 font-serif text-2xl font-bold tracking-tight text-ink-900 dark:text-ink-100"
+				>
 					数据，升维进化
 				</h3>
-				
+
 				<p class="mb-8 text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-					原本的统计页面现已进化为全新的<b>交互式叙事时间轴</b>。从离散的数据点到连续的创作流，邀你一同回溯这段充满逻辑与感性的旅程。
+					原本的统计页面现已进化为全新的<b>交互式叙事时间轴</b
+					>。从离散的数据点到连续的创作流，邀你一同回溯这段充满逻辑与感性的旅程。
 				</p>
 
 				<button
@@ -134,9 +138,19 @@
 	}
 
 	@keyframes morph {
-		0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg) scale(1); }
-		33% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: rotate(120deg) scale(1.1); }
-		66% { border-radius: 50% 50% 20% 80% / 25% 80% 20% 75%; transform: rotate(240deg) scale(0.9); }
+		0%,
+		100% {
+			border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+			transform: rotate(0deg) scale(1);
+		}
+		33% {
+			border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+			transform: rotate(120deg) scale(1.1);
+		}
+		66% {
+			border-radius: 50% 50% 20% 80% / 25% 80% 20% 75%;
+			transform: rotate(240deg) scale(0.9);
+		}
 	}
 
 	.data-lines {
@@ -172,12 +186,25 @@
 		animation: node-ping 4s ease-in-out infinite;
 	}
 
-	.n1 { left: 15%; animation-delay: 0.5s; }
-	.n2 { left: 85%; animation-delay: 1.5s; }
+	.n1 {
+		left: 15%;
+		animation-delay: 0.5s;
+	}
+	.n2 {
+		left: 85%;
+		animation-delay: 1.5s;
+	}
 
 	@keyframes node-ping {
-		0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-		50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+		0%,
+		100% {
+			transform: translate(-50%, -50%) scale(1);
+			opacity: 0.5;
+		}
+		50% {
+			transform: translate(-50%, -50%) scale(1.5);
+			opacity: 1;
+		}
 	}
 
 	.line {
@@ -190,12 +217,31 @@
 		z-index: 3;
 	}
 
-	.l1 { height: 10px; animation-delay: 0s; }
-	.l2 { height: 20px; animation-delay: 0.2s; }
-	.l3 { height: 14px; animation-delay: 0.4s; }
+	.l1 {
+		height: 10px;
+		animation-delay: 0s;
+	}
+	.l2 {
+		height: 20px;
+		animation-delay: 0.2s;
+	}
+	.l3 {
+		height: 14px;
+		animation-delay: 0.4s;
+	}
 
 	@keyframes line-evolve {
-		0%, 100% { height: 12px; transform: translateY(0) scaleY(1); opacity: 0.4; }
-		45%, 55% { height: 1px; transform: translateY(0) scaleX(12); opacity: 1; }
+		0%,
+		100% {
+			height: 12px;
+			transform: translateY(0) scaleY(1);
+			opacity: 0.4;
+		}
+		45%,
+		55% {
+			height: 1px;
+			transform: translateY(0) scaleX(12);
+			opacity: 1;
+		}
 	}
 </style>

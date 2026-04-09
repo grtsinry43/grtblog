@@ -9,13 +9,7 @@
 
 {#if src}
 	<div class="detail-hero-bg" aria-hidden="true">
-		<img
-			{src}
-			alt=""
-			class="hero-bg-img"
-			loading="eager"
-			onload={handleLoad}
-		/>
+		<img {src} alt="" class="hero-bg-img" loading="eager" onload={handleLoad} />
 		<!-- Progressive blur band at bottom for smooth dissolution -->
 		<div class="hero-blur-band">
 			<div class="hero-blur-layer hero-blur-1"></div>

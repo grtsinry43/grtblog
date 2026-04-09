@@ -17,7 +17,7 @@
 	let searchTerm = $state('');
 	let debouncedSearchTerm = $state('');
 	let searchHistory: string[] = $state([]);
-	let activeItemIndex = $state(-1);
+	let activeItemIndex = $derived(-1);
 
 	type KeyboardNavItem = {
 		key: string;
@@ -211,15 +211,13 @@
 	});
 
 	const keyboardNavIndexMap = $derived.by(() => {
-		const map = new Map<string, number>();
-		keyboardNavItems.forEach((item, index) => {
-			map.set(item.key, index);
-		});
-		return map;
+		return Object.fromEntries(keyboardNavItems.map((item, index) => [item.key, index])) as Record<
+			string,
+			number
+		>;
 	});
 
 	$effect(() => {
-		debouncedSearchTerm;
 		activeItemIndex = -1;
 	});
 
@@ -260,11 +258,11 @@
 	}
 
 	function isItemActive(key: string) {
-		return keyboardNavIndexMap.get(key) === activeItemIndex;
+		return keyboardNavIndexMap[key] === activeItemIndex;
 	}
 
 	function setActiveItem(key: string) {
-		const index = keyboardNavIndexMap.get(key);
+		const index = keyboardNavIndexMap[key];
 		if (index === undefined) return;
 		activeItemIndex = index;
 	}

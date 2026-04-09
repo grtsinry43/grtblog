@@ -46,9 +46,17 @@ const resolveLanguage = (lang?: string) => {
 	return hljs.getLanguage(resolved) ? resolved : 'markdown';
 };
 
+const escapeHtml = (value: string) =>
+	value
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;')
+		.replaceAll("'", '&#39;');
+
 export const highlightCode = (code: string, lang?: string) => {
 	const language = resolveLanguage(lang);
 	const result = hljs.highlight(code ?? '', { language, ignoreIllegals: true });
-	const html = result.value || hljs.escapeHTML(code ?? '');
+	const html = result.value || escapeHtml(code ?? '');
 	return `<pre><code class="hljs language-${language}">${html}</code></pre>`;
 };

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Heart, MessageCircle, Share2 } from 'lucide-svelte';
+	import { MessageCircle, Share2 } from 'lucide-svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import type { TrackLikeContentType } from '$lib/features/analytics/types';
 	import { toast } from 'svelte-sonner';

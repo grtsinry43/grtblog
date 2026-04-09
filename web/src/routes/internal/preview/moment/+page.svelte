@@ -2,7 +2,11 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import MomentDetail from '$lib/features/moment/components/MomentDetail.svelte';
-	import type { MomentDetail as MomentDetailModel, TOCNode, TopicTag } from '$lib/features/moment/types';
+	import type {
+		MomentDetail as MomentDetailModel,
+		TOCNode,
+		TopicTag
+	} from '$lib/features/moment/types';
 	import { windowMessage } from '$lib/shared/actions/window-message';
 	import { momentDetailCtx } from '$lib/features/moment/context';
 
@@ -60,6 +64,7 @@
 			isTop: payload.isTop ?? false,
 			isHot: payload.isHot ?? false,
 			isOriginal: payload.isOriginal ?? true,
+			contentUpdatedAt: payload.updatedAt ?? nowIso,
 			createdAt: payload.createdAt ?? nowIso,
 			updatedAt: payload.updatedAt ?? nowIso,
 			relatedPosts: []

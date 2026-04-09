@@ -1,9 +1,8 @@
 <script lang="ts">
-	/* eslint-disable svelte/no-navigation-without-resolve */
-	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context';
 	import { getSiteIconUrl, resolveLinkSite } from '$lib/shared/markdown/link-icons';
+	import { resolveHref } from '$lib/shared/utils/resolve-path';
 
 	const {
 		href = '',
@@ -76,7 +75,7 @@
 	<a
 		class={`group relative mx-auto my-4 flex max-w-[400px] items-center justify-between gap-3 overflow-hidden rounded-default border border-ink-200/80 bg-white/80 px-4 py-3 shadow-subtle transition-all hover:-translate-y-0.5 hover:shadow-float dark:border-ink-800/60 dark:bg-ink-900/40 no-underline ${className}`.trim()}
 		data-site={site || undefined}
-		href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolve(href) : href}
+		href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolveHref(href) : href}
 		{title}
 		{rel}
 		{target}
@@ -112,7 +111,13 @@
 				loading="lazy"
 			/>
 		{:else}
-			<svg class="relative z-10 h-4 w-4 shrink-0 text-ink-400 dark:text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<svg
+				class="relative z-10 h-4 w-4 shrink-0 text-ink-400 dark:text-ink-500"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
 				<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
 				<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
 			</svg>
@@ -122,12 +127,14 @@
 	<a
 		class={`md-link relative inline-flex max-w-full flex-wrap items-center gap-x-[0.35em] gap-y-[0.15em] break-words [overflow-wrap:anywhere] no-underline ${className}`.trim()}
 		data-site={site || undefined}
-		href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolve(href) : href}
+		href={href && !/^(https?:|mailto:|tel:|#|\/\/)/i.test(href) ? resolveHref(href) : href}
 		{title}
 		{rel}
 		{target}
 	>
-		<span class="relative z-[1] min-w-0 break-words [overflow-wrap:anywhere]">{@render children?.()}</span>
+		<span class="relative z-[1] min-w-0 break-words [overflow-wrap:anywhere]"
+			>{@render children?.()}</span
+		>
 		{#if site}
 			<span
 				class="md-link__icon relative z-[1] inline-block h-[0.9em] w-[0.9em] shrink-0 rounded bg-cover bg-center bg-no-repeat opacity-75"
@@ -141,7 +148,8 @@
 <style>
 	.md-link {
 		color: var(--color-ink-900);
-		transition: color 200ms cubic-bezier(0, 0.8, 0.13, 1),
+		transition:
+			color 200ms cubic-bezier(0, 0.8, 0.13, 1),
 			transform 150ms ease;
 		cursor: pointer;
 	}

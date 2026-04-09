@@ -16,4 +16,3 @@ export type OwnerStatus = {
 export type OwnerStatusRealtimePayload = OwnerStatus & {
 	type?: string;
 };
-

@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { Snippet } from 'svelte';
+	import type { Component, Snippet } from 'svelte';
 	import ClientOnly from '$lib/ui/common/ClientOnly.svelte';
 	import type { QueryClientConfig } from '@tanstack/svelte-query';
 
-	import type { Component } from 'svelte';
-
-	type LoaderProps = Record<string, unknown>;
-	type LoaderComponent = Component<LoaderProps>;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	type LoaderProps = Record<string, any>;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	type LoaderComponent = Component<any>;
 	let { children, options, fallback, loader, loaderProps } = $props<{
 		children?: Snippet;
 		options?: QueryClientConfig;

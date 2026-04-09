@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
+	import type { Component } from 'svelte';
 	import lucideIcons, { type LucideIconComponent } from './lucide-loaders';
 
-	type IconComponent = ComponentType<{ size?: number; strokeWidth?: number; class?: string }>;
+	type IconComponent = Component<{ size?: number; strokeWidth?: number; class?: string }>;
 
 	let {
 		name,
@@ -15,7 +15,10 @@
 		if (!iconName) return null;
 		const key = iconName.trim();
 		if (!key) return null;
-		return (lucideIcons as Record<string, LucideIconComponent | undefined>)[key] ?? null;
+		if (key in lucideIcons) {
+			return lucideIcons[key as keyof typeof lucideIcons] as unknown as LucideIconComponent;
+		}
+		return null;
 	};
 
 	const Icon = $derived.by(() => resolveIcon(name));

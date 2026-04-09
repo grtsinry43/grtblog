@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { Spring } from 'svelte/motion';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { intersect } from '$lib/shared/actions/intersect';
 	import type { Snippet } from 'svelte';
+	import type { HTMLAttributes } from 'svelte/elements';
 
 	// Module-level set: survives SvelteKit client-side navigations,
 	// so a list with the same key won't replay the entrance animation.
-	const _animatedKeys = new Set<string>();
+	const _animatedKeys = new SvelteSet<string>();
 
 	let {
 		children,
@@ -18,19 +20,22 @@
 		spring: useSpring = true,
 		class: className = '',
 		itemSelector = ':scope > *',
-		key = ''
-	} = $props<{
-		children: Snippet;
-		staggerDelay?: number;
-		y?: number;
-		duration?: number;
-		threshold?: number;
-		rootMargin?: string;
-		spring?: boolean;
-		class?: string;
-		itemSelector?: string;
-		key?: string;
-	}>();
+		key = '',
+		...restProps
+	} = $props<
+		{
+			children: Snippet;
+			staggerDelay?: number;
+			y?: number;
+			duration?: number;
+			threshold?: number;
+			rootMargin?: string;
+			spring?: boolean;
+			class?: string;
+			itemSelector?: string;
+			key?: string;
+		} & HTMLAttributes<HTMLDivElement>
+	>();
 
 	let wrapper: HTMLElement | undefined = $state();
 	let revealed = $state(false);
@@ -127,6 +132,11 @@
 	}
 </script>
 
-<div bind:this={wrapper} class={className} use:intersect={{ onEnter, threshold, rootMargin }}>
+<div
+	bind:this={wrapper}
+	class={className}
+	use:intersect={{ onEnter, threshold, rootMargin }}
+	{...restProps}
+>
 	{@render children()}
 </div>

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import type { NavMenuItem } from '$lib/features/navigation/types';
 	import OwnerStatusAvatar from '$lib/features/owner-status/components/OwnerStatusAvatar.svelte';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
@@ -14,6 +13,7 @@
 	import { uiState } from '$lib/shared/stores/ui.svelte';
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { LayoutIcon } from 'lucide-svelte';
+	import { resolveHref } from '$lib/shared/utils/resolve-path';
 
 	let { menuTree = [] } = $props<{ menuTree: NavMenuItem[] }>();
 
@@ -58,7 +58,7 @@
 				onmouseleave={handleMouseLeave}
 			>
 				<a
-					href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolve(item.url)}
+					href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolveHref(item.url)}
 					aria-label={item.name}
 					class="relative z-20 flex h-10 w-10 items-center justify-center rounded-default transition-all duration-200
                     {active
@@ -88,7 +88,9 @@
 									{#each item.children as child (child.url)}
 										<li>
 											<a
-												href={/^(https?:|\/\/)/i.test(child.url) ? child.url : resolve(child.url)}
+												href={/^(https?:|\/\/)/i.test(child.url)
+													? child.url
+													: resolveHref(child.url)}
 												class="flex items-center gap-2 rounded-default px-3 py-2 text-sm transition-colors
                                                 {isActive(child.url)
 													? 'bg-ink-100 text-ink-900 font-medium dark:bg-ink-800 dark:text-ink-100'

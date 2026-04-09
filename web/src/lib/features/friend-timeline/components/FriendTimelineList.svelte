@@ -17,16 +17,22 @@
 		basePath?: string;
 	}
 
-	let {
-		basePath = '/friends-timeline'
-	}: Props = $props();
+	let { basePath = '/friends-timeline' }: Props = $props();
 
 	import type { FriendTimelineListResponse } from '../types';
 
-	const itemsStore = friendTimelineListCtx.selectModelData((state: FriendTimelineListResponse | null) => state?.items ?? []);
-	const totalStore = friendTimelineListCtx.selectModelData((state: FriendTimelineListResponse | null) => state?.total ?? 0);
-	const pageStore = friendTimelineListCtx.selectModelData((state: FriendTimelineListResponse | null) => state?.page ?? 1);
-	const sizeStore = friendTimelineListCtx.selectModelData((state: FriendTimelineListResponse | null) => state?.size ?? 10);
+	const itemsStore = friendTimelineListCtx.selectModelData(
+		(state: FriendTimelineListResponse | null) => state?.items ?? []
+	);
+	const totalStore = friendTimelineListCtx.selectModelData(
+		(state: FriendTimelineListResponse | null) => state?.total ?? 0
+	);
+	const pageStore = friendTimelineListCtx.selectModelData(
+		(state: FriendTimelineListResponse | null) => state?.page ?? 1
+	);
+	const sizeStore = friendTimelineListCtx.selectModelData(
+		(state: FriendTimelineListResponse | null) => state?.size ?? 10
+	);
 
 	let items = itemsStore;
 	let total = totalStore;
@@ -45,7 +51,6 @@
 
 	const onPageChange = (page: number) => {
 		const safePage = Number.isFinite(page) && page > 1 ? page : 1;
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(resolvePath(safePage === 1 ? `${basePath}/` : `${basePath}/page/${safePage}/`));
 	};
 </script>

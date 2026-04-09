@@ -3,10 +3,12 @@
 
 	let { album }: { album: AlbumSummary } = $props();
 
-	const dateStr = new Date(album.createdAt).toLocaleDateString('zh-CN', {
-		year: 'numeric',
-		month: 'long'
-	});
+	const dateStr = $derived.by(() =>
+		new Date(album.createdAt).toLocaleDateString('zh-CN', {
+			year: 'numeric',
+			month: 'long'
+		})
+	);
 </script>
 
 <a
@@ -34,7 +36,7 @@
 		<div class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3">
 			<div
 				class="absolute inset-0 bg-gradient-to-t from-ink-950/80 via-ink-950/30 to-transparent backdrop-blur-[1px]"
-			/>
+			></div>
 		</div>
 	</div>
 
@@ -52,7 +54,7 @@
 		{/if}
 		<div class="mt-3 flex items-center gap-3 text-[11px] text-white/40">
 			<span>{dateStr}</span>
-			<span class="h-px flex-1 bg-white/10" />
+			<span class="h-px flex-1 bg-white/10"></span>
 			<span>{album.photoCount} 张</span>
 		</div>
 	</div>

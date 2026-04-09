@@ -7,8 +7,7 @@ export const GET: RequestHandler = async ({ url, fetch, request }) => {
 	const png = await renderOgImage(
 		{
 			title: url.searchParams.get('title') || 'grtBlog',
-			subtitle:
-				url.searchParams.get('subtitle') || 'A personal blog about software and life.',
+			subtitle: url.searchParams.get('subtitle') || 'A personal blog about software and life.',
 			site: url.searchParams.get('site') || 'grtBlog',
 			tag: url.searchParams.get('tag') || 'PREVIEW',
 			theme: url.searchParams.get('theme') === 'dark' ? 'dark' : 'light',

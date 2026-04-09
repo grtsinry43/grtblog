@@ -34,9 +34,13 @@
 	style={`--mouse-x: ${mouseX}; --mouse-y: ${mouseY};`}
 >
 	<div class="home-item-content flex min-w-0 items-center justify-between gap-3">
-		<h3 class="home-item-title flex min-w-0 items-center gap-1.5 font-serif text-[15px] font-medium text-ink-900 dark:text-ink-100">
+		<h3
+			class="home-item-title flex min-w-0 items-center gap-1.5 font-serif text-[15px] font-medium text-ink-900 dark:text-ink-100"
+		>
 			{#if post.isTop}
-				<span class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400">
+				<span
+					class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
+				>
 					<Pin size={9} strokeWidth={2} class="rotate-45" />
 				</span>
 			{/if}

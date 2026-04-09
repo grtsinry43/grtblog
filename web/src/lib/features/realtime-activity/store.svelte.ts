@@ -37,16 +37,17 @@ class RealtimeActivityStore {
 		this.pruneSeen();
 
 		const copy = this.buildCopy(payload, dedupeKey);
-			toast(copy.title, {
-				description: copy.description,
-				duration: 9000,
-				classes: {
-					actionButton: 'inline-flex min-w-[3.5rem] shrink-0 items-center justify-center whitespace-nowrap'
-				},
-				action: {
-					label: '去围观',
-					onClick: () => {
-						void this.openURL(normalizedURL);
+		toast(copy.title, {
+			description: copy.description,
+			duration: 9000,
+			classes: {
+				actionButton:
+					'inline-flex min-w-[3.5rem] shrink-0 items-center justify-center whitespace-nowrap'
+			},
+			action: {
+				label: '去围观',
+				onClick: () => {
+					void this.openURL(normalizedURL);
 				}
 			}
 		});
@@ -73,7 +74,7 @@ class RealtimeActivityStore {
 	private pruneSeen() {
 		const now = Date.now();
 		for (const [key, timestamp] of Object.entries(this.seen)) {
-			if (!Number.isFinite(timestamp) || now-timestamp > 15 * 60 * 1000) {
+			if (!Number.isFinite(timestamp) || now - timestamp > 15 * 60 * 1000) {
 				delete this.seen[key];
 			}
 		}
@@ -84,23 +85,26 @@ class RealtimeActivityStore {
 		window.location.href = url;
 	}
 
-	private buildCopy(payload: SiteActivityPayload, key: string): { title: string; description: string } {
+	private buildCopy(
+		payload: SiteActivityPayload,
+		key: string
+	): { title: string; description: string } {
 		const title = this.fallbackTitle(payload.title, payload.contentType);
 		const excerpt = (payload.excerpt || '').trim();
 
-			switch (payload.event) {
-				case 'article.updated':
-					return {
-						title: this.pick(['文章冒出新鲜热气', '文章刚刚二次发酵', '文章有了新版本'], key),
-						description: `《${title}》刚被作者轻轻打磨，点开看看新变化。`
-					};
-				case 'article.hot_marked':
-					return {
-						title: this.pick(['热榜上新', '这篇文章冲上热门', '新晋热门文章出现'], key),
-						description: `《${title}》刚被标记为热门，来看看它凭什么出圈。`
-					};
-				case 'moment.updated':
-					return {
+		switch (payload.event) {
+			case 'article.updated':
+				return {
+					title: this.pick(['文章冒出新鲜热气', '文章刚刚二次发酵', '文章有了新版本'], key),
+					description: `《${title}》刚被作者轻轻打磨，点开看看新变化。`
+				};
+			case 'article.hot_marked':
+				return {
+					title: this.pick(['热榜上新', '这篇文章冲上热门', '新晋热门文章出现'], key),
+					description: `《${title}》刚被标记为热门，来看看它凭什么出圈。`
+				};
+			case 'moment.updated':
+				return {
 					title: this.pick(['手记冒泡啦', '手记有了新段落', '手记刚续上一笔'], key),
 					description: `「${title}」更新完成，灵感还热乎着。`
 				};

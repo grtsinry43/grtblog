@@ -17,7 +17,7 @@
 {#if tags && tags.length > 0}
 	<div class="flex flex-wrap items-center gap-2">
 		<TagIcon size={12} class="text-ink-400 mr-1" />
-		{#each tags as tag}
+		{#each tags as tag (tag.id)}
 			<button
 				onclick={() => handleTagClick(tag)}
 				class="group flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-ink-50 dark:bg-ink-800/40 border border-ink-200/50 dark:border-ink-700/50 hover:border-jade-500/50 hover:bg-jade-500/5 dark:hover:bg-jade-500/10 transition-all duration-300"

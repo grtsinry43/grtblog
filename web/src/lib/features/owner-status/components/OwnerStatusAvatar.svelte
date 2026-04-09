@@ -34,7 +34,9 @@
 					class="h-10 w-10 rounded-default object-cover shadow-sm ring-1 ring-ink-200 dark:ring-ink-700"
 				/>
 			{:else}
-				<div class="h-10 w-10 rounded-default bg-ink-200 dark:bg-ink-700 ring-1 ring-ink-200 dark:ring-ink-700 shadow-sm"></div>
+				<div
+					class="h-10 w-10 rounded-default bg-ink-200 dark:bg-ink-700 ring-1 ring-ink-200 dark:ring-ink-700 shadow-sm"
+				></div>
 			{/if}
 			<span class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
 				<span
@@ -73,10 +75,14 @@
 				</span>
 			</div>
 
-			<div class="mt-2 rounded-default border border-ink-100 bg-ink-50/80 p-2 dark:border-ink-800 dark:bg-ink-950/70">
+			<div
+				class="mt-2 rounded-default border border-ink-100 bg-ink-50/80 p-2 dark:border-ink-800 dark:bg-ink-950/70"
+			>
 				<p class="text-xs leading-5 text-ink-700 dark:text-ink-300">
 					{#if isOnline}
-						正在使用 <span class="font-medium text-jade-700 dark:text-jade-300">{status.process || '未知应用'}</span>
+						正在使用 <span class="font-medium text-jade-700 dark:text-jade-300"
+							>{status.process || '未知应用'}</span
+						>
 					{:else}
 						当前未上报实时活动
 					{/if}
@@ -87,7 +93,9 @@
 			</div>
 
 			{#if media?.title}
-				<div class="mt-2 flex items-center gap-2 rounded-default border border-ink-100 p-2 dark:border-ink-800">
+				<div
+					class="mt-2 flex items-center gap-2 rounded-default border border-ink-100 p-2 dark:border-ink-800"
+				>
 					<img
 						src={media.thumbnail || siteAvatar}
 						alt={media.title}
@@ -95,7 +103,9 @@
 					/>
 					<div class="min-w-0">
 						<p class="truncate text-xs font-medium text-ink-900 dark:text-ink-100">{media.title}</p>
-						<p class="truncate text-[11px] text-ink-500 dark:text-ink-400">{media.artist || '未知艺术家'}</p>
+						<p class="truncate text-[11px] text-ink-500 dark:text-ink-400">
+							{media.artist || '未知艺术家'}
+						</p>
 					</div>
 				</div>
 			{/if}

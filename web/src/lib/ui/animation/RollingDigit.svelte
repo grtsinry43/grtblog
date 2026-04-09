@@ -56,7 +56,7 @@
 		style:transition-delay="{delay}ms"
 		ontransitionend={handleTransitionEnd}
 	>
-		{#each CELLS as d}
+		{#each CELLS as d, i (`${i}-${d}`)}
 			<span class="rd-cell" aria-hidden="true">{d}</span>
 		{/each}
 	</span>
