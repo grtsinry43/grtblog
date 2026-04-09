@@ -1,10 +1,18 @@
-# GrtBlog v2
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/69a1650d-cfa2-41b3-805c-3cc11bac9911" width="600" />
+</div>
+
+<div align="center">
+
+# grtblog
 
 **现代化博客系统** — 静态先行、实时注水、联合社交
 
 [![GitHub release](https://img.shields.io/github/v/release/grtsinry43/grtblog)](https://github.com/grtsinry43/grtblog/releases)
 [![GitHub top language](https://img.shields.io/github/languages/top/grtsinry43/grtblog)](https://github.com/grtsinry43/grtblog)
 [![GitHub languages count](https://img.shields.io/github/languages/count/grtsinry43/grtblog)](https://github.com/grtsinry43/grtblog)
+
+</div>
 
 GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现极致首屏速度，通过 WebSocket 实现毫秒级实时更新，并内置联合社交协议让博客不再是孤岛。
 
