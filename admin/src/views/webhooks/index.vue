@@ -15,13 +15,13 @@ import {
 import { onMounted, ref } from 'vue'
 
 import { ScrollContainer } from '@/components'
-import { useWebhookForm } from './composables/use-webhook-form'
 
-import WebhookTable from './components/WebhookTable.vue'
 import WebhookFormDrawer from './components/WebhookFormDrawer.vue'
-import WebhookHistoryPanel from './components/WebhookHistoryPanel.vue'
 import WebhookHistoryDrawer from './components/WebhookHistoryDrawer.vue'
+import WebhookHistoryPanel from './components/WebhookHistoryPanel.vue'
+import WebhookTable from './components/WebhookTable.vue'
 import WebhookTestModal from './components/WebhookTestModal.vue'
+import { useWebhookForm } from './composables/use-webhook-form'
 
 defineOptions({
   name: 'WebhookList',
@@ -99,15 +99,45 @@ onMounted(() => init())
           <div class="text-xs text-[var(--text-color-3)]">配置事件推送、测试与投递记录。</div>
         </div>
         <NSpace align="center">
-          <NButton secondary @click="fetchWebhooks">刷新</NButton>
-          <NButton type="primary" @click="openCreate">新建 Webhook</NButton>
+          <NButton
+            secondary
+            @click="fetchWebhooks"
+            >刷新</NButton
+          >
+          <NButton
+            type="primary"
+            @click="openCreate"
+            >新建 Webhook</NButton
+          >
         </NSpace>
       </div>
       <NDivider class="my-4" />
-      <NGrid cols="1 640:2 900:4" x-gap="16" y-gap="12">
-        <NGi><NStatistic label="Webhook 总数" tabular-nums>{{ totalWebhooks }}</NStatistic></NGi>
-        <NGi><NStatistic label="启用中" tabular-nums>{{ enabledCount }}</NStatistic></NGi>
-        <NGi><NStatistic label="已停用" tabular-nums>{{ disabledCount }}</NStatistic></NGi>
+      <NGrid
+        cols="1 640:2 900:4"
+        x-gap="16"
+        y-gap="12"
+      >
+        <NGi
+          ><NStatistic
+            label="Webhook 总数"
+            tabular-nums
+            >{{ totalWebhooks }}</NStatistic
+          ></NGi
+        >
+        <NGi
+          ><NStatistic
+            label="启用中"
+            tabular-nums
+            >{{ enabledCount }}</NStatistic
+          ></NGi
+        >
+        <NGi
+          ><NStatistic
+            label="已停用"
+            tabular-nums
+            >{{ disabledCount }}</NStatistic
+          ></NGi
+        >
         <NGi>
           <NStatistic label="最近投递">
             <NTag
@@ -123,12 +153,19 @@ onMounted(() => init())
       </NGrid>
     </NCard>
 
-    <NTabs v-model:value="activeTab" type="line" animated>
-      <NTabPane name="list" tab="Webhook 列表">
+    <NTabs
+      v-model:value="activeTab"
+      type="line"
+      animated
+    >
+      <NTabPane
+        name="list"
+        tab="Webhook 列表"
+      >
         <WebhookTable
+          v-model:list-filters="listFilters"
           :webhooks="webhooks"
           :loading="loading"
-          :list-filters="listFilters"
           :event-options="eventOptions"
           :status-options="statusOptions"
           @edit="openEdit"
@@ -138,8 +175,13 @@ onMounted(() => init())
         />
       </NTabPane>
 
-      <NTabPane name="history" tab="投递历史">
+      <NTabPane
+        name="history"
+        tab="投递历史"
+      >
         <WebhookHistoryPanel
+          v-model:history-filters="historyFilters"
+          v-model:is-test-only="isTestOnly"
           :history="history"
           :history-loading="historyLoading"
           :history-page="historyPage"
@@ -147,13 +189,10 @@ onMounted(() => init())
           :history-total="historyTotal"
           :history-failure-count="historyFailureCount"
           :webhook-map="webhookMap"
-          :history-filters="historyFilters"
-          :is-test-only="isTestOnly"
           :webhook-options="webhookOptions"
           :event-options="eventOptions"
           @update:history-page="handleHistoryPageChange"
           @update:history-page-size="handleHistoryPageSizeChange"
-          @update:is-test-only="isTestOnly = $event"
           @apply-filters="applyHistoryFilters"
           @reset-filters="resetHistoryFilters"
           @refresh="fetchHistory"
@@ -164,14 +203,13 @@ onMounted(() => init())
     </NTabs>
 
     <WebhookFormDrawer
-      :visible="formDrawerVisible"
+      v-model:visible="formDrawerVisible"
+      v-model:form="form"
       :title="formTitle"
       :action-label="formActionLabel"
       :saving="saving"
-      :form="form"
       :event-groups="eventGroups"
       :valid-variables="validVariables"
-      @update:visible="formDrawerVisible = $event"
       @save="handleSave"
       @format-payload="handleFormatPayload"
       @add-header="addHeaderRow"
@@ -201,7 +239,8 @@ onMounted(() => init())
 
 <style scoped>
 .template-code {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
 }
 </style>

@@ -22,11 +22,12 @@ import {
   batchSetArticleTop,
   batchDeleteArticles,
 } from '@/services/articles'
+import { listWebsiteInfo } from '@/services/website-info'
+
+import Preview from './preview.vue'
 
 import type { ArticleListItem } from '@/services/articles'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
-import { listWebsiteInfo } from '@/services/website-info'
-import Preview from './preview.vue'
 
 export default defineComponent({
   name: 'ArticleList',
@@ -38,9 +39,8 @@ export default defineComponent({
     const publicUrl = ref('')
 
     function normalizePublicUrl(value: string) {
-  return value.trim().replace(/\/+$/, '')
+      return value.trim().replace(/\/+$/, '')
     }
-
 
     async function fetchWebsiteInfo() {
       try {
@@ -52,8 +52,7 @@ export default defineComponent({
       }
     }
 
-
-    onMounted(()=>{
+    onMounted(() => {
       fetchWebsiteInfo()
     })
     const handleEdit = (id: number) => {
@@ -145,40 +144,46 @@ export default defineComponent({
         minWidth: 280,
         render: (row) => (
           <div class='font-medium text-gray-700 dark:text-gray-200'>
-              <span>{row.title}</span>
+            <span>{row.title}</span>
             {row.isHot && (
               <NTooltip trigger='hover'>
                 {{
                   trigger: () => (
-                    <span class='iconify ph--fire-fill size-4 cursor-help text-red-500 ml-2 align-middle' />
+                    <span class='ml-2 iconify size-4 cursor-help align-middle text-red-500 ph--fire-fill' />
                   ),
                   default: () => (
                     <div class='flex flex-col gap-y-0.5'>
                       <span class='font-bold'>热门文章</span>
-                      <span class='text-xs opacity-80'>热门标准：浏览量 &gt; 1000 或 点赞数 &gt; 50</span>
+                      <span class='text-xs opacity-80'>
+                        热门标准：浏览量 &gt; 1000 或 点赞数 &gt; 50
+                      </span>
                     </div>
                   ),
                 }}
               </NTooltip>
             )}
             <NTooltip trigger='hover'>
-                {{
-                  trigger: () => (
-                    <span class='iconify ph--file-search size-4 cursor-help text-black/50 dark:text-gray-40 ml-2 align-middle' />
-                  ),
-                  default: () => (
-                    <ScrollContainer class="max-w-120 max-h-80 overflow-auto text-sm">
-                      <Preview articleId={row.id}/>
-                    </ScrollContainer>
-                  ),
-                }}
-              </NTooltip>
-            <div class="cursor-pointer inline-block" onClick={
-              () => {
-                window.open(`${normalizePublicUrl(publicUrl.value)}/posts/${row.shortUrl}`, '_blank')
-              }
-            }>
-              <span class='iconify ph--link-simple size-4 cursor-pointer text-black/50 dark:text-gray-400 ml-2 align-middle' />
+              {{
+                trigger: () => (
+                  <span class='dark:text-gray-40 ml-2 iconify size-4 cursor-help align-middle text-black/50 ph--file-search' />
+                ),
+                default: () => (
+                  <ScrollContainer class='max-h-80 max-w-120 overflow-auto text-sm'>
+                    <Preview articleId={row.id} />
+                  </ScrollContainer>
+                ),
+              }}
+            </NTooltip>
+            <div
+              class='inline-block cursor-pointer'
+              onClick={() => {
+                window.open(
+                  `${normalizePublicUrl(publicUrl.value)}/posts/${row.shortUrl}`,
+                  '_blank',
+                )
+              }}
+            >
+              <span class='ml-2 iconify size-4 cursor-pointer align-middle text-black/50 ph--link-simple dark:text-gray-400' />
             </div>
           </div>
         ),
@@ -227,8 +232,12 @@ export default defineComponent({
               bordered={false}
             >
               {{
-                default: () => row.isPublished ? '已发布' : '草稿',
-                icon: () => <span class={`iconify ${row.isPublished ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`} />,
+                default: () => (row.isPublished ? '已发布' : '草稿'),
+                icon: () => (
+                  <span
+                    class={`iconify ${row.isPublished ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`}
+                  />
+                ),
               }}
             </NTag>
           </span>
@@ -251,15 +260,31 @@ export default defineComponent({
                 bordered={false}
               >
                 {{
-                  default: () => row.isTop ? '置顶' : '未置顶',
-                  icon: () => <span class={`iconify ${row.isTop ? 'ph--push-pin-fill' : 'ph--push-pin'} size-3.5`} />,
+                  default: () => (row.isTop ? '置顶' : '未置顶'),
+                  icon: () => (
+                    <span
+                      class={`iconify ${row.isTop ? 'ph--push-pin-fill' : 'ph--push-pin'} size-3.5`}
+                    />
+                  ),
                 }}
               </NTag>
             </span>
             {row.isOriginal ? (
-              <NTag size='small' type='success' bordered={false}>原创</NTag>
+              <NTag
+                size='small'
+                type='success'
+                bordered={false}
+              >
+                原创
+              </NTag>
             ) : (
-              <NTag size='small' type='default' bordered={false}>转载</NTag>
+              <NTag
+                size='small'
+                type='default'
+                bordered={false}
+              >
+                转载
+              </NTag>
             )}
           </NSpace>
         ),
@@ -268,22 +293,14 @@ export default defineComponent({
         title: '浏览',
         key: 'views',
         width: 100,
-        render: (row) => (
-          <span class='font-mono text-xs text-gray-500'>
-            {row.views}
-          </span>
-        ),
+        render: (row) => <span class='font-mono text-xs text-gray-500'>{row.views}</span>,
         sorter: 'default',
       },
       {
         title: '点赞',
         key: 'likes',
         width: 100,
-        render: (row) => (
-          <span class='font-mono text-xs text-gray-500'>
-            {row.likes}
-          </span>
-        ),
+        render: (row) => <span class='font-mono text-xs text-gray-500'>{row.likes}</span>,
         sorter: 'default',
       },
       {
@@ -291,14 +308,16 @@ export default defineComponent({
         key: 'createdAt',
         width: 180,
         render: (row) => new Date(row.createdAt).toLocaleString(),
-        sorter: (row1, row2) => new Date(row1.createdAt).getTime() - new Date(row2.createdAt).getTime(),
+        sorter: (row1, row2) =>
+          new Date(row1.createdAt).getTime() - new Date(row2.createdAt).getTime(),
       },
       {
         title: '更新时间',
         key: 'updatedAt',
         width: 180,
         render: (row) => new Date(row.updatedAt).toLocaleString(),
-        sorter: (row1, row2) => new Date(row1.updatedAt).getTime() - new Date(row2.updatedAt).getTime(),
+        sorter: (row1, row2) =>
+          new Date(row1.updatedAt).getTime() - new Date(row2.updatedAt).getTime(),
       },
       {
         title: '操作',
@@ -336,7 +355,7 @@ export default defineComponent({
       },
     ]
 
-    onMounted(()=>{
+    onMounted(() => {
       refresh()
     })
 
@@ -347,23 +366,41 @@ export default defineComponent({
         <NCard bordered={false}>
           <div class='flex items-center justify-between'>
             <div class='text-lg font-medium'>文章列表</div>
-            <NSpace align='center' size={12}>
+            <NSpace
+              align='center'
+              size={12}
+            >
               <Transition name='fade'>
                 {checkedRowKeys.value.length > 0 && (
-                  <NSpace align='center' size={8}>
-                    <NTag type='info' size='small'>已选 {checkedRowKeys.value.length} 项</NTag>
+                  <NSpace
+                    align='center'
+                    size={8}
+                  >
+                    <NTag
+                      type='info'
+                      size='small'
+                    >
+                      已选 {checkedRowKeys.value.length} 项
+                    </NTag>
                     <NDropdown
                       options={batchPublishOptions}
                       onSelect={handleBatchPublishSelect}
                     >
-                      <NButton size='small' secondary>
+                      <NButton
+                        size='small'
+                        secondary
+                      >
                         批量发布
                       </NButton>
                     </NDropdown>
                     <NPopconfirm onPositiveClick={handleBatchDelete}>
                       {{
                         trigger: () => (
-                          <NButton size='small' type='error' secondary>
+                          <NButton
+                            size='small'
+                            type='error'
+                            secondary
+                          >
                             批量删除
                           </NButton>
                         ),

@@ -1,4 +1,5 @@
 import ExifReader from 'exifreader'
+
 import type { PhotoExif } from '@/services/albums'
 
 /**
@@ -20,7 +21,8 @@ export async function extractExif(file: File): Promise<PhotoExif | null> {
     if (tags.exif?.FocalLength?.description) exif.focalLength = tags.exif.FocalLength.description
     if (tags.exif?.FNumber?.description) exif.fNumber = tags.exif.FNumber.description
     if (tags.exif?.ExposureTime?.description) exif.exposureTime = tags.exif.ExposureTime.description
-    if (tags.exif?.ISOSpeedRatings?.description) exif.iso = Number(tags.exif.ISOSpeedRatings.description)
+    if (tags.exif?.ISOSpeedRatings?.description)
+      exif.iso = Number(tags.exif.ISOSpeedRatings.description)
 
     // GPS
     if (tags.gps?.Latitude != null) exif.gpsLatitude = tags.gps.Latitude
@@ -28,7 +30,8 @@ export async function extractExif(file: File): Promise<PhotoExif | null> {
     if (tags.gps?.Altitude != null) exif.gpsAltitude = tags.gps.Altitude
 
     // 时间
-    if (tags.exif?.DateTimeOriginal?.description) exif.dateTimeOriginal = tags.exif.DateTimeOriginal.description
+    if (tags.exif?.DateTimeOriginal?.description)
+      exif.dateTimeOriginal = tags.exif.DateTimeOriginal.description
 
     // 尺寸
     const w = tags.file?.['Image Width']?.value ?? tags.exif?.PixelXDimension?.value
@@ -75,4 +78,3 @@ export function exifLocation(exif?: PhotoExif | null): string | undefined {
   if (!exif?.gpsLatitude || !exif?.gpsLongitude) return undefined
   return `${exif.gpsLatitude.toFixed(4)}, ${exif.gpsLongitude.toFixed(4)}`
 }
-

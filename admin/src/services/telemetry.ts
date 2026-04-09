@@ -19,9 +19,20 @@ export interface TelemetrySnapshot {
     }
   }
   metrics: {
-    content: { articlesTotal: number; momentsTotal: number; commentsTotal: number; friendLinksTotal: number }
+    content: {
+      articlesTotal: number
+      momentsTotal: number
+      commentsTotal: number
+      friendLinksTotal: number
+    }
     traffic: { window: string; requestTotal: number; errorRate5xx: number; p95LatencyMs: number }
-    isr: { renderTotal: number; renderSuccess: number; renderFailed: number; avgRenderMs: number; p95RenderMs: number }
+    isr: {
+      renderTotal: number
+      renderSuccess: number
+      renderFailed: number
+      avgRenderMs: number
+      p95RenderMs: number
+    }
     federation: { outboundTotal: number; outboundFailures: number; activeInstances: number }
     realtime: { wsConnectionsCurrent: number; wsRooms: number; broadcastTotal: number }
   }

@@ -69,11 +69,11 @@ const componentList = computed(() => {
 <template>
   <Transition
     enter-active-class="transition-all duration-300 ease-out"
-    enter-from-class="opacity-0 -translate-y-2 max-h-0"
-    enter-to-class="opacity-100 translate-y-0 max-h-40"
+    enter-from-class="max-h-0 -translate-y-2 opacity-0"
+    enter-to-class="max-h-40 translate-y-0 opacity-100"
     leave-active-class="transition-all duration-200 ease-in"
-    leave-from-class="opacity-100 translate-y-0 max-h-40"
-    leave-to-class="opacity-0 -translate-y-2 max-h-0"
+    leave-from-class="max-h-40 translate-y-0 opacity-100"
+    leave-to-class="max-h-0 -translate-y-2 opacity-0"
   >
     <div
       v-if="healthStore.showBanner && modeConfig"
@@ -81,8 +81,14 @@ const componentList = computed(() => {
       :class="[modeConfig.bg]"
     >
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2" :class="modeConfig.text">
-          <span class="iconify text-base" :class="modeConfig.icon" />
+        <div
+          class="flex items-center gap-2"
+          :class="modeConfig.text"
+        >
+          <span
+            class="iconify text-base"
+            :class="modeConfig.icon"
+          />
           <span class="font-medium">{{ modeConfig.label }}</span>
           <span class="opacity-70">—</span>
           <span class="opacity-70">{{ modeConfig.desc }}</span>
@@ -102,13 +108,17 @@ const componentList = computed(() => {
 
       <Transition
         enter-active-class="transition-all duration-200 ease-out"
-        enter-from-class="opacity-0 max-h-0"
-        enter-to-class="opacity-100 max-h-20"
+        enter-from-class="max-h-0 opacity-0"
+        enter-to-class="max-h-20 opacity-100"
         leave-active-class="transition-all duration-150 ease-in"
-        leave-from-class="opacity-100 max-h-20"
-        leave-to-class="opacity-0 max-h-0"
+        leave-from-class="max-h-20 opacity-100"
+        leave-to-class="max-h-0 opacity-0"
       >
-        <div v-if="expanded" class="mt-2 overflow-hidden" :class="modeConfig.text">
+        <div
+          v-if="expanded"
+          class="mt-2 overflow-hidden"
+          :class="modeConfig.text"
+        >
           <div class="flex items-center gap-4 text-xs">
             <span class="font-mono opacity-70">状态码: {{ stateBinaryStr }}</span>
             <span class="opacity-70">模式: {{ healthStore.mode }}</span>
@@ -121,7 +131,11 @@ const componentList = computed(() => {
             >
               <span
                 class="iconify text-xs"
-                :class="comp.ok ? 'ph--check-circle-bold text-green-500' : 'ph--x-circle-bold text-red-500'"
+                :class="
+                  comp.ok
+                    ? 'text-green-500 ph--check-circle-bold'
+                    : 'text-red-500 ph--x-circle-bold'
+                "
               />
               {{ comp.name }}
             </span>

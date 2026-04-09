@@ -161,11 +161,17 @@ export function getArticleFederationInteractions(id: number | string) {
   })
 }
 
-export function resetArticleFederationSignals(id: number | string, payload?: ResetArticleFederationSignalsPayload) {
-  return request<ResetArticleFederationSignalsResp>(`/admin/articles/${id}/federation/signals/reset`, {
-    method: 'POST',
-    body: payload,
-  })
+export function resetArticleFederationSignals(
+  id: number | string,
+  payload?: ResetArticleFederationSignalsPayload,
+) {
+  return request<ResetArticleFederationSignalsResp>(
+    `/admin/articles/${id}/federation/signals/reset`,
+    {
+      method: 'POST',
+      body: payload,
+    },
+  )
 }
 
 export function deleteArticle(id: number) {

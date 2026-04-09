@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { useMessage } from 'naive-ui'
+import { computed } from 'vue'
 
 import { ButtonAnimation } from '@/components'
 import Avatar from '@/components/UserAvatar.vue'
@@ -15,7 +14,9 @@ const { user } = toRefsUserStore()
 const message = useMessage()
 
 const displayName = computed(() => user.value.nickname || user.value.username || '未命名用户')
-const displaySubtitle = computed(() => user.value.email || (user.value.roles && user.value.roles[0]) || '暂无介绍')
+const displaySubtitle = computed(
+  () => user.value.email || (user.value.roles && user.value.roles[0]) || '暂无介绍',
+)
 
 const handleUserPanelClick = () => {
   // message.info('你可以把它设计成有背景的User Card')

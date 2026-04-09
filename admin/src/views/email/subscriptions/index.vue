@@ -1,6 +1,19 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { NButton, NCard, NDataTable, NForm, NFormItem, NGrid, NGi, NInput, NPopconfirm, NSelect, NTag, useMessage } from 'naive-ui'
+import {
+  NButton,
+  NCard,
+  NDataTable,
+  NForm,
+  NFormItem,
+  NGrid,
+  NGi,
+  NInput,
+  NPopconfirm,
+  NSelect,
+  NTag,
+  useMessage,
+} from 'naive-ui'
 import { h, reactive, computed } from 'vue'
 
 import { ScrollContainer } from '@/components'
@@ -90,7 +103,8 @@ const columns: DataTableColumns<EmailSubscription> = [
     title: '订阅事件',
     key: 'eventName',
     width: 200,
-    render: (row) => h(NTag, { type: 'info', size: 'small', bordered: false }, { default: () => row.eventName }),
+    render: (row) =>
+      h(NTag, { type: 'info', size: 'small', bordered: false }, { default: () => row.eventName }),
   },
   {
     title: '状态',
@@ -138,7 +152,8 @@ const columns: DataTableColumns<EmailSubscription> = [
               },
               { default: () => (row.status === 'blocked' ? '解除拉黑' : '拉黑') },
             ),
-          default: () => (row.status === 'blocked' ? '确认解除拉黑该订阅用户？' : '确认拉黑该订阅用户？'),
+          default: () =>
+            row.status === 'blocked' ? '确认解除拉黑该订阅用户？' : '确认拉黑该订阅用户？',
         },
       ),
   },
@@ -173,7 +188,11 @@ function handleReset() {
   <ScrollContainer>
     <NCard title="订阅管理">
       <template #header-extra>
-        <NButton secondary @click="handleRefresh">刷新</NButton>
+        <NButton
+          secondary
+          @click="handleRefresh"
+          >刷新</NButton
+        >
       </template>
 
       <NForm

@@ -17,13 +17,7 @@ import {
 import { h, onMounted, reactive, ref } from 'vue'
 
 import { FormModal, ScrollContainer } from '@/components'
-import {
-  createTag,
-  deleteTag,
-  getTagContents,
-  listTags,
-  updateTag,
-} from '@/services/taxonomy'
+import { createTag, deleteTag, getTagContents, listTags, updateTag } from '@/services/taxonomy'
 import { formatDate } from '@/utils/format'
 
 import type { TagItem, TagRelatedContents } from '@/services/taxonomy'
@@ -176,10 +170,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <ScrollContainer wrapper-class="p-4" :scrollbar-props="{ trigger: 'none' }">
+  <ScrollContainer
+    wrapper-class="p-4"
+    :scrollbar-props="{ trigger: 'none' }"
+  >
     <NCard title="标签管理">
       <template #header-extra>
-        <NButton type="primary" @click="openCreate">新建标签</NButton>
+        <NButton
+          type="primary"
+          @click="openCreate"
+          >新建标签</NButton
+        >
       </template>
 
       <NDataTable
@@ -190,9 +191,17 @@ onMounted(() => {
       />
     </NCard>
 
-    <FormModal v-model:show="editVisible" :title="modalTitle" :loading="saving" @confirm="handleSubmit">
+    <FormModal
+      v-model:show="editVisible"
+      :title="modalTitle"
+      :loading="saving"
+      @confirm="handleSubmit"
+    >
       <NFormItem label="标签名称">
-        <NInput v-model:value="formModel.name" placeholder="请输入标签名称" />
+        <NInput
+          v-model:value="formModel.name"
+          placeholder="请输入标签名称"
+        />
       </NFormItem>
     </FormModal>
 
@@ -216,9 +225,17 @@ onMounted(() => {
                 <div class="mb-2 flex items-center gap-2 text-sm font-medium">
                   <div class="iconify ph--article" />
                   <span>文章</span>
-                  <NTag size="small" :bordered="false" round>{{ contentsData.articles?.length ?? 0 }}</NTag>
+                  <NTag
+                    size="small"
+                    :bordered="false"
+                    round
+                    >{{ contentsData.articles?.length ?? 0 }}</NTag
+                  >
                 </div>
-                <div v-if="contentsData.articles?.length" class="space-y-1">
+                <div
+                  v-if="contentsData.articles?.length"
+                  class="space-y-1"
+                >
                   <router-link
                     v-for="article in contentsData.articles"
                     :key="article.id"
@@ -234,7 +251,12 @@ onMounted(() => {
                     </div>
                   </router-link>
                 </div>
-                <NEmpty v-else description="无关联文章" size="small" class="py-3" />
+                <NEmpty
+                  v-else
+                  description="无关联文章"
+                  size="small"
+                  class="py-3"
+                />
               </div>
 
               <!-- 手记 -->
@@ -242,9 +264,17 @@ onMounted(() => {
                 <div class="mb-2 flex items-center gap-2 text-sm font-medium">
                   <div class="iconify ph--notebook" />
                   <span>手记</span>
-                  <NTag size="small" :bordered="false" round>{{ contentsData.moments?.length ?? 0 }}</NTag>
+                  <NTag
+                    size="small"
+                    :bordered="false"
+                    round
+                    >{{ contentsData.moments?.length ?? 0 }}</NTag
+                  >
                 </div>
-                <div v-if="contentsData.moments?.length" class="space-y-1">
+                <div
+                  v-if="contentsData.moments?.length"
+                  class="space-y-1"
+                >
                   <router-link
                     v-for="moment in contentsData.moments"
                     :key="moment.id"
@@ -260,11 +290,19 @@ onMounted(() => {
                     </div>
                   </router-link>
                 </div>
-                <NEmpty v-else description="无关联手记" size="small" class="py-3" />
+                <NEmpty
+                  v-else
+                  description="无关联手记"
+                  size="small"
+                  class="py-3"
+                />
               </div>
             </div>
           </template>
-          <div v-else-if="!contentsLoading" class="py-8">
+          <div
+            v-else-if="!contentsLoading"
+            class="py-8"
+          >
             <NEmpty description="加载失败" />
           </div>
         </NSpin>

@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { h, ref } from 'vue'
-import { NDataTable, NButton, NTag, NInput, NCard, NSelect, NPagination } from 'naive-ui'
-import type { DataTableColumns } from 'naive-ui'
-import { listEmailOutbox } from '@/services/email'
-import type { EmailOutbox } from '@/services/email'
 import { useQuery } from '@tanstack/vue-query'
-import DetailDrawer from './DetailDrawer.vue'
+import { NDataTable, NButton, NTag, NInput, NCard, NSelect, NPagination } from 'naive-ui'
+import { h, ref } from 'vue'
+
 import { ScrollContainer } from '@/components'
+import { listEmailOutbox } from '@/services/email'
+
+import DetailDrawer from './DetailDrawer.vue'
+
+import type { EmailOutbox } from '@/services/email'
+import type { DataTableColumns } from 'naive-ui'
 
 const page = ref(1)
 const pageSize = ref(20)
@@ -29,21 +32,31 @@ const { data, isPending } = useQuery({
 
 function statusTagType(status: string) {
   switch (status) {
-    case 'sent': return 'success'
-    case 'failed': return 'error'
-    case 'sending': return 'warning'
-    case 'pending': return 'info'
-    default: return 'default'
+    case 'sent':
+      return 'success'
+    case 'failed':
+      return 'error'
+    case 'sending':
+      return 'warning'
+    case 'pending':
+      return 'info'
+    default:
+      return 'default'
   }
 }
 
 function statusLabel(status: string) {
   switch (status) {
-    case 'pending': return '等待中'
-    case 'sending': return '发送中'
-    case 'sent': return '已发送'
-    case 'failed': return '失败'
-    default: return status
+    case 'pending':
+      return '等待中'
+    case 'sending':
+      return '发送中'
+    case 'sent':
+      return '已发送'
+    case 'failed':
+      return '失败'
+    default:
+      return status
   }
 }
 
@@ -66,7 +79,11 @@ const columns: DataTableColumns<EmailOutbox> = [
     key: 'eventName',
     width: 160,
     render(row) {
-      return h(NTag, { type: 'info', bordered: false, size: 'small' }, { default: () => row.eventName })
+      return h(
+        NTag,
+        { type: 'info', bordered: false, size: 'small' },
+        { default: () => row.eventName },
+      )
     },
   },
   {
@@ -83,7 +100,11 @@ const columns: DataTableColumns<EmailOutbox> = [
     key: 'status',
     width: 90,
     render(row) {
-      return h(NTag, { type: statusTagType(row.status), bordered: false, size: 'small' }, { default: () => statusLabel(row.status) })
+      return h(
+        NTag,
+        { type: statusTagType(row.status), bordered: false, size: 'small' },
+        { default: () => statusLabel(row.status) },
+      )
     },
   },
   {
@@ -158,7 +179,10 @@ const statusOptions = [
       </div>
     </NCard>
 
-    <NCard :bordered="false" content-style="padding: 0;">
+    <NCard
+      :bordered="false"
+      content-style="padding: 0;"
+    >
       <NDataTable
         remote
         :columns="columns"
@@ -186,6 +210,9 @@ const statusOptions = [
       </div>
     </NCard>
 
-    <DetailDrawer v-model:show="showDrawer" :outbox="currentOutbox" />
+    <DetailDrawer
+      v-model:show="showDrawer"
+      :outbox="currentOutbox"
+    />
   </ScrollContainer>
 </template>

@@ -1,9 +1,11 @@
 import { ref } from 'vue'
+
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
 const ADMIN_PANEL_TITLE = '管理后台'
 const DEFAULT_SITE_NAME = 'Grtblog Admin'
-const FALLBACK_SITE_NAME = (import.meta.env.VITE_APP_NAME || DEFAULT_SITE_NAME).trim() || DEFAULT_SITE_NAME
+const FALLBACK_SITE_NAME =
+  (import.meta.env.VITE_APP_NAME || DEFAULT_SITE_NAME).trim() || DEFAULT_SITE_NAME
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v2').replace(/\/$/, '')
 
 interface WebsiteInfoItem {
@@ -111,7 +113,9 @@ export function getCachedFavicon() {
 }
 
 export function resolveDocumentTitle(route: RouteLocationNormalizedLoaded, siteName: string) {
-  return [resolveMetaTitle(route), ADMIN_PANEL_TITLE, normalizeSiteName(siteName)].filter(Boolean).join(' - ')
+  return [resolveMetaTitle(route), ADMIN_PANEL_TITLE, normalizeSiteName(siteName)]
+    .filter(Boolean)
+    .join(' - ')
 }
 
 export function applyDocumentTitle(route: RouteLocationNormalizedLoaded, siteName: string) {

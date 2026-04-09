@@ -1,4 +1,13 @@
-import { NCard, NDataTable, NButton, NTag, NPagination, NSpace, NPopconfirm, useDialog } from 'naive-ui'
+import {
+  NCard,
+  NDataTable,
+  NButton,
+  NTag,
+  NPagination,
+  NSpace,
+  NPopconfirm,
+  useDialog,
+} from 'naive-ui'
 import { defineComponent, onMounted, ref, Transition } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -120,7 +129,7 @@ export default defineComponent({
       },
     ]
 
-    onMounted(()=>{
+    onMounted(() => {
       refresh()
     })
 
@@ -129,15 +138,30 @@ export default defineComponent({
         <NCard bordered={false}>
           <div class='flex items-center justify-between'>
             <div class='text-lg font-medium'>思考列表</div>
-            <NSpace align='center' size={12}>
+            <NSpace
+              align='center'
+              size={12}
+            >
               <Transition name='fade'>
                 {checkedRowKeys.value.length > 0 && (
-                  <NSpace align='center' size={8}>
-                    <NTag type='info' size='small'>已选 {checkedRowKeys.value.length} 项</NTag>
+                  <NSpace
+                    align='center'
+                    size={8}
+                  >
+                    <NTag
+                      type='info'
+                      size='small'
+                    >
+                      已选 {checkedRowKeys.value.length} 项
+                    </NTag>
                     <NPopconfirm onPositiveClick={handleBatchDelete}>
                       {{
                         trigger: () => (
-                          <NButton size='small' type='error' secondary>
+                          <NButton
+                            size='small'
+                            type='error'
+                            secondary
+                          >
                             批量删除
                           </NButton>
                         ),

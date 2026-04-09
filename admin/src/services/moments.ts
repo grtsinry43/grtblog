@@ -1,4 +1,5 @@
 import { request } from './http'
+
 import type { ContentExtInfo } from '@/types/ext-info'
 
 export interface MomentListItem {

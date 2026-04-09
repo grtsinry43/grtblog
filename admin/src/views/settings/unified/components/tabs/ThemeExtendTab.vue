@@ -106,12 +106,35 @@ onMounted(fetchData)
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <NTag v-if="isDirty" type="warning" size="small"> 未保存 </NTag>
-        <NTag size="small" :type="jsonValid ? 'success' : 'error'" :bordered="false">
+        <NTag
+          v-if="isDirty"
+          type="warning"
+          size="small"
+        >
+          未保存
+        </NTag>
+        <NTag
+          size="small"
+          :type="jsonValid ? 'success' : 'error'"
+          :bordered="false"
+        >
           {{ jsonValid ? 'JSON 有效' : 'JSON 无效' }}
         </NTag>
-        <NButton size="small" tertiary @click="formatJson"> 格式化 </NButton>
-        <NButton size="small" secondary :loading="loading" @click="fetchData"> 刷新 </NButton>
+        <NButton
+          size="small"
+          tertiary
+          @click="formatJson"
+        >
+          格式化
+        </NButton>
+        <NButton
+          size="small"
+          secondary
+          :loading="loading"
+          @click="fetchData"
+        >
+          刷新
+        </NButton>
         <NButton
           size="small"
           type="primary"
@@ -125,10 +148,18 @@ onMounted(fetchData)
     </div>
 
     <!-- Editor fills remaining space -->
-    <TemplateEditor v-model="jsonText" class="theme-editor min-h-0 flex-1" />
+    <TemplateEditor
+      v-model="jsonText"
+      class="theme-editor min-h-0 flex-1"
+    />
 
     <!-- Error bar -->
-    <NAlert v-if="jsonError" type="error" :show-icon="false" class="shrink-0">
+    <NAlert
+      v-if="jsonError"
+      type="error"
+      :show-icon="false"
+      class="shrink-0"
+    >
       {{ jsonError }}
     </NAlert>
   </div>

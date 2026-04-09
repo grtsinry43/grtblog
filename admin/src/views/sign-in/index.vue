@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { NForm, NFormItem, NInput, NButton, NCheckbox, NCarousel, useMessage } from 'naive-ui'
-import { computed, defineAsyncComponent, onMounted, onUnmounted, reactive, ref, useTemplateRef } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  useTemplateRef,
+} from 'vue'
 
 import topographySvg from '@/assets/topography.svg'
 import { useInjection } from '@/composables'
@@ -93,7 +101,9 @@ const handleSubmitClick = () => {
         const result = await login({
           credential: signInForm.account,
           password: signInForm.password,
-          ...(turnstileEnabled.value && turnstileToken.value ? { turnstileToken: turnstileToken.value } : {}),
+          ...(turnstileEnabled.value && turnstileToken.value
+            ? { turnstileToken: turnstileToken.value }
+            : {}),
         })
         userStore.setAuth({
           token: result.token,

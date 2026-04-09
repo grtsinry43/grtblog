@@ -1,12 +1,15 @@
 import { ref, reactive, onMounted } from 'vue'
 
-
 interface ApiResponse<T> {
   items: T[]
   total: number
 }
 
-type ApiFunction<T> = (params: { page: number; pageSize: number; [key: string]: any }) => Promise<ApiResponse<T>>
+type ApiFunction<T> = (params: {
+  page: number
+  pageSize: number
+  [key: string]: any
+}) => Promise<ApiResponse<T>>
 
 export function useTable<T>(api: ApiFunction<T>, initialParams: Record<string, any> = {}) {
   const loading = ref(false)
@@ -28,7 +31,7 @@ export function useTable<T>(api: ApiFunction<T>, initialParams: Record<string, a
       pagination.pageSize = pageSize
       pagination.page = 1 // 改变每页大小时重置回第一页
       fetchData()
-    }
+    },
   })
 
   async function fetchData() {
@@ -37,7 +40,7 @@ export function useTable<T>(api: ApiFunction<T>, initialParams: Record<string, a
       const res = await api({
         page: pagination.page,
         pageSize: pagination.pageSize,
-        ...initialParams // 允许传入额外的搜索参数
+        ...initialParams, // 允许传入额外的搜索参数
       })
 
       // 这里的 items 兼容你的 ArticleListResponse 结构
@@ -60,6 +63,6 @@ export function useTable<T>(api: ApiFunction<T>, initialParams: Record<string, a
     loading,
     data,
     pagination, // 直接绑定给 NPagination
-    refresh: fetchData // 暴露刷新方法（比如删除后调用）
+    refresh: fetchData, // 暴露刷新方法（比如删除后调用）
   }
 }

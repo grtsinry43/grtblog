@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { NSpin, NTag, NText, NIcon } from 'naive-ui'
-import { getArticle } from '@/services/articles'
-import { getPage } from '@/services/page'
-import { getMoment } from '@/services/moments'
 import { DocumentTextOutline, NewspaperOutline, ChatbubbleEllipsesOutline } from '@vicons/ionicons5'
+import { NSpin, NTag, NText, NIcon } from 'naive-ui'
+import { computed } from 'vue'
+
+import { getArticle } from '@/services/articles'
+import { getMoment } from '@/services/moments'
+import { getPage } from '@/services/page'
 
 const props = defineProps<{
   type?: string
@@ -55,23 +56,39 @@ const displayLink = computed(() => {
 const typeTag = computed(() => {
   if (isArticle.value) return { type: 'info' as const, icon: DocumentTextOutline, label: '文章' }
   if (isPage.value) return { type: 'success' as const, icon: NewspaperOutline, label: '页面' }
-  if (isMoment.value) return { type: 'warning' as const, icon: ChatbubbleEllipsesOutline, label: '动态' }
+  if (isMoment.value)
+    return { type: 'warning' as const, icon: ChatbubbleEllipsesOutline, label: '动态' }
   return { type: 'default' as const, icon: undefined, label: props.type || '其他' }
 })
 </script>
 
 <template>
   <div class="flex items-center gap-2">
-    <n-tag :type="typeTag.type" size="small" :bordered="false" class="flex items-center">
+    <n-tag
+      :type="typeTag.type"
+      size="small"
+      :bordered="false"
+      class="flex items-center"
+    >
       {{ typeTag.label }}
-      <template #icon v-if="typeTag.icon">
+      <template
+        #icon
+        v-if="typeTag.icon"
+      >
         <n-icon :component="typeTag.icon" />
       </template>
     </n-tag>
-    
-    <n-spin v-if="isLoadingArticle || isLoadingPage || isLoadingMoment" size="small" />
-    
-    <n-text v-else class="text-sm truncate max-w-[200px]" :title="displayTitle">
+
+    <n-spin
+      v-if="isLoadingArticle || isLoadingPage || isLoadingMoment"
+      size="small"
+    />
+
+    <n-text
+      v-else
+      class="max-w-[200px] truncate text-sm"
+      :title="displayTitle"
+    >
       {{ displayTitle }}
     </n-text>
   </div>

@@ -36,9 +36,9 @@ export const componentAttributeSource = (context: CompletionContext): Completion
   const existingKeys = new Set(Object.keys(parseComponentAttributes(existingPart)))
   const query = currentToken
   const replacementFrom = pos - query.length
-  const beforeFrom =
-    replacementFrom > 0 ? state.sliceDoc(replacementFrom - 1, replacementFrom) : ''
-  const insertPrefix = replacementFrom > line.from && beforeFrom && !/\s/.test(beforeFrom) ? ' ' : ''
+  const beforeFrom = replacementFrom > 0 ? state.sliceDoc(replacementFrom - 1, replacementFrom) : ''
+  const insertPrefix =
+    replacementFrom > line.from && beforeFrom && !/\s/.test(beforeFrom) ? ' ' : ''
 
   const queryLower = query.toLowerCase()
   const options = component.attrs

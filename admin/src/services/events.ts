@@ -1,33 +1,33 @@
 import { request } from './http'
 
 export interface AdminEventFieldResp {
-    name: string
-    type: string
-    required: boolean
-    description: string
+  name: string
+  type: string
+  required: boolean
+  description: string
 }
 
 export interface AdminEventDescriptorResp {
-    name: string
-    title: string
-    category: string
-    description: string
-    publicEmail: boolean
-    channels: string[]
-    fields: AdminEventFieldResp[]
+  name: string
+  title: string
+  category: string
+  description: string
+  publicEmail: boolean
+  channels: string[]
+  fields: AdminEventFieldResp[]
 }
 
 export interface AdminEventGroupResp {
-    category: string
-    events: string[]
+  category: string
+  events: string[]
 }
 
 export interface AdminEventListResp {
-    groups: AdminEventGroupResp[]
+  groups: AdminEventGroupResp[]
 }
 
 export interface AdminEventCatalogResp {
-    items: AdminEventDescriptorResp[]
+  items: AdminEventDescriptorResp[]
 }
 
 /**
@@ -35,10 +35,10 @@ export interface AdminEventCatalogResp {
  * @param channel Filter by channel ('email' | 'webhook')
  */
 export function listEvents(channel?: string) {
-    return request<AdminEventListResp>('/admin/events', {
-        method: 'GET',
-        query: channel ? { channel } : undefined,
-    })
+  return request<AdminEventListResp>('/admin/events', {
+    method: 'GET',
+    query: channel ? { channel } : undefined,
+  })
 }
 
 /**
@@ -46,10 +46,10 @@ export function listEvents(channel?: string) {
  * @param channel Filter by channel ('email' | 'webhook')
  */
 export function listEventCatalog(channel?: string) {
-    return request<AdminEventCatalogResp>('/admin/events/catalog', {
-        method: 'GET',
-        query: channel ? { channel } : undefined,
-    })
+  return request<AdminEventCatalogResp>('/admin/events/catalog', {
+    method: 'GET',
+    query: channel ? { channel } : undefined,
+  })
 }
 
 /**
@@ -57,7 +57,7 @@ export function listEventCatalog(channel?: string) {
  * @param name Event name (e.g. 'article.created')
  */
 export function getEventCatalogItem(name: string) {
-    return request<AdminEventDescriptorResp>(`/admin/events/catalog/${name}`, {
-        method: 'GET',
-    })
+  return request<AdminEventDescriptorResp>(`/admin/events/catalog/${name}`, {
+    method: 'GET',
+  })
 }

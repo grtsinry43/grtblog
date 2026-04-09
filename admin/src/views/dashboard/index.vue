@@ -6,6 +6,7 @@ import { computed } from 'vue'
 import { ChartPanel, ScrollContainer } from '@/components'
 import { getDashboardStats, getHitokoto } from '@/services/stats'
 import { toRefsUserStore } from '@/stores/user'
+
 import { useDashboardCharts } from './composables/use-dashboard-charts'
 
 defineOptions({
@@ -42,27 +43,39 @@ const cardList = computed(() => {
   if (!s) return Array.from({ length: 4 }).map(() => ({ loading: true }))
   return [
     {
-      title: '用户总数', value: s.overview.users, precision: 0,
+      title: '用户总数',
+      value: s.overview.users,
+      precision: 0,
       iconClass: 'iconify ph--users-bold text-indigo-50 dark:text-indigo-150',
-      iconBgClass: 'text-indigo-500/5 bg-indigo-400 ring-4 ring-indigo-200 dark:bg-indigo-650 dark:ring-indigo-500/30 transition-all',
+      iconBgClass:
+        'text-indigo-500/5 bg-indigo-400 ring-4 ring-indigo-200 dark:bg-indigo-650 dark:ring-indigo-500/30 transition-all',
       description: '注册用户总数',
     },
     {
-      title: '总访问量', value: s.interaction.viewsTotal, precision: 0,
+      title: '总访问量',
+      value: s.interaction.viewsTotal,
+      precision: 0,
       iconClass: 'iconify ph--eye-bold text-blue-50 dark:text-blue-150',
-      iconBgClass: 'text-blue-500/5 bg-blue-400 ring-4 ring-blue-200 dark:bg-blue-650 dark:ring-blue-500/30 transition-all',
+      iconBgClass:
+        'text-blue-500/5 bg-blue-400 ring-4 ring-blue-200 dark:bg-blue-650 dark:ring-blue-500/30 transition-all',
       description: '全站内容总浏览',
     },
     {
-      title: '在线峰值', value: s.todayPeakOnline, precision: 0,
+      title: '在线峰值',
+      value: s.todayPeakOnline,
+      precision: 0,
       iconClass: 'iconify ph--lightning-bold text-amber-50 dark:text-amber-150',
-      iconBgClass: 'text-amber-500/5 bg-amber-400 ring-4 ring-amber-200 dark:bg-amber-650 dark:ring-amber-500/30 transition-all',
+      iconBgClass:
+        'text-amber-500/5 bg-amber-400 ring-4 ring-amber-200 dark:bg-amber-650 dark:ring-amber-500/30 transition-all',
       description: '今日最高在线',
     },
     {
-      title: '待办事项', value: s.pending.unviewedComments + s.pending.friendLinkApplications, precision: 0,
+      title: '待办事项',
+      value: s.pending.unviewedComments + s.pending.friendLinkApplications,
+      precision: 0,
       iconClass: 'iconify ph--list-checks-bold text-orange-50 dark:text-orange-150',
-      iconBgClass: 'text-orange-500/5 bg-orange-400 ring-4 ring-orange-200 dark:bg-orange-650 dark:ring-orange-500/30 transition-all',
+      iconBgClass:
+        'text-orange-500/5 bg-orange-400 ring-4 ring-orange-200 dark:bg-orange-650 dark:ring-orange-500/30 transition-all',
       description: '待审核评论与友链',
     },
   ]
@@ -106,25 +119,46 @@ const topContentTabs = [
   <ScrollContainer wrapper-class="flex flex-col gap-y-2 max-sm:gap-y-2">
     <!-- Welcome Section -->
     <div class="relative mt-4 mb-4 max-w-6xl">
-      <div class="relative z-10 flex flex-col md:flex-row md:items-end gap-2 md:gap-12">
-        <div class="flex flex-col gap-y-1 shrink-0">
-          <div class="flex items-center gap-x-2 text-xs font-medium tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
-            <span>今天是{{ new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }) }}</span>
+      <div class="relative z-10 flex flex-col gap-2 md:flex-row md:items-end md:gap-12">
+        <div class="flex shrink-0 flex-col gap-y-1">
+          <div
+            class="flex items-center gap-x-2 text-xs font-medium tracking-wider text-neutral-500 uppercase dark:text-neutral-400"
+          >
+            <span
+              >今天是{{
+                new Date().toLocaleDateString('zh-CN', {
+                  month: 'long',
+                  day: 'numeric',
+                  weekday: 'long',
+                })
+              }}</span
+            >
           </div>
           <h2 class="text-2xl font-light text-neutral-800 dark:text-neutral-100">
             {{ greeting }}，<span class="font-normal">{{ user.nickname || user.username }}</span>
           </h2>
         </div>
         <div class="relative max-w-2xl pl-8 md:pl-0">
-          <NSkeleton v-if="isHitokotoLoading" text style="width: 200px" />
+          <NSkeleton
+            v-if="isHitokotoLoading"
+            text
+            style="width: 200px"
+          />
           <template v-else-if="hitokoto">
-            <div class="absolute left-2 -top-2 md:-left-1 md:-top-3 text-neutral-200 dark:text-neutral-700">
-              <span class="iconify ph--quotes-fill text-2xl opacity-50" />
+            <div
+              class="absolute -top-2 left-2 text-neutral-200 md:-top-3 md:-left-1 dark:text-neutral-700"
+            >
+              <span class="iconify text-2xl opacity-50 ph--quotes-fill" />
             </div>
-            <p class="relative z-10 font-serif text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+            <p
+              class="relative z-10 font-serif text-sm leading-relaxed text-neutral-700 dark:text-neutral-300"
+            >
               {{ hitokoto.sentence.hitokoto }}
-              <span class="ml-2 text-xs font-sans font-medium tracking-wider text-neutral-400 dark:text-neutral-500 uppercase">
-                —— {{ hitokoto.sentence.from_who ? hitokoto.sentence.from_who + ' ' : '' }}{{ hitokoto.sentence.from ? `《${hitokoto.sentence.from}》` : '' }}
+              <span
+                class="ml-2 font-sans text-xs font-medium tracking-wider text-neutral-400 uppercase dark:text-neutral-500"
+              >
+                —— {{ hitokoto.sentence.from_who ? hitokoto.sentence.from_who + ' ' : ''
+                }}{{ hitokoto.sentence.from ? `《${hitokoto.sentence.from}》` : '' }}
               </span>
             </p>
           </template>
@@ -143,26 +177,51 @@ const topContentTabs = [
           <div class="flex-1">
             <span class="text-sm font-medium text-neutral-450">{{ item.title }}</span>
             <div class="mt-1 mb-1.5 flex gap-x-4 text-2xl text-neutral-700 dark:text-neutral-400">
-              <NNumberAnimation :to="item.value" show-separator :precision="item.precision" />
+              <NNumberAnimation
+                :to="item.value"
+                show-separator
+                :precision="item.precision"
+              />
             </div>
             <div class="flex items-center">
-              <span class="text-neutral-500 dark:text-neutral-400 text-xs">{{ item.description }}</span>
+              <span class="text-xs text-neutral-500 dark:text-neutral-400">{{
+                item.description
+              }}</span>
             </div>
           </div>
           <div>
-            <div class="grid place-items-center rounded-full p-3" :class="item.iconBgClass">
-              <span class="size-7" :class="item.iconClass" />
+            <div
+              class="grid place-items-center rounded-full p-3"
+              :class="item.iconBgClass"
+            >
+              <span
+                class="size-7"
+                :class="item.iconClass"
+              />
             </div>
           </div>
         </template>
         <template v-else>
-          <div class="w-full flex gap-4">
+          <div class="flex w-full gap-4">
             <div class="flex-1 space-y-2">
-              <NSkeleton text style="width: 40%" />
-              <NSkeleton text style="width: 80%; height: 28px" />
-              <NSkeleton text style="width: 60%" />
+              <NSkeleton
+                text
+                style="width: 40%"
+              />
+              <NSkeleton
+                text
+                style="width: 80%; height: 28px"
+              />
+              <NSkeleton
+                text
+                style="width: 60%"
+              />
             </div>
-            <NSkeleton circle size="medium" style="width: 48px; height: 48px" />
+            <NSkeleton
+              circle
+              size="medium"
+              style="width: 48px; height: 48px"
+            />
           </div>
         </template>
       </div>
@@ -177,7 +236,10 @@ const topContentTabs = [
           v-model:active-tab="mainTrendTab"
           :loading="isLoading && !stats"
         >
-          <div ref="mainTrendChart" class="h-full w-full" />
+          <div
+            ref="mainTrendChart"
+            class="h-full w-full"
+          />
         </ChartPanel>
       </div>
       <div class="col-span-1 lg:col-span-4">
@@ -187,7 +249,10 @@ const topContentTabs = [
           v-model:active-tab="distributionTab"
           :loading="isLoading && !stats"
         >
-          <div ref="distributionChart" class="h-full w-full" />
+          <div
+            ref="distributionChart"
+            class="h-full w-full"
+          />
         </ChartPanel>
       </div>
     </div>
@@ -203,9 +268,15 @@ const topContentTabs = [
           :loading="isLoading && !stats"
         >
           <template #header-extra>
-            <span class="rounded bg-amber-100 px-2 py-0.5 text-[11px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">浏览埋点聚合</span>
+            <span
+              class="rounded bg-amber-100 px-2 py-0.5 text-[11px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              >浏览埋点聚合</span
+            >
           </template>
-          <div ref="sourceChart" class="h-full w-full" />
+          <div
+            ref="sourceChart"
+            class="h-full w-full"
+          />
         </ChartPanel>
       </div>
       <div class="col-span-1 lg:col-span-7">
@@ -216,7 +287,10 @@ const topContentTabs = [
           :height="380"
           :loading="isLoading && !stats"
         >
-          <div ref="topContentChart" class="h-full w-full" />
+          <div
+            ref="topContentChart"
+            class="h-full w-full"
+          />
         </ChartPanel>
       </div>
     </div>

@@ -12,7 +12,14 @@ const emit = defineEmits<{ 'dirty-change': [dirty: boolean] }>()
     :update-fn="updateSysConfigs"
     title="高级设置"
     description="其他系统配置项"
-    :exclude-groups="['security/turnstile', 'interaction/comment', 'storage/upload', 'notification/email', 'webhook', 'site']"
+    :exclude-groups="[
+      'security/turnstile',
+      'interaction/comment',
+      'storage/upload',
+      'notification/email',
+      'webhook',
+      'site',
+    ]"
     :exclude-root-item-keys="['article.hot']"
     :on-dirty-change="(dirty: boolean) => emit('dirty-change', dirty)"
   />

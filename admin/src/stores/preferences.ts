@@ -184,7 +184,10 @@ export const usePreferencesStore = defineStore('preferencesStore', () => {
     (show) => {
       const el = document.documentElement
       if (show && preferences.value.backgroundImage.glassEffect.enable) {
-        el.style.setProperty('--glass-backdrop-blur', `${preferences.value.backgroundImage.glassEffect.blur}px`)
+        el.style.setProperty(
+          '--glass-backdrop-blur',
+          `${preferences.value.backgroundImage.glassEffect.blur}px`,
+        )
       } else {
         el.style.setProperty('--glass-backdrop-blur', '0px')
       }

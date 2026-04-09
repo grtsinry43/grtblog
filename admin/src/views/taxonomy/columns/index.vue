@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { NButton, NCard, NDataTable, NFormItem, NInput, NPopconfirm, NSpace, useMessage } from 'naive-ui'
+import {
+  NButton,
+  NCard,
+  NDataTable,
+  NFormItem,
+  NInput,
+  NPopconfirm,
+  NSpace,
+  useMessage,
+} from 'naive-ui'
 import { h, onMounted, reactive, ref } from 'vue'
 
 import { FormModal, ScrollContainer } from '@/components'
@@ -63,7 +72,6 @@ const columns: DataTableColumns<ColumnItem> = [
 ]
 
 const modalTitle = ref('新建专栏')
-
 
 async function fetchData() {
   loading.value = true
@@ -138,10 +146,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <ScrollContainer wrapper-class="p-4" :scrollbar-props="{ trigger: 'none' }">
+  <ScrollContainer
+    wrapper-class="p-4"
+    :scrollbar-props="{ trigger: 'none' }"
+  >
     <NCard title="手记专栏管理">
       <template #header-extra>
-        <NButton type="primary" @click="openCreate">新建专栏</NButton>
+        <NButton
+          type="primary"
+          @click="openCreate"
+          >新建专栏</NButton
+        >
       </template>
 
       <NDataTable
@@ -152,12 +167,23 @@ onMounted(() => {
       />
     </NCard>
 
-    <FormModal v-model:show="editVisible" :title="modalTitle" :loading="saving" @confirm="handleSubmit">
+    <FormModal
+      v-model:show="editVisible"
+      :title="modalTitle"
+      :loading="saving"
+      @confirm="handleSubmit"
+    >
       <NFormItem label="专栏名称">
-        <NInput v-model:value="formModel.name" placeholder="请输入专栏名称" />
+        <NInput
+          v-model:value="formModel.name"
+          placeholder="请输入专栏名称"
+        />
       </NFormItem>
       <NFormItem label="专栏短链">
-        <NInput v-model:value="formModel.shortUrl" placeholder="例如 life-notes" />
+        <NInput
+          v-model:value="formModel.shortUrl"
+          placeholder="例如 life-notes"
+        />
       </NFormItem>
     </FormModal>
   </ScrollContainer>

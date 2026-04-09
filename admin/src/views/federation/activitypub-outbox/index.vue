@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { h, ref } from 'vue'
-import { NDataTable, NButton, NTag, NInput, NCard, NSelect, NPagination } from 'naive-ui'
-import type { DataTableColumns } from 'naive-ui'
 import { useQuery } from '@tanstack/vue-query'
+import { NDataTable, NButton, NTag, NInput, NCard, NSelect, NPagination } from 'naive-ui'
+import { h, ref } from 'vue'
+
 import { ScrollContainer } from '@/components'
 import { listActivityPubOutbox } from '@/services/federation-admin'
-import type { ActivityPubOutboxItemResp } from '@/types/federation'
+
 import DetailDrawer from './DetailDrawer.vue'
+
+import type { ActivityPubOutboxItemResp } from '@/types/federation'
+import type { DataTableColumns } from 'naive-ui'
 
 const page = ref(1)
 const pageSize = ref(20)
@@ -37,20 +40,29 @@ function openDetail(row: ActivityPubOutboxItemResp) {
 
 function statusTagType(status: string) {
   switch (status) {
-    case 'completed': return 'success'
-    case 'partial': return 'warning'
-    case 'failed': return 'error'
-    case 'sending': return 'info'
-    default: return 'default'
+    case 'completed':
+      return 'success'
+    case 'partial':
+      return 'warning'
+    case 'failed':
+      return 'error'
+    case 'sending':
+      return 'info'
+    default:
+      return 'default'
   }
 }
 
 function sourceTypeLabel(type: string) {
   switch (type) {
-    case 'article': return '文章'
-    case 'moment': return '手记'
-    case 'thinking': return '思考'
-    default: return type
+    case 'article':
+      return '文章'
+    case 'moment':
+      return '手记'
+    case 'thinking':
+      return '思考'
+    default:
+      return type
   }
 }
 
@@ -67,7 +79,11 @@ const columns: DataTableColumns<ActivityPubOutboxItemResp> = [
     key: 'source_type',
     width: 100,
     render(row) {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => sourceTypeLabel(row.source_type) })
+      return h(
+        NTag,
+        { size: 'small', bordered: false },
+        { default: () => sourceTypeLabel(row.source_type) },
+      )
     },
   },
   {
@@ -75,7 +91,11 @@ const columns: DataTableColumns<ActivityPubOutboxItemResp> = [
     key: 'status',
     width: 110,
     render(row) {
-      return h(NTag, { type: statusTagType(row.status), size: 'small', bordered: false }, { default: () => row.status })
+      return h(
+        NTag,
+        { type: statusTagType(row.status), size: 'small', bordered: false },
+        { default: () => row.status },
+      )
     },
   },
   {
@@ -104,7 +124,11 @@ const columns: DataTableColumns<ActivityPubOutboxItemResp> = [
     key: 'actions',
     width: 90,
     render(row) {
-      return h(NButton, { size: 'small', onClick: () => openDetail(row) }, { default: () => '详情' })
+      return h(
+        NButton,
+        { size: 'small', onClick: () => openDetail(row) },
+        { default: () => '详情' },
+      )
     },
   },
 ]
@@ -132,14 +156,34 @@ const sourceTypeOptions = [
       <div class="flex items-center justify-between">
         <div class="text-lg font-medium">ActivityPub 出站</div>
         <div class="flex items-center gap-2">
-          <NInput v-model:value="searchKeyword" placeholder="搜索摘要 / activity_id / object_id" clearable class="w-72" />
-          <NSelect v-model:value="filterSourceType" :options="sourceTypeOptions" class="w-32" placeholder="内容类型" clearable />
-          <NSelect v-model:value="filterStatus" :options="statusOptions" class="w-32" placeholder="状态" clearable />
+          <NInput
+            v-model:value="searchKeyword"
+            placeholder="搜索摘要 / activity_id / object_id"
+            clearable
+            class="w-72"
+          />
+          <NSelect
+            v-model:value="filterSourceType"
+            :options="sourceTypeOptions"
+            class="w-32"
+            placeholder="内容类型"
+            clearable
+          />
+          <NSelect
+            v-model:value="filterStatus"
+            :options="statusOptions"
+            class="w-32"
+            placeholder="状态"
+            clearable
+          />
         </div>
       </div>
     </NCard>
 
-    <NCard :bordered="false" content-style="padding: 0;">
+    <NCard
+      :bordered="false"
+      content-style="padding: 0;"
+    >
       <NDataTable
         remote
         :columns="columns"
@@ -157,11 +201,20 @@ const sourceTypeOptions = [
           show-size-picker
           :page-sizes="[10, 20, 50]"
           @update:page="(p: number) => (page = p)"
-          @update:page-size="(s: number) => { pageSize = s; page = 1 }"
+          @update:page-size="
+            (s: number) => {
+              pageSize = s
+              page = 1
+            }
+          "
         />
       </div>
     </NCard>
 
-    <DetailDrawer v-model:show="showDrawer" :item="currentItem" @refresh="refetch()" />
+    <DetailDrawer
+      v-model:show="showDrawer"
+      :item="currentItem"
+      @refresh="refetch()"
+    />
   </ScrollContainer>
 </template>

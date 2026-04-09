@@ -1,5 +1,11 @@
 import { RangeSet } from '@codemirror/state'
-import { Decoration, type DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view'
+import {
+  Decoration,
+  type DecorationSet,
+  EditorView,
+  ViewPlugin,
+  ViewUpdate,
+} from '@codemirror/view'
 
 const lineHint = Decoration.line({ class: 'cm-slash-hint-line' })
 const lineHintLast = Decoration.line({ class: 'cm-slash-hint-line cm-slash-hint-line-last' })

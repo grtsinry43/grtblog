@@ -1,7 +1,9 @@
 import { reactive, type Ref } from 'vue'
-import type { EditorView } from '@codemirror/view'
+
 import { searchFederationAuthors } from '@/services/federation-admin'
+
 import type { FederationAuthorResp } from '@/types/federation'
+import type { EditorView } from '@codemirror/view'
 
 export function useMentionPicker(view: Ref<EditorView | undefined>) {
   const state = reactive({

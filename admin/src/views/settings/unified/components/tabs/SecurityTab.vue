@@ -27,8 +27,8 @@ import { listSysConfigs, updateSysConfigs } from '@/services/sysconfig'
 
 import ConfigPanel from '../ConfigPanel'
 
-import type { DataTableColumns } from 'naive-ui'
 import type { AdminOAuthProvider, OAuthProviderPayload } from '@/services/oauth-providers'
+import type { DataTableColumns } from 'naive-ui'
 
 const emit = defineEmits<{ 'dirty-change': [dirty: boolean] }>()
 
@@ -332,10 +332,20 @@ onMounted(fetchProviders)
             <div class="text-xs text-neutral-500">管理 OAuth 登录提供方</div>
           </div>
           <div class="flex items-center gap-2">
-            <NButton size="small" secondary :loading="oauthLoading" @click="fetchProviders">
+            <NButton
+              size="small"
+              secondary
+              :loading="oauthLoading"
+              @click="fetchProviders"
+            >
               刷新
             </NButton>
-            <NButton size="small" type="primary" @click="openCreate">新增 Provider</NButton>
+            <NButton
+              size="small"
+              type="primary"
+              @click="openCreate"
+              >新增 Provider</NButton
+            >
             <NButton
               v-for="preset in presets"
               :key="preset.name"
@@ -349,51 +359,110 @@ onMounted(fetchProviders)
         </div>
       </template>
 
-      <NDataTable :columns="columns" :data="providers" :loading="oauthLoading" :bordered="false" />
+      <NDataTable
+        :columns="columns"
+        :data="providers"
+        :loading="oauthLoading"
+        :bordered="false"
+      />
     </NCard>
   </div>
 
-  <NDrawer v-model:show="formVisible" placement="right" :width="520">
-    <NDrawerContent :title="formTitle" closable>
-      <NForm label-placement="top" class="space-y-2">
-        <NFormItem label="Key" required>
-          <NInput v-model:value="form.key" :disabled="!!editing" placeholder="github / google" />
+  <NDrawer
+    v-model:show="formVisible"
+    placement="right"
+    :width="520"
+  >
+    <NDrawerContent
+      :title="formTitle"
+      closable
+    >
+      <NForm
+        label-placement="top"
+        class="space-y-2"
+      >
+        <NFormItem
+          label="Key"
+          required
+        >
+          <NInput
+            v-model:value="form.key"
+            :disabled="!!editing"
+            placeholder="github / google"
+          />
         </NFormItem>
         <NFormItem label="显示名">
-          <NInput v-model:value="form.displayName" placeholder="GitHub" />
+          <NInput
+            v-model:value="form.displayName"
+            placeholder="GitHub"
+          />
         </NFormItem>
         <NFormItem label="Client ID">
-          <NInput v-model:value="form.clientId" placeholder="" />
+          <NInput
+            v-model:value="form.clientId"
+            placeholder=""
+          />
         </NFormItem>
-        <NFormItem label="Client Secret" :feedback="editing ? '留空则保持原值' : ''">
-          <NInput v-model:value="form.clientSecret" type="password" placeholder="" />
+        <NFormItem
+          label="Client Secret"
+          :feedback="editing ? '留空则保持原值' : ''"
+        >
+          <NInput
+            v-model:value="form.clientSecret"
+            type="password"
+            placeholder=""
+          />
         </NFormItem>
-        <NFormItem label="Authorization Endpoint" required>
+        <NFormItem
+          label="Authorization Endpoint"
+          required
+        >
           <NInput
             v-model:value="form.authorizationEndpoint"
             placeholder="https://.../authorize"
           />
         </NFormItem>
-        <NFormItem label="Token Endpoint" required>
-          <NInput v-model:value="form.tokenEndpoint" placeholder="https://.../token" />
+        <NFormItem
+          label="Token Endpoint"
+          required
+        >
+          <NInput
+            v-model:value="form.tokenEndpoint"
+            placeholder="https://.../token"
+          />
         </NFormItem>
         <NFormItem label="Userinfo Endpoint">
-          <NInput v-model:value="form.userinfoEndpoint" placeholder="https://.../userinfo" />
+          <NInput
+            v-model:value="form.userinfoEndpoint"
+            placeholder="https://.../userinfo"
+          />
         </NFormItem>
-        <NFormItem label="Redirect URI Template" required>
+        <NFormItem
+          label="Redirect URI Template"
+          required
+        >
           <NInput
             v-model:value="form.redirectUriTemplate"
             placeholder="https://.../auth/providers/{provider}/callback"
           />
         </NFormItem>
         <NFormItem label="Scopes">
-          <NInput v-model:value="form.scopes" placeholder="openid profile email" />
+          <NInput
+            v-model:value="form.scopes"
+            placeholder="openid profile email"
+          />
         </NFormItem>
         <NFormItem label="Issuer">
-          <NInput v-model:value="form.issuer" placeholder="" />
+          <NInput
+            v-model:value="form.issuer"
+            placeholder=""
+          />
         </NFormItem>
         <NFormItem label="JWKS URI">
-          <NInput v-model:value="form.jwksUri" placeholder="" />
+          <NInput
+            v-model:value="form.jwksUri"
+            placeholder=""
+          />
         </NFormItem>
         <NFormItem label="PKCE Required">
           <NSwitch v-model:value="form.pkceRequired" />
@@ -409,8 +478,16 @@ onMounted(fetchProviders)
           <TemplateEditor v-model="form.extraParams" />
         </NFormItem>
         <div class="flex justify-end gap-2 pt-4">
-          <NButton secondary @click="formVisible = false">取消</NButton>
-          <NButton type="primary" :loading="oauthSaving" @click="handleSave">
+          <NButton
+            secondary
+            @click="formVisible = false"
+            >取消</NButton
+          >
+          <NButton
+            type="primary"
+            :loading="oauthSaving"
+            @click="handleSave"
+          >
             {{ formActionLabel }}
           </NButton>
         </div>

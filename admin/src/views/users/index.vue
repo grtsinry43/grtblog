@@ -19,8 +19,8 @@ import { listSiteUsers, updateSiteUser } from '@/services/site-users'
 import { toRefsUserStore } from '@/stores'
 import { formatDate } from '@/utils/format'
 
-import type { DataTableColumns } from 'naive-ui'
 import type { SiteUser } from '@/types/site-users'
+import type { DataTableColumns } from 'naive-ui'
 
 defineOptions({
   name: 'SiteUserManagement',
@@ -128,7 +128,6 @@ const columns = computed<DataTableColumns<SiteUser>>(() => [
   },
 ])
 
-
 function resolveBoolFilter(raw: string): boolean | undefined {
   if (raw === 'true') return true
   if (raw === 'false') return false
@@ -186,9 +185,15 @@ async function saveEdit() {
 </script>
 
 <template>
-  <ScrollContainer wrapper-class="p-4" :scrollbar-props="{ trigger: 'none' }">
+  <ScrollContainer
+    wrapper-class="p-4"
+    :scrollbar-props="{ trigger: 'none' }"
+  >
     <NCard title="本站用户管理">
-      <NSpace class="mb-4" align="center">
+      <NSpace
+        class="mb-4"
+        align="center"
+      >
         <NInput
           v-model:value="keyword"
           placeholder="搜索用户名 / 昵称 / 邮箱"
@@ -214,7 +219,11 @@ async function saveEdit() {
             { label: '已停用', value: 'false' },
           ]"
         />
-        <NButton type="primary" @click="doSearch">查询</NButton>
+        <NButton
+          type="primary"
+          @click="doSearch"
+          >查询</NButton
+        >
         <NButton @click="resetSearch">重置</NButton>
       </NSpace>
 
@@ -228,21 +237,41 @@ async function saveEdit() {
       />
     </NCard>
 
-    <FormModal v-model:show="editVisible" title="编辑用户" :loading="saving" @confirm="saveEdit">
+    <FormModal
+      v-model:show="editVisible"
+      title="编辑用户"
+      :loading="saving"
+      @confirm="saveEdit"
+    >
       <NFormItem label="用户名">
-        <NInput :value="formModel.username" disabled />
+        <NInput
+          :value="formModel.username"
+          disabled
+        />
       </NFormItem>
       <NFormItem label="昵称">
-        <NInput v-model:value="formModel.nickname" placeholder="请输入昵称" />
+        <NInput
+          v-model:value="formModel.nickname"
+          placeholder="请输入昵称"
+        />
       </NFormItem>
       <NFormItem label="邮箱">
-        <NInput v-model:value="formModel.email" placeholder="请输入邮箱（可留空）" />
+        <NInput
+          v-model:value="formModel.email"
+          placeholder="请输入邮箱（可留空）"
+        />
       </NFormItem>
       <NFormItem label="启用">
-        <NSwitch v-model:value="formModel.isActive" :disabled="isEditingSelf" />
+        <NSwitch
+          v-model:value="formModel.isActive"
+          :disabled="isEditingSelf"
+        />
       </NFormItem>
       <NFormItem label="管理员">
-        <NSwitch v-model:value="formModel.isAdmin" :disabled="isEditingSelf" />
+        <NSwitch
+          v-model:value="formModel.isAdmin"
+          :disabled="isEditingSelf"
+        />
       </NFormItem>
     </FormModal>
   </ScrollContainer>

@@ -5,6 +5,7 @@ import { type Ref, shallowRef, onMounted, onUnmounted } from 'vue'
 
 import { codeMirrorTheme } from '@/composables/markdown-editor/codemirror-theme'
 import '@/composables/markdown-editor/editor.css'
+
 import { templateJsonLintExtension } from './json-lint'
 import {
   setTemplateVariables,
@@ -24,7 +25,10 @@ interface UseTemplateCodeMirrorProps {
 
 export type UpdateHook = (update: ViewUpdate) => void
 
-export function useTemplateCodeMirror(container: Ref<HTMLElement | undefined>, props: UseTemplateCodeMirrorProps) {
+export function useTemplateCodeMirror(
+  container: Ref<HTMLElement | undefined>,
+  props: UseTemplateCodeMirrorProps,
+) {
   const view = shallowRef<EditorView>()
   const readonlyConfig = new Compartment()
   const updateCallbacks = new Set<UpdateHook>()

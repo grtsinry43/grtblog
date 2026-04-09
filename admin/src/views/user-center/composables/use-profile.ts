@@ -1,20 +1,20 @@
 import { computed, onMounted, reactive, ref } from 'vue'
-import {
-  changePassword,
-  getAccessInfo,
-  getOAuthBindings,
-  updateProfile,
-} from '@/services/auth'
+import { cropper } from 'vue-picture-cropper'
+
+import { changePassword, getAccessInfo, getOAuthBindings, updateProfile } from '@/services/auth'
 import { listOAuthProviders } from '@/services/oauth-providers'
 import { uploadFile } from '@/services/uploads'
 import { toRefsUserStore, useUserStore } from '@/stores'
-import { cropper } from 'vue-picture-cropper'
 
 import type { OAuthBinding } from '@/services/auth'
 import type { AdminOAuthProvider } from '@/services/oauth-providers'
 import type { FormInst, FormItemRule } from 'naive-ui'
 
-export function useProfile(message: { error: (m: string) => void; success: (m: string) => void; warning?: (m: string) => void }) {
+export function useProfile(message: {
+  error: (m: string) => void
+  success: (m: string) => void
+  warning?: (m: string) => void
+}) {
   const userStore = useUserStore()
   const { user, token } = toRefsUserStore()
 
@@ -60,7 +60,9 @@ export function useProfile(message: { error: (m: string) => void; success: (m: s
 
   const registrationDays = computed(() => {
     if (!user.value.createdAt) return 0
-    return Math.floor((Date.now() - new Date(user.value.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+    return Math.floor(
+      (Date.now() - new Date(user.value.createdAt).getTime()) / (1000 * 60 * 60 * 24),
+    )
   })
 
   async function loadAccessInfo() {
@@ -124,12 +126,9 @@ export function useProfile(message: { error: (m: string) => void; success: (m: s
   async function loadOAuthBindings() {
     oauthLoading.value = true
     try {
-      const [bindings, providers] = await Promise.all([
-        getOAuthBindings(),
-        listOAuthProviders(),
-      ])
+      const [bindings, providers] = await Promise.all([getOAuthBindings(), listOAuthProviders()])
       oauthBindings.value = bindings
-      oauthProviders.value = providers.filter(p => p.enabled)
+      oauthProviders.value = providers.filter((p) => p.enabled)
     } finally {
       oauthLoading.value = false
     }

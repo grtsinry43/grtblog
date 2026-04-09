@@ -1,6 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue'
+
 import { formatTemplateJson } from '@/composables/template-editor/json-lint'
-import { formatDate } from '@/utils/format'
+import { listEvents, getEventCatalogItem } from '@/services/events'
 import {
   createWebhook,
   deleteWebhook,
@@ -10,11 +11,11 @@ import {
   testWebhook,
   updateWebhook,
 } from '@/services/webhooks'
-import { listEvents, getEventCatalogItem } from '@/services/events'
+import { formatDate } from '@/utils/format'
 
-import type { SelectOption } from 'naive-ui'
-import type { WebhookHistoryItem, WebhookItem } from '@/services/webhooks'
 import type { AdminEventGroupResp, AdminEventFieldResp } from '@/services/events'
+import type { WebhookHistoryItem, WebhookItem } from '@/services/webhooks'
+import type { SelectOption } from 'naive-ui'
 
 export type HeaderRow = {
   key: string
@@ -23,7 +24,10 @@ export type HeaderRow = {
 
 export type StatusTagType = 'default' | 'success' | 'error'
 
-export function useWebhookForm(message: { error: (msg: string) => void; success: (msg: string) => void }) {
+export function useWebhookForm(message: {
+  error: (msg: string) => void
+  success: (msg: string) => void
+}) {
   // --- Core data ---
   const webhooks = ref<WebhookItem[]>([])
   const eventGroups = ref<AdminEventGroupResp[]>([])
@@ -131,7 +135,9 @@ export function useWebhookForm(message: { error: (msg: string) => void; success:
   const enabledCount = computed(() => webhooks.value.filter((item) => item.isEnabled).length)
   const disabledCount = computed(() => totalWebhooks.value - enabledCount.value)
   const historyFailureCount = computed(
-    () => history.value.filter((item) => item.responseStatus < 200 || item.responseStatus >= 300).length,
+    () =>
+      history.value.filter((item) => item.responseStatus < 200 || item.responseStatus >= 300)
+        .length,
   )
 
   const latestHistory = computed(() => history.value[0] ?? null)
@@ -151,7 +157,9 @@ export function useWebhookForm(message: { error: (msg: string) => void; success:
 
   const isTestOnly = computed({
     get: () => historyFilters.isTest === true,
-    set: (value) => { historyFilters.isTest = value ? true : null },
+    set: (value) => {
+      historyFilters.isTest = value ? true : null
+    },
   })
 
   const detailStatus = computed<{ label: string; type: StatusTagType }>(() => {
@@ -160,7 +168,10 @@ export function useWebhookForm(message: { error: (msg: string) => void; success:
     const status = entry.responseStatus
     if (!status) return { label: '未知', type: 'default' as const }
     const success = status >= 200 && status < 300
-    return { label: success ? `成功 ${status}` : `失败 ${status}`, type: success ? 'success' : 'error' }
+    return {
+      label: success ? `成功 ${status}` : `失败 ${status}`,
+      type: success ? 'success' : 'error',
+    }
   })
 
   const validVariables = computed(() => {
@@ -297,9 +308,18 @@ export function useWebhookForm(message: { error: (msg: string) => void; success:
   }
 
   async function handleSave() {
-    if (!form.name.trim()) { message.error('请填写名称'); return }
-    if (!form.url.trim()) { message.error('请填写 URL'); return }
-    if (form.events.length === 0) { message.error('请选择订阅事件'); return }
+    if (!form.name.trim()) {
+      message.error('请填写名称')
+      return
+    }
+    if (!form.url.trim()) {
+      message.error('请填写 URL')
+      return
+    }
+    if (form.events.length === 0) {
+      message.error('请选择订阅事件')
+      return
+    }
 
     saving.value = true
     try {
@@ -449,4 +469,3 @@ export function useWebhookForm(message: { error: (msg: string) => void; success:
     init,
   }
 }
-

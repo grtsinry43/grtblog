@@ -25,10 +25,10 @@ import type { LayoutSlideDirection } from './injection'
 const { watermark, noise } = storeToRefs(usePreferencesStore())
 
 import hljs from 'highlight.js/lib/core'
+import css from 'highlight.js/lib/languages/css'
 import javascript from 'highlight.js/lib/languages/javascript'
 import json from 'highlight.js/lib/languages/json'
 import xml from 'highlight.js/lib/languages/xml'
-import css from 'highlight.js/lib/languages/css'
 
 hljs.registerLanguage('javascript', javascript)
 hljs.registerLanguage('json', json)
@@ -69,7 +69,10 @@ provide(layoutInjectionKey, {
 </script>
 
 <template>
-  <NConfigProvider v-bind="configProviderProps" :hljs="hljs">
+  <NConfigProvider
+    v-bind="configProviderProps"
+    :hljs="hljs"
+  >
     <NGlobalStyle />
     <NEl>
       <NModalProvider>

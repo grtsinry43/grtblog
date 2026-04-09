@@ -12,6 +12,7 @@ import {
   useMessage,
 } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
+
 import { listUploads, uploadFile, type UploadFileResponse } from '@/services/uploads'
 
 const props = defineProps<{

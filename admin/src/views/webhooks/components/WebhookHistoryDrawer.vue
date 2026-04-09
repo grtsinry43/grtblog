@@ -12,12 +12,12 @@ import {
   NTag,
   NTabs,
 } from 'naive-ui'
-import { formatDate } from '@/utils/format'
 
 import { ScrollContainer } from '@/components'
+import { formatDate } from '@/utils/format'
 
-import type { WebhookHistoryItem } from '@/services/webhooks'
 import type { StatusTagType } from '../composables/use-webhook-form'
+import type { WebhookHistoryItem } from '@/services/webhooks'
 
 defineProps<{
   visible: boolean
@@ -47,10 +47,17 @@ const emit = defineEmits<{
       body-style="padding: 0"
     >
       <ScrollContainer wrapper-class="flex flex-col gap-4">
-        <NEmpty v-if="!activeHistory" description="暂无投递详情" />
+        <NEmpty
+          v-if="!activeHistory"
+          description="暂无投递详情"
+        />
         <template v-else>
           <NCard title="概览">
-            <NTable size="small" :bordered="false" :single-line="false">
+            <NTable
+              size="small"
+              :bordered="false"
+              :single-line="false"
+            >
               <tbody>
                 <tr>
                   <th class="w-24 text-xs text-[var(--text-color-3)]">事件</th>
@@ -58,11 +65,15 @@ const emit = defineEmits<{
                 </tr>
                 <tr>
                   <th class="text-xs text-[var(--text-color-3)]">Webhook</th>
-                  <td>{{ webhookMap.get(activeHistory.webhookId) || `#${activeHistory.webhookId}` }}</td>
+                  <td>
+                    {{ webhookMap.get(activeHistory.webhookId) || `#${activeHistory.webhookId}` }}
+                  </td>
                 </tr>
                 <tr>
                   <th class="text-xs text-[var(--text-color-3)]">请求 URL</th>
-                  <td class="break-words font-mono text-xs">{{ activeHistory.requestUrl || '-' }}</td>
+                  <td class="font-mono text-xs break-words">
+                    {{ activeHistory.requestUrl || '-' }}
+                  </td>
                 </tr>
                 <tr>
                   <th class="text-xs text-[var(--text-color-3)]">状态</th>
@@ -79,7 +90,13 @@ const emit = defineEmits<{
                 <tr>
                   <th class="text-xs text-[var(--text-color-3)]">测试</th>
                   <td>
-                    <NTag v-if="activeHistory.isTest" size="small" type="warning" :bordered="false">是</NTag>
+                    <NTag
+                      v-if="activeHistory.isTest"
+                      size="small"
+                      type="warning"
+                      :bordered="false"
+                      >是</NTag
+                    >
                     <span v-else>否</span>
                   </td>
                 </tr>
@@ -92,29 +109,79 @@ const emit = defineEmits<{
           </NCard>
 
           <NCard>
-            <NTabs type="segment" animated>
-              <NTabPane name="request" tab="请求">
-                <NSpace vertical size="large">
-                  <NCard size="small" title="Headers">
-                    <NCode :code="formatHeaders(activeHistory.requestHeaders)" word-wrap />
+            <NTabs
+              type="segment"
+              animated
+            >
+              <NTabPane
+                name="request"
+                tab="请求"
+              >
+                <NSpace
+                  vertical
+                  size="large"
+                >
+                  <NCard
+                    size="small"
+                    title="Headers"
+                  >
+                    <NCode
+                      :code="formatHeaders(activeHistory.requestHeaders)"
+                      word-wrap
+                    />
                   </NCard>
-                  <NCard size="small" title="Body">
-                    <NCode :code="formatBody(activeHistory.requestBody)" language="json" word-wrap />
+                  <NCard
+                    size="small"
+                    title="Body"
+                  >
+                    <NCode
+                      :code="formatBody(activeHistory.requestBody)"
+                      language="json"
+                      word-wrap
+                    />
                   </NCard>
                 </NSpace>
               </NTabPane>
-              <NTabPane name="response" tab="响应">
-                <NSpace vertical size="large">
-                  <NCard size="small" title="Headers">
-                    <NCode :code="formatHeaders(activeHistory.responseHeaders)" word-wrap />
+              <NTabPane
+                name="response"
+                tab="响应"
+              >
+                <NSpace
+                  vertical
+                  size="large"
+                >
+                  <NCard
+                    size="small"
+                    title="Headers"
+                  >
+                    <NCode
+                      :code="formatHeaders(activeHistory.responseHeaders)"
+                      word-wrap
+                    />
                   </NCard>
-                  <NCard size="small" title="Body">
-                    <NCode :code="formatBody(activeHistory.responseBody)" language="json" word-wrap />
+                  <NCard
+                    size="small"
+                    title="Body"
+                  >
+                    <NCode
+                      :code="formatBody(activeHistory.responseBody)"
+                      language="json"
+                      word-wrap
+                    />
                   </NCard>
-                  <NAlert v-if="activeHistory.errorMessage" type="error" :show-icon="false">
+                  <NAlert
+                    v-if="activeHistory.errorMessage"
+                    type="error"
+                    :show-icon="false"
+                  >
                     {{ activeHistory.errorMessage }}
                   </NAlert>
-                  <NAlert v-else type="info" :show-icon="false">无错误信息</NAlert>
+                  <NAlert
+                    v-else
+                    type="info"
+                    :show-icon="false"
+                    >无错误信息</NAlert
+                  >
                 </NSpace>
               </NTabPane>
             </NTabs>

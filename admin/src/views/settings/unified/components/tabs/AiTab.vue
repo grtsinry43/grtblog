@@ -17,7 +17,6 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 
-import { listSysConfigs, updateSysConfigs } from '@/services/sysconfig'
 import {
   createAIModel,
   createAIProvider,
@@ -28,10 +27,12 @@ import {
   updateAIModel,
   updateAIProvider,
 } from '@/services/ai'
+import { listSysConfigs, updateSysConfigs } from '@/services/sysconfig'
+
 import ConfigPanel from '../ConfigPanel'
 
-import type { DataTableColumns, SelectOption } from 'naive-ui'
 import type { AIModel, AIProvider } from '@/services/ai'
+import type { DataTableColumns, SelectOption } from 'naive-ui'
 
 const emit = defineEmits<{ 'dirty-change': [dirty: boolean] }>()
 const message = useMessage()
@@ -65,7 +66,11 @@ const providerColumns = computed<DataTableColumns<AIProvider>>(() => [
     key: 'type',
     width: 130,
     render: (row) => {
-      const map: Record<string, string> = { openai: 'OpenAI 兼容', openrouter: 'OpenRouter', gemini: 'Gemini' }
+      const map: Record<string, string> = {
+        openai: 'OpenAI 兼容',
+        openrouter: 'OpenRouter',
+        gemini: 'Gemini',
+      }
       return map[row.type] || row.type
     },
   },
@@ -75,7 +80,11 @@ const providerColumns = computed<DataTableColumns<AIProvider>>(() => [
     key: 'isActive',
     width: 80,
     render: (row) =>
-      h(NTag, { type: row.isActive ? 'success' : 'default', size: 'small', bordered: false }, { default: () => (row.isActive ? '启用' : '禁用') }),
+      h(
+        NTag,
+        { type: row.isActive ? 'success' : 'default', size: 'small', bordered: false },
+        { default: () => (row.isActive ? '启用' : '禁用') },
+      ),
   },
   {
     title: '操作',
@@ -83,12 +92,21 @@ const providerColumns = computed<DataTableColumns<AIProvider>>(() => [
     width: 130,
     render: (row) =>
       h(NSpace, { size: 'small' }, () => [
-        h(NButton, { size: 'small', tertiary: true, onClick: () => openEditProvider(row) }, { default: () => '编辑' }),
+        h(
+          NButton,
+          { size: 'small', tertiary: true, onClick: () => openEditProvider(row) },
+          { default: () => '编辑' },
+        ),
         h(
           NPopconfirm,
           { onPositiveClick: () => handleDeleteProvider(row) },
           {
-            trigger: () => h(NButton, { size: 'small', type: 'error', tertiary: true }, { default: () => '删除' }),
+            trigger: () =>
+              h(
+                NButton,
+                { size: 'small', type: 'error', tertiary: true },
+                { default: () => '删除' },
+              ),
             default: () => '确认删除该提供商？关联的模型也会被删除。',
           },
         ),
@@ -194,7 +212,11 @@ const modelColumns = computed<DataTableColumns<AIModel>>(() => [
     key: 'isActive',
     width: 80,
     render: (row) =>
-      h(NTag, { type: row.isActive ? 'success' : 'default', size: 'small', bordered: false }, { default: () => (row.isActive ? '启用' : '禁用') }),
+      h(
+        NTag,
+        { type: row.isActive ? 'success' : 'default', size: 'small', bordered: false },
+        { default: () => (row.isActive ? '启用' : '禁用') },
+      ),
   },
   {
     title: '操作',
@@ -202,12 +224,21 @@ const modelColumns = computed<DataTableColumns<AIModel>>(() => [
     width: 130,
     render: (row) =>
       h(NSpace, { size: 'small' }, () => [
-        h(NButton, { size: 'small', tertiary: true, onClick: () => openEditModel(row) }, { default: () => '编辑' }),
+        h(
+          NButton,
+          { size: 'small', tertiary: true, onClick: () => openEditModel(row) },
+          { default: () => '编辑' },
+        ),
         h(
           NPopconfirm,
           { onPositiveClick: () => handleDeleteModel(row) },
           {
-            trigger: () => h(NButton, { size: 'small', type: 'error', tertiary: true }, { default: () => '删除' }),
+            trigger: () =>
+              h(
+                NButton,
+                { size: 'small', type: 'error', tertiary: true },
+                { default: () => '删除' },
+              ),
             default: () => '确认删除该模型？',
           },
         ),
@@ -295,9 +326,17 @@ onMounted(async () => {
 
 <template>
   <!-- 提供商管理 -->
-  <NCard title="AI 提供商" class="mb-4">
+  <NCard
+    title="AI 提供商"
+    class="mb-4"
+  >
     <template #header-extra>
-      <NButton type="primary" size="small" @click="openCreateProvider">新增提供商</NButton>
+      <NButton
+        type="primary"
+        size="small"
+        @click="openCreateProvider"
+        >新增提供商</NButton
+      >
     </template>
     <NDataTable
       :loading="providerLoading"
@@ -309,9 +348,17 @@ onMounted(async () => {
   </NCard>
 
   <!-- 模型管理 -->
-  <NCard title="AI 模型" class="mb-4">
+  <NCard
+    title="AI 模型"
+    class="mb-4"
+  >
     <template #header-extra>
-      <NButton type="primary" size="small" @click="openCreateModel">新增模型</NButton>
+      <NButton
+        type="primary"
+        size="small"
+        @click="openCreateModel"
+        >新增模型</NButton
+      >
     </template>
     <NDataTable
       :loading="modelLoading"
@@ -334,19 +381,47 @@ onMounted(async () => {
   />
 
   <!-- 提供商编辑弹窗 -->
-  <NModal v-model:show="providerModalVisible" preset="card" :title="editingProvider ? '编辑提供商' : '新增提供商'" style="width: 560px">
-    <NForm label-placement="left" label-width="96">
-      <NFormItem label="名称" required>
-        <NInput v-model:value="providerForm.name" placeholder="如：OpenAI 官方" />
+  <NModal
+    v-model:show="providerModalVisible"
+    preset="card"
+    :title="editingProvider ? '编辑提供商' : '新增提供商'"
+    style="width: 560px"
+  >
+    <NForm
+      label-placement="left"
+      label-width="96"
+    >
+      <NFormItem
+        label="名称"
+        required
+      >
+        <NInput
+          v-model:value="providerForm.name"
+          placeholder="如：OpenAI 官方"
+        />
       </NFormItem>
-      <NFormItem label="类型" required>
-        <NSelect v-model:value="providerForm.type" :options="providerTypeOptions" />
+      <NFormItem
+        label="类型"
+        required
+      >
+        <NSelect
+          v-model:value="providerForm.type"
+          :options="providerTypeOptions"
+        />
       </NFormItem>
       <NFormItem label="API 地址">
-        <NInput v-model:value="providerForm.apiUrl" placeholder="留空使用默认地址" />
+        <NInput
+          v-model:value="providerForm.apiUrl"
+          placeholder="留空使用默认地址"
+        />
       </NFormItem>
       <NFormItem :label="editingProvider ? 'API Key（留空不修改）' : 'API Key'">
-        <NInput v-model:value="providerForm.apiKey" type="password" show-password-on="click" placeholder="sk-..." />
+        <NInput
+          v-model:value="providerForm.apiKey"
+          type="password"
+          show-password-on="click"
+          placeholder="sk-..."
+        />
       </NFormItem>
       <NFormItem label="启用">
         <NSwitch v-model:value="providerForm.isActive" />
@@ -355,22 +430,54 @@ onMounted(async () => {
     <template #footer>
       <NSpace justify="end">
         <NButton @click="providerModalVisible = false">取消</NButton>
-        <NButton type="primary" :loading="providerSaving" @click="handleSaveProvider">保存</NButton>
+        <NButton
+          type="primary"
+          :loading="providerSaving"
+          @click="handleSaveProvider"
+          >保存</NButton
+        >
       </NSpace>
     </template>
   </NModal>
 
   <!-- 模型编辑弹窗 -->
-  <NModal v-model:show="modelModalVisible" preset="card" :title="editingModel ? '编辑模型' : '新增模型'" style="width: 560px">
-    <NForm label-placement="left" label-width="96">
-      <NFormItem label="提供商" required>
-        <NSelect v-model:value="modelForm.providerId" :options="providerSelectOptions" placeholder="请选择提供商" />
+  <NModal
+    v-model:show="modelModalVisible"
+    preset="card"
+    :title="editingModel ? '编辑模型' : '新增模型'"
+    style="width: 560px"
+  >
+    <NForm
+      label-placement="left"
+      label-width="96"
+    >
+      <NFormItem
+        label="提供商"
+        required
+      >
+        <NSelect
+          v-model:value="modelForm.providerId"
+          :options="providerSelectOptions"
+          placeholder="请选择提供商"
+        />
       </NFormItem>
-      <NFormItem label="显示名称" required>
-        <NInput v-model:value="modelForm.name" placeholder="如：GPT-4o" />
+      <NFormItem
+        label="显示名称"
+        required
+      >
+        <NInput
+          v-model:value="modelForm.name"
+          placeholder="如：GPT-4o"
+        />
       </NFormItem>
-      <NFormItem label="模型 ID" required>
-        <NInput v-model:value="modelForm.modelId" placeholder="如：gpt-4o、gemini-2.0-flash" />
+      <NFormItem
+        label="模型 ID"
+        required
+      >
+        <NInput
+          v-model:value="modelForm.modelId"
+          placeholder="如：gpt-4o、gemini-2.0-flash"
+        />
       </NFormItem>
       <NFormItem label="启用">
         <NSwitch v-model:value="modelForm.isActive" />
@@ -379,7 +486,12 @@ onMounted(async () => {
     <template #footer>
       <NSpace justify="end">
         <NButton @click="modelModalVisible = false">取消</NButton>
-        <NButton type="primary" :loading="modelSaving" @click="handleSaveModel">保存</NButton>
+        <NButton
+          type="primary"
+          :loading="modelSaving"
+          @click="handleSaveModel"
+          >保存</NButton
+        >
       </NSpace>
     </template>
   </NModal>

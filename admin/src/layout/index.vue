@@ -13,7 +13,15 @@ import { mediaQueryInjectionKey, layoutInjectionKey } from '@/injection'
 import router from '@/router'
 import { adminRealtimeWSCore } from '@/services/realtime-ws'
 import { getSystemUpdateCheck } from '@/services/system'
-import { DEFAULT_PREFERENCES_OPTIONS, toRefsPreferencesStore, toRefsTabsStore, toRefsUserStore, useRealtimeStore, useHealthStore, useUserStore } from '@/stores'
+import {
+  DEFAULT_PREFERENCES_OPTIONS,
+  toRefsPreferencesStore,
+  toRefsTabsStore,
+  toRefsUserStore,
+  useRealtimeStore,
+  useHealthStore,
+  useUserStore,
+} from '@/stores'
 
 import FooterLayout from './footer/index.vue'
 import HeaderLayout from './header/index.vue'
@@ -79,10 +87,7 @@ function shouldShowUpdateDialog() {
 }
 
 function escapeHtml(input: string) {
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+  return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function buildUpgradeCommands(targetVersion: string) {
@@ -117,30 +122,45 @@ function renderUpdateDialogContent() {
     ? releaseNotesMd.render(releaseBody)
     : `<p>${info?.message || `当前版本 ${info?.currentVersion}，检测到新版本 ${targetVersion}。`}</p>`
 
-  return () => h('div', { class: 'space-y-3' }, [
-    h('div', { class: 'space-y-1 text-sm text-neutral-500 dark:text-neutral-400' }, [
-      h('div', `当前版本 ${info?.currentVersion || '-'} → 目标版本 ${targetVersion}`),
-      h('div', `更新通道 ${info?.channel || '-'} / 来源 ${info?.source || '-'}`),
-    ]),
-    h(NScrollbar, { style: 'max-height: 360px' }, {
-      default: () => h('div', {
-        class: 'rounded-lg bg-neutral-50 p-4 text-sm leading-6 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
-        innerHTML: releaseHtml,
-      }),
-    }),
-    h('div', { class: 'space-y-2' }, [
-      h('div', { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' }, '预构建镜像升级'),
-      h('pre', {
-        class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',
-        innerHTML: escapeHtml(prebuilt),
-      }),
-      h('div', { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' }, '本地构建升级'),
-      h('pre', {
-        class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',
-        innerHTML: escapeHtml(localBuild),
-      }),
-    ]),
-  ])
+  return () =>
+    h('div', { class: 'space-y-3' }, [
+      h('div', { class: 'space-y-1 text-sm text-neutral-500 dark:text-neutral-400' }, [
+        h('div', `当前版本 ${info?.currentVersion || '-'} → 目标版本 ${targetVersion}`),
+        h('div', `更新通道 ${info?.channel || '-'} / 来源 ${info?.source || '-'}`),
+      ]),
+      h(
+        NScrollbar,
+        { style: 'max-height: 360px' },
+        {
+          default: () =>
+            h('div', {
+              class:
+                'rounded-lg bg-neutral-50 p-4 text-sm leading-6 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
+              innerHTML: releaseHtml,
+            }),
+        },
+      ),
+      h('div', { class: 'space-y-2' }, [
+        h(
+          'div',
+          { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' },
+          '预构建镜像升级',
+        ),
+        h('pre', {
+          class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',
+          innerHTML: escapeHtml(prebuilt),
+        }),
+        h(
+          'div',
+          { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' },
+          '本地构建升级',
+        ),
+        h('pre', {
+          class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',
+          innerHTML: escapeHtml(localBuild),
+        }),
+      ]),
+    ])
 }
 
 function openUpdateDialog() {
@@ -172,10 +192,14 @@ function openUpdateDialog() {
   })
 }
 
-watch(updateInfo, (info) => {
-  if (!info?.hasUpdate) return
-  openUpdateDialog()
-}, { immediate: true })
+watch(
+  updateInfo,
+  (info) => {
+    if (!info?.hasUpdate) return
+    openUpdateDialog()
+  },
+  { immediate: true },
+)
 
 const AsyncMobileHeader = defineAsyncComponent(() => import('./mobile/MobileHeader.vue'))
 const AsyncMobileLeftAside = defineAsyncComponent(() => import('./mobile/MobileLeftAside.vue'))
@@ -237,7 +261,11 @@ const stopRealtimeConnectionListener = adminRealtimeWSCore.onConnection((connect
 })
 
 const stopRealtimeMessageListener = adminRealtimeWSCore.onMessage((payload) => {
-  if (payload && typeof payload === 'object' && (payload as Record<string, unknown>).type === 'system.health.state') {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    (payload as Record<string, unknown>).type === 'system.health.state'
+  ) {
     healthStore.handleWSMessage(payload as HealthWSPayload)
     return
   }
@@ -298,11 +326,17 @@ function normalizeOwnerStatusPayload(payload: unknown): OwnerStatusPayload | nul
   const media =
     mediaRaw && typeof mediaRaw === 'object'
       ? {
-          title: typeof (mediaRaw as Record<string, unknown>).title === 'string' ? (mediaRaw as Record<string, unknown>).title as string : undefined,
-          artist: typeof (mediaRaw as Record<string, unknown>).artist === 'string' ? (mediaRaw as Record<string, unknown>).artist as string : undefined,
+          title:
+            typeof (mediaRaw as Record<string, unknown>).title === 'string'
+              ? ((mediaRaw as Record<string, unknown>).title as string)
+              : undefined,
+          artist:
+            typeof (mediaRaw as Record<string, unknown>).artist === 'string'
+              ? ((mediaRaw as Record<string, unknown>).artist as string)
+              : undefined,
           thumbnail:
             typeof (mediaRaw as Record<string, unknown>).thumbnail === 'string'
-              ? (mediaRaw as Record<string, unknown>).thumbnail as string
+              ? ((mediaRaw as Record<string, unknown>).thumbnail as string)
               : undefined,
         }
       : null

@@ -44,7 +44,11 @@ export function getObservabilityStorage() {
   return request<ObservabilityStorage>('/admin/observability/storage')
 }
 
-export function getObservabilityTimeline(query: { since?: string; until?: string; group_by?: 'minute' | 'hour' | 'day' }) {
+export function getObservabilityTimeline(query: {
+  since?: string
+  until?: string
+  group_by?: 'minute' | 'hour' | 'day'
+}) {
   return request<ObservabilityTimeline>('/admin/observability/timeline', {
     method: 'GET',
     query: query as any,
@@ -58,7 +62,11 @@ export function getObservabilityAlerts(limit = 50) {
   })
 }
 
-export function getObservabilityPages(query?: { tracked_limit?: number; recent_limit?: number; route_limit?: number }) {
+export function getObservabilityPages(query?: {
+  tracked_limit?: number
+  recent_limit?: number
+  route_limit?: number
+}) {
   return request<ObservabilityPageState>('/admin/observability/pages', {
     method: 'GET',
     query: query as any,

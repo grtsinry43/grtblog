@@ -18,6 +18,7 @@ import { ref } from 'vue'
 
 import { ScrollContainer } from '@/components'
 import { adminNotificationService } from '@/services/admin-notifications'
+
 import type { AdminNotificationResp } from '@/services/admin-notifications'
 
 const queryClient = useQueryClient()
@@ -75,8 +76,14 @@ const handleMarkAllRead = () => {
 </script>
 
 <template>
-  <ScrollContainer wrapper-class="p-4" :scrollbar-props="{ trigger: 'none' }">
-    <NCard title="通知中心" :bordered="false">
+  <ScrollContainer
+    wrapper-class="p-4"
+    :scrollbar-props="{ trigger: 'none' }"
+  >
+    <NCard
+      title="通知中心"
+      :bordered="false"
+    >
       <template #header-extra>
         <NSpace align="center">
           <span class="text-sm">仅看未读</span>
@@ -85,11 +92,14 @@ const handleMarkAllRead = () => {
         </NSpace>
       </template>
 
-      <NList hoverable clickable>
+      <NList
+        hoverable
+        clickable
+      >
         <template v-if="data?.items?.length">
-          <NListItem 
-            v-for="item in data.items" 
-            :key="item.id" 
+          <NListItem
+            v-for="item in data.items"
+            :key="item.id"
             @click="handleMarkRead(item)"
             @mouseenter="handleMouseEnter(item)"
             :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': !item.is_read }"
@@ -97,15 +107,21 @@ const handleMarkAllRead = () => {
             <NThing>
               <template #header>
                 <NSpace align="center">
-                  <NTag v-if="!item.is_read" type="success" size="small" round>NEW</NTag>
+                  <NTag
+                    v-if="!item.is_read"
+                    type="success"
+                    size="small"
+                    round
+                    >NEW</NTag
+                  >
                   <span :class="{ 'font-bold': !item.is_read }">{{ item.title }}</span>
                 </NSpace>
               </template>
               <template #description>
-                <div class="mt-1 text-naive-text-2">{{ item.content }}</div>
+                <div class="text-naive-text-2 mt-1">{{ item.content }}</div>
               </template>
               <template #footer>
-                <div class="mt-2 text-xs text-naive-text-3">
+                <div class="text-naive-text-3 mt-2 text-xs">
                   {{ new Date(item.created_at).toLocaleString() }}
                 </div>
               </template>
@@ -117,7 +133,10 @@ const handleMarkAllRead = () => {
         </template>
       </NList>
 
-      <div class="mt-4 flex justify-end" v-if="data?.total">
+      <div
+        class="mt-4 flex justify-end"
+        v-if="data?.total"
+      >
         <NPagination
           v-model:page="page"
           :page-size="pageSize"

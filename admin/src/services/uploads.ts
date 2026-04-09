@@ -97,7 +97,8 @@ export async function uploadFile(
 
     xhr.onload = () => {
       const status = xhr.status
-      let payload: { code: number; bizErr: string; msg: string; data: UploadFileResponse } | null = null
+      let payload: { code: number; bizErr: string; msg: string; data: UploadFileResponse } | null =
+        null
 
       if (xhr.responseText) {
         try {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { NCard, NGi, NGrid, NTag } from 'naive-ui'
+import { computed } from 'vue'
 
 import type { OAuthBinding } from '@/services/auth'
 import type { AdminOAuthProvider } from '@/services/oauth-providers'
@@ -11,11 +11,14 @@ const props = defineProps<{
   providers: AdminOAuthProvider[]
 }>()
 
-const boundSet = computed(() => new Set(props.bindings.map(b => b.providerKey)))
+const boundSet = computed(() => new Set(props.bindings.map((b) => b.providerKey)))
 </script>
 
 <template>
-  <div v-if="loading" class="py-12 text-center text-neutral-400">
+  <div
+    v-if="loading"
+    class="py-12 text-center text-neutral-400"
+  >
     正在加载绑定信息...
   </div>
   <div
@@ -27,15 +30,28 @@ const boundSet = computed(() => new Set(props.bindings.map(b => b.providerKey)))
     </div>
     <div class="text-neutral-500">暂无可用的第三方登录方式</div>
   </div>
-  <NGrid v-else cols="1 m:2" x-gap="16" y-gap="16">
-    <NGi v-for="provider in providers" :key="provider.key">
-      <NCard size="small" hoverable>
+  <NGrid
+    v-else
+    cols="1 m:2"
+    x-gap="16"
+    y-gap="16"
+  >
+    <NGi
+      v-for="provider in providers"
+      :key="provider.key"
+    >
+      <NCard
+        size="small"
+        hoverable
+      >
         <div class="flex items-center gap-4 py-1">
           <div
             class="grid h-10 w-10 place-items-center rounded text-xl font-bold"
-            :class="boundSet.has(provider.key)
-              ? 'bg-primary/10 text-primary'
-              : 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800'"
+            :class="
+              boundSet.has(provider.key)
+                ? 'bg-primary/10 text-primary'
+                : 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800'
+            "
           >
             {{ provider.displayName.charAt(0).toUpperCase() }}
           </div>
@@ -50,7 +66,12 @@ const boundSet = computed(() => new Set(props.bindings.map(b => b.providerKey)))
               >
                 已绑定
               </NTag>
-              <NTag v-else type="default" size="tiny" round>
+              <NTag
+                v-else
+                type="default"
+                size="tiny"
+                round
+              >
                 未绑定
               </NTag>
             </div>

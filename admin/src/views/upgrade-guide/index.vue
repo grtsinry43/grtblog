@@ -64,8 +64,8 @@ const currentGuide = computed(() => guides.value[currentStepIndex.value])
 // Feature toggle states per guide step, keyed by feature id
 const featureStates = reactive<Record<string, boolean>>({})
 
-const hasAnyEnabled = computed(() =>
-  currentGuide.value?.features.some((f) => featureStates[f.id]) ?? false,
+const hasAnyEnabled = computed(
+  () => currentGuide.value?.features.some((f) => featureStates[f.id]) ?? false,
 )
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
@@ -234,7 +234,9 @@ const latestVersion = computed(() => {
               >
                 欢迎来到
                 <br />
-                <span :style="{ color: `rgb(var(--primary-color-rgb))` }">V{{ latestVersion }}</span>
+                <span :style="{ color: `rgb(var(--primary-color-rgb))` }"
+                  >V{{ latestVersion }}</span
+                >
               </NH1>
 
               <div
@@ -245,9 +247,7 @@ const latestVersion = computed(() => {
               </div>
 
               <!-- Feature bullet list from current guide -->
-              <div
-                class="mt-16 space-y-3 text-sm text-neutral-400 dark:text-neutral-500"
-              >
+              <div class="mt-16 space-y-3 text-sm text-neutral-400 dark:text-neutral-500">
                 <div
                   v-for="item in leftPanelFeatures"
                   :key="item.index"
@@ -259,7 +259,8 @@ const latestVersion = computed(() => {
                       background: `rgba(var(--primary-color-rgb), 0.1)`,
                       color: `rgb(var(--primary-color-rgb))`,
                     }"
-                  >{{ item.index }}</span>
+                    >{{ item.index }}</span
+                  >
                   <span>{{ item.label }}</span>
                 </div>
               </div>

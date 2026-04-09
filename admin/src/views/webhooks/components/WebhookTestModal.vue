@@ -27,9 +27,7 @@ const emit = defineEmits<{
     @update:show="emit('update:visible', $event)"
   >
     <div class="flex flex-col gap-3 py-2">
-      <div class="text-xs text-[var(--text-color-3)]">
-        选择一个事件用于测试投递。
-      </div>
+      <div class="text-xs text-[var(--text-color-3)]">选择一个事件用于测试投递。</div>
       <NSelect
         :value="testEventName"
         :options="eventOptions"

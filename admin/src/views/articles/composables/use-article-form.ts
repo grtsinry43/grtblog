@@ -3,9 +3,26 @@ import { reactive, ref, computed, onMounted, toRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useLeaveConfirm } from '@/composables'
-import { createArticle, getArticle, updateArticle, type ArticleDetail } from '@/services/articles'
-import type { ContentExtInfo } from '@/types/ext-info'
 import { useImageExtInfo } from '@/composables/use-image-ext-info'
+import { createArticle, getArticle, updateArticle, type ArticleDetail } from '@/services/articles'
+
+import type { ContentExtInfo } from '@/types/ext-info'
+
+export interface ArticleEditorForm {
+  title: string
+  summary: string
+  aiSummary: string | null
+  leadIn: string
+  content: string
+  cover: string
+  categoryId: number | null
+  tagIds: number[]
+  shortUrl: string
+  isPublished: boolean
+  isTop: boolean
+  isOriginal: boolean
+  allowComment: boolean
+}
 
 export function useArticleForm() {
   const route = useRoute()
@@ -26,7 +43,7 @@ export function useArticleForm() {
   const initialSnapshot = ref('')
 
   // 表单数据模型
-  const form = reactive({
+  const form = reactive<ArticleEditorForm>({
     title: '',
     summary: '',
     aiSummary: null as string | null,

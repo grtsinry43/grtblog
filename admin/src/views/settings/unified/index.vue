@@ -22,10 +22,11 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
 <template>
   <div class="flex h-full min-h-0 max-sm:flex-col">
     <!-- Mobile: horizontal scrollable tab bar -->
-    <div
-      class="hidden shrink-0 border-b border-neutral-200 max-sm:block dark:border-neutral-700"
-    >
-      <NScrollbar x-scrollable :theme-overrides="scrollbarInMainLayout">
+    <div class="hidden shrink-0 border-b border-neutral-200 max-sm:block dark:border-neutral-700">
+      <NScrollbar
+        x-scrollable
+        :theme-overrides="scrollbarInMainLayout"
+      >
         <div class="flex gap-1 px-2 py-2">
           <button
             v-for="tab in tabs"
@@ -38,11 +39,14 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
             "
             @click="switchTab(tab.key)"
           >
-            <span :class="tab.icon" class="text-sm" />
+            <span
+              :class="tab.icon"
+              class="text-sm"
+            />
             <span>{{ tab.label }}</span>
             <span
               v-if="dirtyTabs.has(tab.key)"
-              class="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500"
+              class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500"
             />
           </button>
         </div>
@@ -50,9 +54,7 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
     </div>
 
     <!-- Desktop: left sidebar -->
-    <div
-      class="w-48 shrink-0 border-r border-neutral-200 max-sm:hidden dark:border-neutral-700"
-    >
+    <div class="w-48 shrink-0 border-r border-neutral-200 max-sm:hidden dark:border-neutral-700">
       <ScrollContainer wrapper-class="!p-0">
         <div class="space-y-0.5 px-2 py-3">
           <div
@@ -67,7 +69,10 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
             @click="switchTab(tab.key)"
           >
             <div class="flex items-center gap-2">
-              <span :class="tab.icon" class="text-base" />
+              <span
+                :class="tab.icon"
+                class="text-base"
+              />
               <span>{{ tab.label }}</span>
               <span
                 v-if="dirtyTabs.has(tab.key)"
@@ -80,8 +85,11 @@ const currentScrollable = computed(() => !currentTabDef.value?.fillHeight)
     </div>
 
     <!-- Right content -->
-    <div class="min-w-0 min-h-0 flex-1">
-      <ScrollContainer :scrollable="currentScrollable" wrapper-class="!p-3 max-sm:!p-2">
+    <div class="min-h-0 min-w-0 flex-1">
+      <ScrollContainer
+        :scrollable="currentScrollable"
+        wrapper-class="!p-3 max-sm:!p-2"
+      >
         <KeepAlive>
           <component
             :is="currentComponent"

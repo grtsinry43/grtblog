@@ -1,18 +1,8 @@
 <script setup lang="ts">
-import {
-  Copy24Regular,
-  Delete24Regular,
-  Document24Regular,
-  Edit24Regular,
-} from '@vicons/fluent'
-import {
-  NButton,
-  NDataTable,
-  NIcon,
-  NImage,
-  NTag,
-} from 'naive-ui'
+import { Copy24Regular, Delete24Regular, Document24Regular, Edit24Regular } from '@vicons/fluent'
+import { NButton, NDataTable, NIcon, NImage, NTag } from 'naive-ui'
 import { computed, h } from 'vue'
+
 import { formatDateZhCN as formatDate, formatFileSize } from '@/utils/format'
 
 import type { UploadFileResponse } from '@/services/uploads'
@@ -59,7 +49,14 @@ const columns = computed<DataTableColumns<UploadFileResponse>>(() => [
             style: { ...previewCellStyle, cursor: 'pointer', height: '40px' },
             onClick: () => emit('preview', row.publicUrl),
           },
-          h(NImage, { src: row.publicUrl, width: 40, height: 40, objectFit: 'cover', style: 'border-radius: 4px', previewDisabled: true }),
+          h(NImage, {
+            src: row.publicUrl,
+            width: 40,
+            height: 40,
+            objectFit: 'cover',
+            style: 'border-radius: 4px',
+            previewDisabled: true,
+          }),
         )
       }
       return h(
@@ -80,7 +77,11 @@ const columns = computed<DataTableColumns<UploadFileResponse>>(() => [
     key: 'type',
     width: 100,
     render: (row) =>
-      h(NTag, { type: row.type === 'picture' ? 'success' : 'info', size: 'small' }, { default: () => (row.type === 'picture' ? '图片' : '文件') }),
+      h(
+        NTag,
+        { type: row.type === 'picture' ? 'success' : 'info', size: 'small' },
+        { default: () => (row.type === 'picture' ? '图片' : '文件') },
+      ),
   },
   {
     title: '大小',
@@ -99,23 +100,48 @@ const columns = computed<DataTableColumns<UploadFileResponse>>(() => [
     key: 'actions',
     width: 320,
     render: (row) =>
-      h('div', { style: actionCellStyle }, {
-        default: () => [
-          h(NButton, { size: 'small', quaternary: true, onClick: () => emit('copyUrl', row) }, {
-            icon: () => h(NIcon, null, { default: () => h(Copy24Regular) }),
-            default: () => '复制链接',
-          }),
-          h(NButton, { size: 'small', quaternary: true, onClick: () => emit('rename', row) }, {
-            icon: () => h(NIcon, null, { default: () => h(Edit24Regular) }),
-            default: () => '重命名',
-          }),
-          h(NButton, { size: 'small', quaternary: true, onClick: () => emit('download', row) }, { default: () => '下载' }),
-          h(NButton, { size: 'small', quaternary: true, type: 'error', onClick: () => emit('delete', row) }, {
-            icon: () => h(NIcon, null, { default: () => h(Delete24Regular) }),
-            default: () => '删除',
-          }),
-        ],
-      }),
+      h(
+        'div',
+        { style: actionCellStyle },
+        {
+          default: () => [
+            h(
+              NButton,
+              { size: 'small', quaternary: true, onClick: () => emit('copyUrl', row) },
+              {
+                icon: () => h(NIcon, null, { default: () => h(Copy24Regular) }),
+                default: () => '复制链接',
+              },
+            ),
+            h(
+              NButton,
+              { size: 'small', quaternary: true, onClick: () => emit('rename', row) },
+              {
+                icon: () => h(NIcon, null, { default: () => h(Edit24Regular) }),
+                default: () => '重命名',
+              },
+            ),
+            h(
+              NButton,
+              { size: 'small', quaternary: true, onClick: () => emit('download', row) },
+              { default: () => '下载' },
+            ),
+            h(
+              NButton,
+              {
+                size: 'small',
+                quaternary: true,
+                type: 'error',
+                onClick: () => emit('delete', row),
+              },
+              {
+                icon: () => h(NIcon, null, { default: () => h(Delete24Regular) }),
+                default: () => '删除',
+              },
+            ),
+          ],
+        },
+      ),
   },
 ])
 </script>

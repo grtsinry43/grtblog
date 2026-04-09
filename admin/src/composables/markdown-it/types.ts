@@ -1,6 +1,6 @@
 import MarkdownIt from 'markdown-it'
 
-import type {Options} from 'markdown-it'
+import type { Options } from 'markdown-it'
 
 export type MarkdownItInstance = MarkdownIt
 

@@ -262,7 +262,11 @@ watch(
       :query="mentionPicker.state.query"
       :results="mentionPicker.state.results"
       :loading="mentionPicker.state.loading"
-      @update:show="(v) => { if (!v) mentionPicker.close() }"
+      @update:show="
+        (v) => {
+          if (!v) mentionPicker.close()
+        }
+      "
       @search="mentionPicker.search"
       @select="mentionPicker.insert"
       @insertRaw="mentionPicker.insertRaw"
@@ -284,7 +288,11 @@ watch(
       :page-size="citationPicker.state.pageSize"
       :resolved-u-r-l="citationPicker.state.resolvedURL"
       :resolved-name="citationPicker.state.resolvedName"
-      @update:show="(v: boolean) => { if (!v) citationPicker.close() }"
+      @update:show="
+        (v: boolean) => {
+          if (!v) citationPicker.close()
+        }
+      "
       @url-input="citationPicker.onURLInput"
       @submit-u-r-l="citationPicker.submitURL"
       @select-instance="citationPicker.selectInstance"

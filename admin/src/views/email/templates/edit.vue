@@ -20,9 +20,9 @@ import {
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { ScrollContainer } from '@/components'
 import HtmlEditor from '@/components/html-editor/HtmlEditor.vue'
 import TemplateEditor from '@/components/template-editor/TemplateEditor.vue'
-import { ScrollContainer } from '@/components'
 import {
   createEmailTemplate,
   listEmailTemplates,
@@ -30,6 +30,7 @@ import {
   previewEmailTemplate,
 } from '@/services/email'
 import { getEventCatalogItem, listEvents } from '@/services/events'
+
 import type { AdminEventFieldResp } from '@/services/events'
 
 const message = useMessage()
@@ -65,7 +66,7 @@ const previewData = reactive({
 
 // Extract valid variable names for the editor
 const validVariables = computed(() => {
-  return currentEventFields.value.map(f => f.name)
+  return currentEventFields.value.map((f) => f.name)
 })
 
 async function fetchEvents() {
@@ -97,7 +98,7 @@ watch(
   () => form.eventName,
   (newVal) => {
     fetchEventDetails(newVal)
-  }
+  },
 )
 
 watch(
@@ -117,7 +118,7 @@ watch(
     } else {
       fetchDetail()
     }
-  }
+  },
 )
 
 async function fetchDetail() {
@@ -218,16 +219,16 @@ watch(previewModalVisible, (visible) => {
     // For now, let's also check if the current valid variables are present in the JSON?
     // Or simpler: just check if we have event fields.
     if (form.eventName && currentEventFields.value.length > 0) {
-       // If the current JSON doesn't contain keys from the current event, maybe regenerate?
-       // This is tricky. Let's just stick to "if default, regenerate".
-       // And maybe an explicit 'Reset' button in the UI could be nice?
-       // For now, let's always regenerate if the user hasn't touched it significantly?
-       // Let's rely on the check against defaultVariables.
-       
-       // Actually, if the user switched events, defaultVariables check might fail if they edited it for PREVIOUS event.
-       // Let's regenerate if the eventName changed since last time?
-       // Simpler: Just regenerate it. The user can edit it.
-       previewData.variables = generatePreviewData()
+      // If the current JSON doesn't contain keys from the current event, maybe regenerate?
+      // This is tricky. Let's just stick to "if default, regenerate".
+      // And maybe an explicit 'Reset' button in the UI could be nice?
+      // For now, let's always regenerate if the user hasn't touched it significantly?
+      // Let's rely on the check against defaultVariables.
+
+      // Actually, if the user switched events, defaultVariables check might fail if they edited it for PREVIOUS event.
+      // Let's regenerate if the eventName changed since last time?
+      // Simpler: Just regenerate it. The user can edit it.
+      previewData.variables = generatePreviewData()
     }
   }
 })
@@ -289,15 +290,28 @@ onMounted(async () => {
               placeholder="支持模版变量，如：Welcome {{.Name}}"
             />
           </NFormItem>
-          
-          <div v-if="currentEventFields.length > 0" class="mb-4">
-             <div class="text-xs text-gray-500 mb-2">可用事件变量:</div>
-             <NSpace size="small">
-               <NTag v-for="field in currentEventFields" :key="field.name" size="small" type="info" dashed>
-                 {{ field.name }}
-                 <template #avatar v-if="field.required"><span class="text-red-500">*</span></template>
-               </NTag>
-             </NSpace>
+
+          <div
+            v-if="currentEventFields.length > 0"
+            class="mb-4"
+          >
+            <div class="mb-2 text-xs text-gray-500">可用事件变量:</div>
+            <NSpace size="small">
+              <NTag
+                v-for="field in currentEventFields"
+                :key="field.name"
+                size="small"
+                type="info"
+                dashed
+              >
+                {{ field.name }}
+                <template
+                  #avatar
+                  v-if="field.required"
+                  ><span class="text-red-500">*</span></template
+                >
+              </NTag>
+            </NSpace>
           </div>
 
           <NTabs
@@ -356,7 +370,12 @@ onMounted(async () => {
                 :disabled="isInternal"
                 placeholder="选择关联的系统事件"
               />
-              <div v-if="isInternal" class="mt-1 text-xs text-neutral-400">内置模版不允许更改触发事件</div>
+              <div
+                v-if="isInternal"
+                class="mt-1 text-xs text-neutral-400"
+              >
+                内置模版不允许更改触发事件
+              </div>
             </NFormItem>
             <NFormItem label="默认收件人">
               <NSelect
@@ -388,23 +407,37 @@ onMounted(async () => {
             size="small"
           >
             <template #header-extra>
-               <NButton size="small" secondary @click="handlePreview" :loading="previewLoading">渲染预览</NButton>
+              <NButton
+                size="small"
+                secondary
+                @click="handlePreview"
+                :loading="previewLoading"
+                >渲染预览</NButton
+              >
             </template>
             <TemplateEditor v-model="previewData.variables" />
           </NCard>
         </div>
         <div class="flex flex-col gap-4">
-           <div class="rounded border p-4">
-              <div class="mb-2 border-b pb-2 font-bold">Subject: {{ previewData.subject }}</div>
-              <iframe 
-                class="w-full h-[600px] border-0" 
-                :srcdoc="previewData.htmlBody"
-                sandbox="allow-same-origin allow-scripts"
-              ></iframe>
-           </div>
-           <NCard title="HTML Source" size="small" embedded>
-              <NCode :code="previewData.htmlBody" language="html" word-wrap />
-           </NCard>
+          <div class="rounded border p-4">
+            <div class="mb-2 border-b pb-2 font-bold">Subject: {{ previewData.subject }}</div>
+            <iframe
+              class="h-[600px] w-full border-0"
+              :srcdoc="previewData.htmlBody"
+              sandbox="allow-same-origin allow-scripts"
+            ></iframe>
+          </div>
+          <NCard
+            title="HTML Source"
+            size="small"
+            embedded
+          >
+            <NCode
+              :code="previewData.htmlBody"
+              language="html"
+              word-wrap
+            />
+          </NCard>
         </div>
       </div>
     </NModal>

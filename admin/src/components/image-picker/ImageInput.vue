@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { NButton, NImage, NInput, NInputGroup } from 'naive-ui'
 import { ref } from 'vue'
+
 import ImagePickerModal from './ImagePickerModal.vue'
 
 const props = defineProps<{

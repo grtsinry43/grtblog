@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ChevronDown24Regular, CloudArrowUp24Regular, Document24Regular, Image24Regular } from '@vicons/fluent'
+import {
+  ChevronDown24Regular,
+  CloudArrowUp24Regular,
+  Document24Regular,
+  Image24Regular,
+} from '@vicons/fluent'
 import { NButton, NDropdown, NIcon, NSpace, NUpload } from 'naive-ui'
 import { h } from 'vue'
 
@@ -32,10 +37,15 @@ function getTypeLabel(value: FileType) {
 
 <template>
   <NSpace align="center">
-    <NDropdown :options="typeOptions" @select="emit('update:uploadType', $event)">
+    <NDropdown
+      :options="typeOptions"
+      @select="emit('update:uploadType', $event)"
+    >
       <NButton secondary>
         <span class="upload-type-option">
-          <NIcon><Image24Regular v-if="uploadType === 'picture'" /><Document24Regular v-else /></NIcon>
+          <NIcon
+            ><Image24Regular v-if="uploadType === 'picture'" /><Document24Regular v-else
+          /></NIcon>
           <span>{{ getTypeLabel(uploadType) }}</span>
           <NIcon><ChevronDown24Regular /></NIcon>
         </span>
@@ -48,8 +58,13 @@ function getTypeLabel(value: FileType) {
       :custom-request="(options) => emit('upload', options)"
       :disabled="uploading"
     >
-      <NButton type="primary" :loading="uploading">
-        <template #icon><NIcon><CloudArrowUp24Regular /></NIcon></template>
+      <NButton
+        type="primary"
+        :loading="uploading"
+      >
+        <template #icon
+          ><NIcon><CloudArrowUp24Regular /></NIcon
+        ></template>
         上传{{ getTypeLabel(uploadType) }}
       </NButton>
     </NUpload>

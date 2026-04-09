@@ -16,10 +16,19 @@ import {
   NTag,
 } from 'naive-ui'
 import { computed, h } from 'vue'
+
 import { formatDate } from '@/utils/format'
 
-import type { DataTableColumns, SelectOption } from 'naive-ui'
 import type { WebhookHistoryItem } from '@/services/webhooks'
+import type { DataTableColumns, SelectOption } from 'naive-ui'
+
+const historyFilters = defineModel<{
+  webhookId: number | null
+  eventName: string | null
+  isTest: boolean | null
+}>('historyFilters', { required: true })
+
+const isTestOnly = defineModel<boolean>('isTestOnly', { required: true })
 
 const props = defineProps<{
   history: WebhookHistoryItem[]
@@ -29,8 +38,6 @@ const props = defineProps<{
   historyTotal: number
   historyFailureCount: number
   webhookMap: Map<number, string>
-  historyFilters: { webhookId: number | null; eventName: string | null; isTest: boolean | null }
-  isTestOnly: boolean
   webhookOptions: SelectOption[]
   eventOptions: SelectOption[]
 }>()
@@ -38,7 +45,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:historyPage': [value: number]
   'update:historyPageSize': [value: number]
-  'update:isTestOnly': [value: boolean]
   applyFilters: []
   resetFilters: []
   refresh: []
@@ -112,16 +118,32 @@ const historyColumns = computed<DataTableColumns<WebhookHistoryItem>>(() => [
   <NCard title="投递历史">
     <template #header-extra>
       <NSpace size="small">
-        <NTag size="small" type="warning" :bordered="false">
+        <NTag
+          size="small"
+          type="warning"
+          :bordered="false"
+        >
           本页失败 {{ historyFailureCount }}
         </NTag>
-        <NTag size="small" type="info" :bordered="false">
+        <NTag
+          size="small"
+          type="info"
+          :bordered="false"
+        >
           共 {{ historyTotal }} 条
         </NTag>
       </NSpace>
     </template>
-    <NForm label-placement="left" label-width="60" :show-feedback="false">
-      <NGrid cols="1 640:2 900:4" x-gap="16" y-gap="8">
+    <NForm
+      label-placement="left"
+      label-width="60"
+      :show-feedback="false"
+    >
+      <NGrid
+        cols="1 640:2 900:4"
+        x-gap="16"
+        y-gap="8"
+      >
         <NGi>
           <NFormItem label="Webhook">
             <NSelect
@@ -148,7 +170,7 @@ const historyColumns = computed<DataTableColumns<WebhookHistoryItem>>(() => [
           <NFormItem label="测试">
             <NCheckbox
               :checked="isTestOnly"
-              @update:checked="emit('update:isTestOnly', $event)"
+              @update:checked="isTestOnly = $event"
             >
               仅测试
             </NCheckbox>
@@ -157,16 +179,28 @@ const historyColumns = computed<DataTableColumns<WebhookHistoryItem>>(() => [
         <NGi>
           <NFormItem label="操作">
             <NSpace>
-              <NButton type="primary" secondary @click="emit('applyFilters')">筛选</NButton>
+              <NButton
+                type="primary"
+                secondary
+                @click="emit('applyFilters')"
+                >筛选</NButton
+              >
               <NButton @click="emit('resetFilters')">重置</NButton>
-              <NButton tertiary @click="emit('refresh')">刷新</NButton>
+              <NButton
+                tertiary
+                @click="emit('refresh')"
+                >刷新</NButton
+              >
             </NSpace>
           </NFormItem>
         </NGi>
       </NGrid>
     </NForm>
     <NDivider class="my-3" />
-    <div v-if="history.length === 0 && !historyLoading" class="py-10">
+    <div
+      v-if="history.length === 0 && !historyLoading"
+      class="py-10"
+    >
       <NEmpty description="暂无投递记录" />
     </div>
     <NDataTable

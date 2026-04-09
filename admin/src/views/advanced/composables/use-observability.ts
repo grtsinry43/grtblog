@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
+
 import {
   getObservabilityAlerts,
   getObservabilityControlPlane,
@@ -126,7 +127,8 @@ export function useObservability() {
         value: ov?.api.requests ?? 0,
         suffix: 'req',
         iconClass: 'iconify ph--arrows-left-right-bold text-indigo-50 dark:text-indigo-150',
-        iconBgClass: 'text-indigo-500/5 bg-indigo-400 ring-4 ring-indigo-200 dark:bg-indigo-650 dark:ring-indigo-500/30 transition-all',
+        iconBgClass:
+          'text-indigo-500/5 bg-indigo-400 ring-4 ring-indigo-200 dark:bg-indigo-650 dark:ring-indigo-500/30 transition-all',
         description: '最近5分钟请求',
       },
       {
@@ -135,7 +137,8 @@ export function useObservability() {
         suffix: '%',
         precision: 2,
         iconClass: 'iconify ph--warning-circle-bold text-rose-50 dark:text-rose-150',
-        iconBgClass: 'text-rose-500/5 bg-rose-400 ring-4 ring-rose-200 dark:bg-rose-650 dark:ring-rose-500/30 transition-all',
+        iconBgClass:
+          'text-rose-500/5 bg-rose-400 ring-4 ring-rose-200 dark:bg-rose-650 dark:ring-rose-500/30 transition-all',
         description: '接口调用异常比例',
       },
       {
@@ -143,7 +146,8 @@ export function useObservability() {
         value: ov?.realtime.currentOnline ?? 0,
         suffix: 'ws',
         iconClass: 'iconify ph--users-three-bold text-blue-50 dark:text-blue-150',
-        iconBgClass: 'text-blue-500/5 bg-blue-400 ring-4 ring-blue-200 dark:bg-blue-650 dark:ring-blue-500/30 transition-all',
+        iconBgClass:
+          'text-blue-500/5 bg-blue-400 ring-4 ring-blue-200 dark:bg-blue-650 dark:ring-blue-500/30 transition-all',
         description: '实时 WebSocket 连接',
       },
       {
@@ -152,7 +156,8 @@ export function useObservability() {
         suffix: '%',
         precision: 2,
         iconClass: 'iconify ph--planet-bold text-emerald-50 dark:text-emerald-150',
-        iconBgClass: 'text-emerald-500/5 bg-emerald-400 ring-4 ring-emerald-200 dark:bg-emerald-650 dark:ring-emerald-500/30 transition-all',
+        iconBgClass:
+          'text-emerald-500/5 bg-emerald-400 ring-4 ring-emerald-200 dark:bg-emerald-650 dark:ring-emerald-500/30 transition-all',
         description: '联合投递成功率',
       },
     ]

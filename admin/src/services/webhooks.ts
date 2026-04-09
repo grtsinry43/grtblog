@@ -66,7 +66,9 @@ export interface ListWebhookHistoryParams {
 
 function stripEmpty<T extends object>(value: T): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null && entry !== ''),
+    Object.entries(value).filter(
+      ([, entry]) => entry !== undefined && entry !== null && entry !== '',
+    ),
   )
 }
 

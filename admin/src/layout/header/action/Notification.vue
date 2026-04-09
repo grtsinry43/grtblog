@@ -1,11 +1,24 @@
 <script setup lang="ts">
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { NBadge, NButton, NEmpty, NList, NListItem, NPopover, NText, NThing, useNotification } from 'naive-ui'
+import {
+  NBadge,
+  NButton,
+  NEmpty,
+  NList,
+  NListItem,
+  NPopover,
+  NText,
+  NThing,
+  useNotification,
+} from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ScrollContainer } from '@/components'
-import { adminNotificationService, type AdminNotificationResp } from '@/services/admin-notifications'
+import {
+  adminNotificationService,
+  type AdminNotificationResp,
+} from '@/services/admin-notifications'
 import { toRefsUserStore } from '@/stores'
 
 const router = useRouter()
@@ -146,12 +159,12 @@ const handleMarkRead = async (id: number) => {
 }
 
 const handleMarkReadAll = async () => {
-    try {
-        await adminNotificationService.markAllRead()
-        queryClient.invalidateQueries({ queryKey: ['admin-notifications'] })
-    } catch {
-        // ignore
-    }
+  try {
+    await adminNotificationService.markAllRead()
+    queryClient.invalidateQueries({ queryKey: ['admin-notifications'] })
+  } catch {
+    // ignore
+  }
 }
 
 const handleViewAll = () => {
@@ -160,62 +173,87 @@ const handleViewAll = () => {
 }
 
 const handleNotificationClick = (item: AdminNotificationResp) => {
-    if (!item.is_read) {
-        handleMarkRead(item.id)
-    }
-    // Logic to navigate or show details based on payload if needed
+  if (!item.is_read) {
+    handleMarkRead(item.id)
+  }
+  // Logic to navigate or show details based on payload if needed
 }
-
-
-
 </script>
 
 <template>
-  <NPopover v-model:show="isPopoverShow" trigger="click" placement="bottom-end" :width="350">
+  <NPopover
+    v-model:show="isPopoverShow"
+    trigger="click"
+    placement="bottom-end"
+    :width="350"
+  >
     <template #trigger>
-      <NBadge :value="unreadData?.total || 0" :max="99">
-        <NButton quaternary circle>
-             <span class="icon-[ph--bell] text-xl" />
+      <NBadge
+        :value="unreadData?.total || 0"
+        :max="99"
+      >
+        <NButton
+          quaternary
+          circle
+        >
+          <span class="icon-[ph--bell] text-xl" />
         </NButton>
       </NBadge>
     </template>
     <div class="flex flex-col">
       <div class="flex items-center justify-between px-4 py-2">
         <NText strong>未读通知</NText>
-        <NButton text type="primary" size="small" @click="handleMarkReadAll" v-if="(unreadData?.total ?? 0) > 0">
-           全部已读
+        <NButton
+          text
+          type="primary"
+          size="small"
+          @click="handleMarkReadAll"
+          v-if="(unreadData?.total ?? 0) > 0"
+        >
+          全部已读
         </NButton>
       </div>
       <div class="h-[400px]">
         <ScrollContainer wrapper-class="!p-0">
-          <NList hoverable clickable v-if="unreadData?.items && unreadData.items.length > 0">
-            <NListItem 
-              v-for="item in unreadData.items" 
-              :key="item.id" 
+          <NList
+            hoverable
+            clickable
+            v-if="unreadData?.items && unreadData.items.length > 0"
+          >
+            <NListItem
+              v-for="item in unreadData.items"
+              :key="item.id"
               @click="handleNotificationClick(item)"
               :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': !item.is_read }"
             >
               <NThing :title="item.title">
                 <template #description>
-                  <div class="line-clamp-2 text-xs text-naive-text-2">
+                  <div class="text-naive-text-2 line-clamp-2 text-xs">
                     {{ item.content }}
                   </div>
                 </template>
                 <template #footer>
-                   <div class="text-[10px] text-naive-text-3">
-                      {{ new Date(item.created_at).toLocaleString() }}
-                   </div>
+                  <div class="text-naive-text-3 text-[10px]">
+                    {{ new Date(item.created_at).toLocaleString() }}
+                  </div>
                 </template>
               </NThing>
             </NListItem>
           </NList>
-          <div v-else class="py-8 text-center">
-              <NEmpty description="暂无未读通知" />
+          <div
+            v-else
+            class="py-8 text-center"
+          >
+            <NEmpty description="暂无未读通知" />
           </div>
         </ScrollContainer>
       </div>
       <div class="p-2">
-        <NButton block secondary @click="handleViewAll">
+        <NButton
+          block
+          secondary
+          @click="handleViewAll"
+        >
           查看全部
         </NButton>
       </div>

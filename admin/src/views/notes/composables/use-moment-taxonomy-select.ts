@@ -1,5 +1,6 @@
-import { listColumns, listTags, createTag, createColumn } from '@/services/taxonomy'
 import { ref, onMounted, reactive, computed } from 'vue'
+
+import { listColumns, listTags, createTag, createColumn } from '@/services/taxonomy'
 
 import type { MomentTopic } from '@/services/moments'
 import type { SelectOption, MessageApi } from 'naive-ui'

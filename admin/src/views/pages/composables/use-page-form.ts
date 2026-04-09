@@ -1,6 +1,7 @@
+import { useMessage } from 'naive-ui'
 import { reactive, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMessage } from 'naive-ui'
+
 import { getPage, createPage, updatePage } from '@/services/page'
 
 export function usePageForm() {

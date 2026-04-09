@@ -1,5 +1,6 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+
 import { useDiscreteApi } from '@/composables/useDiscreteApi'
 import {
   getAlbum,
@@ -10,6 +11,7 @@ import {
   deletePhoto as deletePhotoApi,
   reorderPhotos,
 } from '@/services/albums'
+
 import type { PhotoItem, CreatePhotoPayload, PhotoExif } from '@/services/albums'
 
 export function useAlbumForm() {

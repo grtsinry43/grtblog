@@ -39,13 +39,15 @@ const showPreferencesDrawer = ref(false)
 const serverVersion = ref('')
 
 onMounted(() => {
-  getSystemStatus().then((res) => {
-    const v = res.app.version
-    const c = res.app.commit
-    serverVersion.value = c ? `${v} (${c})` : v
-  }).catch(() => {
-    serverVersion.value = 'unknown'
-  })
+  getSystemStatus()
+    .then((res) => {
+      const v = res.app.version
+      const c = res.app.commit
+      serverVersion.value = c ? `${v} (${c})` : v
+    })
+    .catch(() => {
+      serverVersion.value = 'unknown'
+    })
 })
 
 const colorSwatches = [
@@ -479,7 +481,10 @@ const showWatermarkModal = () => {
                             :min="0"
                             :max="100"
                             :step="1"
-                            :disabled="!preferences.backgroundImage.show || !preferences.backgroundImage.glassEffect.enable"
+                            :disabled="
+                              !preferences.backgroundImage.show ||
+                              !preferences.backgroundImage.glassEffect.enable
+                            "
                           />
                         </div>
                         <div class="flex items-center justify-between">
@@ -489,7 +494,10 @@ const showWatermarkModal = () => {
                             :min="0"
                             :max="50"
                             :step="1"
-                            :disabled="!preferences.backgroundImage.show || !preferences.backgroundImage.glassEffect.enable"
+                            :disabled="
+                              !preferences.backgroundImage.show ||
+                              !preferences.backgroundImage.glassEffect.enable
+                            "
                           />
                         </div>
                       </div>

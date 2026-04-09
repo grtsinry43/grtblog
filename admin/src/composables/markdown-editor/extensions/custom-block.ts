@@ -1,7 +1,16 @@
 import { RangeSet } from '@codemirror/state'
-import { Decoration, type DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view'
+import {
+  Decoration,
+  type DecorationSet,
+  EditorView,
+  ViewPlugin,
+  ViewUpdate,
+} from '@codemirror/view'
 
-import { markdownComponentNames, parseComponentInfo } from '@/composables/markdown/shared/components'
+import {
+  markdownComponentNames,
+  parseComponentInfo,
+} from '@/composables/markdown/shared/components'
 
 const blockLine = Decoration.line({ class: 'cm-custom-block' })
 const blockLineStart = Decoration.line({ class: 'cm-custom-block cm-custom-block-start' })
@@ -57,11 +66,7 @@ function buildDecorations(view: EditorView): DecorationSet {
               const targetLine = doc.line(lineIndex)
               const isStart = lineIndex === startLineNumber
               const isEnd = lineIndex === i
-              const lineDecoration = isStart
-                ? blockLineStart
-                : isEnd
-                  ? blockLineEnd
-                  : blockLine
+              const lineDecoration = isStart ? blockLineStart : isEnd ? blockLineEnd : blockLine
               decorations.push({
                 from: targetLine.from,
                 to: targetLine.from,
@@ -77,11 +82,7 @@ function buildDecorations(view: EditorView): DecorationSet {
           const targetLine = doc.line(lineIndex)
           const isStart = lineIndex === startLineNumber
           const isEnd = lineIndex === i
-          const lineDecoration = isStart
-            ? blockLineStart
-            : isEnd
-              ? blockLineEnd
-              : blockLine
+          const lineDecoration = isStart ? blockLineStart : isEnd ? blockLineEnd : blockLine
           decorations.push({
             from: targetLine.from,
             to: targetLine.from,

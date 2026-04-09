@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import {
   NModal,
   NCard,
@@ -13,6 +12,8 @@ import {
   NCollapseItem,
   useThemeVars,
 } from 'naive-ui'
+import { ref, computed } from 'vue'
+
 import type { FederationAuthorResp } from '@/types/federation'
 
 const props = defineProps<{
@@ -31,8 +32,12 @@ const emit = defineEmits<{
 
 const themeVars = useThemeVars()
 
-const badgeBg = computed(() => `color-mix(in srgb, ${themeVars.value.primaryColor} 12%, transparent)`)
-const avatarBg = computed(() => `color-mix(in srgb, ${themeVars.value.primaryColor} 14%, transparent)`)
+const badgeBg = computed(
+  () => `color-mix(in srgb, ${themeVars.value.primaryColor} 12%, transparent)`,
+)
+const avatarBg = computed(
+  () => `color-mix(in srgb, ${themeVars.value.primaryColor} 14%, transparent)`,
+)
 const avatarColor = computed(() => themeVars.value.primaryColor)
 const hoverBg = computed(() => themeVars.value.hoverColor)
 const borderRadius = computed(() => themeVars.value.borderRadius)
@@ -85,11 +90,14 @@ const hasSearched = computed(() => props.query.trim().length > 0)
             :style="{ background: badgeBg }"
           >
             <span
-              class="iconify ph--at-bold text-base"
+              class="iconify text-base ph--at-bold"
               :style="{ color: avatarColor }"
             />
           </div>
-          <span class="text-base font-medium" :style="{ color: textColor1 }">
+          <span
+            class="text-base font-medium"
+            :style="{ color: textColor1 }"
+          >
             选择提及对象
           </span>
         </div>
@@ -105,10 +113,16 @@ const hasSearched = computed(() => props.query.trim().length > 0)
             @update:value="emit('search', $event)"
           >
             <template #prefix>
-              <span class="iconify ph--magnifying-glass text-base" :style="{ color: textColor3 }" />
+              <span
+                class="iconify text-base ph--magnifying-glass"
+                :style="{ color: textColor3 }"
+              />
             </template>
           </NInput>
-          <p class="mt-1.5 text-xs" :style="{ color: textColor3 }">
+          <p
+            class="mt-1.5 text-xs"
+            :style="{ color: textColor3 }"
+          >
             搜索已联合实例中的作者，点击即可插入提及语法
           </p>
         </div>
@@ -122,10 +136,13 @@ const hasSearched = computed(() => props.query.trim().length > 0)
               class="flex flex-col items-center justify-center gap-2 py-10"
             >
               <span
-                class="iconify ph--users-three text-3xl"
+                class="iconify text-3xl ph--users-three"
                 :style="{ color: textColor3 }"
               />
-              <span class="text-sm" :style="{ color: textColor3 }">
+              <span
+                class="text-sm"
+                :style="{ color: textColor3 }"
+              >
                 输入关键词开始搜索作者
               </span>
             </div>
@@ -136,16 +153,22 @@ const hasSearched = computed(() => props.query.trim().length > 0)
               class="flex flex-col items-center justify-center gap-2 py-10"
             >
               <span
-                class="iconify ph--magnifying-glass text-3xl"
+                class="iconify text-3xl ph--magnifying-glass"
                 :style="{ color: textColor3 }"
               />
-              <span class="text-sm" :style="{ color: textColor3 }">
+              <span
+                class="text-sm"
+                :style="{ color: textColor3 }"
+              >
                 未找到匹配的作者，可在下方手动输入
               </span>
             </div>
 
             <!-- Author list -->
-            <div v-else class="flex flex-col gap-0.5">
+            <div
+              v-else
+              class="flex flex-col gap-0.5"
+            >
               <div
                 v-for="author in results"
                 :key="author.name + '@' + author.instanceUrl"
@@ -162,10 +185,16 @@ const hasSearched = computed(() => props.query.trim().length > 0)
                 </div>
                 <!-- Info -->
                 <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-medium" :style="{ color: textColor1 }">
+                  <div
+                    class="truncate text-sm font-medium"
+                    :style="{ color: textColor1 }"
+                  >
                     {{ author.name }}
                   </div>
-                  <div class="truncate text-xs" :style="{ color: textColor3 }">
+                  <div
+                    class="truncate text-xs"
+                    :style="{ color: textColor3 }"
+                  >
                     {{ author.instanceName || extractHost(author.instanceUrl) }}
                   </div>
                 </div>
@@ -175,7 +204,10 @@ const hasSearched = computed(() => props.query.trim().length > 0)
                   :bordered="false"
                   round
                   class="shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                  :style="{ fontFamily: '\'Fira Code\', \'SFMono-Regular\', monospace', background: codeBg }"
+                  :style="{
+                    fontFamily: '\'Fira Code\', \'SFMono-Regular\', monospace',
+                    background: codeBg,
+                  }"
                 >
                   @{{ author.name }}
                 </NTag>
@@ -185,10 +217,19 @@ const hasSearched = computed(() => props.query.trim().length > 0)
         </NSpin>
 
         <!-- Manual input -->
-        <NCollapse arrow-placement="right" class="mt-1">
-          <NCollapseItem title="手动输入" name="manual">
+        <NCollapse
+          arrow-placement="right"
+          class="mt-1"
+        >
+          <NCollapseItem
+            title="手动输入"
+            name="manual"
+          >
             <template #header-extra>
-              <span class="iconify ph--keyboard text-base" :style="{ color: textColor3 }" />
+              <span
+                class="iconify text-base ph--keyboard"
+                :style="{ color: textColor3 }"
+              />
             </template>
             <div class="flex flex-col gap-3 pt-1">
               <NInputGroup>
@@ -198,7 +239,10 @@ const hasSearched = computed(() => props.query.trim().length > 0)
                   size="small"
                 >
                   <template #prefix>
-                    <span class="iconify ph--user text-sm" :style="{ color: textColor3 }" />
+                    <span
+                      class="iconify text-sm ph--user"
+                      :style="{ color: textColor3 }"
+                    />
                   </template>
                 </NInput>
                 <NInput
@@ -207,7 +251,10 @@ const hasSearched = computed(() => props.query.trim().length > 0)
                   size="small"
                 >
                   <template #prefix>
-                    <span class="iconify ph--globe text-sm" :style="{ color: textColor3 }" />
+                    <span
+                      class="iconify text-sm ph--globe"
+                      :style="{ color: textColor3 }"
+                    />
                   </template>
                 </NInput>
               </NInputGroup>

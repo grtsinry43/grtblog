@@ -23,4 +23,3 @@ export function updateSiteUser(id: number, payload: UpdateSiteUserPayload) {
     body: payload,
   })
 }
-

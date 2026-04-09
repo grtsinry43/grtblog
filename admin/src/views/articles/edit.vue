@@ -1,51 +1,34 @@
 <script setup lang="ts">
 import { PreviewLink20Regular } from '@vicons/fluent'
 import { PaperPlaneOutline, SaveOutline } from '@vicons/ionicons5'
-import {
-  NAlert,
-  NButton,
-  NButtonGroup,
-  NCard,
-  NDivider,
-  NDrawer,
-  NDrawerContent,
-  NDynamicTags,
-  NEmpty,
-  NForm,
-  NFormItem,
-  NInput,
-  NInputNumber,
-  NModal,
-  NPopconfirm,
-  NPopover,
-  NSelect,
-  NSkeleton,
-  NSwitch,
-  NTag,
-  useMessage,
-  NAutoComplete,
-} from 'naive-ui'
+import { NButton, NButtonGroup, NInput, NPopover, useMessage } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref, toRaw, toRef, watch } from 'vue'
 
 // 组件
-import ImageInput from '@/components/image-picker/ImageInput.vue'
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
 import { parseFederationSignals } from '@/composables/markdown-editor/utils/federation-signals'
-import { generateTitle, generateSummaryStream } from '@/services/ai'
 import {
   getArticleFederationInteractions,
   resetArticleFederationSignals,
   type ArticleDetail,
 } from '@/services/articles'
 import { publishFederationActivityPub } from '@/services/federation-admin'
-import { listWebsiteInfo } from '@/services/website-info'
+import EditorStatsOverlay from '@/views/shared/content-editor/components/EditorStatsOverlay.vue'
+import {
+  useAiSummaryGeneration,
+  useAiTitleGeneration,
+} from '@/views/shared/content-editor/composables/use-ai-tools'
+import { usePreviewFrame } from '@/views/shared/content-editor/composables/use-preview-frame'
 
+import ArticleCategoryModal from './components/ArticleCategoryModal.vue'
+import ArticleMetaDrawer from './components/ArticleMetaDrawer.vue'
 // 逻辑 Hooks
 import { useArticleForm } from './composables/use-article-form'
 import { useEditorStats } from './composables/use-editor-stats'
 import { useTaxonomySelect } from './composables/use-taxonomy-select'
 
+import type { FederationSignalRow } from './components/ArticleMetaDrawer.vue'
 import type { FederationOutboundInteractionResp } from '@/types/federation'
 
 defineOptions({ name: 'ArticleEdit' })
@@ -76,11 +59,6 @@ const { cursorPos, selectionStats, statsIdle, markActivity, handleCursorChange, 
 
 // 4. 视图状态管理
 const showMeta = ref(false)
-const showPreview = ref(false)
-const previewMode = ref<'markdown' | 'page'>('markdown')
-const previewFrameRef = ref<HTMLIFrameElement | null>(null)
-const previewReady = ref(false)
-const publicUrl = ref('')
 const loadedArticle = ref<ArticleDetail | null>(null)
 const apPublishing = ref(false)
 const isYearSummary = ref(false)
@@ -92,79 +70,31 @@ const federationOutbounds = ref<FederationOutboundInteractionResp[]>([])
 const resetAllFederationLoading = ref(false)
 const resetSignalLoadingKeys = ref<Record<string, boolean>>({})
 
-type FederationSignalType = 'mention' | 'citation'
+type FederationSignalType = FederationSignalRow['type']
 
-interface FederationSignalRow {
-  key: string
-  type: FederationSignalType
-  instance: string
-  target: string
-  marker: string
-  inContent: boolean
-  deliveredAt: string | null
-  outbound: FederationOutboundInteractionResp | null
-}
-
-const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
-const PREVIEW_POST_TYPE = 'grtblog-preview:post'
-
-// 5. AI 生成
-const aiGenerating = ref(false)
-async function handleAIGenerate() {
-  if (!form.content?.trim()) {
-    message.warning('请先输入内容')
-    return
-  }
-  aiGenerating.value = true
-  try {
-    const result = await generateTitle(form.content)
+const { loading: aiGenerating, generate: handleAIGenerate } = useAiTitleGeneration({
+  getContent: () => form.content,
+  applyResult: (result) => {
     form.title = result.title
     form.shortUrl = result.shortUrl
-    message.success('AI 生成成功')
-  } catch (e: unknown) {
-    message.error(e instanceof Error ? e.message : 'AI 生成失败')
-  } finally {
-    aiGenerating.value = false
-  }
-}
+  },
+  message,
+})
 
-// AI 摘要生成
-const aiSummaryLoading = ref(false)
-const aiSummaryResult = ref('')
-const aiSummaryDone = ref(false)
-
-async function handleAISummary() {
-  if (!form.content?.trim()) {
-    message.warning('请先输入内容')
-    return
-  }
-  aiSummaryLoading.value = true
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-  try {
-    await generateSummaryStream(form.content, (chunk) => {
-      aiSummaryResult.value += chunk
-    })
-    aiSummaryDone.value = true
-  } catch (e: unknown) {
-    message.error(e instanceof Error ? e.message : 'AI 摘要生成失败')
-    aiSummaryResult.value = ''
-  } finally {
-    aiSummaryLoading.value = false
-  }
-}
-
-function adoptAISummary() {
-  form.aiSummary = aiSummaryResult.value
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-  message.success('已采纳 AI 摘要')
-}
-
-function dismissAISummary() {
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-}
+const {
+  loading: aiSummaryLoading,
+  result: aiSummaryResult,
+  done: aiSummaryDone,
+  generate: handleAISummary,
+  adopt: adoptAISummary,
+  dismiss: dismissAISummary,
+} = useAiSummaryGeneration({
+  getContent: () => form.content,
+  adoptSummary: (summary) => {
+    form.aiSummary = summary
+  },
+  message,
+})
 
 // 6. 计算属性
 const stats = computed(() => getStats(form.content))
@@ -173,23 +103,24 @@ const actionLabel = computed(() => {
   return isCreating.value ? '发布' : '发布新版本'
 })
 const actionIcon = computed(() => (form.isPublished ? PaperPlaneOutline : SaveOutline))
-const previewUrl = computed(() => {
-  const base = normalizePublicUrl(publicUrl.value)
-  return base ? `${base}/internal/preview/post` : ''
+const {
+  showPreview,
+  previewMode,
+  previewFrameRef,
+  previewUrl,
+  fetchWebsiteInfo,
+  schedulePreviewPayload,
+  handlePreviewMessage,
+  handlePreviewFrameLoad,
+  resetPreviewReady,
+  cleanup,
+} = usePreviewFrame({
+  previewPath: '/internal/preview/post',
+  readyType: 'grtblog-preview:ready',
+  postType: 'grtblog-preview:post',
+  buildPayload: buildPreviewPayload,
+  message,
 })
-
-const previewOrigin = computed(() => {
-  if (!previewUrl.value) return '*'
-  try {
-    return new URL(previewUrl.value).origin
-  } catch {
-    return '*'
-  }
-})
-
-function normalizePublicUrl(value: string) {
-  return value.trim().replace(/\/+$/, '')
-}
 
 function formatDateTime(value?: string | null) {
   if (!value) return '-'
@@ -223,7 +154,8 @@ async function handleRepublishActivityPub() {
       source_type: 'article',
       source_id: loadedArticle.value.id,
     })
-    loadedArticle.value.activityPubObjectId = resp.object_id || loadedArticle.value.activityPubObjectId
+    loadedArticle.value.activityPubObjectId =
+      resp.object_id || loadedArticle.value.activityPubObjectId
     loadedArticle.value.activityPubLastPublishedAt = resp.published_at
     message.success(`补发完成：成功 ${resp.success_count}，失败 ${resp.failure_count}`)
   } catch (err) {
@@ -237,9 +169,7 @@ function readFederationRegistry(value: unknown) {
   const root = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
   const rawRegistry = root._federation_delivery_registry
   const registry =
-    rawRegistry && typeof rawRegistry === 'object'
-      ? (rawRegistry as Record<string, unknown>)
-      : {}
+    rawRegistry && typeof rawRegistry === 'object' ? (rawRegistry as Record<string, unknown>) : {}
   const mentionRegistry =
     registry.mentions && typeof registry.mentions === 'object'
       ? (registry.mentions as Record<string, unknown>)
@@ -372,7 +302,13 @@ function outboundStatusTagType(status?: string | null) {
   const normalized = (status || '').trim().toLowerCase()
   if (normalized === 'approved' || normalized === 'accepted') return 'success'
   if (normalized === 'queued' || normalized === 'sending') return 'warning'
-  if (normalized === 'rejected' || normalized === 'failed' || normalized === 'timeout' || normalized === 'dead') return 'error'
+  if (
+    normalized === 'rejected' ||
+    normalized === 'failed' ||
+    normalized === 'timeout' ||
+    normalized === 'dead'
+  )
+    return 'error'
   return 'default'
 }
 
@@ -447,10 +383,7 @@ async function handleResetFederationSignal(row: FederationSignalRow) {
   if (!loadedArticle.value?.id) return
   setSignalResetLoading(row.key, true)
   try {
-    const payload =
-      row.type === 'mention'
-        ? { mentions: [row.key] }
-        : { citations: [row.key] }
+    const payload = row.type === 'mention' ? { mentions: [row.key] } : { citations: [row.key] }
     const result = await resetArticleFederationSignals(loadedArticle.value.id, payload)
     applyFederationResetResult(result.extInfo ?? null)
     await fetchFederationInteractions(loadedArticle.value.id)
@@ -485,16 +418,6 @@ async function handleResetAllFederationSignals() {
   }
 }
 
-async function fetchWebsiteInfo() {
-  try {
-    const list = await listWebsiteInfo()
-    const item = list?.find((info) => info.key === 'public_url')
-    publicUrl.value = item?.value?.trim() ?? ''
-  } catch (err) {
-    message.error(err instanceof Error ? err.message : '加载站点地址失败')
-  }
-}
-
 function buildPreviewPayload() {
   const nowIso = new Date().toISOString()
   const safeExtInfo = extInfo.value ? JSON.parse(JSON.stringify(toRaw(extInfo.value))) : null
@@ -526,18 +449,6 @@ function buildPreviewPayload() {
     authorId: loadedArticle.value?.authorId ?? 0,
   }
 }
-
-function sendPreviewPayload() {
-  if (!showPreview.value || previewMode.value !== 'page') return
-  if (!previewUrl.value || !previewReady.value) return
-  const frame = previewFrameRef.value
-  if (!frame?.contentWindow) return
-  frame.contentWindow.postMessage(
-    { type: PREVIEW_POST_TYPE, payload: buildPreviewPayload() },
-    previewOrigin.value,
-  )
-}
-
 function normalizeYearSummaryValue(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     const year = Math.floor(value)
@@ -578,31 +489,6 @@ async function handleSave() {
   await save()
 }
 
-let previewTimer: number | null = null
-function schedulePreviewPayload() {
-  if (!showPreview.value || previewMode.value !== 'page') return
-  if (!previewUrl.value) return
-  if (previewTimer) window.clearTimeout(previewTimer)
-  previewTimer = window.setTimeout(() => {
-    previewTimer = null
-    sendPreviewPayload()
-  }, 200)
-}
-
-function handlePreviewMessage(event: MessageEvent) {
-  const frame = previewFrameRef.value
-  if (!frame?.contentWindow || event.source !== frame.contentWindow) return
-  const data = event.data as { type?: string } | null
-  if (!data || data.type !== PREVIEW_READY_TYPE) return
-  previewReady.value = true
-  sendPreviewPayload()
-}
-
-function handlePreviewFrameLoad() {
-  previewReady.value = true
-  sendPreviewPayload()
-}
-
 // 6. 生命周期
 onMounted(async () => {
   window.addEventListener('message', handlePreviewMessage)
@@ -627,7 +513,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('message', handlePreviewMessage)
-  if (previewTimer) window.clearTimeout(previewTimer)
+  cleanup()
 })
 
 watch(
@@ -655,7 +541,7 @@ watch([showPreview, previewMode, previewUrl], () => {
 })
 
 watch(previewUrl, () => {
-  previewReady.value = false
+  resetPreviewReady()
 })
 
 watch([isYearSummary, yearSummaryYear], () => {
@@ -775,38 +661,19 @@ watch([isYearSummary, yearSummaryYear], () => {
             @cursor-change="handleCursorChange"
           />
 
-          <div
-            class="pointer-events-none absolute right-3 bottom-3 z-10 transition-opacity duration-200"
-            :class="statsIdle ? 'opacity-75 hover:opacity-100' : 'opacity-0'"
-          >
-            <NCard
-              size="small"
-              class="pointer-events-auto shadow-sm"
-              content-style="padding: 6px 8px;"
-            >
-              <div class="flex items-center gap-3 text-[13px]">
-                <NPopover
-                  trigger="hover"
-                  :disabled="!statsIdle"
-                  content-style="padding: 4px 6px;"
-                >
-                  <template #trigger
-                    ><span class="cursor-help">字数 {{ stats.charCount }}</span></template
-                  >
-                  <div class="flex flex-col gap-0.5 text-[11px] leading-tight">
-                    <span v-if="selectionStats.total">选中 {{ selectionStats.chars }}</span>
-                    <span>中文 {{ stats.chineseCharCount }}</span>
-                    <span>英文词 {{ stats.wordCount }}</span>
-                    <span>字符 {{ stats.totalCharCount }}</span>
-                    <span>段落 {{ stats.paragraphCount }}</span>
-                  </div>
-                </NPopover>
-                <span v-if="selectionStats.total">选中 {{ selectionStats.chars }} 字</span>
-                <span>{{ cursorPos.line }}:{{ cursorPos.column }}</span>
-                <span>预计阅读 {{ stats.readingMinutes }} 分钟</span>
-              </div>
-            </NCard>
-          </div>
+          <EditorStatsOverlay
+            :idle="statsIdle"
+            :cursor-line="cursorPos.line"
+            :cursor-column="cursorPos.column"
+            :reading-minutes="stats.readingMinutes"
+            :char-count="stats.charCount"
+            :chinese-char-count="stats.chineseCharCount"
+            :word-count="stats.wordCount"
+            :total-char-count="stats.totalCharCount"
+            :paragraph-count="stats.paragraphCount"
+            :selection-total="selectionStats.total"
+            :selection-chars="selectionStats.chars"
+          />
         </div>
 
         <div
@@ -878,454 +745,50 @@ watch([isYearSummary, yearSummaryYear], () => {
       </div>
     </main>
 
-    <NDrawer
+    <ArticleMetaDrawer
       v-model:show="showMeta"
-      placement="right"
-      width="400"
-    >
-      <NDrawerContent
-        title="文章设置"
-        :native-scrollbar="false"
-        closable
-        header-style="padding: 24px;"
-        body-style="padding: 24px;"
-      >
-        <div class="flex flex-col gap-6">
-          <div class="space-y-4">
-            <div class="flex items-center gap-2 text-sm font-medium">
-              <div class="iconify ph--tag" />
-              <span>分类与标签</span>
-            </div>
-            <NForm
-              label-placement="top"
-              label-width="auto"
-              class="space-y-4"
-            >
-              <NFormItem
-                label="分类"
-                :show-feedback="false"
-              >
-                <div class="flex w-full items-center gap-2">
-                  <NSelect
-                    v-model:value="form.categoryId"
-                    :options="categoryOptions"
-                    placeholder="选择分类"
-                    clearable
-                    filterable
-                    class="flex-1"
-                  />
-                  <NButton
-                    quaternary
-                    size="small"
-                    @click="newCatModal.show = true"
-                    >新建</NButton
-                  >
-                </div>
-              </NFormItem>
-              <NFormItem
-                label="标签"
-                :show-feedback="false"
-              >
-                <div class="flex w-full flex-col gap-2">
-                  <NDynamicTags
-                    :value="dynamicTags"
-                    @update:value="handleTagsChange"
-                  />
-                  <div class="flex items-center gap-2">
-                    <NAutoComplete
-                      v-model:value="tagSearchValue"
-                      :options="autoCompleteOptions"
-                      placeholder="搜索或创建标签"
-                      class="flex-1"
-                      @select="addTagFromSearch"
-                      :input-props="{
-                        onKeydown: (e: KeyboardEvent) => {
-                          if (e.key === 'Enter') addTagFromSearch(tagSearchValue)
-                        },
-                      }"
-                    />
-                    <NButton
-                      quaternary
-                      size="small"
-                      @click="addTagFromSearch(tagSearchValue)"
-                      >添加</NButton
-                    >
-                  </div>
-                </div>
-              </NFormItem>
-            </NForm>
-          </div>
+      v-model:form="form"
+      :category-options="categoryOptions"
+      :dynamic-tags="dynamicTags"
+      :tag-search-value="tagSearchValue"
+      :auto-complete-options="autoCompleteOptions"
+      :new-category-modal="newCatModal"
+      :ai-summary-loading="aiSummaryLoading"
+      :ai-summary-result="aiSummaryResult"
+      :ai-summary-done="aiSummaryDone"
+      :is-year-summary="isYearSummary"
+      :year-summary-year="yearSummaryYear"
+      :ap-status-text="apStatusText"
+      :ap-last-published-at-text="apLastPublishedAtText"
+      :loaded-article="loadedArticle"
+      :can-republish-to-activity-pub="canRepublishToActivityPub"
+      :ap-publishing="apPublishing"
+      :is-creating="isCreating"
+      :federation-interactions-error="federationInteractionsError"
+      :federation-interactions-loading="federationInteractionsLoading"
+      :federation-signal-rows="federationSignalRows"
+      :reset-all-federation-loading="resetAllFederationLoading"
+      :reset-signal-loading-keys="resetSignalLoadingKeys"
+      :format-date-time="formatDateTime"
+      :signal-status-text="signalStatusText"
+      @update:tag-search-value="tagSearchValue = $event"
+      @update:is-year-summary="isYearSummary = $event"
+      @update:year-summary-year="yearSummaryYear = $event ?? new Date().getFullYear()"
+      @open-category-modal="newCatModal.show = true"
+      @tags-change="handleTagsChange"
+      @add-tag="addTagFromSearch"
+      @generate-ai-summary="handleAISummary"
+      @adopt-ai-summary="adoptAISummary"
+      @dismiss-ai-summary="dismissAISummary"
+      @republish-activity-pub="handleRepublishActivityPub"
+      @reset-all-federation-signals="handleResetAllFederationSignals"
+      @reset-federation-signal="handleResetFederationSignal"
+    />
 
-          <NDivider style="margin: 0" />
-
-          <div class="space-y-4">
-            <div class="flex items-center gap-2 text-sm font-medium">
-              <div class="iconify ph--article" />
-              <span>元信息</span>
-            </div>
-            <NForm
-              label-placement="top"
-              label-width="auto"
-              class="space-y-4"
-            >
-              <NFormItem
-                :show-feedback="false"
-              >
-                <template #label>
-                  <span>摘要</span>
-                  <span class="ml-1 text-xs opacity-50">用于外显描述、OG 信息、SEO</span>
-                </template>
-                <NInput
-                  v-model:value="form.summary"
-                  type="textarea"
-                  placeholder="文章外显摘要，用于列表卡片、网页描述、社交分享..."
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                />
-              </NFormItem>
-              <NFormItem
-                :show-feedback="false"
-              >
-                <template #label>
-                  <span>AI 摘要</span>
-                  <span class="ml-1 text-xs opacity-50">用于正文前的总结导读</span>
-                </template>
-                <NInput
-                  v-model:value="form.aiSummary"
-                  type="textarea"
-                  placeholder="AI 生成的内容导读，展示在正文之前..."
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                />
-              </NFormItem>
-              <div class="flex flex-col gap-2">
-                <NButton
-                  size="small"
-                  :loading="aiSummaryLoading"
-                  :disabled="!form.content?.trim() || aiSummaryLoading"
-                  @click="handleAISummary"
-                >
-                  <template #icon><div class="iconify ph--sparkle" /></template>
-                  AI 生成导读摘要
-                </NButton>
-                <div
-                  v-if="aiSummaryLoading || aiSummaryResult"
-                  class="rounded-lg border border-current/10 p-3 text-sm leading-relaxed"
-                >
-                  <span>{{ aiSummaryResult }}</span>
-                  <span
-                    v-if="aiSummaryLoading"
-                    class="inline-block w-1.5 animate-pulse bg-current"
-                    >&nbsp;</span
-                  >
-                </div>
-                <div
-                  v-if="aiSummaryDone"
-                  class="flex justify-end gap-2"
-                >
-                  <NButton
-                    size="small"
-                    quaternary
-                    @click="dismissAISummary"
-                    >放弃</NButton
-                  >
-                  <NButton
-                    size="small"
-                    type="primary"
-                    @click="adoptAISummary"
-                    >采纳</NButton
-                  >
-                </div>
-              </div>
-              <NFormItem
-                label="引言"
-                :show-feedback="false"
-              >
-                <NInput
-                  v-model:value="form.leadIn"
-                  type="textarea"
-                  placeholder="文章引言..."
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                />
-              </NFormItem>
-              <NFormItem
-                label="封面图"
-                :show-feedback="false"
-              >
-                <ImageInput v-model:value="form.cover" />
-              </NFormItem>
-            </NForm>
-          </div>
-
-          <NDivider style="margin: 0" />
-
-          <div class="space-y-4">
-            <div class="flex items-center gap-2 text-sm font-medium">
-              <div class="iconify ph--toggle-left" />
-              <span>属性</span>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div
-                class="flex items-center justify-between rounded-lg px-4 py-3"
-              >
-                <span class="text-sm">置顶</span
-                ><NSwitch
-                  v-model:value="form.isTop"
-                  size="small"
-                />
-              </div>
-              <div
-                class="flex items-center justify-between rounded-lg px-4 py-3"
-              >
-                <span class="text-sm">允许评论</span
-                ><NSwitch
-                  v-model:value="form.allowComment"
-                  size="small"
-                />
-              </div>
-              <div
-                class="flex items-center justify-between rounded-lg px-4 py-3"
-              >
-                <span class="text-sm">原创</span
-                ><NSwitch
-                  v-model:value="form.isOriginal"
-                  size="small"
-                />
-              </div>
-              <div class="col-span-2 rounded-lg px-4 py-3">
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-sm">这是年终总结</span>
-                  <NSwitch
-                    v-model:value="isYearSummary"
-                    size="small"
-                  />
-                </div>
-                <div
-                  v-if="isYearSummary"
-                  class="mt-3"
-                >
-                  <NInputNumber
-                    v-model:value="yearSummaryYear"
-                    :min="1900"
-                    :max="3000"
-                    :precision="0"
-                    class="w-full"
-                    placeholder="输入年份，例如 2024"
-                  />
-                </div>
-              </div>
-              <div class="col-span-2 rounded-lg px-4 py-3">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="min-w-0 space-y-1">
-                    <div class="text-sm">ActivityPub：{{ apStatusText }}</div>
-                    <div class="text-xs opacity-70">最近发布：{{ apLastPublishedAtText }}</div>
-                    <div
-                      v-if="loadedArticle?.activityPubObjectId"
-                      class="break-all text-xs opacity-70"
-                    >
-                      {{ loadedArticle.activityPubObjectId }}
-                    </div>
-                  </div>
-                  <NButton
-                    size="small"
-                    secondary
-                    :loading="apPublishing"
-                    :disabled="!canRepublishToActivityPub || apPublishing"
-                    @click="handleRepublishActivityPub"
-                  >
-                    手动补发
-                  </NButton>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <NDivider style="margin: 0" />
-
-          <div class="space-y-4">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2 text-sm font-medium">
-                <div class="iconify ph--circles-three" />
-                <span>联合条目状态</span>
-              </div>
-              <NPopconfirm
-                trigger="click"
-                @positive-click="handleResetAllFederationSignals"
-              >
-                <template #trigger>
-                  <NButton
-                    size="small"
-                    secondary
-                    :loading="resetAllFederationLoading"
-                    :disabled="isCreating || federationSignalRows.length === 0 || resetAllFederationLoading"
-                  >
-                    全部重置
-                  </NButton>
-                </template>
-                将重置全部联合条目状态，并尝试重新触发出站。
-              </NPopconfirm>
-            </div>
-
-            <NAlert
-              v-if="isCreating"
-              type="info"
-              :show-icon="false"
-            >
-              新建文章保存后可查看联合条目状态。
-            </NAlert>
-
-            <NAlert
-              v-else-if="federationInteractionsError"
-              type="warning"
-              :show-icon="false"
-            >
-              {{ federationInteractionsError }}
-            </NAlert>
-
-            <div
-              v-else-if="federationInteractionsLoading"
-              class="space-y-3"
-            >
-              <NSkeleton
-                text
-                :repeat="2"
-              />
-              <NSkeleton
-                text
-                :repeat="2"
-              />
-            </div>
-
-            <NEmpty
-              v-else-if="federationSignalRows.length === 0"
-              size="small"
-              description="当前未识别到联合条目"
-            />
-
-            <div
-              v-else
-              class="space-y-3"
-            >
-              <div
-                v-for="row in federationSignalRows"
-                :key="row.key"
-                class="rounded-lg border border-current/10 p-3"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0 space-y-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <NTag
-                        size="small"
-                        :bordered="false"
-                        :type="row.type === 'mention' ? 'info' : 'warning'"
-                      >
-                        {{ row.type === 'mention' ? '提及' : '引用' }}
-                      </NTag>
-                      <NTag
-                        size="small"
-                        :bordered="false"
-                        :type="outboundStatusTagType(row.outbound?.status)"
-                      >
-                        {{ signalStatusText(row) }}
-                      </NTag>
-                      <NTag
-                        v-if="!row.inContent"
-                        size="small"
-                        :bordered="false"
-                        type="default"
-                      >
-                        已不在正文
-                      </NTag>
-                    </div>
-                    <div class="break-all font-mono text-xs opacity-80">
-                      {{ row.marker }}
-                    </div>
-                    <div class="text-xs opacity-70">
-                      目标：{{ row.instance }} / {{ row.target }}
-                    </div>
-                    <div
-                      v-if="row.deliveredAt"
-                      class="text-xs opacity-70"
-                    >
-                      已记录时间：{{ formatDateTime(row.deliveredAt) }}
-                    </div>
-                    <div
-                      v-if="row.outbound?.updated_at"
-                      class="text-xs opacity-70"
-                    >
-                      队列更新时间：{{ formatDateTime(row.outbound.updated_at) }}
-                    </div>
-                  </div>
-
-                  <NPopconfirm
-                    trigger="click"
-                    @positive-click="handleResetFederationSignal(row)"
-                  >
-                    <template #trigger>
-                      <NButton
-                        size="tiny"
-                        secondary
-                        :loading="!!resetSignalLoadingKeys[row.key]"
-                        :disabled="!!resetSignalLoadingKeys[row.key]"
-                      >
-                        重置
-                      </NButton>
-                    </template>
-                    将重置该条目状态，并尝试重新触发一次出站。
-                  </NPopconfirm>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </NDrawerContent>
-    </NDrawer>
-
-    <NModal
-      v-model:show="newCatModal.show"
-      style="width: 420px; max-width: 90vw"
-    >
-      <NCard
-        title="新建分类"
-        size="small"
-      >
-        <NForm
-          label-placement="top"
-          label-width="auto"
-          class="space-y-3"
-        >
-          <NFormItem
-            label="名称"
-            :show-feedback="false"
-          >
-            <NInput
-              v-model:value="newCatModal.name"
-              placeholder="例如：随笔"
-            />
-          </NFormItem>
-          <NFormItem
-            label="短链接"
-            :show-feedback="false"
-          >
-            <NInput
-              v-model:value="newCatModal.slug"
-              placeholder="例如：notes"
-            />
-          </NFormItem>
-        </NForm>
-        <div class="mt-4 flex justify-end gap-2">
-          <NButton
-            quaternary
-            @click="newCatModal.show = false"
-            >取消</NButton
-          >
-          <NButton
-            type="primary"
-            :loading="newCatModal.loading"
-            @click="createNewCategory"
-            >创建并选择</NButton
-          >
-        </div>
-      </NCard>
-    </NModal>
+    <ArticleCategoryModal
+      v-model:modal="newCatModal"
+      @create="createNewCategory"
+    />
   </div>
 </template>
 

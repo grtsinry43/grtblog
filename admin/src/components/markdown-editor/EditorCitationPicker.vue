@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import {
   NModal,
   NCard,
@@ -13,6 +12,8 @@ import {
   NTooltip,
   useThemeVars,
 } from 'naive-ui'
+import { computed, ref } from 'vue'
+
 import type { FederationInstanceResp, FederationRemotePostResp } from '@/types/federation'
 
 const props = defineProps<{
@@ -52,7 +53,9 @@ const emit = defineEmits<{
 
 const themeVars = useThemeVars()
 
-const infoBadgeBg = computed(() => `color-mix(in srgb, ${themeVars.value.infoColor} 12%, transparent)`)
+const infoBadgeBg = computed(
+  () => `color-mix(in srgb, ${themeVars.value.infoColor} 12%, transparent)`,
+)
 const infoIconColor = computed(() => themeVars.value.infoColor)
 const hoverBg = computed(() => themeVars.value.hoverColor)
 const borderRadius = computed(() => themeVars.value.borderRadius)
@@ -60,9 +63,13 @@ const borderColor = computed(() => themeVars.value.borderColor)
 const textColor1 = computed(() => themeVars.value.textColor1)
 const textColor3 = computed(() => themeVars.value.textColor3)
 const codeBg = computed(() => themeVars.value.codeColor)
-const contextBarBg = computed(() => `color-mix(in srgb, ${themeVars.value.infoColor} 6%, ${themeVars.value.cardColor})`)
+const contextBarBg = computed(
+  () => `color-mix(in srgb, ${themeVars.value.infoColor} 6%, ${themeVars.value.cardColor})`,
+)
 
-const totalPages = computed(() => props.pageSize > 0 ? Math.ceil(props.total / props.pageSize) : 1)
+const totalPages = computed(() =>
+  props.pageSize > 0 ? Math.ceil(props.total / props.pageSize) : 1,
+)
 const hasPrev = computed(() => props.page > 1)
 const hasNext = computed(() => props.page < totalPages.value)
 
@@ -119,21 +126,27 @@ function extractHost(url: string): string {
             :style="{ background: infoBadgeBg }"
           >
             <span
-              class="iconify ph--quotes-bold text-base"
+              class="iconify text-base ph--quotes-bold"
               :style="{ color: infoIconColor }"
             />
           </div>
           <div class="flex items-center gap-1.5 text-sm">
             <span
-              :class="step === 'input'
-                ? 'font-medium'
-                : 'cursor-pointer transition-colors duration-150'"
+              :class="
+                step === 'input' ? 'font-medium' : 'cursor-pointer transition-colors duration-150'
+              "
               :style="{
                 color: step === 'input' ? textColor1 : textColor3,
               }"
               @click="step === 'posts' ? emit('back') : undefined"
-              @mouseenter="($event.target as HTMLElement).style.color = step === 'posts' ? themeVars.infoColor : ''"
-              @mouseleave="($event.target as HTMLElement).style.color = step === 'posts' ? textColor3 : textColor1"
+              @mouseenter="
+                ($event.target as HTMLElement).style.color =
+                  step === 'posts' ? themeVars.infoColor : ''
+              "
+              @mouseleave="
+                ($event.target as HTMLElement).style.color =
+                  step === 'posts' ? textColor3 : textColor1
+              "
             >
               输入远端地址
             </span>
@@ -165,7 +178,10 @@ function extractHost(url: string): string {
               @keydown="handleURLKeydown"
             >
               <template #prefix>
-                <span class="iconify ph--globe text-base" :style="{ color: textColor3 }" />
+                <span
+                  class="iconify text-base ph--globe"
+                  :style="{ color: textColor3 }"
+                />
               </template>
             </NInput>
             <NButton
@@ -179,14 +195,24 @@ function extractHost(url: string): string {
               拉取
             </NButton>
           </div>
-          <div v-if="urlError" class="text-xs" style="color: var(--error-color, #e88080); margin-top: -6px">
+          <div
+            v-if="urlError"
+            class="text-xs"
+            style="color: var(--error-color, #e88080); margin-top: -6px"
+          >
             {{ urlError }}
           </div>
 
           <!-- Instance shortcuts -->
-          <div v-if="instances.length > 0" class="mt-1">
-            <div class="mb-2 text-xs" :style="{ color: textColor3 }">
-              <span class="iconify ph--lightning inline-block align-text-bottom text-sm" />
+          <div
+            v-if="instances.length > 0"
+            class="mt-1"
+          >
+            <div
+              class="mb-2 text-xs"
+              :style="{ color: textColor3 }"
+            >
+              <span class="iconify inline-block align-text-bottom text-sm ph--lightning" />
               快捷选择已联合实例
             </div>
             <NSpin :show="instancesLoading">
@@ -204,20 +230,26 @@ function extractHost(url: string): string {
                       :style="{ background: infoBadgeBg }"
                     >
                       <span
-                        class="iconify ph--globe-simple text-base"
+                        class="iconify text-base ph--globe-simple"
                         :style="{ color: infoIconColor }"
                       />
                     </div>
                     <div class="min-w-0 flex-1">
-                      <div class="truncate text-sm font-medium" :style="{ color: textColor1 }">
+                      <div
+                        class="truncate text-sm font-medium"
+                        :style="{ color: textColor1 }"
+                      >
                         {{ inst.name || extractHost(inst.base_url) }}
                       </div>
-                      <div class="truncate text-xs" :style="{ color: textColor3 }">
+                      <div
+                        class="truncate text-xs"
+                        :style="{ color: textColor3 }"
+                      >
                         {{ extractHost(inst.base_url) }}
                       </div>
                     </div>
                     <span
-                      class="iconify ph--caret-right shrink-0 text-base opacity-40 transition-opacity duration-150 group-hover:opacity-80"
+                      class="iconify shrink-0 text-base opacity-40 transition-opacity duration-150 ph--caret-right group-hover:opacity-80"
                       :style="{ color: textColor3 }"
                     />
                   </div>
@@ -227,10 +259,19 @@ function extractHost(url: string): string {
           </div>
 
           <!-- Manual input fallback -->
-          <NCollapse arrow-placement="right" class="mt-1">
-            <NCollapseItem title="手动输入引用标记" name="manual">
+          <NCollapse
+            arrow-placement="right"
+            class="mt-1"
+          >
+            <NCollapseItem
+              title="手动输入引用标记"
+              name="manual"
+            >
               <template #header-extra>
-                <span class="iconify ph--keyboard text-base" :style="{ color: textColor3 }" />
+                <span
+                  class="iconify text-base ph--keyboard"
+                  :style="{ color: textColor3 }"
+                />
               </template>
               <div class="flex flex-col gap-3 pt-1">
                 <NInput
@@ -239,7 +280,10 @@ function extractHost(url: string): string {
                   size="small"
                 >
                   <template #prefix>
-                    <span class="iconify ph--globe text-sm" :style="{ color: textColor3 }" />
+                    <span
+                      class="iconify text-sm ph--globe"
+                      :style="{ color: textColor3 }"
+                    />
                   </template>
                 </NInput>
                 <NInput
@@ -248,7 +292,10 @@ function extractHost(url: string): string {
                   size="small"
                 >
                   <template #prefix>
-                    <span class="iconify ph--article text-sm" :style="{ color: textColor3 }" />
+                    <span
+                      class="iconify text-sm ph--article"
+                      :style="{ color: textColor3 }"
+                    />
                   </template>
                 </NInput>
                 <div class="flex items-center justify-between">
@@ -296,15 +343,21 @@ function extractHost(url: string): string {
               :style="{ background: infoBadgeBg }"
             >
               <span
-                class="iconify ph--globe-simple text-sm"
+                class="iconify text-sm ph--globe-simple"
                 :style="{ color: infoIconColor }"
               />
             </div>
             <div class="min-w-0 flex-1">
-              <span class="text-sm font-medium" :style="{ color: textColor1 }">
+              <span
+                class="text-sm font-medium"
+                :style="{ color: textColor1 }"
+              >
                 {{ resolvedName || extractHost(resolvedURL) }}
               </span>
-              <span class="ml-1.5 text-xs" :style="{ color: textColor3 }">
+              <span
+                class="ml-1.5 text-xs"
+                :style="{ color: textColor3 }"
+              >
                 {{ extractHost(resolvedURL) }}
               </span>
             </div>
@@ -328,7 +381,10 @@ function extractHost(url: string): string {
             @update:value="emit('searchPosts', $event)"
           >
             <template #prefix>
-              <span class="iconify ph--magnifying-glass text-base" :style="{ color: textColor3 }" />
+              <span
+                class="iconify text-base ph--magnifying-glass"
+                :style="{ color: textColor3 }"
+              />
             </template>
           </NInput>
 
@@ -341,10 +397,13 @@ function extractHost(url: string): string {
                 class="flex flex-col items-center justify-center gap-2 py-12"
               >
                 <span
-                  class="iconify ph--magnifying-glass text-3xl"
+                  class="iconify text-3xl ph--magnifying-glass"
                   :style="{ color: textColor3 }"
                 />
-                <span class="text-sm" :style="{ color: textColor3 }">
+                <span
+                  class="text-sm"
+                  :style="{ color: textColor3 }"
+                >
                   未找到匹配的文章
                 </span>
               </div>
@@ -355,16 +414,22 @@ function extractHost(url: string): string {
                 class="flex flex-col items-center justify-center gap-2 py-12"
               >
                 <span
-                  class="iconify ph--article text-3xl"
+                  class="iconify text-3xl ph--article"
                   :style="{ color: textColor3 }"
                 />
-                <span class="text-sm" :style="{ color: textColor3 }">
+                <span
+                  class="text-sm"
+                  :style="{ color: textColor3 }"
+                >
                   该远端暂无可用文章，可能不支持联合协议
                 </span>
               </div>
 
               <!-- Post list -->
-              <div v-else class="flex flex-col gap-0.5">
+              <div
+                v-else
+                class="flex flex-col gap-0.5"
+              >
                 <div
                   v-for="post in posts"
                   :key="post.id"
@@ -391,7 +456,7 @@ function extractHost(url: string): string {
                     :style="{ background: infoBadgeBg }"
                   >
                     <span
-                      class="iconify ph--article text-xl"
+                      class="iconify text-xl ph--article"
                       :style="{ color: infoIconColor }"
                     />
                   </div>
@@ -405,11 +470,18 @@ function extractHost(url: string): string {
                       >
                         {{ post.title }}
                       </span>
-                      <NTooltip v-if="!post.allow_citation" trigger="hover">
+                      <NTooltip
+                        v-if="!post.allow_citation"
+                        trigger="hover"
+                      >
                         <template #trigger>
-                          <NTag size="tiny" type="warning" round>
+                          <NTag
+                            size="tiny"
+                            type="warning"
+                            round
+                          >
                             <template #icon>
-                              <span class="iconify ph--warning text-xs" />
+                              <span class="iconify text-xs ph--warning" />
                             </template>
                             不可引用
                           </NTag>
@@ -417,13 +489,19 @@ function extractHost(url: string): string {
                         该文章作者未允许被引用
                       </NTooltip>
                     </div>
-                    <div class="mt-0.5 flex items-center gap-3 text-xs" :style="{ color: textColor3 }">
-                      <span v-if="post.author?.name" class="flex items-center gap-1">
-                        <span class="iconify ph--user text-xs" />
+                    <div
+                      class="mt-0.5 flex items-center gap-3 text-xs"
+                      :style="{ color: textColor3 }"
+                    >
+                      <span
+                        v-if="post.author?.name"
+                        class="flex items-center gap-1"
+                      >
+                        <span class="iconify text-xs ph--user" />
                         {{ post.author.name }}
                       </span>
                       <span class="flex items-center gap-1">
-                        <span class="iconify ph--calendar-blank text-xs" />
+                        <span class="iconify text-xs ph--calendar-blank" />
                         {{ formatDate(post.published_at) }}
                       </span>
                     </div>
@@ -445,7 +523,10 @@ function extractHost(url: string): string {
             v-if="totalPages > 1"
             class="flex items-center justify-between pt-2"
           >
-            <span class="text-xs" :style="{ color: textColor3 }">
+            <span
+              class="text-xs"
+              :style="{ color: textColor3 }"
+            >
               共 {{ total }} 篇，第 {{ page }}/{{ totalPages }} 页
             </span>
             <div class="flex gap-1.5">

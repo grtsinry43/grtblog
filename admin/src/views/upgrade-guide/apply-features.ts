@@ -48,9 +48,7 @@ export async function applyEnabledFeatures(
   }
 
   // Execute all batches in parallel
-  const tasks = Array.from(batches.entries()).map(([endpoint, items]) =>
-    updaters[endpoint](items),
-  )
+  const tasks = Array.from(batches.entries()).map(([endpoint, items]) => updaters[endpoint](items))
   if (tasks.length > 0) {
     await Promise.all(tasks)
   }

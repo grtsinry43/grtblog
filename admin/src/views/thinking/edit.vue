@@ -14,6 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { publishFederationActivityPub } from '@/services/federation-admin'
 import { createThinking, getThinking, updateThinking } from '@/services/thinking'
+
 import type { FormInst } from 'naive-ui'
 
 defineOptions({ name: 'ThinkingEdit' })
@@ -69,7 +70,9 @@ async function handleSave() {
       await createThinking({
         content: formValue.value.content,
         allowComment: formValue.value.allowComment,
-        createdAt: formValue.value.createdAt ? new Date(formValue.value.createdAt).toISOString() : null,
+        createdAt: formValue.value.createdAt
+          ? new Date(formValue.value.createdAt).toISOString()
+          : null,
       })
       message.success('创建成功')
     } else {
@@ -110,8 +113,15 @@ async function handleRepublishActivityPub() {
 <template>
   <div class="flex h-full min-h-0 flex-col p-10">
     <NCard>
-      <NForm ref="formRef" :model="formValue" label-placement="top">
-        <NFormItem label="内容" path="content">
+      <NForm
+        ref="formRef"
+        :model="formValue"
+        label-placement="top"
+      >
+        <NFormItem
+          label="内容"
+          path="content"
+        >
           <NInput
             v-model:value="formValue.content"
             type="textarea"
@@ -130,7 +140,7 @@ async function handleRepublishActivityPub() {
               <div class="text-xs opacity-70">最近发布：{{ apLastPublishedAtText }}</div>
               <div
                 v-if="activityPubObjectId"
-                class="mt-1 break-all text-xs opacity-70"
+                class="mt-1 text-xs break-all opacity-70"
               >
                 {{ activityPubObjectId }}
               </div>
@@ -147,7 +157,10 @@ async function handleRepublishActivityPub() {
             </div>
           </div>
         </NFormItem>
-        <NFormItem v-if="isCreating" label="发布时间">
+        <NFormItem
+          v-if="isCreating"
+          label="发布时间"
+        >
           <NDatePicker
             v-model:value="formValue.createdAt"
             type="datetime"
@@ -159,7 +172,11 @@ async function handleRepublishActivityPub() {
       </NForm>
       <template #footer>
         <div class="flex justify-end">
-          <NButton type="primary" :loading="saving" @click="handleSave">
+          <NButton
+            type="primary"
+            :loading="saving"
+            @click="handleSave"
+          >
             {{ isCreating ? '创建' : '更新' }}
           </NButton>
         </div>

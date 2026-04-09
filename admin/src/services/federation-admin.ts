@@ -1,4 +1,5 @@
 import { request } from './http'
+
 import type {
   FederationAdminCitationReq,
   FederationAdminMentionReq,
@@ -69,14 +70,20 @@ export function getFederationPendingReviews() {
   })
 }
 
-export function reviewFederationCitation(id: number | string, decision: FederationReviewDecisionReq) {
+export function reviewFederationCitation(
+  id: number | string,
+  decision: FederationReviewDecisionReq,
+) {
   return request<void>(`/admin/federation/citations/${id}/review`, {
     method: 'PUT',
     body: decision,
   })
 }
 
-export function reviewFederationMention(id: number | string, decision: FederationReviewDecisionReq) {
+export function reviewFederationMention(
+  id: number | string,
+  decision: FederationReviewDecisionReq,
+) {
   return request<void>(`/admin/federation/mentions/${id}/review`, {
     method: 'PUT',
     body: decision,
@@ -140,7 +147,6 @@ export function fetchRemotePosts(url: string, query?: string, page = 1, pageSize
     query: { url, query: query || '', page, pageSize },
   })
 }
-
 
 export function listActivityPubOutbox(query: ActivityPubOutboxListReq) {
   return request<ActivityPubOutboxListResp>('/admin/activitypub/outbox', {

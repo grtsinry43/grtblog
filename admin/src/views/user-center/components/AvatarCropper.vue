@@ -43,8 +43,17 @@ const emit = defineEmits<{
     </div>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <NButton :disabled="isUploading" @click="emit('update:visible', false)">取消</NButton>
-        <NButton type="primary" :loading="isUploading" @click="emit('confirm')">确认并上传</NButton>
+        <NButton
+          :disabled="isUploading"
+          @click="emit('update:visible', false)"
+          >取消</NButton
+        >
+        <NButton
+          type="primary"
+          :loading="isUploading"
+          @click="emit('confirm')"
+          >确认并上传</NButton
+        >
       </div>
     </template>
   </NModal>

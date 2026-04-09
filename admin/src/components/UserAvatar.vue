@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { NAvatar } from 'naive-ui'
+import { computed } from 'vue'
 
 import type { AvatarProps } from 'naive-ui'
 

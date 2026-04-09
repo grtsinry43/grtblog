@@ -1,4 +1,14 @@
-import { NCard, NDataTable, NButton, NTag, NPagination, NSpace, NPopconfirm, NDropdown, useDialog } from 'naive-ui'
+import {
+  NCard,
+  NDataTable,
+  NButton,
+  NTag,
+  NPagination,
+  NSpace,
+  NPopconfirm,
+  NDropdown,
+  useDialog,
+} from 'naive-ui'
 import { defineComponent, onMounted, ref, Transition } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -107,7 +117,11 @@ export default defineComponent({
           <div class='flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200'>
             {row.title}
             {row.isBuiltin && (
-              <NTag size='tiny' type='info' bordered={false}>
+              <NTag
+                size='tiny'
+                type='info'
+                bordered={false}
+              >
                 内置
               </NTag>
             )}
@@ -135,8 +149,12 @@ export default defineComponent({
               bordered={false}
             >
               {{
-                default: () => row.isEnabled ? '已启用' : '已禁用',
-                icon: () => <span class={`iconify ${row.isEnabled ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`} />,
+                default: () => (row.isEnabled ? '已启用' : '已禁用'),
+                icon: () => (
+                  <span
+                    class={`iconify ${row.isEnabled ? 'ph--check-circle' : 'ph--circle-dashed'} size-3.5`}
+                  />
+                ),
               }}
             </NTag>
           </span>
@@ -188,7 +206,7 @@ export default defineComponent({
       },
     ]
 
-    onMounted(()=>{
+    onMounted(() => {
       refresh()
     })
 
@@ -197,23 +215,41 @@ export default defineComponent({
         <NCard bordered={false}>
           <div class='flex items-center justify-between'>
             <div class='text-lg font-medium'>页面列表</div>
-            <NSpace align='center' size={12}>
+            <NSpace
+              align='center'
+              size={12}
+            >
               <Transition name='fade'>
                 {checkedRowKeys.value.length > 0 && (
-                  <NSpace align='center' size={8}>
-                    <NTag type='info' size='small'>已选 {checkedRowKeys.value.length} 项</NTag>
+                  <NSpace
+                    align='center'
+                    size={8}
+                  >
+                    <NTag
+                      type='info'
+                      size='small'
+                    >
+                      已选 {checkedRowKeys.value.length} 项
+                    </NTag>
                     <NDropdown
                       options={batchEnabledOptions}
                       onSelect={handleBatchEnabledSelect}
                     >
-                      <NButton size='small' secondary>
+                      <NButton
+                        size='small'
+                        secondary
+                      >
                         批量启用
                       </NButton>
                     </NDropdown>
                     <NPopconfirm onPositiveClick={handleBatchDelete}>
                       {{
                         trigger: () => (
-                          <NButton size='small' type='error' secondary>
+                          <NButton
+                            size='small'
+                            type='error'
+                            secondary
+                          >
                             批量删除
                           </NButton>
                         ),

@@ -19,16 +19,11 @@ import { useTable } from '@/composables/table/use-table'
 import { createAdminToken, deleteAdminToken, listAdminTokens } from '@/services/admin-tokens'
 import { formatDate } from '@/utils/format'
 
-import type { DataTableColumns } from 'naive-ui'
 import type { AdminTokenItem } from '@/services/admin-tokens'
+import type { DataTableColumns } from 'naive-ui'
 
 const message = useMessage()
-const {
-  loading,
-  data: tableData,
-  pagination,
-  refresh,
-} = useTable<AdminTokenItem>(listAdminTokens)
+const { loading, data: tableData, pagination, refresh } = useTable<AdminTokenItem>(listAdminTokens)
 
 const columns = computed<DataTableColumns<AdminTokenItem>>(() => [
   {
@@ -73,11 +68,7 @@ const columns = computed<DataTableColumns<AdminTokenItem>>(() => [
         { onPositiveClick: () => handleDelete(row) },
         {
           trigger: () =>
-            h(
-              NButton,
-              { size: 'small', type: 'error', tertiary: true },
-              { default: () => '删除' },
-            ),
+            h(NButton, { size: 'small', type: 'error', tertiary: true }, { default: () => '删除' }),
           default: () => '确认删除该 token？',
         },
       ),
@@ -128,13 +119,16 @@ async function handleDelete(row: AdminTokenItem) {
   message.success('删除成功')
   refresh()
 }
-
 </script>
 
 <template>
   <NCard title="管理员 API Token">
     <template #header-extra>
-      <NButton type="primary" @click="openCreate">新建 Token</NButton>
+      <NButton
+        type="primary"
+        @click="openCreate"
+        >新建 Token</NButton
+      >
     </template>
 
     <NDataTable
@@ -162,14 +156,31 @@ async function handleDelete(row: AdminTokenItem) {
         placeholder="可选，用于区分用途（例如：CI 调用）"
       />
     </NFormItem>
-    <NFormItem label="过期时间" required>
-      <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
+    <NFormItem
+      label="过期时间"
+      required
+    >
+      <NDatePicker
+        v-model:value="formParams.expireAt"
+        type="datetime"
+        style="width: 100%"
+      />
     </NFormItem>
   </FormModal>
 
-  <NModal v-model:show="revealVisible" preset="card" title="Token 已生成" style="width: 560px">
+  <NModal
+    v-model:show="revealVisible"
+    preset="card"
+    title="Token 已生成"
+    style="width: 560px"
+  >
     <div class="mb-3 text-sm text-[var(--text-color-2)]">仅展示一次，请立即复制保存。</div>
-    <NInput :value="createdToken" type="textarea" :rows="3" readonly />
+    <NInput
+      :value="createdToken"
+      type="textarea"
+      :rows="3"
+      readonly
+    />
     <template #footer>
       <NSpace justify="end">
         <NButton @click="revealVisible = false">我已保存</NButton>

@@ -3,7 +3,11 @@ import { isEmpty } from 'lodash-es'
 import { useEventBus } from '@/event-bus'
 import { getSetupState } from '@/services/auth'
 import { useUserStore, toRefsUserStore } from '@/stores'
-import { applyDocumentTitle, ensureBackendSiteName, getCachedSiteName } from '@/utils/document-title'
+import {
+  applyDocumentTitle,
+  ensureBackendSiteName,
+  getCachedSiteName,
+} from '@/utils/document-title'
 
 import type { Router } from 'vue-router'
 

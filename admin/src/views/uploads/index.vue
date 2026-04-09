@@ -1,12 +1,25 @@
 <script setup lang="ts">
-import { NButton, NCard, NEmpty, NImage, NModal, NPagination, NProgress, NTag, NTabs, NTabPane, useMessage } from 'naive-ui'
+import {
+  NButton,
+  NCard,
+  NEmpty,
+  NImage,
+  NModal,
+  NPagination,
+  NProgress,
+  NTag,
+  NTabs,
+  NTabPane,
+  useMessage,
+} from 'naive-ui'
 
 import { ScrollContainer } from '@/components'
 import { formatFileSize } from '@/utils/format'
-import { useFileList } from './composables/use-file-list'
+
 import FileTable from './components/FileTable.vue'
 import FileUploader from './components/FileUploader.vue'
 import RenameModal from './components/RenameModal.vue'
+import { useFileList } from './composables/use-file-list'
 
 const message = useMessage()
 
@@ -49,14 +62,31 @@ const {
         <div class="header-row">
           <div class="header-main">
             <div class="page-title">文件管理</div>
-            <NTabs v-model:value="activeFilter" size="small" animated>
-              <NTabPane name="all" tab="全部" />
-              <NTabPane name="picture" tab="图片" />
-              <NTabPane name="file" tab="文件" />
+            <NTabs
+              v-model:value="activeFilter"
+              size="small"
+              animated
+            >
+              <NTabPane
+                name="all"
+                tab="全部"
+              />
+              <NTabPane
+                name="picture"
+                tab="图片"
+              />
+              <NTabPane
+                name="file"
+                tab="文件"
+              />
             </NTabs>
           </div>
           <div class="header-actions">
-            <NButton secondary :loading="syncing" @click="handleSync">
+            <NButton
+              secondary
+              :loading="syncing"
+              @click="handleSync"
+            >
               同步索引
             </NButton>
             <FileUploader
@@ -69,27 +99,50 @@ const {
         </div>
       </NCard>
 
-      <NCard v-if="isEmpty" :bordered="false">
+      <NCard
+        v-if="isEmpty"
+        :bordered="false"
+      >
         <div class="empty-container">
           <NEmpty description="暂无文件" />
         </div>
       </NCard>
 
-      <NCard v-if="uploadTasks.length > 0" :bordered="false" title="上传进度">
+      <NCard
+        v-if="uploadTasks.length > 0"
+        :bordered="false"
+        title="上传进度"
+      >
         <div class="upload-task-list">
-          <div v-for="task in uploadTasks" :key="task.id" class="upload-task-item">
+          <div
+            v-for="task in uploadTasks"
+            :key="task.id"
+            class="upload-task-item"
+          >
             <div class="upload-task-meta">
               <div class="upload-task-main">
                 <span class="upload-task-name">{{ task.name }}</span>
-                <NTag size="small" :type="task.type === 'picture' ? 'success' : 'info'" :bordered="false">
+                <NTag
+                  size="small"
+                  :type="task.type === 'picture' ? 'success' : 'info'"
+                  :bordered="false"
+                >
                   {{ task.type === 'picture' ? '图片' : '文件' }}
                 </NTag>
                 <NTag
                   size="small"
-                  :type="task.status === 'success' ? 'success' : task.status === 'error' ? 'error' : 'warning'"
+                  :type="
+                    task.status === 'success'
+                      ? 'success'
+                      : task.status === 'error'
+                        ? 'error'
+                        : 'warning'
+                  "
                   :bordered="false"
                 >
-                  {{ task.status === 'success' ? '完成' : task.status === 'error' ? '失败' : '上传中' }}
+                  {{
+                    task.status === 'success' ? '完成' : task.status === 'error' ? '失败' : '上传中'
+                  }}
                 </NTag>
               </div>
               <span class="upload-task-size">{{ formatFileSize(task.size) }}</span>
@@ -97,16 +150,27 @@ const {
             <NProgress
               type="line"
               :percentage="task.percentage"
-              :status="task.status === 'error' ? 'error' : task.status === 'success' ? 'success' : 'info'"
+              :status="
+                task.status === 'error' ? 'error' : task.status === 'success' ? 'success' : 'info'
+              "
               :show-indicator="true"
               :processing="task.status === 'uploading'"
             />
-            <div v-if="task.error" class="upload-task-error">{{ task.error }}</div>
+            <div
+              v-if="task.error"
+              class="upload-task-error"
+            >
+              {{ task.error }}
+            </div>
           </div>
         </div>
       </NCard>
 
-      <NCard v-else :bordered="false" content-style="padding: 0;">
+      <NCard
+        v-else
+        :bordered="false"
+        content-style="padding: 0;"
+      >
         <div class="table-card-body">
           <FileTable
             :files="filteredFiles"
@@ -154,7 +218,11 @@ const {
       <p style="color: #f5222d; margin-top: 8px">此操作将永久删除文件，无法恢复。</p>
     </NModal>
 
-    <NModal v-model:show="previewVisible" preset="card" style="max-width: 800px">
+    <NModal
+      v-model:show="previewVisible"
+      preset="card"
+      style="max-width: 800px"
+    >
       <template #header><span>图片预览</span></template>
       <div class="preview-container">
         <NImage :src="previewImageUrl" />

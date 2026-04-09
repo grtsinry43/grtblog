@@ -31,7 +31,10 @@ import {
   invalidateObservabilityPages,
 } from '@/services/observability'
 
-import type { ObservabilityInvalidateReport, ObservabilityRenderRecord } from '@/types/observability'
+import type {
+  ObservabilityInvalidateReport,
+  ObservabilityRenderRecord,
+} from '@/types/observability'
 import type { DataTableColumns, TreeOption } from 'naive-ui'
 
 defineOptions({
@@ -100,7 +103,11 @@ const renderColumns: DataTableColumns<ObservabilityRenderRecord> = [
     render: (row) =>
       h(
         NTag,
-        { size: 'small', type: row.status === 'error' ? 'error' : row.status === 'not_found' ? 'warning' : 'success' },
+        {
+          size: 'small',
+          type:
+            row.status === 'error' ? 'error' : row.status === 'not_found' ? 'warning' : 'success',
+        },
         { default: () => row.status },
       ),
   },
@@ -233,7 +240,9 @@ function triggerInvalidate() {
             <NDescriptionsItem label="队列深度">{{ snapshot?.queueDepth ?? 0 }}</NDescriptionsItem>
             <NDescriptionsItem label="依赖键">{{ snapshot?.depKeyCount ?? 0 }}</NDescriptionsItem>
             <NDescriptionsItem label="页面键">{{ snapshot?.urlKeyCount ?? 0 }}</NDescriptionsItem>
-            <NDescriptionsItem label="已追踪页面">{{ snapshot?.trackedPages?.length ?? 0 }}</NDescriptionsItem>
+            <NDescriptionsItem label="已追踪页面">{{
+              snapshot?.trackedPages?.length ?? 0
+            }}</NDescriptionsItem>
             <NDescriptionsItem label="路由总数">{{ routeCatalog?.total ?? 0 }}</NDescriptionsItem>
             <NDescriptionsItem label="路由截断">{{
               routeCatalog?.truncated ? '是' : '否'
@@ -241,7 +250,9 @@ function triggerInvalidate() {
           </NDescriptions>
           <div class="mt-3 text-xs text-neutral-500">
             最近引导：{{
-              bootstrapReport?.finishedAt ? new Date(bootstrapReport.finishedAt).toLocaleString() : '无'
+              bootstrapReport?.finishedAt
+                ? new Date(bootstrapReport.finishedAt).toLocaleString()
+                : '无'
             }}
           </div>
         </NCard>
@@ -363,7 +374,9 @@ function triggerInvalidate() {
             <NDescriptionsItem label="入队页面">{{
               ensureArray(lastInvalidateReport.enqueuedUrls).length
             }}</NDescriptionsItem>
-            <NDescriptionsItem label="队列深度">{{ lastInvalidateReport.queueDepth }}</NDescriptionsItem>
+            <NDescriptionsItem label="队列深度">{{
+              lastInvalidateReport.queueDepth
+            }}</NDescriptionsItem>
           </NDescriptions>
           <NDataTable
             :columns="renderColumns"

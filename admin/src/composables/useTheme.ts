@@ -10,7 +10,10 @@ import { cah } from '@/utils/chromaHelper'
 
 import type { GlobalThemeOverrides } from 'naive-ui'
 
-function applyGlassEffect(overrides: GlobalThemeOverrides, glassOpacity: number): GlobalThemeOverrides {
+function applyGlassEffect(
+  overrides: GlobalThemeOverrides,
+  glassOpacity: number,
+): GlobalThemeOverrides {
   const alpha = glassOpacity / 100
   const cardColor = overrides.common?.cardColor
   if (cardColor) {
@@ -23,8 +26,11 @@ function applyGlassEffect(overrides: GlobalThemeOverrides, glassOpacity: number)
 export function useTheme() {
   const { themeColor, isDark, backgroundImage } = toRefsPreferencesStore()
 
-  const isGlassActive = computed(() =>
-    backgroundImage.value.show && backgroundImage.value.url && backgroundImage.value.glassEffect.enable,
+  const isGlassActive = computed(
+    () =>
+      backgroundImage.value.show &&
+      backgroundImage.value.url &&
+      backgroundImage.value.glassEffect.enable,
   )
 
   const getLightThemeOverrides = (primaryColor = themeColor.value) => {

@@ -1,8 +1,9 @@
 import { CompletionContext, type Completion, type CompletionResult } from '@codemirror/autocomplete'
 import { syntaxTree } from '@codemirror/language'
-import type { EditorView } from '@codemirror/view'
 
 import { markdownComponents } from '@/composables/markdown/shared/components'
+
+import type { EditorView } from '@codemirror/view'
 
 // ... options 定义保持不变 ...
 const baseOptions: Completion[] = [

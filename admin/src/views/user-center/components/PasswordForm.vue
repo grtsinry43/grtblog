@@ -3,9 +3,15 @@ import { NButton, NDivider, NForm, NFormItem, NInput } from 'naive-ui'
 
 import type { FormInst, FormItemRule } from 'naive-ui'
 
+const form = defineModel<{ oldPassword: string; newPassword: string; confirmPassword: string }>(
+  'form',
+  {
+    required: true,
+  },
+)
+
 defineProps<{
   formRef: FormInst | null
-  form: { oldPassword: string; newPassword: string; confirmPassword: string }
   rules: Record<string, FormItemRule[]>
 }>()
 
@@ -28,7 +34,10 @@ const emit = defineEmits<{
       :rules="rules"
       label-placement="top"
     >
-      <NFormItem label="当前密码" path="oldPassword">
+      <NFormItem
+        label="当前密码"
+        path="oldPassword"
+      >
         <NInput
           v-model:value="form.oldPassword"
           type="password"
@@ -37,7 +46,10 @@ const emit = defineEmits<{
         />
       </NFormItem>
       <NDivider />
-      <NFormItem label="新密码" path="newPassword">
+      <NFormItem
+        label="新密码"
+        path="newPassword"
+      >
         <NInput
           v-model:value="form.newPassword"
           type="password"
@@ -45,7 +57,10 @@ const emit = defineEmits<{
           placeholder="设置您的新密码"
         />
       </NFormItem>
-      <NFormItem label="确认新密码" path="confirmPassword">
+      <NFormItem
+        label="确认新密码"
+        path="confirmPassword"
+      >
         <NInput
           v-model:value="form.confirmPassword"
           type="password"
@@ -54,7 +69,13 @@ const emit = defineEmits<{
         />
       </NFormItem>
       <div class="mt-6">
-        <NButton type="primary" block size="large" @click="emit('submit')">确认更改密码</NButton>
+        <NButton
+          type="primary"
+          block
+          size="large"
+          @click="emit('submit')"
+          >确认更改密码</NButton
+        >
       </div>
     </NForm>
   </div>

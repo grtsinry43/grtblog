@@ -100,7 +100,8 @@ export default defineComponent({
         rssUrl: normalizeOptional(formModel.rssUrl),
         type: formModel.type,
         instanceId: formModel.instanceId,
-        syncInterval: formModel.syncInterval && formModel.syncInterval > 0 ? formModel.syncInterval : undefined,
+        syncInterval:
+          formModel.syncInterval && formModel.syncInterval > 0 ? formModel.syncInterval : undefined,
         isActive: formModel.isActive,
       }
       if (payload.type !== 'federation') {
@@ -135,15 +136,13 @@ export default defineComponent({
             if (editingId.value) {
               await friendLinkService.updateFriendLink(editingId.value, payload)
               message.success('更新成功')
-            }
-            else {
+            } else {
               await friendLinkService.createFriendLink(payload)
               message.success('创建成功')
             }
             showEditModal.value = false
             refreshLinks()
-          }
-          catch (e: any) {
+          } catch (e: any) {
             message.error(e.message || '保存失败')
           }
         }
@@ -166,11 +165,9 @@ export default defineComponent({
         message.success('申请已发送')
         showRequestModal.value = false
         resetRequestForm()
-      }
-      catch (e: any) {
+      } catch (e: any) {
         message.error(e.message || '发送失败')
-      }
-      finally {
+      } finally {
         requestLoading.value = false
       }
     }
@@ -180,14 +177,12 @@ export default defineComponent({
         if (action === 'delete') {
           await friendLinkService.deleteFriendLink(id)
           message.success('删除成功')
-        }
-        else if (action === 'block') {
+        } else if (action === 'block') {
           await friendLinkService.blockFriendLink(id)
           message.success('封禁成功')
         }
         refreshLinks()
-      }
-      catch (e: any) {
+      } catch (e: any) {
         message.error(e.message || '操作失败')
       }
     }
@@ -232,9 +227,13 @@ export default defineComponent({
         key: 'logo',
         width: 60,
         render: (row) => {
-          if (!row.logo)
-            return null
-          return <img src={row.logo} class="w-8 h-8 rounded object-cover" />
+          if (!row.logo) return null
+          return (
+            <img
+              src={row.logo}
+              class='h-8 w-8 rounded object-cover'
+            />
+          )
         },
       },
       {
@@ -243,8 +242,8 @@ export default defineComponent({
         render: (row) => (
           <a
             href={row.url}
-            target="_blank"
-            class="text-primary hover:underline font-medium"
+            target='_blank'
+            class='font-medium text-primary hover:underline'
           >
             {row.name}
           </a>
@@ -255,7 +254,10 @@ export default defineComponent({
         key: 'type',
         width: 110,
         render: (row) => (
-          <NTag type={typeTagMap[row.type]} size="small">
+          <NTag
+            type={typeTagMap[row.type]}
+            size='small'
+          >
             {{ default: () => typeLabelMap[row.type] }}
           </NTag>
         ),
@@ -265,10 +267,8 @@ export default defineComponent({
         key: 'syncSource',
         minWidth: 180,
         render: (row) => (
-          <span class="text-sm text-neutral-500 truncate">
-            {row.type === 'federation'
-              ? `实例 #${row.instanceId || '-'}`
-              : (row.rssUrl || '-')}
+          <span class='truncate text-sm text-neutral-500'>
+            {row.type === 'federation' ? `实例 #${row.instanceId || '-'}` : row.rssUrl || '-'}
           </span>
         ),
       },
@@ -279,14 +279,13 @@ export default defineComponent({
         render: (row) => (
           <NSwitch
             value={row.isActive}
-            size="small"
+            size='small'
             onUpdateValue={async (val: boolean) => {
               try {
                 await friendLinkService.updateFriendLink(row.id, toUpdatePayload(row, val))
                 row.isActive = val
                 message.success('已更新状态')
-              }
-              catch (e: any) {
+              } catch (e: any) {
                 message.error(e.message || '更新状态失败')
               }
             }}
@@ -300,31 +299,35 @@ export default defineComponent({
         render: (row) => (
           <NSpace>
             <NButton
-              size="tiny"
+              size='tiny'
               secondary
               onClick={() => openEdit(row)}
             >
               编辑
             </NButton>
-            <NPopconfirm
-              onPositiveClick={() => handleAction(row.id, 'delete')}
-            >
+            <NPopconfirm onPositiveClick={() => handleAction(row.id, 'delete')}>
               {{
                 default: () => '确认删除该友链吗？',
                 trigger: () => (
-                  <NButton size="tiny" type="error" secondary>
+                  <NButton
+                    size='tiny'
+                    type='error'
+                    secondary
+                  >
                     删除
                   </NButton>
                 ),
               }}
             </NPopconfirm>
-            <NPopconfirm
-              onPositiveClick={() => handleAction(row.id, 'block')}
-            >
+            <NPopconfirm onPositiveClick={() => handleAction(row.id, 'block')}>
               {{
                 default: () => '确认封禁该友链吗？（后续申请将被自动拒绝）',
                 trigger: () => (
-                  <NButton size="tiny" type="error" secondary>
+                  <NButton
+                    size='tiny'
+                    type='error'
+                    secondary
+                  >
                     封禁
                   </NButton>
                 ),
@@ -336,46 +339,59 @@ export default defineComponent({
     ]
 
     return () => (
-      <ScrollContainer wrapper-class="p-4">
-        <NCard title="友链列表" class="h-full">
+      <ScrollContainer wrapper-class='p-4'>
+        <NCard
+          title='友链列表'
+          class='h-full'
+        >
           {{
             'header-extra': () => (
               <NSpace>
-                <NButton secondary size="small" onClick={() => showRequestModal.value = true}>
+                <NButton
+                  secondary
+                  size='small'
+                  onClick={() => (showRequestModal.value = true)}
+                >
                   发起联合友链申请
                 </NButton>
-                <NButton type="primary" size="small" onClick={openCreate}>
+                <NButton
+                  type='primary'
+                  size='small'
+                  onClick={openCreate}
+                >
                   新建友链
                 </NButton>
               </NSpace>
             ),
             default: () => (
               <>
-                <div class="mb-4 flex gap-2">
+                <div class='mb-4 flex gap-2'>
                   <NInput
                     value={linksFilter.keyword}
-                    placeholder="搜索名称或URL"
-                    class="max-w-xs"
+                    placeholder='搜索名称或URL'
+                    class='max-w-xs'
                     clearable
-                    onUpdateValue={(v) => linksFilter.keyword = v}
+                    onUpdateValue={(v) => (linksFilter.keyword = v)}
                     onKeydown={(e) => {
-                      if (e.key === 'Enter')
-                        refreshLinks()
+                      if (e.key === 'Enter') refreshLinks()
                     }}
                   />
                   <NSelect
                     value={linksFilter.type}
                     clearable
-                    class="w-40"
-                    placeholder="类型"
+                    class='w-40'
+                    placeholder='类型'
                     options={[
                       { label: '联合', value: 'federation' },
                       { label: 'RSS', value: 'rss' },
                       { label: '无 RSS', value: 'norss' },
                     ]}
-                    onUpdateValue={(v) => linksFilter.type = v as FriendLink['type'] | undefined}
+                    onUpdateValue={(v) => (linksFilter.type = v as FriendLink['type'] | undefined)}
                   />
-                  <NButton secondary onClick={refreshLinks}>
+                  <NButton
+                    secondary
+                    onClick={refreshLinks}
+                  >
                     搜索
                   </NButton>
                 </div>
@@ -387,7 +403,7 @@ export default defineComponent({
                   row-key={(row: FriendLink) => row.id}
                   scrollX={860}
                 />
-                <div class="mt-4 flex justify-end">
+                <div class='mt-4 flex justify-end'>
                   <NPagination
                     page={linksPagination.page}
                     page-size={linksPagination.pageSize}
@@ -403,23 +419,67 @@ export default defineComponent({
           }}
         </NCard>
 
-        <NModal show={showEditModal.value} preset="card" title={modalTitle.value} class="max-w-lg" onUpdateShow={(v) => showEditModal.value = v}>
+        <NModal
+          show={showEditModal.value}
+          preset='card'
+          title={modalTitle.value}
+          class='max-w-lg'
+          onUpdateShow={(v) => (showEditModal.value = v)}
+        >
           {{
             default: () => (
-              <NForm ref={editFormRef} model={formModel} rules={rules} label-placement="left" label-width="80">
-                <NFormItem label="名称" path="name">
-                  <NInput value={formModel.name} placeholder="站点名称" onUpdateValue={(v) => formModel.name = v} />
+              <NForm
+                ref={editFormRef}
+                model={formModel}
+                rules={rules}
+                label-placement='left'
+                label-width='80'
+              >
+                <NFormItem
+                  label='名称'
+                  path='name'
+                >
+                  <NInput
+                    value={formModel.name}
+                    placeholder='站点名称'
+                    onUpdateValue={(v) => (formModel.name = v)}
+                  />
                 </NFormItem>
-                <NFormItem label="URL" path="url">
-                  <NInput value={formModel.url} placeholder="https://example.com" onUpdateValue={(v) => formModel.url = v} />
+                <NFormItem
+                  label='URL'
+                  path='url'
+                >
+                  <NInput
+                    value={formModel.url}
+                    placeholder='https://example.com'
+                    onUpdateValue={(v) => (formModel.url = v)}
+                  />
                 </NFormItem>
-                <NFormItem label="Logo" path="logo">
-                  <NInput value={formModel.logo} placeholder="Logo 图片地址" onUpdateValue={(v) => formModel.logo = v} />
+                <NFormItem
+                  label='Logo'
+                  path='logo'
+                >
+                  <NInput
+                    value={formModel.logo}
+                    placeholder='Logo 图片地址'
+                    onUpdateValue={(v) => (formModel.logo = v)}
+                  />
                 </NFormItem>
-                <NFormItem label="描述" path="description">
-                  <NInput value={formModel.description} type="textarea" placeholder="站点简介" onUpdateValue={(v) => formModel.description = v} />
+                <NFormItem
+                  label='描述'
+                  path='description'
+                >
+                  <NInput
+                    value={formModel.description}
+                    type='textarea'
+                    placeholder='站点简介'
+                    onUpdateValue={(v) => (formModel.description = v)}
+                  />
                 </NFormItem>
-                <NFormItem label="类型" path="type">
+                <NFormItem
+                  label='类型'
+                  path='type'
+                >
                   <NSelect
                     value={formModel.type}
                     options={[
@@ -429,54 +489,78 @@ export default defineComponent({
                     ]}
                     onUpdateValue={(v) => {
                       formModel.type = v as FriendLink['type']
-                      if (formModel.type !== 'federation')
-                        formModel.instanceId = undefined
+                      if (formModel.type !== 'federation') formModel.instanceId = undefined
                     }}
                   />
                 </NFormItem>
-                <NFormItem label="RSS" path="rssUrl">
+                <NFormItem
+                  label='RSS'
+                  path='rssUrl'
+                >
                   <NInput
                     value={formModel.rssUrl}
-                    placeholder={formModel.type === 'rss' ? 'RSS 必填，例如 https://example.com/feed' : 'RSS 订阅地址（可选）'}
-                    onUpdateValue={(v) => formModel.rssUrl = v}
+                    placeholder={
+                      formModel.type === 'rss'
+                        ? 'RSS 必填，例如 https://example.com/feed'
+                        : 'RSS 订阅地址（可选）'
+                    }
+                    onUpdateValue={(v) => (formModel.rssUrl = v)}
                   />
                 </NFormItem>
 
                 {formModel.type === 'federation' && (
-                  <NFormItem label="实例ID" path="instanceId">
+                  <NFormItem
+                    label='实例ID'
+                    path='instanceId'
+                  >
                     <NInput
                       value={formModel.instanceId?.toString() || ''}
                       allowInput={(v) => !v || /^\d+$/.test(v)}
-                      placeholder="联合实例 ID（必填）"
-                      onUpdateValue={(v) => formModel.instanceId = v ? Number.parseInt(v, 10) : undefined}
+                      placeholder='联合实例 ID（必填）'
+                      onUpdateValue={(v) =>
+                        (formModel.instanceId = v ? Number.parseInt(v, 10) : undefined)
+                      }
                     />
                   </NFormItem>
                 )}
 
                 {formModel.type !== 'norss' && (
-                  <NFormItem label="刷新间隔" path="syncInterval">
+                  <NFormItem
+                    label='刷新间隔'
+                    path='syncInterval'
+                  >
                     <NInput
                       value={formModel.syncInterval?.toString() || ''}
                       allowInput={(v) => !v || /^\d+$/.test(v)}
-                      placeholder="单位：分钟"
-                      onUpdateValue={(v) => formModel.syncInterval = v ? Number.parseInt(v, 10) : undefined}
+                      placeholder='单位：分钟'
+                      onUpdateValue={(v) =>
+                        (formModel.syncInterval = v ? Number.parseInt(v, 10) : undefined)
+                      }
                     >
                       {{ suffix: () => '分钟' }}
                     </NInput>
                   </NFormItem>
                 )}
 
-                <NFormItem label="启用" path="isActive">
-                  <NSwitch value={formModel.isActive} onUpdateValue={(v) => formModel.isActive = v} />
+                <NFormItem
+                  label='启用'
+                  path='isActive'
+                >
+                  <NSwitch
+                    value={formModel.isActive}
+                    onUpdateValue={(v) => (formModel.isActive = v)}
+                  />
                 </NFormItem>
               </NForm>
             ),
             footer: () => (
-              <div class="flex justify-end gap-2">
-                <NButton onClick={() => showEditModal.value = false}>
-                  取消
-                </NButton>
-                <NButton type="primary" loading={linksLoading.value} onClick={handleSave}>
+              <div class='flex justify-end gap-2'>
+                <NButton onClick={() => (showEditModal.value = false)}>取消</NButton>
+                <NButton
+                  type='primary'
+                  loading={linksLoading.value}
+                  onClick={handleSave}
+                >
                   保存
                 </NButton>
               </div>
@@ -484,27 +568,54 @@ export default defineComponent({
           }}
         </NModal>
 
-        <NModal show={showRequestModal.value} preset="card" title="发起联合友链申请" class="max-w-lg" onUpdateShow={(v) => showRequestModal.value = v}>
+        <NModal
+          show={showRequestModal.value}
+          preset='card'
+          title='发起联合友链申请'
+          class='max-w-lg'
+          onUpdateShow={(v) => (showRequestModal.value = v)}
+        >
           {{
             default: () => (
-              <NForm label-placement="left" label-width="100">
-                <NFormItem label="目标地址" required>
-                  <NInput value={requestForm.target_url} placeholder="https://target.example.com" onUpdateValue={(v) => requestForm.target_url = v} />
+              <NForm
+                label-placement='left'
+                label-width='100'
+              >
+                <NFormItem
+                  label='目标地址'
+                  required
+                >
+                  <NInput
+                    value={requestForm.target_url}
+                    placeholder='https://target.example.com'
+                    onUpdateValue={(v) => (requestForm.target_url = v)}
+                  />
                 </NFormItem>
-                <NFormItem label="本站 RSS">
-                  <NInput value={requestForm.rss_url} placeholder="https://your-site.com/feed（可选）" onUpdateValue={(v) => requestForm.rss_url = v} />
+                <NFormItem label='本站 RSS'>
+                  <NInput
+                    value={requestForm.rss_url}
+                    placeholder='https://your-site.com/feed（可选）'
+                    onUpdateValue={(v) => (requestForm.rss_url = v)}
+                  />
                 </NFormItem>
-                <NFormItem label="留言">
-                  <NInput value={requestForm.message} type="textarea" placeholder="你好，想与贵站建立友链与联合关系" onUpdateValue={(v) => requestForm.message = v} />
+                <NFormItem label='留言'>
+                  <NInput
+                    value={requestForm.message}
+                    type='textarea'
+                    placeholder='你好，想与贵站建立友链与联合关系'
+                    onUpdateValue={(v) => (requestForm.message = v)}
+                  />
                 </NFormItem>
               </NForm>
             ),
             footer: () => (
-              <div class="flex justify-end gap-2">
-                <NButton onClick={() => showRequestModal.value = false}>
-                  取消
-                </NButton>
-                <NButton type="primary" loading={requestLoading.value} onClick={handleFederationRequest}>
+              <div class='flex justify-end gap-2'>
+                <NButton onClick={() => (showRequestModal.value = false)}>取消</NButton>
+                <NButton
+                  type='primary'
+                  loading={requestLoading.value}
+                  onClick={handleFederationRequest}
+                >
                   发送申请
                 </NButton>
               </div>

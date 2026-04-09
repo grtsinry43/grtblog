@@ -4,8 +4,8 @@ import {
   getMarkdownComponent,
   serializeComponentAttributes,
 } from '@/composables/markdown/shared/components'
-import type { ComponentEditPayload } from '@/composables/markdown-editor/extensions/component-editor'
 
+import type { ComponentEditPayload } from '@/composables/markdown-editor/extensions/component-editor'
 import type { EditorView } from 'codemirror'
 
 export function useComponentInserter(view: Ref<EditorView | undefined>) {

@@ -4,9 +4,10 @@ import { onMounted, reactive, ref } from 'vue'
 
 import { ScrollContainer } from '@/components'
 import TemplateEditor from '@/components/template-editor/TemplateEditor.vue'
-import { getEventCatalogItem } from '@/services/events'
-import { listEmailTemplates, testEmailTemplate } from '@/services/email'
 import { usePreviewData } from '@/composables/email/use-preview-data'
+import { listEmailTemplates, testEmailTemplate } from '@/services/email'
+import { getEventCatalogItem } from '@/services/events'
+
 import type { EmailTemplate } from '@/services/email'
 
 const message = useMessage()
@@ -27,7 +28,7 @@ const form = reactive({
 async function fetchTemplates() {
   const list = await listEmailTemplates()
   templatesList.value = list
-  
+
   templateOptions.value = list.map((t) => ({ label: `${t.name} (${t.code})`, value: t.code }))
   const first = list[0]
   if (first) {
@@ -37,18 +38,18 @@ async function fetchTemplates() {
 }
 
 async function handleTemplateChange(code: string) {
-    const t = templatesList.value.find(i => i.code === code)
-    if (t && t.eventName) {
-        currentEventName.value = t.eventName
-        try {
-            const details = await getEventCatalogItem(t.eventName)
-            if (details && details.fields) {
-               form.variables = generatePreviewData(details.fields)
-            }
-        } catch (e) {
-            // ignore
-        }
+  const t = templatesList.value.find((i) => i.code === code)
+  if (t && t.eventName) {
+    currentEventName.value = t.eventName
+    try {
+      const details = await getEventCatalogItem(t.eventName)
+      if (details && details.fields) {
+        form.variables = generatePreviewData(details.fields)
+      }
+    } catch (e) {
+      // ignore
     }
+  }
 }
 
 async function handleSend() {

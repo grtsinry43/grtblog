@@ -2,7 +2,11 @@ import { NButton, NCard, NCollapse, NCollapseItem, NEmpty, NForm, NSpin, NTag } 
 import { computed, defineComponent, watch, type PropType } from 'vue'
 
 import ConfigItem from '@/components/config/ConfigItem'
-import { useConfigCenter, type ConfigListFn, type ConfigUpdateFn } from '@/composables/use-config-center'
+import {
+  useConfigCenter,
+  type ConfigListFn,
+  type ConfigUpdateFn,
+} from '@/composables/use-config-center'
 
 import type { SysConfigGroup, SysConfigTreeResponse } from '@/services/sysconfig'
 
@@ -13,7 +17,10 @@ import type { SysConfigGroup, SysConfigTreeResponse } from '@/services/sysconfig
  * - It's a descendant of a prefix (group.path starts with prefix/)
  * - It's an ancestor of a prefix (a prefix starts with group.path/)
  */
-function groupMatchesPrefixes(groupPath: string, prefixes: string[]): 'exact-or-descendant' | 'ancestor' | false {
+function groupMatchesPrefixes(
+  groupPath: string,
+  prefixes: string[],
+): 'exact-or-descendant' | 'ancestor' | false {
   for (const p of prefixes) {
     if (groupPath === p || groupPath.startsWith(`${p}/`)) return 'exact-or-descendant'
     if (p.startsWith(`${groupPath}/`)) return 'ancestor'
@@ -35,7 +42,11 @@ function filterGroupsRecursive(
       if (excludeMatch === 'exact-or-descendant') return acc
       // If ancestor of excluded prefix, keep group but filter children
       if (excludeMatch === 'ancestor') {
-        const filteredChildren = filterGroupsRecursive(group.children ?? [], undefined, excludePrefixes)
+        const filteredChildren = filterGroupsRecursive(
+          group.children ?? [],
+          undefined,
+          excludePrefixes,
+        )
         if (filteredChildren.length > 0 || (group.items && group.items.length > 0)) {
           acc.push({ ...group, children: filteredChildren })
         }
@@ -53,7 +64,11 @@ function filterGroupsRecursive(
         acc.push(group)
       } else {
         // This group is an ancestor — include it but recurse to filter children
-        const filteredChildren = filterGroupsRecursive(group.children ?? [], filterPrefixes, excludePrefixes)
+        const filteredChildren = filterGroupsRecursive(
+          group.children ?? [],
+          filterPrefixes,
+          excludePrefixes,
+        )
         if (filteredChildren.length > 0) {
           acc.push({ ...group, children: filteredChildren, items: undefined })
         }
@@ -173,10 +188,17 @@ export default defineComponent({
       if (!groups || groups.length === 0) return null
 
       return groups.map((group) => (
-        <NCollapseItem key={group.path} name={group.path} title={group.label || group.key}>
-          <div class="space-y-4 pl-2">
+        <NCollapseItem
+          key={group.path}
+          name={group.path}
+          title={group.label || group.key}
+        >
+          <div class='space-y-4 pl-2'>
             {group.items && group.items.length > 0 && (
-              <NForm labelPlacement="left" labelWidth={160}>
+              <NForm
+                labelPlacement='left'
+                labelWidth={160}
+              >
                 {group.items.map((item) => (
                   <ConfigItem
                     key={item.key}
@@ -201,23 +223,29 @@ export default defineComponent({
       <NCard>
         {{
           header: () => (
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class='flex flex-wrap items-center justify-between gap-3'>
               <div>
-                <div class="text-base font-semibold">{props.title}</div>
+                <div class='text-base font-semibold'>{props.title}</div>
                 {props.description && (
-                  <div class="text-xs text-neutral-500">{props.description}</div>
+                  <div class='text-xs text-neutral-500'>{props.description}</div>
                 )}
               </div>
-              <div class="flex items-center gap-2">
-                {pendingCount.value > 0 && (
-                  <NTag type="warning">
-                    待保存 {pendingCount.value}
-                  </NTag>
-                )}
-                <NButton size="small" secondary loading={loading.value} onClick={fetch}>
+              <div class='flex items-center gap-2'>
+                {pendingCount.value > 0 && <NTag type='warning'>待保存 {pendingCount.value}</NTag>}
+                <NButton
+                  size='small'
+                  secondary
+                  loading={loading.value}
+                  onClick={fetch}
+                >
                   刷新
                 </NButton>
-                <NButton size="small" type="primary" loading={saving.value} onClick={save}>
+                <NButton
+                  size='small'
+                  type='primary'
+                  loading={saving.value}
+                  onClick={save}
+                >
                   保存
                 </NButton>
               </div>
@@ -226,13 +254,16 @@ export default defineComponent({
           default: () => (
             <NSpin show={loading.value}>
               {!tree.value || (!tree.value.items?.length && !tree.value.groups?.length) ? (
-                <div class="py-8">
-                  <NEmpty description="暂无配置项" />
+                <div class='py-8'>
+                  <NEmpty description='暂无配置项' />
                 </div>
               ) : (
-                <div class="space-y-6">
+                <div class='space-y-6'>
                   {tree.value.items && tree.value.items.length > 0 && (
-                    <NForm labelPlacement="left" labelWidth={160}>
+                    <NForm
+                      labelPlacement='left'
+                      labelWidth={160}
+                    >
                       {tree.value.items.map((item) => (
                         <ConfigItem
                           key={item.key}

@@ -1,4 +1,5 @@
 import { computed, onMounted, ref } from 'vue'
+
 import {
   deleteFile,
   downloadFile,
@@ -25,7 +26,11 @@ export interface UploadTaskItem {
   error?: string
 }
 
-export function useFileList(message: { error: (m: string) => void; success: (m: string) => void; warning: (m: string) => void }) {
+export function useFileList(message: {
+  error: (m: string) => void
+  success: (m: string) => void
+  warning: (m: string) => void
+}) {
   const files = ref<UploadFileResponse[]>([])
   const uploadTasks = ref<UploadTaskItem[]>([])
   const loading = ref(false)
@@ -60,7 +65,9 @@ export function useFileList(message: { error: (m: string) => void; success: (m: 
   })
 
   const isEmpty = computed(() => filteredFiles.value.length === 0 && !loading.value)
-  const activeUploadTasks = computed(() => uploadTasks.value.filter((task) => task.status === 'uploading'))
+  const activeUploadTasks = computed(() =>
+    uploadTasks.value.filter((task) => task.status === 'uploading'),
+  )
 
   function upsertUploadTask(task: UploadTaskItem) {
     const idx = uploadTasks.value.findIndex((item) => item.id === task.id)
@@ -133,7 +140,9 @@ export function useFileList(message: { error: (m: string) => void; success: (m: 
         status: 'success',
       })
       options.onFinish?.()
-      message.success(response.duplicated ? `${response.name} 已存在，已复用` : `${response.name} 上传成功`)
+      message.success(
+        response.duplicated ? `${response.name} 已存在，已复用` : `${response.name} 上传成功`,
+      )
       await fetchFiles(false)
     } catch (error) {
       upsertUploadTask({

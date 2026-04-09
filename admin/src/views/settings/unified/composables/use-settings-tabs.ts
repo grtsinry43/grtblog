@@ -1,17 +1,17 @@
 import { ref, reactive, watch, type Component, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import SiteInfoTab from '../components/tabs/SiteInfoTab.vue'
-import ThemeExtendTab from '../components/tabs/ThemeExtendTab.vue'
-import SecurityTab from '../components/tabs/SecurityTab.vue'
-import ContentTab from '../components/tabs/ContentTab.vue'
-import EmailTab from '../components/tabs/EmailTab.vue'
-import WebhookTab from '../components/tabs/WebhookTab.vue'
-import FederationTab from '../components/tabs/FederationTab.vue'
+import AdvancedTab from '../components/tabs/AdvancedTab.vue'
 import AiTab from '../components/tabs/AiTab.vue'
 import ApiTokensTab from '../components/tabs/ApiTokensTab.vue'
+import ContentTab from '../components/tabs/ContentTab.vue'
+import EmailTab from '../components/tabs/EmailTab.vue'
+import FederationTab from '../components/tabs/FederationTab.vue'
+import SecurityTab from '../components/tabs/SecurityTab.vue'
+import SiteInfoTab from '../components/tabs/SiteInfoTab.vue'
 import TelemetryTab from '../components/tabs/TelemetryTab.vue'
-import AdvancedTab from '../components/tabs/AdvancedTab.vue'
+import ThemeExtendTab from '../components/tabs/ThemeExtendTab.vue'
+import WebhookTab from '../components/tabs/WebhookTab.vue'
 
 export interface SettingsTab {
   key: string
@@ -23,9 +23,25 @@ export interface SettingsTab {
 }
 
 export const settingsTabs: SettingsTab[] = [
-  { key: 'site-info', label: '基本信息', icon: 'iconify ph--globe-hemisphere-west', component: SiteInfoTab },
-  { key: 'theme-extend', label: '主题扩展', icon: 'iconify ph--paint-brush', component: ThemeExtendTab, fillHeight: true },
-  { key: 'security', label: '安全与登录', icon: 'iconify ph--shield-check', component: SecurityTab },
+  {
+    key: 'site-info',
+    label: '基本信息',
+    icon: 'iconify ph--globe-hemisphere-west',
+    component: SiteInfoTab,
+  },
+  {
+    key: 'theme-extend',
+    label: '主题扩展',
+    icon: 'iconify ph--paint-brush',
+    component: ThemeExtendTab,
+    fillHeight: true,
+  },
+  {
+    key: 'security',
+    label: '安全与登录',
+    icon: 'iconify ph--shield-check',
+    component: SecurityTab,
+  },
   { key: 'content', label: '内容与评论', icon: 'iconify ph--article', component: ContentTab },
   { key: 'email', label: '邮件', icon: 'iconify ph--envelope', component: EmailTab },
   { key: 'webhook', label: 'Webhook', icon: 'iconify ph--webhooks-logo', component: WebhookTab },

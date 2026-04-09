@@ -32,4 +32,3 @@ export interface UpdateSiteUserPayload {
   isActive: boolean
   isAdmin: boolean
 }
-

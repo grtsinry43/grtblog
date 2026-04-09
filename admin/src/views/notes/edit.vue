@@ -24,10 +24,15 @@ import { computed, onMounted, onUnmounted, ref, watch, toRef } from 'vue'
 import MultiImageInput from '@/components/image-picker/MultiImageInput.vue'
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
-import { generateTitle, generateSummaryStream } from '@/services/ai'
 import { publishFederationActivityPub } from '@/services/federation-admin'
-import { listWebsiteInfo } from '@/services/website-info'
 import { useEditorStats } from '@/views/articles/composables/use-editor-stats'
+import AiSummaryAssist from '@/views/shared/content-editor/components/AiSummaryAssist.vue'
+import EditorStatsOverlay from '@/views/shared/content-editor/components/EditorStatsOverlay.vue'
+import {
+  useAiSummaryGeneration,
+  useAiTitleGeneration,
+} from '@/views/shared/content-editor/composables/use-ai-tools'
+import { usePreviewFrame } from '@/views/shared/content-editor/composables/use-preview-frame'
 
 import { useMomentForm } from './composables/use-moment-form'
 import { useMomentTaxonomySelect } from './composables/use-moment-taxonomy-select'
@@ -57,73 +62,32 @@ const { cursorPos, selectionStats, statsIdle, markActivity, handleCursorChange, 
   useEditorStats()
 
 const showMeta = ref(false)
-const showPreview = ref(false)
-const previewMode = ref<'markdown' | 'page'>('markdown')
-const previewFrameRef = ref<HTMLIFrameElement | null>(null)
-const previewReady = ref(false)
-const publicUrl = ref('')
 const loadedMoment = ref<MomentDetail | null>(null)
 const apPublishing = ref(false)
 
-const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
-const PREVIEW_MOMENT_TYPE = 'grtblog-preview:moment'
-
-const aiGenerating = ref(false)
-async function handleAIGenerate() {
-  if (!form.content?.trim()) {
-    message.warning('请先输入内容')
-    return
-  }
-  aiGenerating.value = true
-  try {
-    const result = await generateTitle(form.content)
+const { loading: aiGenerating, generate: handleAIGenerate } = useAiTitleGeneration({
+  getContent: () => form.content,
+  applyResult: (result) => {
     form.title = result.title
     form.shortUrl = result.shortUrl
-    message.success('AI 生成成功')
-  } catch (e: unknown) {
-    message.error(e instanceof Error ? e.message : 'AI 生成失败')
-  } finally {
-    aiGenerating.value = false
-  }
-}
+  },
+  message,
+})
 
-// AI 摘要生成
-const aiSummaryLoading = ref(false)
-const aiSummaryResult = ref('')
-const aiSummaryDone = ref(false)
-
-async function handleAISummary() {
-  if (!form.content?.trim()) {
-    message.warning('请先输入内容')
-    return
-  }
-  aiSummaryLoading.value = true
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-  try {
-    await generateSummaryStream(form.content, (chunk) => {
-      aiSummaryResult.value += chunk
-    })
-    aiSummaryDone.value = true
-  } catch (e: unknown) {
-    message.error(e instanceof Error ? e.message : 'AI 摘要生成失败')
-    aiSummaryResult.value = ''
-  } finally {
-    aiSummaryLoading.value = false
-  }
-}
-
-function adoptAISummary() {
-  form.aiSummary = aiSummaryResult.value
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-  message.success('已采纳 AI 摘要')
-}
-
-function dismissAISummary() {
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-}
+const {
+  loading: aiSummaryLoading,
+  result: aiSummaryResult,
+  done: aiSummaryDone,
+  generate: handleAISummary,
+  adopt: adoptAISummary,
+  dismiss: dismissAISummary,
+} = useAiSummaryGeneration({
+  getContent: () => form.content,
+  adoptSummary: (summary) => {
+    form.aiSummary = summary
+  },
+  message,
+})
 
 const stats = computed(() => getStats(form.content))
 const actionLabel = computed(() => {
@@ -131,23 +95,24 @@ const actionLabel = computed(() => {
   return isCreating.value ? '发布' : '发布新版本'
 })
 const actionIcon = computed(() => (form.isPublished ? PaperPlaneOutline : SaveOutline))
-const previewUrl = computed(() => {
-  const base = normalizePublicUrl(publicUrl.value)
-  return base ? `${base}/internal/preview/moment` : ''
+const {
+  showPreview,
+  previewMode,
+  previewFrameRef,
+  previewUrl,
+  fetchWebsiteInfo,
+  schedulePreviewPayload,
+  handlePreviewMessage,
+  handlePreviewFrameLoad,
+  resetPreviewReady,
+  cleanup,
+} = usePreviewFrame({
+  previewPath: '/internal/preview/moment',
+  readyType: 'grtblog-preview:ready',
+  postType: 'grtblog-preview:moment',
+  buildPayload: buildPreviewPayload,
+  message,
 })
-
-const previewOrigin = computed(() => {
-  if (!previewUrl.value) return '*'
-  try {
-    return new URL(previewUrl.value).origin
-  } catch {
-    return '*'
-  }
-})
-
-function normalizePublicUrl(value: string) {
-  return value.trim().replace(/\/+$/, '')
-}
 
 function formatDateTime(value?: string | null) {
   if (!value) return '-'
@@ -181,23 +146,14 @@ async function handleRepublishActivityPub() {
       source_type: 'moment',
       source_id: loadedMoment.value.id,
     })
-    loadedMoment.value.activityPubObjectId = resp.object_id || loadedMoment.value.activityPubObjectId
+    loadedMoment.value.activityPubObjectId =
+      resp.object_id || loadedMoment.value.activityPubObjectId
     loadedMoment.value.activityPubLastPublishedAt = resp.published_at
     message.success(`补发完成：成功 ${resp.success_count}，失败 ${resp.failure_count}`)
   } catch (err) {
     message.error(err instanceof Error ? err.message : '补发失败')
   } finally {
     apPublishing.value = false
-  }
-}
-
-async function fetchWebsiteInfo() {
-  try {
-    const list = await listWebsiteInfo()
-    const item = list?.find((info) => info.key === 'public_url')
-    publicUrl.value = item?.value?.trim() ?? ''
-  } catch (err) {
-    message.error(err instanceof Error ? err.message : '加载站点地址失败')
   }
 }
 
@@ -240,43 +196,6 @@ function buildPreviewPayload() {
     authorId: loadedMoment.value?.authorId ?? 0,
   }
 }
-
-function sendPreviewPayload() {
-  if (!showPreview.value || previewMode.value !== 'page') return
-  if (!previewUrl.value || !previewReady.value) return
-  const frame = previewFrameRef.value
-  if (!frame?.contentWindow) return
-  frame.contentWindow.postMessage(
-    { type: PREVIEW_MOMENT_TYPE, payload: buildPreviewPayload() },
-    previewOrigin.value,
-  )
-}
-
-let previewTimer: number | null = null
-function schedulePreviewPayload() {
-  if (!showPreview.value || previewMode.value !== 'page') return
-  if (!previewUrl.value) return
-  if (previewTimer) window.clearTimeout(previewTimer)
-  previewTimer = window.setTimeout(() => {
-    previewTimer = null
-    sendPreviewPayload()
-  }, 200)
-}
-
-function handlePreviewMessage(event: MessageEvent) {
-  const frame = previewFrameRef.value
-  if (!frame?.contentWindow || event.source !== frame.contentWindow) return
-  const data = event.data as { type?: string } | null
-  if (!data || data.type !== PREVIEW_READY_TYPE) return
-  previewReady.value = true
-  sendPreviewPayload()
-}
-
-function handlePreviewFrameLoad() {
-  previewReady.value = true
-  sendPreviewPayload()
-}
-
 onMounted(async () => {
   window.addEventListener('message', handlePreviewMessage)
 
@@ -289,7 +208,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('message', handlePreviewMessage)
-  if (previewTimer) window.clearTimeout(previewTimer)
+  cleanup()
 })
 
 watch(
@@ -318,7 +237,7 @@ watch([showPreview, previewMode, previewUrl], () => {
 })
 
 watch(previewUrl, () => {
-  previewReady.value = false
+  resetPreviewReady()
 })
 </script>
 
@@ -433,38 +352,19 @@ watch(previewUrl, () => {
             @cursor-change="handleCursorChange"
           />
 
-          <div
-            class="pointer-events-none absolute right-3 bottom-3 z-10 transition-opacity duration-200"
-            :class="statsIdle ? 'opacity-75 hover:opacity-100' : 'opacity-0'"
-          >
-            <NCard
-              size="small"
-              class="pointer-events-auto shadow-sm"
-              content-style="padding: 6px 8px;"
-            >
-              <div class="flex items-center gap-3 text-[13px]">
-                <NPopover
-                  trigger="hover"
-                  :disabled="!statsIdle"
-                  content-style="padding: 4px 6px;"
-                >
-                  <template #trigger
-                    ><span class="cursor-help">字数 {{ stats.charCount }}</span></template
-                  >
-                  <div class="flex flex-col gap-0.5 text-[11px] leading-tight">
-                    <span v-if="selectionStats.total">选中 {{ selectionStats.chars }}</span>
-                    <span>中文 {{ stats.chineseCharCount }}</span>
-                    <span>英文词 {{ stats.wordCount }}</span>
-                    <span>字符 {{ stats.totalCharCount }}</span>
-                    <span>段落 {{ stats.paragraphCount }}</span>
-                  </div>
-                </NPopover>
-                <span v-if="selectionStats.total">选中 {{ selectionStats.chars }} 字</span>
-                <span>{{ cursorPos.line }}:{{ cursorPos.column }}</span>
-                <span>预计阅读 {{ stats.readingMinutes }} 分钟</span>
-              </div>
-            </NCard>
-          </div>
+          <EditorStatsOverlay
+            :idle="statsIdle"
+            :cursor-line="cursorPos.line"
+            :cursor-column="cursorPos.column"
+            :reading-minutes="stats.readingMinutes"
+            :char-count="stats.charCount"
+            :chinese-char-count="stats.chineseCharCount"
+            :word-count="stats.wordCount"
+            :total-char-count="stats.totalCharCount"
+            :paragraph-count="stats.paragraphCount"
+            :selection-total="selectionStats.total"
+            :selection-chars="selectionStats.chars"
+          />
         </div>
 
         <div
@@ -626,9 +526,7 @@ watch(previewUrl, () => {
               label-width="auto"
               class="space-y-4"
             >
-              <NFormItem
-                :show-feedback="false"
-              >
+              <NFormItem :show-feedback="false">
                 <template #label>
                   <span>摘要</span>
                   <span class="ml-1 text-xs opacity-50">用于外显描述、OG 信息、SEO</span>
@@ -640,59 +538,18 @@ watch(previewUrl, () => {
                   :autosize="{ minRows: 2, maxRows: 4 }"
                 />
               </NFormItem>
-              <NFormItem
-                :show-feedback="false"
-              >
-                <template #label>
-                  <span>AI 摘要</span>
-                  <span class="ml-1 text-xs opacity-50">用于正文前的总结导读</span>
-                </template>
-                <NInput
-                  v-model:value="form.aiSummary"
-                  type="textarea"
-                  placeholder="AI 生成的内容导读，展示在正文之前..."
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                />
-              </NFormItem>
-              <div class="flex flex-col gap-2">
-                <NButton
-                  size="small"
-                  :loading="aiSummaryLoading"
-                  :disabled="!form.content?.trim() || aiSummaryLoading"
-                  @click="handleAISummary"
-                >
-                  <template #icon><div class="iconify ph--sparkle" /></template>
-                  AI 生成导读摘要
-                </NButton>
-                <div
-                  v-if="aiSummaryLoading || aiSummaryResult"
-                  class="rounded-lg border border-current/10 p-3 text-sm leading-relaxed"
-                >
-                  <span>{{ aiSummaryResult }}</span>
-                  <span
-                    v-if="aiSummaryLoading"
-                    class="inline-block w-1.5 animate-pulse bg-current"
-                    >&nbsp;</span
-                  >
-                </div>
-                <div
-                  v-if="aiSummaryDone"
-                  class="flex justify-end gap-2"
-                >
-                  <NButton
-                    size="small"
-                    quaternary
-                    @click="dismissAISummary"
-                    >放弃</NButton
-                  >
-                  <NButton
-                    size="small"
-                    type="primary"
-                    @click="adoptAISummary"
-                    >采纳</NButton
-                  >
-                </div>
-              </div>
+              <AiSummaryAssist
+                :model-value="form.aiSummary"
+                :loading="aiSummaryLoading"
+                :result="aiSummaryResult"
+                :done="aiSummaryDone"
+                placeholder="AI 生成的内容导读，展示在正文之前..."
+                :disabled="!form.content?.trim()"
+                @update:model-value="form.aiSummary = $event"
+                @generate="handleAISummary"
+                @adopt="adoptAISummary"
+                @dismiss="dismissAISummary"
+              />
               <NFormItem
                 label="配图"
                 :show-feedback="false"
@@ -710,27 +567,21 @@ watch(previewUrl, () => {
               <span>属性</span>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div
-                class="flex items-center justify-between rounded-lg px-4 py-3"
-              >
+              <div class="flex items-center justify-between rounded-lg px-4 py-3">
                 <span class="text-sm">置顶</span
                 ><NSwitch
                   v-model:value="form.isTop"
                   size="small"
                 />
               </div>
-              <div
-                class="flex items-center justify-between rounded-lg px-4 py-3"
-              >
+              <div class="flex items-center justify-between rounded-lg px-4 py-3">
                 <span class="text-sm">允许评论</span
                 ><NSwitch
                   v-model:value="form.allowComment"
                   size="small"
                 />
               </div>
-              <div
-                class="flex items-center justify-between rounded-lg px-4 py-3"
-              >
+              <div class="flex items-center justify-between rounded-lg px-4 py-3">
                 <span class="text-sm">原创</span
                 ><NSwitch
                   v-model:value="form.isOriginal"
@@ -744,7 +595,7 @@ watch(previewUrl, () => {
                     <div class="text-xs opacity-70">最近发布：{{ apLastPublishedAtText }}</div>
                     <div
                       v-if="loadedMoment?.activityPubObjectId"
-                      class="break-all text-xs opacity-70"
+                      class="text-xs break-all opacity-70"
                     >
                       {{ loadedMoment.activityPubObjectId }}
                     </div>

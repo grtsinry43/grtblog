@@ -89,15 +89,27 @@ function onInputKeydown(e: KeyboardEvent) {
 
 <template>
   <Transition name="ai-toolbar">
-    <div v-if="visible" class="ai-toolbar-container">
+    <div
+      v-if="visible"
+      class="ai-toolbar-container"
+    >
       <!-- Upper panel: streaming or diff -->
-      <div v-if="phase === 'streaming'" class="ai-panel-upper">
-        <NScrollbar ref="scrollRef" style="max-height: 260px">
+      <div
+        v-if="phase === 'streaming'"
+        class="ai-panel-upper"
+      >
+        <NScrollbar
+          ref="scrollRef"
+          style="max-height: 260px"
+        >
           <pre class="ai-stream-pre">{{ resultContent }}<span class="ai-cursor" /></pre>
         </NScrollbar>
       </div>
 
-      <div v-else-if="phase === 'diff'" class="ai-panel-upper">
+      <div
+        v-else-if="phase === 'diff'"
+        class="ai-panel-upper"
+      >
         <div class="ai-diff-header">
           <span class="ai-diff-title">变更预览</span>
           <span class="ai-diff-stats">
@@ -124,7 +136,11 @@ function onInputKeydown(e: KeyboardEvent) {
 
       <!-- Bottom input bar (always present) -->
       <div class="ai-input-bar">
-        <NIcon :component="Sparkle20Filled" :size="16" class="ai-input-icon" />
+        <NIcon
+          :component="Sparkle20Filled"
+          :size="16"
+          class="ai-input-icon"
+        />
         <input
           ref="inputRef"
           class="ai-input"
@@ -136,11 +152,25 @@ function onInputKeydown(e: KeyboardEvent) {
         />
         <div class="ai-input-actions">
           <template v-if="phase === 'diff'">
-            <button class="ai-btn ai-btn--reject" title="放弃" @click="emit('reject')">
-              <NIcon :component="Dismiss20Filled" :size="14" />
+            <button
+              class="ai-btn ai-btn--reject"
+              title="放弃"
+              @click="emit('reject')"
+            >
+              <NIcon
+                :component="Dismiss20Filled"
+                :size="14"
+              />
             </button>
-            <button class="ai-btn ai-btn--accept" title="采纳" @click="emit('accept')">
-              <NIcon :component="Checkmark20Filled" :size="14" />
+            <button
+              class="ai-btn ai-btn--accept"
+              title="采纳"
+              @click="emit('accept')"
+            >
+              <NIcon
+                :component="Checkmark20Filled"
+                :size="14"
+              />
               <span>采纳</span>
             </button>
           </template>
@@ -154,7 +184,10 @@ function onInputKeydown(e: KeyboardEvent) {
               title="发送"
               @click="emit('execute')"
             >
-              <NIcon :component="ArrowUp20Filled" :size="14" />
+              <NIcon
+                :component="ArrowUp20Filled"
+                :size="14"
+              />
             </button>
           </template>
         </div>
@@ -205,8 +238,13 @@ function onInputKeydown(e: KeyboardEvent) {
 }
 
 @keyframes ai-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 /* ── Diff view ── */
@@ -403,7 +441,9 @@ function onInputKeydown(e: KeyboardEvent) {
 }
 
 @keyframes ai-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Transition ── */

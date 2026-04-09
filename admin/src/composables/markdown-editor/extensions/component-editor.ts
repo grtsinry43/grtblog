@@ -71,7 +71,11 @@ export const createComponentEditorExtension = (options: ComponentEditorOptions) 
   const findClosingLine = (view: EditorView, headerLineNumber: number) => {
     let nestedOpenCount = 0
 
-    for (let lineNumber = headerLineNumber + 1; lineNumber <= view.state.doc.lines; lineNumber += 1) {
+    for (
+      let lineNumber = headerLineNumber + 1;
+      lineNumber <= view.state.doc.lines;
+      lineNumber += 1
+    ) {
       const line = view.state.doc.line(lineNumber)
       const trimmed = line.text.trim()
 

@@ -47,4 +47,3 @@ export function deleteAdminToken(id: number) {
     method: 'DELETE',
   })
 }
-

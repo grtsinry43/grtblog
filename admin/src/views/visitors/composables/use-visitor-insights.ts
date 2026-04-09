@@ -1,9 +1,10 @@
 import * as echarts from 'echarts'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+
 import { getVisitorInsights } from '@/services/visitors'
 
-import type { ECharts } from 'echarts'
 import type { VisitorInsights } from '@/types/visitors'
+import type { ECharts } from 'echarts'
 
 export function useVisitorInsights(message: { error: (m: string) => void }) {
   const insightDays = ref<number>(30)
@@ -47,7 +48,14 @@ export function useVisitorInsights(message: { error: (m: string) => void }) {
     sourceChart.setOption({
       tooltip: { trigger: 'item' },
       legend: { top: 4 },
-      series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '58%'], data: sourceSeries.value.map((item) => ({ name: item.name, value: item.count })) }],
+      series: [
+        {
+          type: 'pie',
+          radius: ['38%', '66%'],
+          center: ['50%', '58%'],
+          data: sourceSeries.value.map((item) => ({ name: item.name, value: item.count })),
+        },
+      ],
     })
   }
 
@@ -62,10 +70,30 @@ export function useVisitorInsights(message: { error: (m: string) => void }) {
       xAxis: { type: 'category', data: insights.value.trend.map((item) => item.date.slice(5)) },
       yAxis: { type: 'value' },
       series: [
-        { name: '活跃访客', type: 'line', smooth: true, data: insights.value.trend.map((item) => item.activeVisitors) },
-        { name: '浏览', type: 'line', smooth: true, data: insights.value.trend.map((item) => item.views) },
-        { name: '点赞', type: 'line', smooth: true, data: insights.value.trend.map((item) => item.likes) },
-        { name: '评论', type: 'line', smooth: true, data: insights.value.trend.map((item) => item.comments) },
+        {
+          name: '活跃访客',
+          type: 'line',
+          smooth: true,
+          data: insights.value.trend.map((item) => item.activeVisitors),
+        },
+        {
+          name: '浏览',
+          type: 'line',
+          smooth: true,
+          data: insights.value.trend.map((item) => item.views),
+        },
+        {
+          name: '点赞',
+          type: 'line',
+          smooth: true,
+          data: insights.value.trend.map((item) => item.likes),
+        },
+        {
+          name: '评论',
+          type: 'line',
+          smooth: true,
+          data: insights.value.trend.map((item) => item.comments),
+        },
       ],
     })
   }
@@ -78,10 +106,16 @@ export function useVisitorInsights(message: { error: (m: string) => void }) {
       tooltip: { trigger: 'axis' },
       xAxis: { type: 'category', data: ['浏览访客', '点赞访客', '评论访客'] },
       yAxis: { type: 'value' },
-      series: [{
-        type: 'bar',
-        data: [insights.value.funnel.viewVisitors, insights.value.funnel.likeVisitors, insights.value.funnel.commentVisitors],
-      }],
+      series: [
+        {
+          type: 'bar',
+          data: [
+            insights.value.funnel.viewVisitors,
+            insights.value.funnel.likeVisitors,
+            insights.value.funnel.commentVisitors,
+          ],
+        },
+      ],
     })
   }
 

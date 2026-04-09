@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { defineAsyncComponent, h } from 'vue'
 
+import DevModeBadge from '@/components/health/DevModeBadge.vue'
 import { useInjection } from '@/composables'
 import { mediaQueryInjectionKey } from '@/injection'
 import { toRefsPreferencesStore } from '@/stores'
-
-import DevModeBadge from '@/components/health/DevModeBadge.vue'
 
 import FullScreen from './FullScreen.vue'
 import Notification from './Notification.vue'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { NButton, NModal, useMessage } from 'naive-ui'
+import { ref } from 'vue'
 
 import {
   exportFederationConfigs,
@@ -10,8 +10,10 @@ import {
   updateActivityPubConfigs,
   updateFederationConfigs,
 } from '@/services/sysconfig'
-import type { ConfigExportData } from '@/services/sysconfig'
+
 import ConfigPanel from '../ConfigPanel'
+
+import type { ConfigExportData } from '@/services/sysconfig'
 
 const emit = defineEmits<{ 'dirty-change': [dirty: boolean] }>()
 const message = useMessage()
@@ -107,10 +109,19 @@ async function confirmImport() {
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-2">
-      <NButton size="small" secondary :loading="exporting" @click="handleExport">
+      <NButton
+        size="small"
+        secondary
+        :loading="exporting"
+        @click="handleExport"
+      >
         导出配置
       </NButton>
-      <NButton size="small" secondary @click="triggerImport">
+      <NButton
+        size="small"
+        secondary
+        @click="triggerImport"
+      >
         导入配置
       </NButton>
       <input
@@ -151,11 +162,10 @@ async function confirmImport() {
     >
       <template v-if="pendingImportData">
         <p>
-          即将导入 <strong>{{ pendingImportData.configs.length }}</strong> 项配置，现有的同名配置将被覆盖。
+          即将导入
+          <strong>{{ pendingImportData.configs.length }}</strong> 项配置，现有的同名配置将被覆盖。
         </p>
-        <p class="mt-1 text-xs text-neutral-500">
-          导出时间：{{ pendingImportData.exportedAt }}
-        </p>
+        <p class="mt-1 text-xs text-neutral-500">导出时间：{{ pendingImportData.exportedAt }}</p>
       </template>
     </NModal>
   </div>

@@ -1,9 +1,8 @@
 import { NCard, NButton, NInput, NForm, NFormItem, NAlert, NCode } from 'naive-ui'
+import { useMessage } from 'naive-ui'
 import { defineComponent, ref } from 'vue'
 
 import { ScrollContainer } from '@/components'
-import { useMessage } from 'naive-ui'
-
 import { checkFederationRemote } from '@/services/federation-admin'
 
 export default defineComponent({
@@ -58,7 +57,10 @@ export default defineComponent({
               <div class='text-xs text-neutral-500'>拉取远端 manifest / public-key / endpoints</div>
             </div>
 
-            <NForm labelPlacement='left' labelWidth={120}>
+            <NForm
+              labelPlacement='left'
+              labelWidth={120}
+            >
               <NFormItem label='远端地址'>
                 <div class='flex w-full gap-2'>
                   <NInput
@@ -76,7 +78,14 @@ export default defineComponent({
               </NFormItem>
             </NForm>
 
-            {error.value && <NAlert type='error' title='请求失败'>{error.value}</NAlert>}
+            {error.value && (
+              <NAlert
+                type='error'
+                title='请求失败'
+              >
+                {error.value}
+              </NAlert>
+            )}
 
             {result.value && (
               <div class='space-y-6'>

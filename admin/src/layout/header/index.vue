@@ -13,8 +13,11 @@ defineOptions({
 
 const { navigationMode, backgroundImage } = toRefsPreferencesStore()
 
-const isGlassActive = computed(() =>
-  backgroundImage.value.show && backgroundImage.value.url && backgroundImage.value.glassEffect.enable,
+const isGlassActive = computed(
+  () =>
+    backgroundImage.value.show &&
+    backgroundImage.value.url &&
+    backgroundImage.value.glassEffect.enable,
 )
 </script>
 <template>

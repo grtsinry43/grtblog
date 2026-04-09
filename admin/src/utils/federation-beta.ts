@@ -3,7 +3,8 @@ import type { RouteLocationNormalized } from 'vue-router'
 type FederationBetaConfirmHandler = () => Promise<boolean>
 
 const FEDERATION_BETA_TITLE = '联合功能 Beta 说明'
-const FEDERATION_BETA_CONTENT = 'Blog Federation 与 ActivityPub 兼容目前仍处于 Beta 阶段。当前版本已开放体验，但在稳定性、兼容性与交互细节上仍会持续改进与修复，预计在 2.1.0 版本趋于稳定。'
+const FEDERATION_BETA_CONTENT =
+  'Blog Federation 与 ActivityPub 兼容目前仍处于 Beta 阶段。当前版本已开放体验，但在稳定性、兼容性与交互细节上仍会持续改进与修复，预计在 2.1.0 版本趋于稳定。'
 
 let federationBetaConfirmHandler: FederationBetaConfirmHandler | null = null
 
@@ -14,22 +15,24 @@ export function isFederationBetaRoute(to: RouteLocationNormalized) {
     return true
   }
 
-  return typeof to.name === 'string' && [
-    'unionManagement',
-    'federationInstances',
-    'federationOutbound',
-    'activityPubOutbox',
-    'federationReviews',
-    'federationDebug',
-    'unionSettingsLegacy',
-    'activityPubSettingsLegacy',
-  ].includes(to.name)
+  return (
+    typeof to.name === 'string' &&
+    [
+      'unionManagement',
+      'federationInstances',
+      'federationOutbound',
+      'activityPubOutbox',
+      'federationReviews',
+      'federationDebug',
+      'unionSettingsLegacy',
+      'activityPubSettingsLegacy',
+    ].includes(to.name)
+  )
 }
 
 export function registerFederationBetaConfirmHandler(handler: FederationBetaConfirmHandler | null) {
   federationBetaConfirmHandler = handler
 }
-
 
 export function hasAcknowledgedFederationBeta() {
   if (typeof window === 'undefined') {

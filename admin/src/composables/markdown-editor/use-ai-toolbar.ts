@@ -20,9 +20,10 @@ export function computeLineDiff(oldText: string, newText: string): DiffLine[] {
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i]![j] = oldLines[i - 1] === newLines[j - 1]
-        ? dp[i - 1]![j - 1]! + 1
-        : Math.max(dp[i - 1]![j]!, dp[i]![j - 1]!)
+      dp[i]![j] =
+        oldLines[i - 1] === newLines[j - 1]
+          ? dp[i - 1]![j - 1]! + 1
+          : Math.max(dp[i - 1]![j]!, dp[i]![j - 1]!)
     }
   }
 
@@ -136,5 +137,18 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
     originalContent.value = ''
   }
 
-  return { visible, instruction, loading, resultContent, showResult, originalContent, trackSelection, open, execute, accept, reject, close }
+  return {
+    visible,
+    instruction,
+    loading,
+    resultContent,
+    showResult,
+    originalContent,
+    trackSelection,
+    open,
+    execute,
+    accept,
+    reject,
+    close,
+  }
 }

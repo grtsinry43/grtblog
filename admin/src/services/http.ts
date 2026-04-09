@@ -26,7 +26,10 @@ export class ApiError extends Error {
   status?: number
   meta?: ApiMeta
 
-  constructor(message: string, options: { code?: number; bizErr?: string; status?: number; meta?: ApiMeta } = {}) {
+  constructor(
+    message: string,
+    options: { code?: number; bizErr?: string; status?: number; meta?: ApiMeta } = {},
+  ) {
     super(message)
     this.name = 'ApiError'
     this.code = options.code

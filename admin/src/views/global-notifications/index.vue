@@ -13,6 +13,7 @@ import {
   useMessage,
 } from 'naive-ui'
 import { h, ref, computed } from 'vue'
+
 import { FormModal, ScrollContainer } from '@/components'
 import { useTable } from '@/composables/table/use-table'
 import {
@@ -21,9 +22,10 @@ import {
   updateGlobalNotification,
   deleteGlobalNotification,
 } from '@/services/global-notifications'
-import type { DataTableColumns } from 'naive-ui'
-import type { GlobalNotificationItem } from '@/services/global-notifications'
 import { formatDate } from '@/utils/format'
+
+import type { GlobalNotificationItem } from '@/services/global-notifications'
+import type { DataTableColumns } from 'naive-ui'
 
 defineOptions({
   name: 'GlobalNotificationList',
@@ -32,12 +34,7 @@ defineOptions({
 const message = useMessage()
 
 // Table Logic
-const {
-  loading,
-  data: tableData,
-  pagination,
-  refresh,
-} = useTable(listGlobalNotifications)
+const { loading, data: tableData, pagination, refresh } = useTable(listGlobalNotifications)
 
 const columns = computed<DataTableColumns<GlobalNotificationItem>>(() => [
   {
@@ -193,14 +190,17 @@ async function handleDelete(row: GlobalNotificationItem) {
     // Error handling
   }
 }
-
 </script>
 
 <template>
   <ScrollContainer wrapper-class="p-4">
     <NCard title="全站通知管理">
       <template #header-extra>
-        <NButton type="primary" @click="openCreate">新建通知</NButton>
+        <NButton
+          type="primary"
+          @click="openCreate"
+          >新建通知</NButton
+        >
       </template>
 
       <NDataTable
@@ -221,18 +221,35 @@ async function handleDelete(row: GlobalNotificationItem) {
       :label-width="100"
       @confirm="handleSave"
     >
-      <NFormItem label="内容" required>
+      <NFormItem
+        label="内容"
+        required
+      >
         <NInput
           v-model:value="formParams.content"
           type="textarea"
           placeholder="请输入通知内容"
         />
       </NFormItem>
-      <NFormItem label="开始时间" required>
-        <NDatePicker v-model:value="formParams.publishAt" type="datetime" style="width: 100%" />
+      <NFormItem
+        label="开始时间"
+        required
+      >
+        <NDatePicker
+          v-model:value="formParams.publishAt"
+          type="datetime"
+          style="width: 100%"
+        />
       </NFormItem>
-      <NFormItem label="结束时间" required>
-        <NDatePicker v-model:value="formParams.expireAt" type="datetime" style="width: 100%" />
+      <NFormItem
+        label="结束时间"
+        required
+      >
+        <NDatePicker
+          v-model:value="formParams.expireAt"
+          type="datetime"
+          style="width: 100%"
+        />
       </NFormItem>
       <NFormItem>
         <template #label>允许&ldquo;不再提示&rdquo;</template>

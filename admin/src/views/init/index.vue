@@ -28,10 +28,10 @@ import { bootstrapObservabilityPages } from '@/services/observability'
 import { completeAllUpgradeGuides } from '@/services/system'
 import { updateWebsiteInfo } from '@/services/website-info'
 import { useUserStore, usePreferencesStore } from '@/stores'
+import ThemeColorPopover from '@/views/sign-in/components/ThemeColorPopover.vue'
 import { applyEnabledFeatures } from '@/views/upgrade-guide/apply-features'
 import FeatureToggleList from '@/views/upgrade-guide/FeatureToggleList.vue'
 import { getAllGuides } from '@/views/upgrade-guide/registry'
-import ThemeColorPopover from '@/views/sign-in/components/ThemeColorPopover.vue'
 
 import type { FormItemRule } from 'naive-ui'
 
@@ -394,10 +394,22 @@ onMounted(() => {
                 </div>
 
                 <NH2 class="m-0 text-2xl font-bold tracking-tight">
-                  {{ currentStep === 1 ? '创建管理员' : currentStep === 2 ? '站点基本信息' : '新功能配置' }}
+                  {{
+                    currentStep === 1
+                      ? '创建管理员'
+                      : currentStep === 2
+                        ? '站点基本信息'
+                        : '新功能配置'
+                  }}
                 </NH2>
                 <p class="mt-2 text-[13px] leading-relaxed text-neutral-500">
-                  {{ currentStep === 1 ? '请设置您的超级管理员账户。' : currentStep === 2 ? '完善站点的基础元数据。' : '选择要启用的新功能，也可以稍后在设置中配置。' }}
+                  {{
+                    currentStep === 1
+                      ? '请设置您的超级管理员账户。'
+                      : currentStep === 2
+                        ? '完善站点的基础元数据。'
+                        : '选择要启用的新功能，也可以稍后在设置中配置。'
+                  }}
                 </p>
               </div>
 
@@ -631,8 +643,7 @@ onMounted(() => {
                 size="large"
                 bordered
               >
-                <div class="mb-4 flex items-center justify-between">
-                </div>
+                <div class="mb-4 flex items-center justify-between"></div>
                 <h3 class="text-base font-semibold text-neutral-800 dark:text-neutral-100">
                   就要完成了！
                 </h3>

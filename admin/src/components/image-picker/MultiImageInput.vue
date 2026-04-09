@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { NButton, NImage, NInput, NInputGroup } from 'naive-ui'
 import { computed, ref } from 'vue'
+
 import ImagePickerModal from './ImagePickerModal.vue'
 
 const props = defineProps<{
@@ -72,7 +73,7 @@ function handleRemove(index: number) {
           class="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
           @click="handleRemove(index)"
         >
-          <template #icon><div class="iconify ph--x text-xs" /></template>
+          <template #icon><div class="iconify text-xs ph--x" /></template>
         </NButton>
       </div>
     </div>

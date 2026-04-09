@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { h, ref } from 'vue'
-import { NDataTable, NButton, NTag, NInput, NCard, NSelect, NPagination } from 'naive-ui'
-import type { DataTableColumns } from 'naive-ui'
-import { listAITaskLogs } from '@/services/ai'
-import type { AITaskLog } from '@/services/ai'
 import { useQuery } from '@tanstack/vue-query'
-import DetailDrawer from './DetailDrawer.vue'
+import { NDataTable, NButton, NTag, NInput, NCard, NSelect, NPagination } from 'naive-ui'
+import { h, ref } from 'vue'
+
 import { ScrollContainer } from '@/components'
+import { listAITaskLogs } from '@/services/ai'
+
+import DetailDrawer from './DetailDrawer.vue'
+
+import type { AITaskLog } from '@/services/ai'
+import type { DataTableColumns } from 'naive-ui'
 
 const page = ref(1)
 const pageSize = ref(20)
@@ -29,41 +32,61 @@ const { data, isPending } = useQuery({
 
 function statusTagType(status: string) {
   switch (status) {
-    case 'completed': return 'success'
-    case 'failed': return 'error'
-    case 'interrupted': return 'warning'
-    case 'running': return 'warning'
-    case 'pending': return 'info'
-    default: return 'default'
+    case 'completed':
+      return 'success'
+    case 'failed':
+      return 'error'
+    case 'interrupted':
+      return 'warning'
+    case 'running':
+      return 'warning'
+    case 'pending':
+      return 'info'
+    default:
+      return 'default'
   }
 }
 
 function statusLabel(status: string) {
   switch (status) {
-    case 'pending': return '等待中'
-    case 'running': return '运行中'
-    case 'completed': return '已完成'
-    case 'failed': return '失败'
-    case 'interrupted': return '已中断'
-    default: return status
+    case 'pending':
+      return '等待中'
+    case 'running':
+      return '运行中'
+    case 'completed':
+      return '已完成'
+    case 'failed':
+      return '失败'
+    case 'interrupted':
+      return '已中断'
+    default:
+      return status
   }
 }
 
 function taskTypeLabel(type_: string) {
   switch (type_) {
-    case 'comment_moderation': return '评论审核'
-    case 'title_generation': return '标题生成'
-    case 'content_rewrite': return '内容改写'
-    case 'summary_generation': return '摘要生成'
-    default: return type_
+    case 'comment_moderation':
+      return '评论审核'
+    case 'title_generation':
+      return '标题生成'
+    case 'content_rewrite':
+      return '内容改写'
+    case 'summary_generation':
+      return '摘要生成'
+    default:
+      return type_
   }
 }
 
 function triggerLabel(trigger: string) {
   switch (trigger) {
-    case 'manual': return '手动'
-    case 'auto': return '自动'
-    default: return trigger
+    case 'manual':
+      return '手动'
+    case 'auto':
+      return '自动'
+    default:
+      return trigger
   }
 }
 
@@ -79,7 +102,11 @@ const columns: DataTableColumns<AITaskLog> = [
     key: 'taskType',
     width: 120,
     render(row) {
-      return h(NTag, { type: 'info', bordered: false, size: 'small' }, { default: () => taskTypeLabel(row.taskType) })
+      return h(
+        NTag,
+        { type: 'info', bordered: false, size: 'small' },
+        { default: () => taskTypeLabel(row.taskType) },
+      )
     },
   },
   {
@@ -93,7 +120,11 @@ const columns: DataTableColumns<AITaskLog> = [
     key: 'status',
     width: 90,
     render(row) {
-      return h(NTag, { type: statusTagType(row.status), bordered: false, size: 'small' }, { default: () => statusLabel(row.status) })
+      return h(
+        NTag,
+        { type: statusTagType(row.status), bordered: false, size: 'small' },
+        { default: () => statusLabel(row.status) },
+      )
     },
   },
   {
@@ -107,11 +138,15 @@ const columns: DataTableColumns<AITaskLog> = [
     key: 'triggerSource',
     width: 90,
     render(row) {
-      return h(NTag, {
-        type: row.triggerSource === 'auto' ? 'warning' : 'default',
-        bordered: false,
-        size: 'small',
-      }, { default: () => triggerLabel(row.triggerSource) })
+      return h(
+        NTag,
+        {
+          type: row.triggerSource === 'auto' ? 'warning' : 'default',
+          bordered: false,
+          size: 'small',
+        },
+        { default: () => triggerLabel(row.triggerSource) },
+      )
     },
   },
   {
@@ -190,7 +225,10 @@ const statusOptions = [
       </div>
     </NCard>
 
-    <NCard :bordered="false" content-style="padding: 0;">
+    <NCard
+      :bordered="false"
+      content-style="padding: 0;"
+    >
       <NDataTable
         remote
         :columns="columns"
@@ -218,6 +256,9 @@ const statusOptions = [
       </div>
     </NCard>
 
-    <DetailDrawer v-model:show="showDrawer" :task-log="currentLog" />
+    <DetailDrawer
+      v-model:show="showDrawer"
+      :task-log="currentLog"
+    />
   </ScrollContainer>
 </template>

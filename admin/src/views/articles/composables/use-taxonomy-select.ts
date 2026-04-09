@@ -5,6 +5,13 @@ import { listCategories, listTags, createTag, createCategory } from '@/services/
 import type { ArticleTag } from '@/services/articles'
 import type { SelectOption, useMessage } from 'naive-ui'
 
+export interface NewCategoryModalState {
+  show: boolean
+  name: string
+  slug: string
+  loading: boolean
+}
+
 export function useTaxonomySelect(
   formTagIds: Ref<number[]>,
   formCategoryId: Ref<number | null>,
@@ -81,7 +88,12 @@ export function useTaxonomySelect(
   }
 
   // 5. 新建分类逻辑
-  const newCatModal = reactive({ show: false, name: '', slug: '', loading: false })
+  const newCatModal = reactive<NewCategoryModalState>({
+    show: false,
+    name: '',
+    slug: '',
+    loading: false,
+  })
 
   async function createNewCategory() {
     if (!newCatModal.name || !newCatModal.slug) return message.error('请填写完整')

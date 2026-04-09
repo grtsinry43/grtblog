@@ -24,7 +24,11 @@ const columns: DataTableColumns<EmailTemplate> = [
       h('span', { class: 'inline-flex items-center gap-1.5' }, [
         row.name,
         row.isInternal
-          ? h(NTag, { size: 'tiny', type: 'default', bordered: false, round: true }, { default: () => '内置' })
+          ? h(
+              NTag,
+              { size: 'tiny', type: 'default', bordered: false, round: true },
+              { default: () => '内置' },
+            )
           : null,
       ]),
   },
@@ -32,7 +36,8 @@ const columns: DataTableColumns<EmailTemplate> = [
     title: '编码',
     key: 'code',
     width: 150,
-    render: (row) => h(NTag, { type: 'info', size: 'small', bordered: false }, { default: () => row.code }),
+    render: (row) =>
+      h(NTag, { type: 'info', size: 'small', bordered: false }, { default: () => row.code }),
   },
   {
     title: '事件',

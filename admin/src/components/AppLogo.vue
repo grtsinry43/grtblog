@@ -14,6 +14,9 @@ const faviconUrl = computed(() => getCachedFavicon())
       alt="Site Logo"
       class="size-full rounded object-contain"
     />
-    <div v-else class="size-full rounded bg-primary/10"></div>
+    <div
+      v-else
+      class="size-full rounded bg-primary/10"
+    ></div>
   </div>
 </template>

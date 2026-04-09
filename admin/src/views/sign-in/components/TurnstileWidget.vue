@@ -19,8 +19,12 @@ const siteKeyRef = toRef(props, 'siteKey')
 const { token, error, expired, render } = useTurnstile(containerRef, siteKeyRef)
 
 watch(token, (v) => emit('update:token', v))
-watch(error, (v) => { if (v) emit('error', v) })
-watch(expired, (v) => { if (v) emit('expired') })
+watch(error, (v) => {
+  if (v) emit('error', v)
+})
+watch(expired, (v) => {
+  if (v) emit('expired')
+})
 
 onMounted(() => {
   if (props.siteKey) {
@@ -34,8 +38,15 @@ watch(siteKeyRef, (key) => {
 </script>
 
 <template>
-  <div v-if="siteKey" ref="containerRef" class="turnstile-container" />
-  <div v-else class="text-sm text-neutral-400">
+  <div
+    v-if="siteKey"
+    ref="containerRef"
+    class="turnstile-container"
+  />
+  <div
+    v-else
+    class="text-sm text-neutral-400"
+  >
     Turnstile 未配置
   </div>
 </template>

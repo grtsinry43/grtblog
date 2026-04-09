@@ -2,6 +2,7 @@ import { NFormItem, NInput, NInputNumber, NSelect, NSwitch, NTag } from 'naive-u
 import { defineComponent, type PropType } from 'vue'
 
 import ImageInput from '@/components/image-picker/ImageInput.vue'
+
 import type { SysConfigItem } from '@/services/sysconfig'
 
 export default defineComponent({
@@ -33,7 +34,14 @@ export default defineComponent({
               敏感
             </NTag>
           )}
-           <NTag size="small" type="default" bordered={false} class="scale-90 opacity-50">{item.valueType}</NTag>
+          <NTag
+            size='small'
+            type='default'
+            bordered={false}
+            class='scale-90 opacity-50'
+          >
+            {item.valueType}
+          </NTag>
         </div>
       )
 
@@ -84,7 +92,9 @@ export default defineComponent({
             control = (
               <ImageInput
                 value={valueMap[item.key] || null}
-                onUpdate:value={(v: string | null) => { valueMap[item.key] = v ?? '' }}
+                onUpdate:value={(v: string | null) => {
+                  valueMap[item.key] = v ?? ''
+                }}
               />
             )
           } else if (metaInputType === 'textarea') {

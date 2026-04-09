@@ -1,13 +1,4 @@
-import {
-  NButton,
-  NCard,
-  NDataTable,
-  NInput,
-  NPagination,
-  NSelect,
-  NTag,
-  NTooltip,
-} from 'naive-ui'
+import { NButton, NCard, NDataTable, NInput, NPagination, NSelect, NTag, NTooltip } from 'naive-ui'
 import { defineComponent, reactive } from 'vue'
 
 import { ScrollContainer } from '@/components'
@@ -40,25 +31,23 @@ export default defineComponent({
         key: 'target',
         minWidth: 280,
         render: (row) => (
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <NTag size="small" bordered={false} type="success">
+          <div class='min-w-0'>
+            <div class='flex items-center gap-2'>
+              <NTag
+                size='small'
+                bordered={false}
+                type='success'
+              >
                 {{ default: () => '友链' }}
               </NTag>
-              <span class="text-xs text-neutral-400">#{row.friendLinkId || row.instanceId || '-'}</span>
+              <span class='text-xs text-neutral-400'>
+                #{row.friendLinkId || row.instanceId || '-'}
+              </span>
             </div>
-            <NTooltip placement="top-start">
+            <NTooltip placement='top-start'>
               {{
-                trigger: () => (
-                  <div class="truncate text-sm text-neutral-600">
-                    {row.targetUrl}
-                  </div>
-                ),
-                default: () => (
-                  <div class="max-w-[520px] break-all">
-                    {row.targetUrl}
-                  </div>
-                ),
+                trigger: () => <div class='truncate text-sm text-neutral-600'>{row.targetUrl}</div>,
+                default: () => <div class='max-w-[520px] break-all'>{row.targetUrl}</div>,
               }}
             </NTooltip>
           </div>
@@ -68,7 +57,7 @@ export default defineComponent({
         title: '同步方式',
         key: 'syncMethod',
         width: 100,
-        render: (row) => <NTag size="small">{row.syncMethod}</NTag>,
+        render: (row) => <NTag size='small'>{row.syncMethod}</NTag>,
       },
       {
         title: '状态',
@@ -81,7 +70,14 @@ export default defineComponent({
             success: 'success',
             failed: 'error',
           }
-          return <NTag type={typeMap[row.status] || 'default'} size="small">{row.status}</NTag>
+          return (
+            <NTag
+              type={typeMap[row.status] || 'default'}
+              size='small'
+            >
+              {row.status}
+            </NTag>
+          )
         },
       },
       {
@@ -94,25 +90,20 @@ export default defineComponent({
         title: '耗时',
         key: 'durationMs',
         width: 90,
-        render: (row) => row.durationMs != null ? `${row.durationMs}ms` : '-',
+        render: (row) => (row.durationMs != null ? `${row.durationMs}ms` : '-'),
       },
       {
         title: '错误信息',
         key: 'errorMessage',
         minWidth: 220,
         render: (row) => {
-          if (!row.errorMessage)
-            return '-'
+          if (!row.errorMessage) return '-'
           return (
-            <NTooltip placement="top-start">
+            <NTooltip placement='top-start'>
               {{
-                trigger: () => (
-                  <div class="truncate text-sm text-red-500">
-                    {row.errorMessage}
-                  </div>
-                ),
+                trigger: () => <div class='truncate text-sm text-red-500'>{row.errorMessage}</div>,
                 default: () => (
-                  <div class="max-w-[520px] whitespace-pre-wrap break-all text-red-500">
+                  <div class='max-w-[520px] break-all whitespace-pre-wrap text-red-500'>
                     {row.errorMessage}
                   </div>
                 ),
@@ -129,12 +120,15 @@ export default defineComponent({
     ]
 
     return () => (
-      <ScrollContainer wrapper-class="p-4">
-        <NCard title="友链同步任务" class="h-full">
-          <div class="mb-4 flex gap-2">
+      <ScrollContainer wrapper-class='p-4'>
+        <NCard
+          title='友链同步任务'
+          class='h-full'
+        >
+          <div class='mb-4 flex gap-2'>
             <NSelect
               value={syncJobsFilter.status}
-              placeholder="状态"
+              placeholder='状态'
               clearable
               options={[
                 { label: '排队中 (Queued)', value: 'queued' },
@@ -142,7 +136,7 @@ export default defineComponent({
                 { label: '成功 (Success)', value: 'success' },
                 { label: '失败 (Failed)', value: 'failed' },
               ]}
-              class="w-44"
+              class='w-44'
               onUpdateValue={(v) => {
                 syncJobsFilter.status = v
                 refreshSyncJobs()
@@ -150,12 +144,10 @@ export default defineComponent({
             />
             <NSelect
               value={syncJobsFilter.targetType}
-              placeholder="目标类型"
+              placeholder='目标类型'
               clearable
-              options={[
-                { label: '友链', value: 'friend_link' },
-              ]}
-              class="w-44"
+              options={[{ label: '友链', value: 'friend_link' }]}
+              class='w-44'
               onUpdateValue={(v) => {
                 syncJobsFilter.targetType = v
                 refreshSyncJobs()
@@ -163,14 +155,14 @@ export default defineComponent({
             />
             <NSelect
               value={syncJobsFilter.syncMethod}
-              placeholder="同步方式"
+              placeholder='同步方式'
               clearable
               options={[
                 { label: 'Timeline', value: 'timeline' },
                 { label: 'RSS', value: 'rss' },
                 { label: 'RSS Fallback', value: 'rss_fallback' },
               ]}
-              class="w-40"
+              class='w-40'
               onUpdateValue={(v) => {
                 syncJobsFilter.syncMethod = v
                 refreshSyncJobs()
@@ -178,16 +170,18 @@ export default defineComponent({
             />
             <NInput
               value={syncJobsFilter.keyword}
-              placeholder="搜索目标/错误信息"
-              class="max-w-xs"
+              placeholder='搜索目标/错误信息'
+              class='max-w-xs'
               clearable
-              onUpdateValue={(v) => syncJobsFilter.keyword = v}
+              onUpdateValue={(v) => (syncJobsFilter.keyword = v)}
               onKeydown={(e) => {
-                if (e.key === 'Enter')
-                  refreshSyncJobs()
+                if (e.key === 'Enter') refreshSyncJobs()
               }}
             />
-            <NButton secondary onClick={refreshSyncJobs}>
+            <NButton
+              secondary
+              onClick={refreshSyncJobs}
+            >
               刷新
             </NButton>
           </div>
@@ -199,7 +193,7 @@ export default defineComponent({
             row-key={(row: FriendLinkSyncJob) => row.id}
             scrollX={1100}
           />
-          <div class="mt-4 flex justify-end">
+          <div class='mt-4 flex justify-end'>
             <NPagination
               page={syncJobsPagination.page}
               page-size={syncJobsPagination.pageSize}

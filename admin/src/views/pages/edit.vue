@@ -17,8 +17,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 // Components
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
-import { generateSummaryStream } from '@/services/ai'
-import { listWebsiteInfo } from '@/services/website-info'
+import AiSummaryAssist from '@/views/shared/content-editor/components/AiSummaryAssist.vue'
+import { useAiSummaryGeneration } from '@/views/shared/content-editor/composables/use-ai-tools'
+import { usePreviewFrame } from '@/views/shared/content-editor/composables/use-preview-frame'
 
 // Composables
 import { usePageForm } from './composables/use-page-form'
@@ -32,83 +33,42 @@ const message = useMessage()
 // 1. Initialize form logic
 const { form, saving, fetch, save } = usePageForm()
 
-// AI 摘要生成
-const aiSummaryLoading = ref(false)
-const aiSummaryResult = ref('')
-const aiSummaryDone = ref(false)
-
-async function handleAISummary() {
-  if (!form.content?.trim()) {
-    message.warning('请先输入内容')
-    return
-  }
-  aiSummaryLoading.value = true
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-  try {
-    await generateSummaryStream(form.content, (chunk) => {
-      aiSummaryResult.value += chunk
-    })
-    aiSummaryDone.value = true
-  } catch (e: unknown) {
-    message.error(e instanceof Error ? e.message : 'AI 摘要生成失败')
-    aiSummaryResult.value = ''
-  } finally {
-    aiSummaryLoading.value = false
-  }
-}
-
-function adoptAISummary() {
-  form.aiSummary = aiSummaryResult.value
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-  message.success('已采纳 AI 摘要')
-}
-
-function dismissAISummary() {
-  aiSummaryResult.value = ''
-  aiSummaryDone.value = false
-}
+const {
+  loading: aiSummaryLoading,
+  result: aiSummaryResult,
+  done: aiSummaryDone,
+  generate: handleAISummary,
+  adopt: adoptAISummary,
+  dismiss: dismissAISummary,
+} = useAiSummaryGeneration({
+  getContent: () => form.content,
+  adoptSummary: (summary) => {
+    form.aiSummary = summary
+  },
+  message,
+})
 
 // 2. View state management
 const showMeta = ref(false)
-const showPreview = ref(false)
-const previewMode = ref<'markdown' | 'page'>('markdown')
-const previewFrameRef = ref<HTMLIFrameElement | null>(null)
-const previewReady = ref(false)
-const publicUrl = ref('')
 const loadedPage = ref<PageDetail | null>(null)
 
-const PREVIEW_READY_TYPE = 'grtblog-preview:ready'
-const PREVIEW_PAGE_TYPE = 'grtblog-preview:page'
-
-const previewUrl = computed(() => {
-  const base = normalizePublicUrl(publicUrl.value)
-  return base ? `${base}/internal/preview/page` : ''
+const {
+  showPreview,
+  previewMode,
+  previewFrameRef,
+  previewUrl,
+  fetchWebsiteInfo,
+  schedulePreviewPayload,
+  handlePreviewMessage,
+  handlePreviewFrameLoad,
+  resetPreviewReady,
+  cleanup,
+} = usePreviewFrame({
+  previewPath: '/internal/preview/page',
+  readyType: 'grtblog-preview:ready',
+  postType: 'grtblog-preview:page',
+  buildPayload: buildPreviewPayload,
 })
-
-const previewOrigin = computed(() => {
-  if (!previewUrl.value) return '*'
-  try {
-    return new URL(previewUrl.value).origin
-  } catch {
-    return '*'
-  }
-})
-
-function normalizePublicUrl(value: string) {
-  return value.trim().replace(/\/+$/, '')
-}
-
-async function fetchWebsiteInfo() {
-  try {
-    const list = await listWebsiteInfo()
-    const item = list?.find((info) => info.key === 'public_url')
-    publicUrl.value = item?.value?.trim() ?? ''
-  } catch (err) {
-    console.error(err)
-  }
-}
 
 function buildPreviewPayload() {
   const nowIso = new Date().toISOString()
@@ -134,43 +94,6 @@ function buildPreviewPayload() {
     updatedAt: nowIso,
   }
 }
-
-function sendPreviewPayload() {
-  if (!showPreview.value || previewMode.value !== 'page') return
-  if (!previewUrl.value || !previewReady.value) return
-  const frame = previewFrameRef.value
-  if (!frame?.contentWindow) return
-  frame.contentWindow.postMessage(
-    { type: PREVIEW_PAGE_TYPE, payload: buildPreviewPayload() },
-    previewOrigin.value,
-  )
-}
-
-let previewTimer: number | null = null
-function schedulePreviewPayload() {
-  if (!showPreview.value || previewMode.value !== 'page') return
-  if (!previewUrl.value) return
-  if (previewTimer) window.clearTimeout(previewTimer)
-  previewTimer = window.setTimeout(() => {
-    previewTimer = null
-    sendPreviewPayload()
-  }, 200)
-}
-
-function handlePreviewMessage(event: MessageEvent) {
-  const frame = previewFrameRef.value
-  if (!frame?.contentWindow || event.source !== frame.contentWindow) return
-  const data = event.data as { type?: string } | null
-  if (!data || data.type !== PREVIEW_READY_TYPE) return
-  previewReady.value = true
-  sendPreviewPayload()
-}
-
-function handlePreviewFrameLoad() {
-  previewReady.value = true
-  sendPreviewPayload()
-}
-
 // 3. Lifecycle
 onMounted(() => {
   window.addEventListener('message', handlePreviewMessage)
@@ -181,7 +104,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('message', handlePreviewMessage)
-  if (previewTimer) window.clearTimeout(previewTimer)
+  cleanup()
 })
 
 watch(
@@ -204,7 +127,7 @@ watch([showPreview, previewMode, previewUrl], () => {
 })
 
 watch(previewUrl, () => {
-  previewReady.value = false
+  resetPreviewReady()
 })
 </script>
 
@@ -382,59 +305,18 @@ watch(previewUrl, () => {
                   :autosize="{ minRows: 2, maxRows: 4 }"
                 />
               </NFormItem>
-              <NFormItem
-                :show-feedback="false"
-              >
-                <template #label>
-                  <span>AI 摘要</span>
-                  <span class="ml-1 text-xs opacity-50">用于正文前的总结导读</span>
-                </template>
-                <NInput
-                  v-model:value="form.aiSummary"
-                  type="textarea"
-                  placeholder="AI 生成的内容导读，展示在正文之前..."
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                />
-              </NFormItem>
-              <div class="flex flex-col gap-2">
-                <NButton
-                  size="small"
-                  :loading="aiSummaryLoading"
-                  :disabled="!form.content?.trim() || aiSummaryLoading"
-                  @click="handleAISummary"
-                >
-                  <template #icon><div class="iconify ph--sparkle" /></template>
-                  AI 生成导读摘要
-                </NButton>
-                <div
-                  v-if="aiSummaryLoading || aiSummaryResult"
-                  class="rounded-lg border border-current/10 p-3 text-sm leading-relaxed"
-                >
-                  <span>{{ aiSummaryResult }}</span>
-                  <span
-                    v-if="aiSummaryLoading"
-                    class="inline-block w-1.5 animate-pulse bg-current"
-                    >&nbsp;</span
-                  >
-                </div>
-                <div
-                  v-if="aiSummaryDone"
-                  class="flex justify-end gap-2"
-                >
-                  <NButton
-                    size="small"
-                    quaternary
-                    @click="dismissAISummary"
-                    >放弃</NButton
-                  >
-                  <NButton
-                    size="small"
-                    type="primary"
-                    @click="adoptAISummary"
-                    >采纳</NButton
-                  >
-                </div>
-              </div>
+              <AiSummaryAssist
+                :model-value="form.aiSummary"
+                :loading="aiSummaryLoading"
+                :result="aiSummaryResult"
+                :done="aiSummaryDone"
+                placeholder="AI 生成的内容导读，展示在正文之前..."
+                :disabled="!form.content?.trim()"
+                @update:model-value="form.aiSummary = $event"
+                @generate="handleAISummary"
+                @adopt="adoptAISummary"
+                @dismiss="dismissAISummary"
+              />
             </NForm>
           </div>
 

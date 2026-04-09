@@ -3,9 +3,12 @@ import { NButton, NForm, NFormItem, NGi, NGrid, NInput } from 'naive-ui'
 
 import type { FormInst, FormItemRule } from 'naive-ui'
 
+const form = defineModel<{ nickname: string; email: string; avatar: string }>('form', {
+  required: true,
+})
+
 defineProps<{
   formRef: FormInst | null
-  form: { nickname: string; email: string; avatar: string }
   rules: Record<string, FormItemRule[]>
 }>()
 
@@ -23,15 +26,30 @@ const emit = defineEmits<{
       :rules="rules"
       label-placement="top"
     >
-      <NGrid cols="1 m:2" x-gap="24">
+      <NGrid
+        cols="1 m:2"
+        x-gap="24"
+      >
         <NGi>
-          <NFormItem label="昵称" path="nickname">
-            <NInput v-model:value="form.nickname" placeholder="请输入您的昵称" />
+          <NFormItem
+            label="昵称"
+            path="nickname"
+          >
+            <NInput
+              v-model:value="form.nickname"
+              placeholder="请输入您的昵称"
+            />
           </NFormItem>
         </NGi>
         <NGi>
-          <NFormItem label="电子邮箱" path="email">
-            <NInput v-model:value="form.email" placeholder="请输入电子邮箱" />
+          <NFormItem
+            label="电子邮箱"
+            path="email"
+          >
+            <NInput
+              v-model:value="form.email"
+              placeholder="请输入电子邮箱"
+            />
           </NFormItem>
         </NGi>
       </NGrid>
@@ -44,7 +62,13 @@ const emit = defineEmits<{
         />
       </NFormItem>
       <div class="mt-4">
-        <NButton type="primary" size="large" strong @click="emit('submit')">保存基本信息</NButton>
+        <NButton
+          type="primary"
+          size="large"
+          strong
+          @click="emit('submit')"
+          >保存基本信息</NButton
+        >
       </div>
     </NForm>
   </div>

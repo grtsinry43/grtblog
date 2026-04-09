@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+
 import { toRefsPreferencesStore } from '@/stores'
 import twc from '@/utils/tailwindColor'
 
@@ -45,7 +46,11 @@ function render() {
   })
 }
 
-watch(() => props.outboundByStatus, () => nextTick(render), { deep: true })
+watch(
+  () => props.outboundByStatus,
+  () => nextTick(render),
+  { deep: true },
+)
 watch(isDark, () => nextTick(render))
 
 onMounted(() => {
@@ -60,12 +65,20 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col rounded border border-naive-border bg-naive-card transition-[background-color,border-color]" style="height: 420px">
+  <div
+    class="flex flex-col rounded border border-naive-border bg-naive-card transition-[background-color,border-color]"
+    style="height: 420px"
+  >
     <div class="flex items-center justify-between px-5 pt-4">
-      <span class="text-base font-medium text-neutral-600 dark:text-neutral-300">联邦出站状态分布</span>
+      <span class="text-base font-medium text-neutral-600 dark:text-neutral-300"
+        >联邦出站状态分布</span
+      >
     </div>
     <div class="flex-1 px-4 pt-2 pb-4">
-      <div ref="chartEl" class="h-full w-full" />
+      <div
+        ref="chartEl"
+        class="h-full w-full"
+      />
     </div>
   </div>
 </template>

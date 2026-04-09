@@ -3,9 +3,10 @@ import { reactive, ref, computed, onMounted, toRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useLeaveConfirm } from '@/composables'
-import { createMoment, getMoment, updateMoment } from '@/services/moments'
-import type { ContentExtInfo } from '@/types/ext-info'
 import { useImageExtInfo } from '@/composables/use-image-ext-info'
+import { createMoment, getMoment, updateMoment } from '@/services/moments'
+
+import type { ContentExtInfo } from '@/types/ext-info'
 
 function joinImages(images?: string[]) {
   return (images ?? []).join('\n')

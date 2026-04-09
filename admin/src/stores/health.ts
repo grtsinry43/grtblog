@@ -72,10 +72,7 @@ export const useHealthStore = defineStore('healthStore', () => {
   const networkToastShown = ref(false)
 
   async function runProbes() {
-    const [nginx, renderer] = await Promise.all([
-      probeNginx(),
-      probeRenderer(),
-    ])
+    const [nginx, renderer] = await Promise.all([probeNginx(), probeRenderer()])
 
     if (nginx && renderer) {
       // Both probes succeeded — update state normally and reset toast flag.

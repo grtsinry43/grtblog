@@ -90,22 +90,20 @@ export default defineComponent({
         key: 'cover',
         width: 72,
         render(row) {
-          return row.cover
-            ? (
-              <NImage
-                src={row.cover}
-                width={48}
-                height={48}
-                objectFit="cover"
-                previewDisabled
-                imgProps={{ style: 'border-radius: 6px;' }}
-              />
-            )
-            : (
-              <div class="flex h-12 w-12 items-center justify-center rounded-md bg-current/5">
-                <div class="iconify ph--image text-lg opacity-30" />
-              </div>
-            )
+          return row.cover ? (
+            <NImage
+              src={row.cover}
+              width={48}
+              height={48}
+              objectFit='cover'
+              previewDisabled
+              imgProps={{ style: 'border-radius: 6px;' }}
+            />
+          ) : (
+            <div class='flex h-12 w-12 items-center justify-center rounded-md bg-current/5'>
+              <div class='iconify text-lg opacity-30 ph--image' />
+            </div>
+          )
         },
       },
       {
@@ -115,7 +113,11 @@ export default defineComponent({
         ellipsis: { tooltip: true },
         render(row) {
           return (
-            <NButton text type="primary" onClick={() => handleEdit(row.id)}>
+            <NButton
+              text
+              type='primary'
+              onClick={() => handleEdit(row.id)}
+            >
               {row.title}
             </NButton>
           )
@@ -128,7 +130,11 @@ export default defineComponent({
         align: 'center',
         render(row) {
           return (
-            <NTag size="small" round bordered={false}>
+            <NTag
+              size='small'
+              round
+              bordered={false}
+            >
               {row.photoCount}
             </NTag>
           )
@@ -141,7 +147,11 @@ export default defineComponent({
         align: 'center',
         render(row) {
           return (
-            <NTag type={row.isPublished ? 'success' : 'default'} size="small" bordered={false}>
+            <NTag
+              type={row.isPublished ? 'success' : 'default'}
+              size='small'
+              bordered={false}
+            >
               {row.isPublished ? '已发布' : '草稿'}
             </NTag>
           )
@@ -175,14 +185,26 @@ export default defineComponent({
         align: 'center',
         render(row) {
           return (
-            <NSpace justify="center" size={4}>
-              <NButton text type="primary" size="small" onClick={() => handleEdit(row.id)}>
+            <NSpace
+              justify='center'
+              size={4}
+            >
+              <NButton
+                text
+                type='primary'
+                size='small'
+                onClick={() => handleEdit(row.id)}
+              >
                 编辑
               </NButton>
               <NPopconfirm onPositiveClick={() => handleDelete(row.id)}>
                 {{
                   trigger: () => (
-                    <NButton text type="error" size="small">
+                    <NButton
+                      text
+                      type='error'
+                      size='small'
+                    >
                       删除
                     </NButton>
                   ),
@@ -196,28 +218,46 @@ export default defineComponent({
     ]
 
     return () => (
-      <ScrollContainer wrapperClass="flex flex-col gap-y-4">
+      <ScrollContainer wrapperClass='flex flex-col gap-y-4'>
         {/* 顶部操作栏 */}
         <NCard bordered={false}>
-          <div class="flex items-center justify-between">
-            <div class="text-lg font-medium">相册列表</div>
-            <NSpace align="center" size={12}>
-              <Transition name="fade">
+          <div class='flex items-center justify-between'>
+            <div class='text-lg font-medium'>相册列表</div>
+            <NSpace
+              align='center'
+              size={12}
+            >
+              <Transition name='fade'>
                 {checkedRowKeys.value.length > 0 && (
-                  <NSpace align="center" size={8}>
-                    <NTag type="info" size="small">已选 {checkedRowKeys.value.length} 项</NTag>
+                  <NSpace
+                    align='center'
+                    size={8}
+                  >
+                    <NTag
+                      type='info'
+                      size='small'
+                    >
+                      已选 {checkedRowKeys.value.length} 项
+                    </NTag>
                     <NDropdown
                       options={batchPublishOptions}
                       onSelect={handleBatchPublishSelect}
                     >
-                      <NButton size="small" secondary>
+                      <NButton
+                        size='small'
+                        secondary
+                      >
                         批量发布
                       </NButton>
                     </NDropdown>
                     <NPopconfirm onPositiveClick={handleBatchDelete}>
                       {{
                         trigger: () => (
-                          <NButton size="small" type="error" secondary>
+                          <NButton
+                            size='small'
+                            type='error'
+                            secondary
+                          >
                             批量删除
                           </NButton>
                         ),
@@ -227,9 +267,12 @@ export default defineComponent({
                   </NSpace>
                 )}
               </Transition>
-              <NButton type="primary" onClick={handleCreate}>
+              <NButton
+                type='primary'
+                onClick={handleCreate}
+              >
                 {{
-                  icon: () => <div class="iconify ph--plus" />,
+                  icon: () => <div class='iconify ph--plus' />,
                   default: () => '新建相册',
                 }}
               </NButton>
@@ -238,7 +281,10 @@ export default defineComponent({
         </NCard>
 
         {/* 表格 */}
-        <NCard bordered={false} contentStyle={{ padding: '0' }}>
+        <NCard
+          bordered={false}
+          contentStyle={{ padding: '0' }}
+        >
           <NDataTable
             columns={columns}
             data={data.value}
@@ -250,7 +296,7 @@ export default defineComponent({
             }}
             scrollX={900}
           />
-          <div class="flex justify-end p-4">
+          <div class='flex justify-end p-4'>
             <NPagination {...pagination} />
           </div>
         </NCard>

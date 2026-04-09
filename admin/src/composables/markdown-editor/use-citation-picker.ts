@@ -1,10 +1,13 @@
 import { reactive, type Ref } from 'vue'
-import type { EditorView } from '@codemirror/view'
+
 import { getFederationInstances, fetchRemotePosts } from '@/services/federation-admin'
+
 import type { FederationInstanceResp, FederationRemotePostResp } from '@/types/federation'
+import type { EditorView } from '@codemirror/view'
 
 /** URL 格式校验：必须是合法域名或 http(s) URL */
-const URL_PATTERN = /^(https?:\/\/)?[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+(\:\d{1,5})?(\/.*)?$/
+const URL_PATTERN =
+  /^(https?:\/\/)?[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+(\:\d{1,5})?(\/.*)?$/
 
 const PAGE_SIZE = 20
 
@@ -51,7 +54,7 @@ export function useCitationPicker(view: Ref<EditorView | undefined>) {
     state.instancesLoading = true
     try {
       const resp = await getFederationInstances({ pageSize: 50 })
-      state.instances = (resp.items ?? []).filter(i => i.status === 'active')
+      state.instances = (resp.items ?? []).filter((i) => i.status === 'active')
     } catch {
       state.instances = []
     } finally {

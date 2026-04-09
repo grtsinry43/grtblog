@@ -12,9 +12,9 @@ import {
   type ComponentEditPayload,
 } from './extensions/component-editor'
 import { customBlockExtension } from './extensions/custom-block'
-import { slashCommandSource } from './extensions/slash-command'
-import './editor.css'
 import { federationHighlightPlugin } from './extensions/federation-highlight'
+import './editor.css'
+import { slashCommandSource } from './extensions/slash-command'
 import { slashHintExtension } from './extensions/slash-hint'
 import { addUpload, removeUpload, uploadStateField } from './use-upload-extensions'
 
@@ -38,11 +38,7 @@ export function useCodeMirror(container: Ref<HTMLElement | undefined>, props: Us
   const readonlyConfig = new Compartment()
 
   const updateCallbacks = new Set<UpdateHook>()
-  const handleImageUpload = (
-    file: File,
-    editor: EditorView,
-    insertPos: number,
-  ) => {
+  const handleImageUpload = (file: File, editor: EditorView, insertPos: number) => {
     if (!props.onUploadImage) return
 
     const uploadId =
@@ -136,9 +132,7 @@ export function useCodeMirror(container: Ref<HTMLElement | undefined>, props: Us
             if (!props.onUploadImage) return
             const files = event.clipboardData?.files
             if (!files || files.length === 0) return
-            const imageFiles = Array.from(files).filter((file) =>
-              file.type.startsWith('image/'),
-            )
+            const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
             if (!imageFiles.length) return
             event.preventDefault()
             const insertPos = editor.state.selection.main.head
@@ -148,9 +142,7 @@ export function useCodeMirror(container: Ref<HTMLElement | undefined>, props: Us
             if (!props.onUploadImage) return
             const files = event.dataTransfer?.files
             if (!files || files.length === 0) return
-            const imageFiles = Array.from(files).filter((file) =>
-              file.type.startsWith('image/'),
-            )
+            const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
             if (!imageFiles.length) return
             event.preventDefault()
             const pos = editor.posAtCoords({ x: event.clientX, y: event.clientY })

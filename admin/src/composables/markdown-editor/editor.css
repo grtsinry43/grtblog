@@ -22,7 +22,14 @@
   padding: 0;
   margin: 0;
   max-height: 480px !important;
-  font-family: "Google Sans Flex", "Noto Sans SC Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-family:
+    'Google Sans Flex',
+    'Noto Sans SC Variable',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif !important;
 }
 
 .cm-editor {
@@ -36,7 +43,14 @@
 .cm-scroller,
 .cm-content,
 .cm-line {
-  font-family: "Google Sans Flex", "Noto Sans SC Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-family:
+    'Google Sans Flex',
+    'Noto Sans SC Variable',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif !important;
 }
 
 .cm-content {
@@ -54,7 +68,7 @@
 
 .cm-inline-code,
 .cm-codeblock {
-  font-family: "Fira Code", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: 'Fira Code', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   font-size: 0.95em;
 }
 
@@ -156,7 +170,7 @@
 }
 
 .cm-line.cm-custom-block::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   right: 0;

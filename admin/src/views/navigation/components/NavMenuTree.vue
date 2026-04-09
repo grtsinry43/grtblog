@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+// 引入 Ionicons5 图标
+import {
+  ReorderTwo,
+  CreateOutline,
+  Add,
+  TrashBinOutline,
+  FolderOpenOutline,
+  DocumentTextOutline,
+} from '@vicons/ionicons5'
 import {
   NButton,
   NTag,
@@ -11,18 +19,11 @@ import {
   NButtonGroup,
   NIcon,
 } from 'naive-ui'
+import { ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
-// 引入 Ionicons5 图标
-import {
-  ReorderTwo,
-  CreateOutline,
-  Add,
-  TrashBinOutline,
-  FolderOpenOutline,
-  DocumentTextOutline,
-} from '@vicons/ionicons5'
 
 import { normalizeNavMenuIconValue, navMenuIconOptions } from '@/constants/nav-menu-icons'
+
 import type { NavMenuItem } from '@/services/navigation'
 
 defineOptions({
@@ -130,7 +131,10 @@ const handleChildUpdate = (element: NavMenuItem, newChildren: NavMenuItem[]) => 
               <span class="text-sm font-medium">{{ element.name }}</span>
               <span
                 v-if="resolveIconClass(element.icon)"
-                :class="[resolveIconClass(element.icon), 'size-4 text-neutral-500 dark:text-neutral-300']"
+                :class="[
+                  resolveIconClass(element.icon),
+                  'size-4 text-neutral-500 dark:text-neutral-300',
+                ]"
               />
               <NTag
                 v-if="element.icon"

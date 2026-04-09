@@ -25,3 +25,4 @@ exports/
 /telemetry-server/telemetry-server
 
 .claude/
+.codex

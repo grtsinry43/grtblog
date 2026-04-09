@@ -65,7 +65,9 @@ function buildDecorations(view: EditorView) {
       const start = range.from + match.index
       const end = start + match[0].length
       const expr = match[0].slice(2, -2)
-      const decoration = isValidTemplateExpression(expr, validFields) ? templateToken : templateInvalid
+      const decoration = isValidTemplateExpression(expr, validFields)
+        ? templateToken
+        : templateInvalid
       builder.add(start, end, decoration)
     }
   }
@@ -106,7 +108,9 @@ export const templateHighlightExtension = ViewPlugin.fromClass(
 
     update(update: ViewUpdate) {
       // Re-build decorations if doc changed OR if the variables field changed (configuration update)
-      const varsChanged = update.startState.field(templateVariablesField) !== update.state.field(templateVariablesField)
+      const varsChanged =
+        update.startState.field(templateVariablesField) !==
+        update.state.field(templateVariablesField)
       if (update.docChanged || update.viewportChanged || varsChanged) {
         this.decorations = buildDecorations(update.view)
       }

@@ -12,10 +12,12 @@ export function createFederationCitationRegExp(flags = 'g') {
 function normalizeSignalHost(value: string) {
   const trimmed = value.trim()
   if (!trimmed) return ''
-  return trimmed
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/+$/, '')
-    .split('/')[0] || ''
+  return (
+    trimmed
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/+$/, '')
+      .split('/')[0] || ''
+  )
 }
 
 export interface FederationMentionSignal {

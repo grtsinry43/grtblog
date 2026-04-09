@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, h, onMounted, reactive, ref, type VNodeChild } from 'vue'
 import {
   NButton,
   NCard,
@@ -15,6 +14,7 @@ import {
   type TreeSelectOption,
   useMessage,
 } from 'naive-ui'
+import { computed, h, onMounted, reactive, ref, type VNodeChild } from 'vue'
 
 import { ScrollContainer } from '@/components'
 import { navMenuIconOptions, normalizeNavMenuIconValue } from '@/constants/nav-menu-icons'
@@ -82,7 +82,7 @@ const renderIconOptionLabel = (option: SelectOption): VNodeChild => {
   const displayLabel =
     typeof option.label === 'string' || typeof option.label === 'number'
       ? String(option.label)
-      : rawValue ?? ''
+      : (rawValue ?? '')
   if (!rawValue) {
     return displayLabel
   }
@@ -90,14 +90,10 @@ const renderIconOptionLabel = (option: SelectOption): VNodeChild => {
   if (!iconOption) {
     return displayLabel
   }
-  return h(
-    'div',
-    { class: 'flex items-center gap-2' },
-    [
-      h('span', { class: `${iconOption.iconClass} size-4 text-neutral-600 dark:text-neutral-300` }),
-      h('span', iconOption.label),
-    ],
-  )
+  return h('div', { class: 'flex items-center gap-2' }, [
+    h('span', { class: `${iconOption.iconClass} size-4 text-neutral-600 dark:text-neutral-300` }),
+    h('span', iconOption.label),
+  ])
 }
 
 const resetForm = () => {
@@ -208,7 +204,11 @@ const handleDelete = async (item: NavMenuItem) => {
   }
 }
 
-const buildOrderPayload = (items: NavMenuItem[], parentId: number | null = null, acc: NavMenuOrderItem[] = []) => {
+const buildOrderPayload = (
+  items: NavMenuItem[],
+  parentId: number | null = null,
+  acc: NavMenuOrderItem[] = [],
+) => {
   items.forEach((item, index) => {
     acc.push({
       id: item.id,
@@ -302,11 +302,24 @@ onMounted(() => {
             <div class="text-sm text-neutral-600 dark:text-neutral-400">
               导航菜单用于前台侧边栏与移动端导航，支持拖拽调整层级与顺序。
             </div>
-            <NTag size="small" type="info">图标字段使用 lucide-svelte 的图标名称</NTag>
+            <NTag
+              size="small"
+              type="info"
+              >图标字段使用 lucide-svelte 的图标名称</NTag
+            >
           </div>
           <NSpace>
-            <NButton secondary :loading="loading" @click="fetchMenus">刷新</NButton>
-            <NButton type="primary" @click="openCreate()">新增菜单</NButton>
+            <NButton
+              secondary
+              :loading="loading"
+              @click="fetchMenus"
+              >刷新</NButton
+            >
+            <NButton
+              type="primary"
+              @click="openCreate()"
+              >新增菜单</NButton
+            >
             <NButton
               type="success"
               :disabled="!orderDirty"
@@ -326,19 +339,45 @@ onMounted(() => {
           @drag="markDirty"
         />
 
-        <div v-if="orderDirty" class="text-xs text-orange-600 dark:text-orange-400">
+        <div
+          v-if="orderDirty"
+          class="text-xs text-orange-600 dark:text-orange-400"
+        >
           当前排序有改动，请点击“保存排序”同步到服务端。
         </div>
       </div>
     </NCard>
 
-    <NModal v-model:show="modalOpen" preset="card" title="菜单配置" class="w-full max-w-[440px]">
-      <NForm ref="formRef" :model="formState" :rules="formRules" label-placement="left" label-width="90">
-        <NFormItem label="名称" path="name">
-          <NInput v-model:value="formState.name" placeholder="例如：首页" />
+    <NModal
+      v-model:show="modalOpen"
+      preset="card"
+      title="菜单配置"
+      class="w-full max-w-[440px]"
+    >
+      <NForm
+        ref="formRef"
+        :model="formState"
+        :rules="formRules"
+        label-placement="left"
+        label-width="90"
+      >
+        <NFormItem
+          label="名称"
+          path="name"
+        >
+          <NInput
+            v-model:value="formState.name"
+            placeholder="例如：首页"
+          />
         </NFormItem>
-        <NFormItem label="链接" path="url">
-          <NInput v-model:value="formState.url" placeholder="例如：/ 或 https://..." />
+        <NFormItem
+          label="链接"
+          path="url"
+        >
+          <NInput
+            v-model:value="formState.url"
+            placeholder="例如：/ 或 https://..."
+          />
         </NFormItem>
         <NFormItem label="父级菜单">
           <NTreeSelect
@@ -357,7 +396,10 @@ onMounted(() => {
             clearable
             filterable
           />
-          <div v-if="selectedIconOption" class="mt-2 inline-flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+          <div
+            v-if="selectedIconOption"
+            class="mt-2 inline-flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400"
+          >
             <span :class="[selectedIconOption.iconClass, 'size-4']" />
             <span>{{ selectedIconOption.label }}</span>
           </div>
@@ -367,7 +409,11 @@ onMounted(() => {
       <template #footer>
         <div class="flex justify-end gap-3">
           <NButton @click="modalOpen = false">取消</NButton>
-          <NButton type="primary" :loading="formSubmitting" @click="handleSubmit">
+          <NButton
+            type="primary"
+            :loading="formSubmitting"
+            @click="handleSubmit"
+          >
             保存
           </NButton>
         </div>
