@@ -426,6 +426,7 @@ func (h *ArticleHandler) ListSamePeriodMoments(c *fiber.Ctx) error {
 	const limit = 2
 	start := articleItem.CreatedAt.AddDate(0, 0, -windowDays)
 	end := articleItem.CreatedAt.AddDate(0, 0, windowDays)
+	siteTZ := h.apCfgSvc.Timezone(c.Context())
 
 	moments, err := h.contentRepo.ListPublishedMomentsByCreatedAtRange(c.Context(), start, end, limit)
 	if err != nil {
@@ -439,7 +440,7 @@ func (h *ArticleHandler) ListSamePeriodMoments(c *fiber.Ctx) error {
 			Title:     item.Title,
 			ShortURL:  item.ShortURL,
 			Summary:   item.Summary,
-			CreatedAt: item.CreatedAt,
+			CreatedAt: item.CreatedAt.In(siteTZ),
 		}
 		if item.Image != nil {
 			resp.Image = splitImages(item.Image)

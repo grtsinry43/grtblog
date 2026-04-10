@@ -24,9 +24,13 @@ EOF
 
 # Sync client assets to the shared volume so nginx can serve them
 # directly as static files (survives renderer restarts/crashes).
+#
+# Keep previously hashed assets in place during deploys. Old HTML snapshots
+# may still reference the previous build hashes until ISR bootstrap refreshes
+# them, and deleting `_app` first creates a guaranteed 404 window.
 if [ -d /assets ]; then
 	echo "[entrypoint] Syncing client assets..."
-	rm -rf /assets/_app
+	mkdir -p /assets
 	cp -a /app/build/client/. /assets/
 	echo "[entrypoint] Client assets synced."
 fi

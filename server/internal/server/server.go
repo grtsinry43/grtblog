@@ -76,6 +76,8 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	eventBus := infraevent.NewInMemoryBus()
 	sysCfgSvc := sysconfig.NewService(sysCfgRepo, cfg.Turnstile, eventBus)
 	contentRepo := persistence.NewContentRepository(db)
+	albumRepo := persistence.NewAlbumRepository(db)
+	thinkingRepo := persistence.NewThinkingRepository(db)
 	commentRepo := persistence.NewCommentRepository(db)
 	articleSvc := article.NewService(contentRepo, commentRepo, eventBus)
 	errorCollector := telemetry.NewCollector(24 * time.Hour)
@@ -103,10 +105,10 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 				}
 				logRequestError(c, "biz", detail)
 				errorCollector.Record(telemetry.ErrorRecord{
-					Kind:    telemetry.KindBiz,
-					BizCode: ae.Biz.BizErr,
+					Kind:     telemetry.KindBiz,
+					BizCode:  ae.Biz.BizErr,
 					Location: fmt.Sprintf("%s %s", c.Method(), c.Route().Path),
-					Message: ae.Error(),
+					Message:  ae.Error(),
 				})
 				return response.ErrorWithMsg[any](c, ae.Biz, ae.Message)
 			}
@@ -117,10 +119,10 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 				// Only collect server-side errors (5xx); skip 404/405 noise.
 				if fe.Code >= 500 {
 					errorCollector.Record(telemetry.ErrorRecord{
-						Kind:    telemetry.KindHTTP,
-						BizCode: fmt.Sprintf("HTTP_%d", fe.Code),
+						Kind:     telemetry.KindHTTP,
+						BizCode:  fmt.Sprintf("HTTP_%d", fe.Code),
 						Location: fmt.Sprintf("%s %s", c.Method(), c.Route().Path),
-						Message: fe.Message,
+						Message:  fe.Message,
 					})
 				}
 				switch fe.Code {
@@ -144,10 +146,10 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 			logRequestError(c, "unhandled", fmt.Sprintf("err=%v", err))
 			if c.Locals("panicRecorded") == nil {
 				errorCollector.Record(telemetry.ErrorRecord{
-					Kind:    telemetry.KindUnhandled,
-					BizCode: "SERVER_ERROR",
+					Kind:     telemetry.KindUnhandled,
+					BizCode:  "SERVER_ERROR",
 					Location: fmt.Sprintf("%s %s", c.Method(), c.Route().Path),
-					Message: err.Error(),
+					Message:  err.Error(),
 				})
 			}
 			return response.ErrorFromBiz[any](c, response.ServerError)
@@ -210,7 +212,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
 	analyticsSvc := analytics.NewService(cfg, db, redisClient)
 	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, cfg.App.HTMLSnapshotBaseURL, redisClient, cfg.Redis.Prefix)
-	isrSvc := isr.NewService(redisClient, cfg.Redis.Prefix, htmlSnapshotSvc, contentRepo)
+	isrSvc := isr.NewService(redisClient, cfg.Redis.Prefix, htmlSnapshotSvc, contentRepo, albumRepo, thinkingRepo)
 	httpStats := metrics.NewHTTPStats(6 * time.Hour)
 	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
 	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))

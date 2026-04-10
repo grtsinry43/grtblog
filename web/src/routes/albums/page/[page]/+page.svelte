@@ -5,4 +5,4 @@
 	let { data } = $props<{ data: PageData }>();
 </script>
 
-<AlbumListPage albums={data.albums} />
+<AlbumListPage albums={data.albums} staggerKey={`albums-${data.albums.page}`} />

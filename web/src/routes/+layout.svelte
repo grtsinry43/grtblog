@@ -32,6 +32,16 @@
 	import { userStore } from '$lib/shared/stores/userStore';
 	import { get } from 'svelte/store';
 
+	function logClientRuntimeError(
+		kind: 'error' | 'unhandledrejection',
+		message: string,
+		detail: string
+	) {
+		console.error(
+			`[renderer][client-error] side=client code=runtime kind=${kind} path=${page.url.pathname} message=${message}\n${detail}`
+		);
+	}
+
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
 			event.preventDefault();
@@ -262,6 +272,25 @@
 	}
 
 	onMount(() => {
+		const handleWindowError = (event: ErrorEvent) => {
+			const message = event.message || 'Unhandled client error';
+			const detail =
+				event.error instanceof Error
+					? `${event.error.name}: ${event.error.message}${event.error.stack ? `\n${event.error.stack}` : ''}`
+					: `${event.filename || 'unknown'}:${event.lineno || 0}:${event.colno || 0}`;
+			logClientRuntimeError('error', message, detail);
+		};
+		const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+			const reason = event.reason;
+			const detail =
+				reason instanceof Error
+					? `${reason.name}: ${reason.message}${reason.stack ? `\n${reason.stack}` : ''}`
+					: String(reason);
+			logClientRuntimeError('unhandledrejection', 'Unhandled promise rejection', detail);
+		};
+		window.addEventListener('error', handleWindowError);
+		window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
 		initTheme(theme);
 		consoleLogInfo();
 		presenceStore.start();
@@ -285,6 +314,8 @@
 		}
 
 		return () => {
+			window.removeEventListener('error', handleWindowError);
+			window.removeEventListener('unhandledrejection', handleUnhandledRejection);
 			presenceStore.stop();
 			ownerStatusStore.stop();
 			siteHealthStore.stop();

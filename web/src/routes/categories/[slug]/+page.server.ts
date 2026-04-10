@@ -1,5 +1,6 @@
 import { getPostListByCategory } from '$lib/features/post/api';
 import { getCategories } from '$lib/features/taxonomy/api';
+import { trackISRDeps } from '$lib/server/isr-deps';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -16,6 +17,7 @@ export const load: PageServerLoad = async (event) => {
 
 	const category = categories.find((c) => c.shortUrl === slug);
 	const categoryName = category?.name ?? slug;
+	trackISRDeps(event, 'category:list');
 
 	return {
 		categorySlug: slug,

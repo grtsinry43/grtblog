@@ -37,6 +37,7 @@ func RegisterArticleSubscribers(bus appEvent.Bus, service *Service) {
 				"home:recent-posts",
 				"home:activity-pulse",
 				"home:inspiration-stats",
+				"category:list",
 				"tag:list:public",
 				"timeline:by-year",
 				"post:list:page:1",
@@ -83,6 +84,7 @@ func RegisterMomentSubscribers(bus appEvent.Bus, service *Service) {
 				"home:recent-moments",
 				"home:activity-pulse",
 				"home:inspiration-stats",
+				"column:list",
 				"timeline:by-year",
 				"moment:list:page:1",
 				"moment:list:page:2",
@@ -146,6 +148,8 @@ func RegisterThinkingSubscribers(bus appEvent.Bus, service *Service) {
 				"home:inspiration-stats",
 				"timeline:by-year",
 				"thinking:list:page:1",
+				"thinking:list:page:2",
+				"thinking:list:page:3",
 			}
 			urls := []string{
 				"/",

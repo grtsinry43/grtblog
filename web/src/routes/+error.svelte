@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
 	import { ArrowLeft, Compass, RefreshCw } from 'lucide-svelte';
@@ -22,6 +23,18 @@
 	function reloadPage() {
 		location.reload();
 	}
+
+	let loggedKey = '';
+	$effect(() => {
+		if (!browser) return;
+		const key = `${page.url.pathname}:${status}:${detail}`;
+		if (key === loggedKey) return;
+		loggedKey = key;
+		const level = status >= 500 ? 'error' : 'warn';
+		console[level](
+			`[renderer][client-route-error] side=client code=${status} path=${page.url.pathname} message=${detail}`
+		);
+	});
 </script>
 
 <section class="mx-auto max-w-3xl px-6 py-16 md:py-24">

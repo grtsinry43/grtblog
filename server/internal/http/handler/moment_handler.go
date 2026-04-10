@@ -352,6 +352,7 @@ func (h *MomentHandler) ListSamePeriodArticles(c *fiber.Ctx) error {
 	const limit = 2
 	start := momentItem.CreatedAt.AddDate(0, 0, -windowDays)
 	end := momentItem.CreatedAt.AddDate(0, 0, windowDays)
+	siteTZ := h.sysCfg.Timezone(c.Context())
 
 	articles, err := h.contentRepo.ListPublishedArticlesByCreatedAtRange(c.Context(), start, end, limit)
 	if err != nil {
@@ -365,7 +366,7 @@ func (h *MomentHandler) ListSamePeriodArticles(c *fiber.Ctx) error {
 			Title:     item.Title,
 			ShortURL:  item.ShortURL,
 			Summary:   item.Summary,
-			CreatedAt: item.CreatedAt,
+			CreatedAt: item.CreatedAt.In(siteTZ),
 		}
 		if item.Cover != nil {
 			resp.Cover = *item.Cover

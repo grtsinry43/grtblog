@@ -57,10 +57,10 @@ type Dependencies struct {
 	HTMLSnapshot  *htmlsnapshot.Service
 	ISR           *isr.Service
 	OwnerStatus   *ownerstatus.Service
-	HealthState    *health.State
-	HealthChecker  *health.Checker
-	FedSync        *appfed.SyncWorker
-	Telemetry      *telemetry.Service
+	HealthState   *health.State
+	HealthChecker *health.Checker
+	FedSync       *appfed.SyncWorker
+	Telemetry     *telemetry.Service
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -141,13 +141,15 @@ func Register(app *fiber.App, deps Dependencies) {
 	email.RegisterSubscribers(eventBus, emailDispatcher)
 
 	contentRepo := persistence.NewContentRepository(deps.DB)
+	albumRepo := persistence.NewAlbumRepository(deps.DB)
+	thinkingRepo := persistence.NewThinkingRepository(deps.DB)
 	ws.RegisterSiteActivitySubscriber(
 		eventBus,
 		wsManager,
 		contentRepo,
-		persistence.NewThinkingRepository(deps.DB),
+		thinkingRepo,
 		persistence.NewCommentRepository(deps.DB),
-		persistence.NewAlbumRepository(deps.DB),
+		albumRepo,
 	)
 	htmlSnapshotSvc := deps.HTMLSnapshot
 	if htmlSnapshotSvc == nil {
@@ -156,7 +158,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	deps.HTMLSnapshot = htmlSnapshotSvc
 	isrSvc := deps.ISR
 	if isrSvc == nil {
-		isrSvc = isr.NewService(deps.Redis, deps.Config.Redis.Prefix, htmlSnapshotSvc, contentRepo)
+		isrSvc = isr.NewService(deps.Redis, deps.Config.Redis.Prefix, htmlSnapshotSvc, contentRepo, albumRepo, thinkingRepo)
 	}
 	deps.ISR = isrSvc
 	isr.RegisterArticleSubscribers(eventBus, isrSvc)
