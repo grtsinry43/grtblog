@@ -1,6 +1,8 @@
 import { useMessage } from 'naive-ui'
 import { ref, reactive, computed, onMounted } from 'vue'
 
+import { firstVisibleCollapsiblePath } from './sysconfig-tree-visibility'
+
 import type {
   SysConfigTreeResponse,
   SysConfigItem,
@@ -151,16 +153,9 @@ export function useConfigCenter(listFn: ConfigListFn, updateFn: ConfigUpdateFn) 
       tree.value = data
       seedMaps(data)
 
-      // 自动展开所有组
-      const paths: string[] = []
-      const walk = (gs?: SysConfigGroup[]) => {
-        gs?.forEach((g) => {
-          paths.push(g.path)
-          walk(g.children)
-        })
-      }
-      walk(data.groups)
-      expandedGroups.value = paths
+      // 默认只展开第一个可见折叠项（含 visibleWhen 级联隐藏、与 ConfigPanel 一致）
+      const firstPath = firstVisibleCollapsiblePath(data.groups, isItemVisible)
+      expandedGroups.value = firstPath ? [firstPath] : []
     } catch (e: any) {
       message.error(e.message || '加载配置失败')
     } finally {

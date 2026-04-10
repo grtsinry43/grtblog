@@ -1,12 +1,17 @@
 import { NButton, NCard, NCollapse, NCollapseItem, NEmpty, NForm, NSpin, NTag } from 'naive-ui'
-import { computed, defineComponent, watch, type PropType } from 'vue'
+import { computed, defineComponent, watch, type PropType, type Ref, type VNodeChild } from 'vue'
 
 import ConfigItem from '@/components/config/ConfigItem'
+import { useInjection } from '@/composables'
+import { subtreeHasAnyVisibleField } from '@/composables/sysconfig-tree-visibility'
 import {
   useConfigCenter,
   type ConfigListFn,
   type ConfigUpdateFn,
 } from '@/composables/use-config-center'
+import { mediaQueryInjectionKey } from '@/injection'
+
+import { titleForSysconfigGroup } from '../lib/sysconfig-group-segment-labels'
 
 import type { SysConfigGroup, SysConfigTreeResponse } from '@/services/sysconfig'
 
@@ -139,6 +144,8 @@ export default defineComponent({
     onDirtyChange: { type: Function as PropType<(dirty: boolean) => void>, default: undefined },
   },
   setup(props, { expose }) {
+    const { isMaxSm } = useInjection(mediaQueryInjectionKey)
+
     const hasFilter = computed(
       () =>
         (props.filterGroups && props.filterGroups.length > 0) ||
@@ -161,6 +168,19 @@ export default defineComponent({
       )
     }
 
+    const wrappedUpdateFn: ConfigUpdateFn = async (items) => {
+      const tree = await props.updateFn(items)
+      if (!hasFilter.value) return tree
+      return filterTree(
+        tree,
+        props.filterGroups,
+        props.filterRootItemKeys,
+        props.excludeGroups,
+        props.excludeRootItemKeys,
+        props.excludeItemKeys,
+      )
+    }
+
     const {
       loading,
       saving,
@@ -172,7 +192,7 @@ export default defineComponent({
       isItemVisible,
       fetch,
       save,
-    } = useConfigCenter(wrappedListFn, props.updateFn)
+    } = useConfigCenter(wrappedListFn, wrappedUpdateFn)
 
     watch(
       pendingCount,
@@ -184,39 +204,74 @@ export default defineComponent({
 
     expose({ save, fetch, pendingCount })
 
-    const renderGroups = (groups?: SysConfigGroup[]) => {
-      if (!groups || groups.length === 0) return null
+    const renderGroups = (
+      groups: SysConfigGroup[] | undefined,
+      exp: Ref<string[]>,
+    ): VNodeChild | VNodeChild[] | null => {
+      if (!groups?.length) return null
 
-      return groups.map((group) => (
-        <NCollapseItem
-          key={group.path}
-          name={group.path}
-          title={group.label || group.key}
-        >
-          <div class='space-y-4 pl-2'>
-            {group.items && group.items.length > 0 && (
-              <NForm
-                labelPlacement='left'
-                labelWidth={160}
-              >
-                {group.items.map((item) => (
-                  <ConfigItem
-                    key={item.key}
-                    item={item}
-                    valueMap={valueMap}
-                    jsonBufferMap={jsonBufferMap}
-                    visible={isItemVisible}
-                  />
-                ))}
-              </NForm>
-            )}
+      const nodes = groups.flatMap((group): VNodeChild[] => {
+        const visibleDirect = group.items?.some(isItemVisible) ?? false
+        const hasChildren = (group.children?.length ?? 0) > 0
 
-            {group.children && group.children.length > 0 && (
-              <NCollapse>{renderGroups(group.children)}</NCollapse>
-            )}
-          </div>
-        </NCollapseItem>
-      ))
+        // 无当前可见表单项：仅子树仍有可见项时提升子级，否则整支不展示
+        if (!visibleDirect && hasChildren) {
+          if (!group.children!.some((ch) => subtreeHasAnyVisibleField(ch, isItemVisible))) {
+            return []
+          }
+          const inner = renderGroups(group.children, exp)
+          if (inner == null) return []
+          return Array.isArray(inner) ? inner : [inner]
+        }
+        if (!visibleDirect && !hasChildren) {
+          return []
+        }
+
+        const nestedHasVisible =
+          hasChildren && group.children!.some((ch) => subtreeHasAnyVisibleField(ch, isItemVisible))
+
+        return [
+          <NCollapseItem
+            key={group.path}
+            name={group.path}
+            title={titleForSysconfigGroup(group)}
+          >
+            <div class='mt-3 space-y-4'>
+              {visibleDirect && (
+                <div class='pl-6 max-sm:pl-4'>
+                  <NForm
+                    labelPlacement={isMaxSm.value ? 'top' : 'left'}
+                    labelWidth={isMaxSm.value ? undefined : 160}
+                  >
+                    {group.items!.map((item) => (
+                      <ConfigItem
+                        key={item.key}
+                        item={item}
+                        valueMap={valueMap}
+                        jsonBufferMap={jsonBufferMap}
+                        visible={isItemVisible}
+                      />
+                    ))}
+                  </NForm>
+                </div>
+              )}
+
+              {nestedHasVisible && (
+                <NCollapse
+                  expandedNames={exp.value}
+                  onUpdate:expandedNames={(names) => {
+                    exp.value = names
+                  }}
+                >
+                  {renderGroups(group.children, exp)}
+                </NCollapse>
+              )}
+            </div>
+          </NCollapseItem>,
+        ]
+      })
+
+      return nodes.length ? nodes : null
     }
 
     return () => (
@@ -260,9 +315,9 @@ export default defineComponent({
               ) : (
                 <div class='space-y-6'>
                   {tree.value.items && tree.value.items.length > 0 && (
-                    <NForm
-                      labelPlacement='left'
-                      labelWidth={160}
+                                       <NForm
+                      labelPlacement={isMaxSm.value ? 'top' : 'left'}
+                      labelWidth={isMaxSm.value ? undefined : 160}
                     >
                       {tree.value.items.map((item) => (
                         <ConfigItem
@@ -277,8 +332,13 @@ export default defineComponent({
                   )}
 
                   {tree.value.groups && tree.value.groups.length > 0 && (
-                    <NCollapse v-model:expandedNames={expandedGroups.value}>
-                      {renderGroups(tree.value.groups)}
+                    <NCollapse
+                      expandedNames={expandedGroups.value}
+                      onUpdate:expandedNames={(names) => {
+                        expandedGroups.value = names
+                      }}
+                    >
+                      {renderGroups(tree.value.groups, expandedGroups)}
                     </NCollapse>
                   )}
                 </div>
