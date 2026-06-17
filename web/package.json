@@ -73,7 +73,7 @@
 		"emoji-picker-element": "^1.29.1",
 		"highlight.js": "^11.11.1",
 		"lucide-svelte": "^1.0.1",
-		"markdown-it": "^14.1.1",
+		"markdown-it": "^14.2.0",
 		"markdown-it-container": "^4.0.0",
 		"ofetch": "^1.5.1",
 		"svatoms": "^0.2.0",
