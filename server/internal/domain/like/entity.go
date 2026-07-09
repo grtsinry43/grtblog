@@ -18,5 +18,6 @@ type ContentLike struct {
 	TargetID   int64
 	UserID     *int64
 	VisitorID  *string
+	ClientFP   string
 	CreatedAt  time.Time
 }

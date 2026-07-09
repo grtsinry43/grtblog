@@ -2,8 +2,6 @@ package analytics
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,6 +31,7 @@ const (
 	defaultQueueMaxLength = 200000
 	defaultUVTTL          = 72 * time.Hour
 	defaultViewDedupTTL   = 30 * time.Minute
+	defaultFPVisitorTTL   = 90 * 24 * time.Hour
 )
 
 type Service struct {
@@ -103,12 +102,16 @@ func (s *Service) TrackView(ctx context.Context, in ViewTrackInput) (*ViewTrackR
 	if err := s.ensureContentExists(ctx, event.ContentType, event.ContentID); err != nil {
 		return nil, err
 	}
-	if duplicated := s.isDuplicateView(ctx, event); duplicated {
+
+	clientFP := clientinfo.ClientFingerprint(event.IP, event.UserAgent)
+	event.VisitorID = s.resolveStableVisitorID(ctx, clientFP, event.VisitorID)
+
+	if duplicated := s.isDuplicateView(ctx, event, clientFP); duplicated {
 		return &ViewTrackResult{VisitorID: event.VisitorID, Queued: false}, nil
 	}
 
 	if s.redis == nil {
-		if err := s.processViewEvent(ctx, event); err != nil {
+		if err := s.processViewEvent(ctx, event, clientFP); err != nil {
 			return nil, err
 		}
 		return &ViewTrackResult{VisitorID: event.VisitorID, Queued: false}, nil
@@ -129,22 +132,62 @@ func (s *Service) TrackView(ctx context.Context, in ViewTrackInput) (*ViewTrackR
 	return &ViewTrackResult{VisitorID: event.VisitorID, Queued: true}, nil
 }
 
-func (s *Service) isDuplicateView(ctx context.Context, event ViewTrackEvent) bool {
+func (s *Service) isDuplicateView(ctx context.Context, event ViewTrackEvent, clientFP string) bool {
 	if s.redis == nil {
 		return false
+	}
+	if clientFP == "" {
+		clientFP = clientinfo.ClientFingerprint(event.IP, event.UserAgent)
 	}
 	key := fmt.Sprintf(
 		"%sanalytics:view:dedupe:%s:%d:%s",
 		s.redisPrefix,
 		event.ContentType,
 		event.ContentID,
-		event.VisitorID,
+		clientFP,
 	)
 	added, err := s.redis.SetNX(ctx, key, "1", defaultViewDedupTTL).Result()
 	if err != nil {
 		return false
 	}
 	return !added
+}
+
+func (s *Service) resolveStableVisitorID(ctx context.Context, clientFP, requestedVisitorID string) string {
+	requested := strings.TrimSpace(requestedVisitorID)
+	if s.redis == nil || clientFP == "" {
+		if requested != "" {
+			return requested
+		}
+		return clientFP
+	}
+
+	key := fmt.Sprintf("%sanalytics:fp-visitor:%s", s.redisPrefix, clientFP)
+	if existing, err := s.redis.Get(ctx, key).Result(); err == nil {
+		existing = strings.TrimSpace(existing)
+		if existing != "" {
+			_ = s.redis.Expire(ctx, key, defaultFPVisitorTTL).Err()
+			return existing
+		}
+	}
+
+	stable := requested
+	if stable == "" {
+		stable = clientFP
+	}
+	ok, err := s.redis.SetNX(ctx, key, stable, defaultFPVisitorTTL).Result()
+	if err != nil {
+		return stable
+	}
+	if !ok {
+		if existing, getErr := s.redis.Get(ctx, key).Result(); getErr == nil {
+			existing = strings.TrimSpace(existing)
+			if existing != "" {
+				return existing
+			}
+		}
+	}
+	return stable
 }
 
 func (s *Service) RunViewEventWorker(ctx context.Context) {
@@ -173,7 +216,9 @@ func (s *Service) RunViewEventWorker(ctx context.Context) {
 		if err := json.Unmarshal([]byte(res[1]), &event); err != nil {
 			continue
 		}
-		_ = s.processViewEvent(context.Background(), event)
+		clientFP := clientinfo.ClientFingerprint(event.IP, event.UserAgent)
+		event.VisitorID = s.resolveStableVisitorID(context.Background(), clientFP, event.VisitorID)
+		_ = s.processViewEvent(context.Background(), event, clientFP)
 	}
 }
 
@@ -262,14 +307,17 @@ func (s *Service) ensureContentExists(ctx context.Context, contentType string, c
 	return nil
 }
 
-func (s *Service) processViewEvent(ctx context.Context, event ViewTrackEvent) error {
+func (s *Service) processViewEvent(ctx context.Context, event ViewTrackEvent, clientFP string) error {
+	if clientFP == "" {
+		clientFP = clientinfo.ClientFingerprint(event.IP, event.UserAgent)
+	}
 	hourBucket := event.At.UTC().Truncate(time.Hour)
 	uvBucket := event.At.UTC().Format("20060102")
 	uvKey := fmt.Sprintf("%sanalytics:uv:%s:%d:%s", s.redisPrefix, event.ContentType, event.ContentID, uvBucket)
 
 	isNewVisitor := int64(1)
 	if s.redis != nil {
-		added, err := s.redis.SAdd(ctx, uvKey, event.VisitorID).Result()
+		added, err := s.redis.SAdd(ctx, uvKey, clientFP).Result()
 		if err == nil {
 			isNewVisitor = added
 			_ = s.redis.Expire(ctx, uvKey, defaultUVTTL).Err()
@@ -437,10 +485,5 @@ func (s *Service) incrementContentViews(ctx context.Context, contentType string,
 }
 
 func fallbackVisitorID(ip, ua string) string {
-	raw := strings.TrimSpace(ip) + "|" + strings.TrimSpace(ua)
-	if raw == "|" {
-		raw = fmt.Sprintf("anonymous-%d", time.Now().UnixNano())
-	}
-	sum := sha256.Sum256([]byte(raw))
-	return hex.EncodeToString(sum[:16])
+	return clientinfo.ClientFingerprint(ip, ua)
 }

@@ -8,6 +8,7 @@ type ContentLike struct {
 	TargetID   int64     `gorm:"column:target_id;not null"`
 	UserID     *int64    `gorm:"column:user_id"`
 	VisitorID  string    `gorm:"column:visitor_id;size:255"`
+	ClientFP   string    `gorm:"column:client_fp;size:64"`
 	CreatedAt  time.Time `gorm:"column:created_at;autoCreateTime"`
 }
 

@@ -62,13 +62,13 @@ const (
 	promptKeyContentRewrite    = "ai.prompt.contentRewrite"
 	promptKeySummaryGeneration = "ai.prompt.summaryGeneration"
 
-	defaultModerationPrompt = `你是一个博客评论审核助手。请判断以下评论是否应该通过审核。
+	defaultModerationPrompt = `你是一个博客评论审核助手。请判断 <comment> 标签内的评论是否应该通过审核。
 评判标准：
 1. 拒绝垃圾广告、恶意链接、无意义灌水内容
 2. 拒绝包含侮辱、歧视、仇恨言论的内容
 3. 通过正常的讨论、提问、建议、赞赏等内容
 请以 JSON 格式返回结果：{"approved": true/false, "reason": "原因说明", "score": 0.0-1.0}
-其中 score 表示通过审核的置信度，1.0 表示完全确定应该通过。`
+其中 score 表示你对本次 approved 决策的置信度，1.0 表示非常确定。`
 
 	defaultTitlePrompt = `你是一个博客标题生成助手。请根据以下文章内容生成一个合适的标题和 URL 短链接。
 要求：
@@ -99,13 +99,14 @@ func (s *Service) ModerateComment(ctx context.Context, content, triggerSource st
 
 	taskLog, startTime := s.recordTaskStart(ctx, domainai.TaskTypeCommentModeration, content, triggerSource, modelName, providerName)
 
-	prompt := s.readPrompt(ctx, promptKeyCommentModeration, defaultModerationPrompt)
+	prompt := ensureModerationPromptSafety(s.readPrompt(ctx, promptKeyCommentModeration, defaultModerationPrompt))
+	userContent := WrapCommentForModeration(content)
 
 	resp, err := client.Chat(ctx, infraai.ChatRequest{
 		Model: modelID,
 		Messages: []infraai.ChatMessage{
 			{Role: "system", Content: prompt},
-			{Role: "user", Content: content},
+			{Role: "user", Content: userContent},
 		},
 	})
 	if err != nil {
@@ -120,6 +121,7 @@ func (s *Service) ModerateComment(ctx context.Context, content, triggerSource st
 		s.recordTaskEnd(ctx, taskLog, resp.Content, parseErr, startTime)
 		return nil, parseErr
 	}
+	normalizeModerationResult(&result)
 
 	s.recordTaskEnd(ctx, taskLog, resp.Content, nil, startTime)
 	return &result, nil

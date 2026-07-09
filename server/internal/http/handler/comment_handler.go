@@ -299,7 +299,7 @@ func (h *CommentHandler) GetAdminVisitorProfile(c *fiber.Ctx) error {
 // @Summary 获取访客画像统计图数据（管理端）
 // @Tags CommentAdmin
 // @Produce json
-// @Param days query int false "统计天数（默认30，最大180）"
+// @Param days query int false "统计天数（默认30，最大90）"
 // @Success 200 {object} contract.AdminVisitorInsightsResp
 // @Security JWTAuth
 // @Router /admin/visitors/insights [get]

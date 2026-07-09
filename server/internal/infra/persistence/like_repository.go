@@ -53,6 +53,7 @@ func (r *LikeRepository) CreateIfAbsent(ctx context.Context, entity *domainlike.
 		TargetType: string(entity.TargetType),
 		TargetID:   entity.TargetID,
 		UserID:     entity.UserID,
+		ClientFP:   entity.ClientFP,
 	}
 	if entity.VisitorID != nil {
 		rec.VisitorID = *entity.VisitorID

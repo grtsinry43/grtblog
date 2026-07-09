@@ -45,7 +45,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
 	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, linkRepo, deps.EventBus)
 
-	wellKnownLimiter := limiter.New(limiter.Config{
+	wellKnownLimiter := newRateLimiter(deps, limiter.Config{
 		Max:        120,
 		Expiration: time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
@@ -62,7 +62,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	app.Get("/.well-known/nodeinfo", wellKnownLimiter, apHandler.NodeInfoDiscovery)
 	app.Get("/nodeinfo/2.0", wellKnownLimiter, apHandler.NodeInfo20)
 	app.Get("/.well-known/webfinger", wellKnownLimiter, apHandler.WebFinger)
-	apLimiter := limiter.New(limiter.Config{
+	apLimiter := newRateLimiter(deps, limiter.Config{
 		Max:        60,
 		Expiration: time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
@@ -75,7 +75,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	app.Get("/ap/objects/:id", apLimiter, apHandler.Object)
 	app.Post("/ap/inbox", apLimiter, apHandler.Inbox)
 
-	federationGroup := app.Group("/api/federation", limiter.New(limiter.Config{
+	federationGroup := app.Group("/api/federation", newRateLimiter(deps, limiter.Config{
 		Max:        60,
 		Expiration: time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {

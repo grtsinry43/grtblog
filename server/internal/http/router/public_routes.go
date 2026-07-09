@@ -58,7 +58,7 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	searchRepo := persistence.NewSearchRepository(deps.DB)
 	searchSvc := appsearch.NewService(searchRepo, deps.Redis, deps.Config.Redis.Prefix)
 	searchHandler := handler.NewSearchHandler(searchSvc)
-	searchGuard := public.Group("/search", limiter.New(limiter.Config{
+	searchGuard := public.Group("/search", newRateLimiter(deps, limiter.Config{
 		Max:        30,
 		Expiration: time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
@@ -84,8 +84,8 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 
 	if deps.Analytics != nil {
 		analyticsHandler := handler.NewAnalyticsHandler(deps.Analytics)
-		viewGuard := public.Group("/analytics", limiter.New(limiter.Config{
-			Max:        120,
+		viewGuard := public.Group("/analytics", newRateLimiter(deps, limiter.Config{
+			Max:        60,
 			Expiration: time.Minute,
 			KeyGenerator: func(c *fiber.Ctx) string {
 				return c.IP()
@@ -100,8 +100,8 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	likeRepo := persistence.NewLikeRepository(deps.DB)
 	likeSvc := applike.NewService(likeRepo)
 	likeHandler := handler.NewLikeHandler(likeSvc)
-	likeGuard := public.Group("/analytics", limiter.New(limiter.Config{
-		Max:        60,
+	likeGuard := public.Group("/analytics", newRateLimiter(deps, limiter.Config{
+		Max:        30,
 		Expiration: time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			return c.IP()

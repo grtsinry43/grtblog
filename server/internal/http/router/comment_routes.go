@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	commentCreateRateLimitMax = 20
-	commentCreateRateWindow   = time.Minute
+	commentVisitorCreateRateMax = 5
+	commentLoginCreateRateMax   = 10
+	commentCreateRateWindow     = time.Minute
 )
 
 func registerCommentPublicRoutes(v2 fiber.Router, deps Dependencies) {
@@ -30,8 +31,8 @@ func registerCommentPublicRoutes(v2 fiber.Router, deps Dependencies) {
 	publicGroup.Get("/areas/:areaId", commentHandler.ListCommentTree)
 	publicGroup.Put("/:id", commentHandler.EditOwnComment)
 	publicGroup.Delete("/:id", commentHandler.DeleteOwnComment)
-	publicGroup.Post("/areas/:areaId/visitor", limiter.New(limiter.Config{
-		Max:        commentCreateRateLimitMax,
+	publicGroup.Post("/areas/:areaId/visitor", newRateLimiter(deps, limiter.Config{
+		Max:        commentVisitorCreateRateMax,
 		Expiration: commentCreateRateWindow,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			return c.IP()
@@ -49,8 +50,8 @@ func registerCommentAuthRoutes(v2 fiber.Router, deps Dependencies) {
 	adminTokenRepo := persistence.NewAdminTokenRepository(deps.DB)
 
 	authGroup := v2.Group("/comments", middleware.RequireAuth(deps.JWTManager, identityRepo, adminTokenRepo))
-	authGroup.Post("/areas/:areaId", limiter.New(limiter.Config{
-		Max:        commentCreateRateLimitMax,
+	authGroup.Post("/areas/:areaId", newRateLimiter(deps, limiter.Config{
+		Max:        commentLoginCreateRateMax,
 		Expiration: commentCreateRateWindow,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			if claims, ok := middleware.GetClaims(c); ok && claims != nil && claims.UserID > 0 {

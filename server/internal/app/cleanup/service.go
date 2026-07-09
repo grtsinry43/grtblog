@@ -65,7 +65,8 @@ func (s *Service) runOnce(ctx context.Context) {
 			return s.repo.PurgeRSSAccessHourlyStats(ctx, now.AddDate(0, 0, -90))
 		}},
 		{"stale_visitor_views", func() (int64, error) {
-			return s.repo.PurgeStaleVisitorViews(ctx, now.AddDate(0, 0, -180))
+			// Align with content/online/rss hourly retention and admin insights max window.
+			return s.repo.PurgeStaleVisitorViews(ctx, now.AddDate(0, 0, -90))
 		}},
 		{"ai_task_logs", func() (int64, error) {
 			return s.repo.PurgeAITaskLogs(ctx, now.AddDate(0, 0, -30))

@@ -26,7 +26,7 @@ func registerEmailPublicRoutes(v2 fiber.Router, deps Dependencies, sysCfgSvc *sy
 	public := v2.Group("/public/email")
 	public.Get("/events", emailHandler.ListPublicEmailEvents)
 
-	guarded := public.Group("", limiter.New(limiter.Config{
+	guarded := public.Group("", newRateLimiter(deps, limiter.Config{
 		Max:        20,
 		Expiration: time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {

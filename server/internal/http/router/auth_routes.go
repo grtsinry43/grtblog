@@ -26,7 +26,7 @@ func registerAuthRoutes(v2 fiber.Router, deps Dependencies, sysCfgSvc *sysconfig
 	authHandler := handler.NewAuthHandler(authSvc, setupStateSvc, sysCfgSvc, deps.Turnstile)
 	oauthHandler := handler.NewOAuthHandler(authSvc, deps.Config.Auth.OAuthStateTTL)
 
-	authGroup := v2.Group("/auth", limiter.New(limiter.Config{
+	authGroup := v2.Group("/auth", newRateLimiter(deps, limiter.Config{
 		Max:        10,
 		Expiration: time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {

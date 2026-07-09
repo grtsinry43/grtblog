@@ -50,6 +50,8 @@ func RegisterSubscribers(bus appEvent.Bus, aiSvc *Service, commentUpdater Commen
 			return nil
 		}
 
+		injectionRisk := LooksLikePromptInjection(payload.Content)
+
 		// Call AI moderation
 		result, err := aiSvc.ModerateComment(ctx, payload.Content, "auto")
 		if err != nil {
@@ -57,16 +59,23 @@ func RegisterSubscribers(bus appEvent.Bus, aiSvc *Service, commentUpdater Commen
 			return nil // Don't block the event chain; comment stays pending
 		}
 
-		newStatus := "approved"
-		if !result.Approved {
-			newStatus = "rejected"
+		action := DecideCommentModerationAction(result, injectionRisk)
+		if action == ModerationActionPending {
+			log.Printf(
+				"[AI] comment #%d kept pending (approved=%v score=%.2f injectionRisk=%v reason=%s)",
+				payload.ID, result.Approved, result.Score, injectionRisk, result.Reason,
+			)
+			return nil
 		}
 
-		log.Printf("[AI] comment #%d moderated: %s (score=%.2f, reason=%s)", payload.ID, newStatus, result.Score, result.Reason)
+		log.Printf(
+			"[AI] comment #%d moderated: %s (score=%.2f, reason=%s)",
+			payload.ID, action, result.Score, result.Reason,
+		)
 
 		if err := commentUpdater.UpdateCommentStatus(ctx, appcomment.UpdateCommentStatusCmd{
 			ID:     payload.ID,
-			Status: newStatus,
+			Status: string(action),
 		}); err != nil {
 			log.Printf("[AI] update comment #%d status failed: %v", payload.ID, err)
 		}

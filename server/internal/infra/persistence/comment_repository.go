@@ -891,8 +891,8 @@ func (r *CommentRepository) GetVisitorInsights(ctx context.Context, days int) (*
 	if days <= 0 {
 		days = 30
 	}
-	if days > 180 {
-		days = 180
+	if days > 90 {
+		days = 90
 	}
 	start := time.Now().UTC().AddDate(0, 0, -(days - 1)).Truncate(24 * time.Hour)
 

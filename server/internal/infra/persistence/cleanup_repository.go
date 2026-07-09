@@ -2,10 +2,13 @@ package persistence
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+const cleanupBatchSize = 5000
 
 // CleanupRepository implements cleanup.Repository using GORM.
 type CleanupRepository struct {
@@ -41,6 +44,18 @@ func (r *CleanupRepository) PurgeEmailOutbox(ctx context.Context, before time.Ti
 }
 
 func (r *CleanupRepository) deleteWhere(ctx context.Context, table, where string, arg time.Time) (int64, error) {
-	result := r.db.WithContext(ctx).Table(table).Where(where, arg).Delete(nil)
-	return result.RowsAffected, result.Error
+	var total int64
+	for {
+		result := r.db.WithContext(ctx).Exec(
+			fmt.Sprintf("DELETE FROM %s WHERE ctid IN (SELECT ctid FROM %s WHERE %s LIMIT %d)", table, table, where, cleanupBatchSize),
+			arg,
+		)
+		if result.Error != nil {
+			return total, result.Error
+		}
+		total += result.RowsAffected
+		if result.RowsAffected < int64(cleanupBatchSize) {
+			return total, nil
+		}
+	}
 }

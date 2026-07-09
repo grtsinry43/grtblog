@@ -2,13 +2,12 @@ package like
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
 
 	domainlike "github.com/grtsinry43/grtblog-v2/server/internal/domain/like"
+	"github.com/grtsinry43/grtblog-v2/server/internal/infra/clientinfo"
 )
 
 type RequestMeta struct {
@@ -58,11 +57,13 @@ func (s *Service) TrackLike(ctx context.Context, cmd TrackLikeCmd, meta RequestM
 	if visitorID == "" {
 		visitorID = fallbackVisitorID(meta.IP, meta.UserAgent, s.now().UnixNano())
 	}
+	clientFP := clientinfo.ClientFingerprint(meta.IP, meta.UserAgent)
 
 	likeEntity := &domainlike.ContentLike{
 		TargetType: targetType,
 		TargetID:   cmd.ContentID,
 		VisitorID:  &visitorID,
+		ClientFP:   clientFP,
 	}
 	liked, err := s.repo.CreateIfAbsent(ctx, likeEntity)
 	if err != nil {
@@ -125,10 +126,9 @@ func normalizeTargetType(raw string) (domainlike.TargetType, error) {
 }
 
 func fallbackVisitorID(ip, ua string, seed int64) string {
-	raw := strings.TrimSpace(ip) + "|" + strings.TrimSpace(ua)
-	if raw == "|" {
-		raw = fmt.Sprintf("anonymous-%d", seed)
+	fp := clientinfo.ClientFingerprint(ip, ua)
+	if strings.TrimSpace(ip) == "" && strings.TrimSpace(ua) == "" {
+		return fmt.Sprintf("anonymous-%d", seed)
 	}
-	sum := sha256.Sum256([]byte(raw))
-	return hex.EncodeToString(sum[:16])
+	return fp
 }

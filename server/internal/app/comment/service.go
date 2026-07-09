@@ -418,8 +418,8 @@ func (s *Service) GetVisitorInsights(ctx context.Context, cmd GetVisitorInsights
 	if days <= 0 {
 		days = 30
 	}
-	if days > 180 {
-		days = 180
+	if days > 90 {
+		days = 90
 	}
 	return s.repo.GetVisitorInsights(ctx, days)
 }
