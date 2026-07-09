@@ -1,4 +1,7 @@
-onlyBuiltDependencies:
-  - esbuild
-  - exifreader
-  - vue-demi
+allowBuilds:
+  esbuild: true
+  exifreader: true
+  vue-demi: true
+
+overrides:
+  esbuild: 0.28.1

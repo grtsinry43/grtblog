@@ -17,16 +17,16 @@ const {
 
 defineSlots<CollapseTransitionTriggerSlot>()
 
-const collapsed = defineModel<boolean>({ default: undefined })
+const collapsed = defineModel<boolean>()
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const mergedCollapsed = computed(() => collapsed.value ?? defaultCollapsed)
+const mergedCollapsed = computed(() => collapsed.value ?? defaultCollapsed ?? false)
 
 const handleTriggerClick = () => {
-  collapsed.value = !collapsed.value
+  collapsed.value = !mergedCollapsed.value
 }
 </script>
 <template>
