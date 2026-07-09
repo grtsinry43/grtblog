@@ -17,6 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/infra/persistence/model"
 )
 
@@ -38,6 +39,7 @@ type Service struct {
 	httpClient  *http.Client
 	redis       *redis.Client
 	redisPrefix string
+	sysCfg      *sysconfig.Service
 }
 
 type ActivityPulsePoint struct {
@@ -110,12 +112,13 @@ type TimelineYearBucket struct {
 	Thinkings   []TimelineThinkingItem `json:"thinkings"`
 }
 
-func NewService(db *gorm.DB, redisClient *redis.Client, redisPrefix string) *Service {
+func NewService(db *gorm.DB, redisClient *redis.Client, redisPrefix string, sysCfg *sysconfig.Service) *Service {
 	return &Service{
 		db:          db,
 		now:         time.Now,
 		redis:       redisClient,
 		redisPrefix: redisPrefix,
+		sysCfg:      sysCfg,
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -312,6 +315,7 @@ func (s *Service) GetInspirationStats(ctx context.Context, githubUsername string
 
 func (s *Service) GetTimelineByYear(ctx context.Context) (map[string]TimelineYearBucket, error) {
 	timeline := make(map[string]TimelineYearBucket)
+	siteTZ := s.sysCfg.Timezone(ctx)
 
 	type articleRow struct {
 		Title     string    `gorm:"column:title"`
@@ -362,7 +366,7 @@ func (s *Service) GetTimelineByYear(ctx context.Context) (map[string]TimelineYea
 	}
 
 	for _, item := range articles {
-		yearKey, publishedAt := toYearKeyAndPublishedAt(item.CreatedAt)
+		yearKey, publishedAt := toYearKeyAndPublishedAt(item.CreatedAt, siteTZ)
 		bucket := ensureTimelineBucket(timeline, yearKey)
 
 		post := TimelinePostItem{
@@ -374,7 +378,7 @@ func (s *Service) GetTimelineByYear(ctx context.Context) (map[string]TimelineYea
 		}
 
 		yearSummaryMark, marked := parseYearSummaryYear(item.ExtInfo)
-		if marked && yearSummaryMark == item.CreatedAt.UTC().Year() && bucket.YearSummary == nil {
+		if marked && yearSummaryMark == item.CreatedAt.In(siteTZ).Year() && bucket.YearSummary == nil {
 			bucket.YearSummary = &post
 		} else {
 			bucket.Posts = append(bucket.Posts, post)
@@ -383,7 +387,7 @@ func (s *Service) GetTimelineByYear(ctx context.Context) (map[string]TimelineYea
 	}
 
 	for _, item := range moments {
-		yearKey, publishedAt := toYearKeyAndPublishedAt(item.CreatedAt)
+		yearKey, publishedAt := toYearKeyAndPublishedAt(item.CreatedAt, siteTZ)
 		bucket := ensureTimelineBucket(timeline, yearKey)
 		image := optionalString(item.Image)
 		if image == "" {
@@ -392,7 +396,7 @@ func (s *Service) GetTimelineByYear(ctx context.Context) (map[string]TimelineYea
 		bucket.Moments = append(bucket.Moments, TimelineMomentItem{
 			Title:       strings.TrimSpace(item.Title),
 			ShortURL:    strings.TrimSpace(item.ShortURL),
-			URL:         buildMomentURL(item.ShortURL, item.CreatedAt),
+			URL:         buildMomentURL(item.ShortURL, item.CreatedAt, siteTZ),
 			Image:       image,
 			PublishedAt: publishedAt,
 		})
@@ -400,7 +404,7 @@ func (s *Service) GetTimelineByYear(ctx context.Context) (map[string]TimelineYea
 	}
 
 	for _, item := range thinkings {
-		yearKey, publishedAt := toYearKeyAndPublishedAt(item.CreatedAt)
+		yearKey, publishedAt := toYearKeyAndPublishedAt(item.CreatedAt, siteTZ)
 		bucket := ensureTimelineBucket(timeline, yearKey)
 		shortURL := fmt.Sprintf("#%d", item.ID)
 		bucket.Thinkings = append(bucket.Thinkings, TimelineThinkingItem{
@@ -603,9 +607,9 @@ func ensureTimelineBucket(m map[string]TimelineYearBucket, yearKey string) Timel
 	return bucket
 }
 
-func toYearKeyAndPublishedAt(t time.Time) (string, string) {
-	utc := t.UTC()
-	return strconv.Itoa(utc.Year()), utc.Format(time.RFC3339)
+func toYearKeyAndPublishedAt(t time.Time, loc *time.Location) (string, string) {
+	local := t.In(loc)
+	return strconv.Itoa(local.Year()), local.Format(time.RFC3339)
 }
 
 func optionalString(value *string) string {
@@ -619,13 +623,13 @@ func buildPostURL(shortURL string) string {
 	return "/posts/" + url.PathEscape(strings.TrimSpace(shortURL))
 }
 
-func buildMomentURL(shortURL string, createdAt time.Time) string {
-	utc := createdAt.UTC()
+func buildMomentURL(shortURL string, createdAt time.Time, loc *time.Location) string {
+	local := createdAt.In(loc)
 	return fmt.Sprintf(
 		"/moments/%04d/%02d/%02d/%s",
-		utc.Year(),
-		utc.Month(),
-		utc.Day(),
+		local.Year(),
+		local.Month(),
+		local.Day(),
 		url.PathEscape(strings.TrimSpace(shortURL)),
 	)
 }

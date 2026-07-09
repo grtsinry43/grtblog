@@ -158,7 +158,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	deps.HTMLSnapshot = htmlSnapshotSvc
 	isrSvc := deps.ISR
 	if isrSvc == nil {
-		isrSvc = isr.NewService(deps.Redis, deps.Config.Redis.Prefix, htmlSnapshotSvc, contentRepo, albumRepo, thinkingRepo)
+		isrSvc = isr.NewService(deps.Redis, deps.Config.Redis.Prefix, htmlSnapshotSvc, contentRepo, albumRepo, thinkingRepo, sysCfgSvc)
 	}
 	deps.ISR = isrSvc
 	isr.RegisterArticleSubscribers(eventBus, isrSvc)
@@ -250,6 +250,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	}
 
 	registerFederationRoutes(app, deps)
+	registerInternalRoutes(app, deps)
 	registerAdminSPA(app)
 }
 

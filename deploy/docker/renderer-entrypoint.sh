@@ -35,4 +35,7 @@ if [ -d /assets ]; then
 	echo "[entrypoint] Client assets synced."
 fi
 
+mkdir -p /app/storage/meta/isr/manifests
+find /app/build/client -type f | sed 's#^/app/build/client/##' | sort > "/app/storage/meta/isr/manifests/${APP_VERSION}.txt"
+
 exec node /app/build/index.js

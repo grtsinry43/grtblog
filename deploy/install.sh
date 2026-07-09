@@ -251,6 +251,9 @@ MSG_en_STARTING="Starting services..."
 MSG_en_START_FAIL="Failed to start services."
 MSG_en_LOGS_TITLE="Container Logs"
 MSG_en_STARTED="Services started"
+MSG_en_NGINX_RELOAD="Reloading nginx config..."
+MSG_en_NGINX_RELOADED="nginx config reloaded"
+MSG_en_NGINX_RELOAD_FALLBACK="Graceful reload failed, restarting nginx container..."
 MSG_en_STEP11="Step 11/11: Health Check"
 MSG_en_HEALTH_WAIT="Waiting for health check at"
 MSG_en_HEALTH_OK="Health check passed!"
@@ -346,6 +349,9 @@ MSG_zh_STARTING="正在启动服务..."
 MSG_zh_START_FAIL="服务启动失败。"
 MSG_zh_LOGS_TITLE="容器日志"
 MSG_zh_STARTED="服务已启动"
+MSG_zh_NGINX_RELOAD="正在重载 nginx 配置..."
+MSG_zh_NGINX_RELOADED="nginx 配置已重载"
+MSG_zh_NGINX_RELOAD_FALLBACK="优雅重载失败，正在重启 nginx 容器..."
 MSG_zh_STEP11="步骤 11/11: 健康检查"
 MSG_zh_HEALTH_WAIT="正在等待健康检查"
 MSG_zh_HEALTH_OK="健康检查通过！"
@@ -486,8 +492,9 @@ fi
 # =========================================================================
 section "$(__ STEP3)"
 
-mkdir -p storage/html storage/uploads storage/geoip nginx
+mkdir -p storage/html storage/meta/isr storage/uploads storage/geoip nginx
 ok "storage/html"
+ok "storage/meta/isr"
 ok "storage/uploads"
 ok "storage/geoip"
 ok "nginx/"
@@ -707,6 +714,12 @@ download_with_fallback() {
 }
 
 download_with_fallback "docker-compose.yml" "docker-compose.yml" || exit 1
+if [[ "$INSTALL_MODE" == "upgrade" ]] && [[ -f "nginx/nginx.conf" ]]; then
+  NGINX_BACKUP_FILE="nginx/nginx.conf.backup.$(date +%Y%m%d%H%M%S)"
+  cp "nginx/nginx.conf" "$NGINX_BACKUP_FILE"
+  warn "Backed up existing nginx/nginx.conf to ${NGINX_BACKUP_FILE}"
+  warn "nginx/nginx.conf is managed by grtblog. Put custom reverse-proxy rules in your outer proxy instead of editing this file."
+fi
 download_with_fallback "nginx/nginx.conf" "nginx/nginx.conf" || exit 1
 
 # =========================================================================
@@ -799,6 +812,18 @@ if ! $COMPOSE_CMD up -d; then
   exit 1
 fi
 ok "$(__ STARTED)"
+
+# nginx.conf is bind-mounted: `compose up -d` does not recreate the nginx
+# container when only the mounted file changed, and nginx reads its config
+# once at startup. Force a graceful reload so an updated config takes effect.
+info "$(__ NGINX_RELOAD)"
+if $COMPOSE_CMD exec -T nginx nginx -t >/dev/null 2>&1 \
+  && $COMPOSE_CMD exec -T nginx nginx -s reload >/dev/null 2>&1; then
+  ok "$(__ NGINX_RELOADED)"
+else
+  warn "$(__ NGINX_RELOAD_FALLBACK)"
+  $COMPOSE_CMD restart nginx >/dev/null 2>&1 || true
+fi
 
 # =========================================================================
 # Step 11: Health Check & Result

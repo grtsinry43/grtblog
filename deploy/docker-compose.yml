@@ -40,6 +40,7 @@ services:
         condition: service_started
     volumes:
       - ./storage/html:/app/storage/html
+      - ./storage/meta:/app/storage/meta
       - ./storage/uploads:/app/storage/uploads
       - ./storage/geoip:/app/storage/geoip
     networks:
@@ -62,6 +63,7 @@ services:
       INTERNAL_API_BASE_URL: "http://server:8080/api/v2"
     volumes:
       - ./storage/html:/assets
+      - ./storage/meta:/app/storage/meta
     networks:
       - grtblog-internal
     restart: unless-stopped

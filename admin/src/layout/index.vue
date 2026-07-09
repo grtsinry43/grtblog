@@ -94,22 +94,36 @@ function buildUpgradeCommands(targetVersion: string) {
   const bare = targetVersion.replace(/^v/, '')
   const tag = `v${bare}`
 
+  const script = [
+    `bash <(curl -fsSL https://raw.githubusercontent.com/grtsinry43/grtblog/main/deploy/install.sh)`,
+    `# 国内：`,
+    `bash <(curl -fsSL https://cnb.cool/grtsinry43/grtblog/-/git/raw/main/deploy/install.sh)`,
+  ].join('\n')
+
   const prebuilt = [
-    `# deploy/.env`,
+    `# 1. deploy/.env 中更新版本号`,
     `APP_VERSION=${bare}`,
-    `docker compose pull server renderer`,
-    `docker compose up -d server renderer`,
+    `# 2. 同步部署配置（每次升级都要做，新版本可能修改了挂载或路由）`,
+    `BASE=https://raw.githubusercontent.com/grtsinry43/grtblog/main`,
+    `curl -fsSL "$BASE/deploy/docker-compose.yml"  -o docker-compose.yml`,
+    `curl -fsSL "$BASE/deploy/nginx/nginx.conf"    -o nginx/nginx.conf`,
+    `# 3. 拉取镜像并重启，重载 nginx 配置`,
+    `docker compose pull`,
+    `docker compose up -d`,
+    `docker compose exec nginx nginx -s reload`,
   ].join('\n')
 
   const localBuild = [
     `git fetch --tags`,
     `git checkout ${tag}`,
-    `docker compose up -d --build server renderer`,
+    `docker compose up -d --build`,
+    `docker compose exec nginx nginx -s reload`,
   ].join('\n')
 
   return {
-    localBuild,
+    script,
     prebuilt,
+    localBuild,
   }
 }
 
@@ -117,7 +131,7 @@ function renderUpdateDialogContent() {
   const info = updateInfo.value
   const targetVersion = info?.targetRelease?.tag || info?.latestRelease?.tag || '最新版本'
   const releaseBody = info?.targetRelease?.body?.trim() || info?.latestRelease?.body?.trim() || ''
-  const { prebuilt, localBuild } = buildUpgradeCommands(targetVersion)
+  const { script, prebuilt, localBuild } = buildUpgradeCommands(targetVersion)
   const releaseHtml = releaseBody
     ? releaseNotesMd.render(releaseBody)
     : `<p>${info?.message || `当前版本 ${info?.currentVersion}，检测到新版本 ${targetVersion}。`}</p>`
@@ -144,7 +158,16 @@ function renderUpdateDialogContent() {
         h(
           'div',
           { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' },
-          '预构建镜像升级',
+          '一键升级（推荐）— 自动同步 docker-compose.yml 与 nginx 配置',
+        ),
+        h('pre', {
+          class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',
+          innerHTML: escapeHtml(script),
+        }),
+        h(
+          'div',
+          { class: 'text-xs font-medium text-neutral-500 dark:text-neutral-400' },
+          '手动升级（预构建镜像）— 注意每次都需同步配置文件',
         ),
         h('pre', {
           class: 'overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-5 text-neutral-100',

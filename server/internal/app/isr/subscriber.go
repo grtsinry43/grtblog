@@ -40,9 +40,7 @@ func RegisterArticleSubscribers(bus appEvent.Bus, service *Service) {
 				"category:list",
 				"tag:list:public",
 				"timeline:by-year",
-				"post:list:page:1",
-				"post:list:page:2",
-				"post:list:page:3",
+				"post:list:page:*",
 				fmt.Sprintf("post:detail:%d", articleID),
 			}
 			urls := []string{
@@ -51,8 +49,6 @@ func RegisterArticleSubscribers(bus appEvent.Bus, service *Service) {
 				"/tags",
 				"/posts",
 				"/posts/page/1",
-				"/posts/page/2",
-				"/posts/page/3",
 			}
 			if shortURL != "" {
 				urls = append(urls, fmt.Sprintf("/posts/%s", shortURL))
@@ -86,16 +82,19 @@ func RegisterMomentSubscribers(bus appEvent.Bus, service *Service) {
 				"home:inspiration-stats",
 				"column:list",
 				"timeline:by-year",
-				"moment:list:page:1",
-				"moment:list:page:2",
-				"moment:list:page:3",
+				"moment:list:page:*",
 				fmt.Sprintf("moment:detail:%d", momentID),
 			}
-			_ = shortURL // moments detail URL uses date segments; dep invalidation handles tracked URLs.
 			urls := []string{
 				"/",
 				"/timeline",
 				"/moments",
+			}
+			// Brand-new moments are not tracked under any dep key yet, so the
+			// date-segmented detail URL must be enqueued directly. Deleted
+			// moments won't resolve; their tracked URL is handled by the dep.
+			if detailURL, ok := service.MomentDetailURL(ctx, shortURL); ok {
+				urls = append(urls, detailURL)
 			}
 			return service.Invalidate(ctx, deps, urls)
 		}))
@@ -147,9 +146,7 @@ func RegisterThinkingSubscribers(bus appEvent.Bus, service *Service) {
 			deps := []string{
 				"home:inspiration-stats",
 				"timeline:by-year",
-				"thinking:list:page:1",
-				"thinking:list:page:2",
-				"thinking:list:page:3",
+				"thinking:list:page:*",
 			}
 			urls := []string{
 				"/",
@@ -189,9 +186,7 @@ func RegisterFriendTimelineSubscribers(bus appEvent.Bus, service *Service) {
 
 	bus.Subscribe(federation.FederatedPostsCached{}.Name(), handlerFunc(func(ctx context.Context, _ appEvent.Event) error {
 		deps := []string{
-			"friend-timeline:list:page:1",
-			"friend-timeline:list:page:2",
-			"friend-timeline:list:page:3",
+			"friend-timeline:list:page:*",
 		}
 		urls := []string{
 			"/friends-timeline",
@@ -236,15 +231,13 @@ func RegisterAlbumSubscribers(bus appEvent.Bus, service *Service) {
 			}
 
 			deps := []string{
-				"album:list:page:1",
-				"album:list:page:2",
-				"album:list:page:3",
+				"album:list:page:*",
 				fmt.Sprintf("album:detail:%d", albumID),
 			}
 			urls := []string{"/albums"}
-			if shortURL != "" {
-				urls = append(urls, fmt.Sprintf("/albums/%s", shortURL))
-			}
+			// Resolve photo pages too: newly added photos have URLs that were
+			// never rendered, so dep invalidation alone cannot reach them.
+			urls = append(urls, service.AlbumURLs(ctx, shortURL)...)
 			return service.Invalidate(ctx, deps, urls)
 		}))
 	}

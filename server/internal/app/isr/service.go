@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainalbum "github.com/grtsinry43/grtblog-v2/server/internal/domain/album"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/content"
 	domainthinking "github.com/grtsinry43/grtblog-v2/server/internal/domain/thinking"
@@ -31,7 +32,12 @@ const (
 	defaultTrackedPages  = 3
 	defaultMomentPerPage = 20
 
-	bootstrapVersionFile = "storage/html/.bootstrap-version"
+	bootstrapVersionFile      = "storage/meta/isr/.bootstrap-version"
+	renderedHTMLRoot          = "storage/html"
+	assetManifestDir          = "storage/meta/isr/manifests"
+	activeAssetVersionFile    = "storage/meta/isr/.active-asset-version"
+	staleAssetGracePeriod     = 2 * time.Hour
+	staleAssetRetainedVersion = 2
 )
 
 var errStopWalk = errors.New("stop-walk")
@@ -105,6 +111,7 @@ type Service struct {
 	contentRepo  content.Repository
 	albumRepo    domainalbum.Repository
 	thinkingRepo domainthinking.ThinkingRepository
+	sysCfg       *sysconfig.Service
 	debounce     time.Duration
 
 	activityMu          sync.Mutex
@@ -112,7 +119,7 @@ type Service struct {
 	lastBootstrap       *BootstrapReport
 }
 
-func NewService(redisClient *redis.Client, redisPrefix string, renderer *htmlsnapshot.Service, contentRepo content.Repository, albumRepo domainalbum.Repository, thinkingRepo domainthinking.ThinkingRepository) *Service {
+func NewService(redisClient *redis.Client, redisPrefix string, renderer *htmlsnapshot.Service, contentRepo content.Repository, albumRepo domainalbum.Repository, thinkingRepo domainthinking.ThinkingRepository, sysCfg *sysconfig.Service) *Service {
 	return &Service{
 		redis:        redisClient,
 		redisPrefix:  redisPrefix,
@@ -120,6 +127,7 @@ func NewService(redisClient *redis.Client, redisPrefix string, renderer *htmlsna
 		contentRepo:  contentRepo,
 		albumRepo:    albumRepo,
 		thinkingRepo: thinkingRepo,
+		sysCfg:       sysCfg,
 		debounce:     defaultDebounce,
 	}
 }
@@ -127,6 +135,59 @@ func NewService(redisClient *redis.Client, redisPrefix string, renderer *htmlsna
 func (s *Service) Invalidate(ctx context.Context, depKeys []string, urls []string) error {
 	_, err := s.InvalidateWithReport(ctx, depKeys, urls, "event", false)
 	return err
+}
+
+// EnqueueURL schedules a single URL for background re-rendering through the
+// debounced ISR queue. Used by the renderer to backfill static snapshots
+// after an SSR fallback served a page that had no static file on disk.
+func (s *Service) EnqueueURL(ctx context.Context, rawURL string) (bool, error) {
+	enqueued, err := s.enqueueURLs(ctx, []string{rawURL})
+	if err != nil {
+		return false, err
+	}
+	return len(enqueued) > 0, nil
+}
+
+// MomentDetailURL resolves the canonical date-segmented detail path of a
+// moment, so publish events can enqueue brand-new pages that no dep key
+// tracks yet.
+func (s *Service) MomentDetailURL(ctx context.Context, shortURL string) (string, bool) {
+	shortURL = strings.TrimSpace(shortURL)
+	if shortURL == "" || s.contentRepo == nil {
+		return "", false
+	}
+	item, err := s.contentRepo.GetMomentByShortURL(ctx, shortURL)
+	if err != nil || item == nil {
+		return "", false
+	}
+	year, month, day := item.CreatedAt.In(s.sysCfg.Timezone(ctx)).Date()
+	return fmt.Sprintf("/moments/%04d/%02d/%02d/%s", year, int(month), day, shortURL), true
+}
+
+// AlbumURLs returns the album detail path plus all of its photo pages, so
+// album events can enqueue newly added photo pages that were never tracked.
+func (s *Service) AlbumURLs(ctx context.Context, shortURL string) []string {
+	shortURL = strings.TrimSpace(shortURL)
+	if shortURL == "" {
+		return nil
+	}
+	albumPath := fmt.Sprintf("/albums/%s", shortURL)
+	urls := []string{albumPath}
+	if s.albumRepo == nil {
+		return urls
+	}
+	albumItem, err := s.albumRepo.GetAlbumByShortURL(ctx, shortURL)
+	if err != nil || albumItem == nil {
+		return urls
+	}
+	photos, err := s.albumRepo.ListPhotosByAlbumID(ctx, albumItem.ID)
+	if err != nil {
+		return urls
+	}
+	for _, photo := range photos {
+		urls = append(urls, fmt.Sprintf("%s/photo/%d", albumPath, photo.ID))
+	}
+	return urls
 }
 
 func (s *Service) InvalidateWithReport(ctx context.Context, depKeys []string, urls []string, source string, syncRender bool) (*InvalidateReport, error) {
@@ -360,6 +421,14 @@ func (s *Service) NeedsBootstrapForVersion(ctx context.Context, version string) 
 	}
 	normalizedVersion := normalizeVersion(version)
 
+	hasHTML, err := hasRenderedHTML(renderedHTMLRoot)
+	if err != nil {
+		return false, "", err
+	}
+	if !hasHTML {
+		return true, "missing_html_snapshot", nil
+	}
+
 	if s.redis != nil {
 		_, urlCount, _, err := s.stats(ctx)
 		if err != nil {
@@ -379,13 +448,6 @@ func (s *Service) NeedsBootstrapForVersion(ctx context.Context, version string) 
 		return false, "version_unchanged", nil
 	}
 
-	hasHTML, err := hasRenderedHTML("storage/html")
-	if err != nil {
-		return false, "", err
-	}
-	if !hasHTML {
-		return true, "missing_html_snapshot", nil
-	}
 	currentVersion, err := s.readBootstrapVersionFile()
 	if err != nil {
 		return false, "", err
@@ -407,6 +469,12 @@ func (s *Service) MarkBootstrapVersion(ctx context.Context, version string) erro
 		}
 	}
 	if err := s.writeBootstrapVersionFile(normalizedVersion); err != nil {
+		errs = append(errs, err)
+	}
+	if err := writeActiveAssetVersionFile(normalizedVersion); err != nil {
+		errs = append(errs, err)
+	}
+	if err := cleanupStaleClientAssets(renderedHTMLRoot, normalizedVersion); err != nil {
 		errs = append(errs, err)
 	}
 	if len(errs) > 0 {
@@ -530,6 +598,7 @@ func (s *Service) discoverMomentRoutes(ctx context.Context) (int64, []string, er
 	paths := make([]string, 0, 256)
 	page := 1
 	var totalMoments int64
+	siteTZ := s.sysCfg.Timezone(ctx)
 	for {
 		items, total, err := s.contentRepo.ListPublicMoments(ctx, content.MomentListOptions{
 			Page:     page,
@@ -544,7 +613,7 @@ func (s *Service) discoverMomentRoutes(ctx context.Context) (int64, []string, er
 			if shortURL == "" {
 				continue
 			}
-			year, month, day := item.CreatedAt.Date()
+			year, month, day := item.CreatedAt.In(siteTZ).Date()
 			paths = append(paths, fmt.Sprintf("/moments/%04d/%02d/%02d/%s", year, int(month), day, shortURL))
 		}
 		if len(items) == 0 || int64(page*discoveryPageSize) >= total {
@@ -795,10 +864,10 @@ func (s *Service) urlsByDeps(ctx context.Context, depKeys []string) ([]string, e
 	}
 
 	urlSet := make(map[string]struct{}, 32)
-	for _, dep := range normalizedDeps {
-		members, err := s.redis.SMembers(ctx, s.depKey(dep)).Result()
+	collect := func(depRedisKey string) error {
+		members, err := s.redis.SMembers(ctx, depRedisKey).Result()
 		if err != nil && !errors.Is(err, redis.Nil) {
-			return nil, err
+			return err
 		}
 		for _, item := range members {
 			normalized, err := htmlsnapshot.NormalizeURLPath(item)
@@ -806,6 +875,27 @@ func (s *Service) urlsByDeps(ctx context.Context, depKeys []string) ([]string, e
 				continue
 			}
 			urlSet[normalized] = struct{}{}
+		}
+		return nil
+	}
+
+	for _, dep := range normalizedDeps {
+		// Wildcard deps (e.g. "post:list:page:*") expand to every tracked dep
+		// key matching the glob, so subscribers don't hardcode page numbers.
+		if strings.ContainsAny(dep, "*?[") {
+			keys, err := s.scanKeys(ctx, s.depKey(dep), 2000)
+			if err != nil {
+				return nil, err
+			}
+			for _, key := range keys {
+				if err := collect(key); err != nil {
+					return nil, err
+				}
+			}
+			continue
+		}
+		if err := collect(s.depKey(dep)); err != nil {
+			return nil, err
 		}
 	}
 
@@ -1024,6 +1114,13 @@ func (s *Service) writeBootstrapVersionFile(version string) error {
 	return os.WriteFile(bootstrapVersionFile, []byte(version+"\n"), 0o644)
 }
 
+func writeActiveAssetVersionFile(version string) error {
+	if err := os.MkdirAll(assetManifestDir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(activeAssetVersionFile, []byte(version+"\n"), 0o644)
+}
+
 func normalizeDeps(deps []string) []string {
 	set := make(map[string]struct{}, len(deps))
 	out := make([]string, 0, len(deps))
@@ -1093,4 +1190,266 @@ func hasRenderedHTML(root string) (bool, error) {
 		return false, err
 	}
 	return found, nil
+}
+
+type assetManifestInfo struct {
+	Version string
+	Path    string
+	ModTime time.Time
+}
+
+func cleanupStaleClientAssets(root string, activeVersion string) error {
+	activeVersion = normalizeVersion(activeVersion)
+
+	manifests, err := loadAssetManifestInfos(assetManifestDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	if len(manifests) == 0 {
+		return nil
+	}
+
+	liveRefs, err := collectHTMLAssetRefs(root)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+
+	retained := make(map[string]struct{}, staleAssetRetainedVersion)
+	retained[activeVersion] = struct{}{}
+	for _, item := range manifests {
+		if len(retained) >= staleAssetRetainedVersion {
+			break
+		}
+		retained[item.Version] = struct{}{}
+	}
+
+	// Files shared across versions (favicon, robots.txt, _app/version.json, ...)
+	// appear in every manifest under the same path. Deleting them while pruning
+	// an old manifest would break the currently active build, so collect the
+	// union of all retained manifests' entries and never touch those paths.
+	hasActiveManifest := false
+	retainedEntries := make(map[string]struct{}, 256)
+	for _, manifest := range manifests {
+		if _, keep := retained[manifest.Version]; !keep {
+			continue
+		}
+		if manifest.Version == activeVersion {
+			hasActiveManifest = true
+		}
+		entries, err := readManifestEntries(manifest.Path)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			normalized := strings.TrimPrefix(filepath.ToSlash(entry), "/")
+			if normalized == "" {
+				continue
+			}
+			retainedEntries[normalized] = struct{}{}
+		}
+	}
+	if !hasActiveManifest {
+		// Without the active version's manifest we cannot tell which shared
+		// files the live build still needs; pruning would be unsafe.
+		log.Printf("[isr] asset cleanup skipped: manifest for active version %s not found", activeVersion)
+		return nil
+	}
+
+	var errs []error
+	for _, manifest := range manifests {
+		if _, keep := retained[manifest.Version]; keep {
+			continue
+		}
+		if now.Sub(manifest.ModTime) < staleAssetGracePeriod {
+			continue
+		}
+		if err := pruneManifestAssets(root, manifest, liveRefs, retainedEntries, activeVersion); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
+}
+
+func loadAssetManifestInfos(dir string) ([]assetManifestInfo, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]assetManifestInfo, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".txt") {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return nil, err
+		}
+		version := strings.TrimSuffix(name, ".txt")
+		version = normalizeVersion(version)
+		items = append(items, assetManifestInfo{
+			Version: version,
+			Path:    filepath.Join(dir, name),
+			ModTime: info.ModTime(),
+		})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].ModTime.After(items[j].ModTime)
+	})
+	return items, nil
+}
+
+func collectHTMLAssetRefs(root string) (map[string]struct{}, error) {
+	refs := make(map[string]struct{})
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(strings.ToLower(d.Name()), ".html") {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		for _, match := range extractAppAssetRefs(string(content)) {
+			refs[match] = struct{}{}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return refs, nil
+}
+
+func extractAppAssetRefs(content string) []string {
+	const marker = "/_app/"
+
+	refs := make([]string, 0, 16)
+	seen := make(map[string]struct{}, 16)
+	for start := 0; start < len(content); {
+		idx := strings.Index(content[start:], marker)
+		if idx < 0 {
+			break
+		}
+		idx += start
+		end := idx
+		for end < len(content) {
+			ch := content[end]
+			if ch == '"' || ch == '\'' || ch == '<' || ch == '>' || ch == ' ' || ch == '\n' || ch == '\r' {
+				break
+			}
+			end++
+		}
+		ref := content[idx:end]
+		start = end
+		if ref == "" {
+			continue
+		}
+		ref = strings.TrimSpace(ref)
+		ref = strings.SplitN(ref, "?", 2)[0]
+		ref = strings.SplitN(ref, "#", 2)[0]
+		if _, exists := seen[ref]; exists {
+			continue
+		}
+		seen[ref] = struct{}{}
+		refs = append(refs, ref)
+	}
+	return refs
+}
+
+func pruneManifestAssets(root string, manifest assetManifestInfo, liveRefs map[string]struct{}, retainedEntries map[string]struct{}, activeVersion string) error {
+	entries, err := readManifestEntries(manifest.Path)
+	if err != nil {
+		return err
+	}
+
+	removedCount := 0
+	for _, entry := range entries {
+		normalized := strings.TrimPrefix(filepath.ToSlash(entry), "/")
+		if normalized == "" {
+			continue
+		}
+		if _, shared := retainedEntries[normalized]; shared {
+			continue
+		}
+		webPath := "/" + normalized
+		if _, live := liveRefs[webPath]; live {
+			continue
+		}
+
+		target := filepath.Join(root, filepath.FromSlash(normalized))
+		removed, err := removeIfExists(target)
+		if err != nil {
+			return err
+		}
+		if removed {
+			removedCount++
+			pruneEmptyDirs(filepath.Dir(target), root)
+		}
+	}
+
+	if err := os.Remove(manifest.Path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	log.Printf("[isr] asset cleanup pruned version=%s active=%s removed=%d", manifest.Version, activeVersion, removedCount)
+	return nil
+}
+
+func readManifestEntries(path string) ([]string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(content), "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		item := strings.TrimSpace(line)
+		if item == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func pruneEmptyDirs(dir string, stop string) {
+	stop = filepath.Clean(stop)
+	current := filepath.Clean(dir)
+	for current != stop && current != "." && current != string(filepath.Separator) {
+		entries, err := os.ReadDir(current)
+		if err != nil || len(entries) > 0 {
+			return
+		}
+		if err := os.Remove(current); err != nil {
+			return
+		}
+		current = filepath.Dir(current)
+	}
+}
+
+func removeIfExists(target string) (bool, error) {
+	if err := os.Remove(target); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
