@@ -1,7 +1,6 @@
 package router
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -128,7 +127,7 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	if deps.Redis != nil {
 		cache = fedinfra.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 	}
-	resolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
+	resolver := fedinfra.NewResolver(fedinfra.NewSafeHTTPClient(10*time.Second), cache)
 	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
 	outboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)

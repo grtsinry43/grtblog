@@ -54,6 +54,12 @@ func RegisterSubscribers(bus appEvent.Bus, svc *Service, contentRepo content.Rep
 		if !ok {
 			return nil
 		}
+		// Pending mentions still await review; notifying the user now would
+		// bypass moderation (spam/harassment vector). They get notified on
+		// approval via federation.mention.reviewed instead.
+		if status, _ := generic.Payload["Status"].(string); status != "approved" {
+			return nil
+		}
 		username, _ := generic.Payload["MentionedUser"].(string)
 		username = strings.TrimSpace(username)
 		if username == "" {
@@ -183,6 +189,17 @@ func RegisterSubscribers(bus appEvent.Bus, svc *Service, contentRepo content.Rep
 		contentText := fmt.Sprintf("联合提及 #%.0f 已被%s。", mentionID, action)
 		if identityRepo == nil {
 			return nil
+		}
+		// Approval is the moment the mentioned user should learn about it
+		// (pending mentions are intentionally silent for them).
+		if status == "approved" {
+			if userID, ok := generic.Payload["MentionedUserID"].(int64); ok && userID > 0 {
+				userTitle := "收到联合提及"
+				userContent := fmt.Sprintf("你收到的联合提及 #%.0f 已通过审核。", mentionID)
+				if _, err := svc.Create(ctx, userID, "federation.mention.received", userTitle, userContent, generic.Payload); err != nil {
+					return err
+				}
+			}
 		}
 		admins, err := identityRepo.ListAdmins(ctx)
 		if err != nil || len(admins) == 0 {

@@ -114,6 +114,9 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 	if !settings.AllowInbound {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
 	}
+	if err := enforceRequireHTTPS(settings, payload.SourceInstanceURL); err != nil {
+		return err
+	}
 	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, payload.SourceInstanceURL, "citation", settings.RateLimits); err != nil {
 		_ = h.events.Publish(c.Context(), appEvent.Generic{
 			EventName: "federation.inbound.rate_limited",
@@ -171,6 +174,16 @@ func (h *FederationCitationHandler) RequestCitation(c *fiber.Ctx) error {
 		RequestedAt:      time.Now().UTC(),
 	}
 	if err := h.citationRepo.Create(c.Context(), citation); err != nil {
+		// Unique index on source_request_id: a concurrent duplicate request
+		// may have won the race; return the existing record instead.
+		if reqID := strings.TrimSpace(payload.RequestID); reqID != "" {
+			if existing, findErr := h.citationRepo.FindBySourceRequestID(c.Context(), reqID); findErr == nil && existing != nil {
+				return response.Success(c, contract.FederationCitationResponseResp{
+					CitationID: existing.ID,
+					Status:     existing.Status,
+				})
+			}
+		}
 		return response.NewBizErrorWithCause(response.ServerError, "创建引用记录失败", err)
 	}
 
@@ -204,6 +217,7 @@ func (h *FederationCitationHandler) isFriendLink(ctx context.Context, baseURL st
 	if h.linkRepo == nil {
 		return false
 	}
-	_, err := h.linkRepo.FindByURL(ctx, strings.TrimRight(baseURL, "/"))
-	return err == nil
+	link, err := h.linkRepo.FindByURL(ctx, strings.TrimRight(baseURL, "/"))
+	// Auto-approval must only apply to currently active friend links.
+	return err == nil && link != nil && link.IsActive
 }

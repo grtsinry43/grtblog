@@ -2,6 +2,7 @@ package article
 
 import (
 	"context"
+	"log"
 	"time"
 
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
@@ -26,7 +27,9 @@ func publishFederationSignals(ctx context.Context, bus appEvent.Bus, article *co
 		if _, exists := deliveredMentions[key]; exists {
 			continue
 		}
-		_ = bus.Publish(ctx, appfed.MentionDetected{
+		// Only record the signal as delivered when the dispatch handler
+		// succeeded; otherwise the marker would be silently lost forever.
+		if err := bus.Publish(ctx, appfed.MentionDetected{
 			ArticleID:      article.ID,
 			AuthorID:       article.AuthorID,
 			Title:          article.Title,
@@ -36,7 +39,10 @@ func publishFederationSignals(ctx context.Context, bus appEvent.Bus, article *co
 			Context:        mention.Context,
 			MentionType:    "",
 			At:             now,
-		})
+		}); err != nil {
+			log.Printf("[federation] 提及事件发布失败 article_id=%d target=%s@%s err=%v", article.ID, mention.User, mention.Instance, err)
+			continue
+		}
 		newMentionKeys = append(newMentionKeys, key)
 	}
 	for _, citation := range citations {
@@ -44,7 +50,7 @@ func publishFederationSignals(ctx context.Context, bus appEvent.Bus, article *co
 		if _, exists := deliveredCitations[key]; exists {
 			continue
 		}
-		_ = bus.Publish(ctx, appfed.CitationDetected{
+		if err := bus.Publish(ctx, appfed.CitationDetected{
 			ArticleID:      article.ID,
 			AuthorID:       article.AuthorID,
 			Title:          article.Title,
@@ -54,7 +60,10 @@ func publishFederationSignals(ctx context.Context, bus appEvent.Bus, article *co
 			Context:        citation.Context,
 			CitationType:   "",
 			At:             now,
-		})
+		}); err != nil {
+			log.Printf("[federation] 引用事件发布失败 article_id=%d target=%s|%s err=%v", article.ID, citation.Instance, citation.PostID, err)
+			continue
+		}
 		newCitationKeys = append(newCitationKeys, key)
 	}
 	if len(newMentionKeys) == 0 && len(newCitationKeys) == 0 {

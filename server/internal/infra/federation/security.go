@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"net/netip"
 	"net/url"
 	"strings"
+	"syscall"
+	"time"
 )
 
 func ValidateRemoteURL(ctx context.Context, raw string) error {
@@ -60,4 +63,49 @@ func IsBlockedHost(host string) bool {
 func IsPrivateAddr(ip netip.Addr) bool {
 	return ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() ||
 		ip.IsLinkLocalMulticast() || ip.IsMulticast() || ip.IsUnspecified()
+}
+
+// NewSafeHTTPClient returns an HTTP client hardened for federation traffic:
+//   - the dialer rejects connections to private/loopback addresses at connect
+//     time (defends against DNS rebinding between validation and connection);
+//   - every redirect hop is re-validated against the SSRF rules and capped.
+func NewSafeHTTPClient(timeout time.Duration) *http.Client {
+	if timeout <= 0 {
+		timeout = 10 * time.Second
+	}
+	dialer := &net.Dialer{
+		Timeout:   timeout,
+		KeepAlive: 30 * time.Second,
+		Control: func(network, address string, _ syscall.RawConn) error {
+			host, _, err := net.SplitHostPort(address)
+			if err != nil {
+				return err
+			}
+			addr, err := netip.ParseAddr(host)
+			if err != nil {
+				return fmt.Errorf("invalid dial address: %w", err)
+			}
+			if IsPrivateAddr(addr) {
+				return fmt.Errorf("private address blocked: %s", host)
+			}
+			return nil
+		},
+	}
+	transport := &http.Transport{
+		DialContext:           dialer.DialContext,
+		TLSHandshakeTimeout:   timeout,
+		ResponseHeaderTimeout: timeout,
+		MaxIdleConns:          20,
+		IdleConnTimeout:       90 * time.Second,
+	}
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 5 {
+				return fmt.Errorf("stopped after 5 redirects")
+			}
+			return ValidateRemoteURL(req.Context(), req.URL.String())
+		},
+	}
 }

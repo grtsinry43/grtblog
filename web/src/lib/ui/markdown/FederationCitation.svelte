@@ -19,8 +19,13 @@
 		status?: string;
 	}>();
 
+	import { safeHttpUrl } from '$lib/shared/url/safe-url';
+
 	const isApproved = $derived(status === 'approved');
-	const resolvedUrl = $derived(url || `https://${instance}/posts/${postId}`);
+	const resolvedUrl = $derived(
+		safeHttpUrl(url, instance ? `https://${instance}/posts/${postId}` : '')
+	);
+	const safeCoverImage = $derived(safeHttpUrl(coverImage));
 	const displayTitle = $derived(title || resolvedUrl);
 </script>
 
@@ -77,12 +82,12 @@
 		</div>
 
 		<!-- Cover image -->
-		{#if coverImage}
+		{#if safeCoverImage}
 			<div
 				class="relative w-24 shrink-0 overflow-hidden border-l border-ink-100/50 dark:border-ink-800/50 sm:w-32"
 			>
 				<img
-					src={coverImage}
+					src={safeCoverImage}
 					alt=""
 					class="h-full w-full object-cover grayscale-[0.3] transition-all duration-500 group-hover:scale-105 group-hover:grayscale-0"
 					loading="lazy"

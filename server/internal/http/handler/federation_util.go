@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 	fedinfra "github.com/grtsinry43/grtblog-v2/server/internal/infra/federation"
@@ -33,6 +34,13 @@ func fetchFederationDocs(ctx context.Context, resolver *fedinfra.Resolver, baseU
 }
 
 func ensureFederationInstance(ctx context.Context, baseURL string, resolver *fedinfra.Resolver, instanceRepo federation.FederationInstanceRepository) (*federation.FederationInstance, error) {
+	// Reject blocked instances before making any outbound fetch on their behalf.
+	if instanceRepo != nil {
+		if existing, err := instanceRepo.GetByBaseURL(ctx, strings.TrimRight(baseURL, "/")); err == nil && existing != nil &&
+			strings.EqualFold(strings.TrimSpace(existing.Status), "blocked") {
+			return nil, response.NewBizErrorWithMsg(response.Unauthorized, "该实例已被封禁")
+		}
+	}
 	manifest, endpoints, publicKey, err := fetchFederationDocs(ctx, resolver, baseURL)
 	if err != nil {
 		return nil, err
@@ -57,6 +65,9 @@ func ensureInstanceFromDocs(
 	endpointsPayload := toJSON(endpoints)
 
 	instance, err := instanceRepo.GetByBaseURL(ctx, baseURL)
+	if err == nil && instance != nil && strings.EqualFold(strings.TrimSpace(instance.Status), "blocked") {
+		return nil, response.NewBizErrorWithMsg(response.Unauthorized, "该实例已被封禁")
+	}
 	if err != nil {
 		if !errors.Is(err, federation.ErrFederationInstanceNotFound) {
 			return nil, err
@@ -93,6 +104,18 @@ func ensureInstanceFromDocs(
 		return nil, err
 	}
 	return instance, nil
+}
+
+// enforceRequireHTTPS rejects plain-HTTP source instances when the
+// federation.requireHTTPS setting is enabled.
+func enforceRequireHTTPS(settings sysconfig.FederationSettings, rawURL string) error {
+	if !settings.RequireHTTPS {
+		return nil
+	}
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(rawURL)), "http://") {
+		return response.NewBizErrorWithMsg(response.Unauthorized, "本站要求联合请求来源必须为 HTTPS")
+	}
+	return nil
 }
 
 func toOptionalString(val string) *string {

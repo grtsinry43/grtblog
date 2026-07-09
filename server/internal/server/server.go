@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -214,7 +213,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, cfg.App.HTMLSnapshotBaseURL, redisClient, cfg.Redis.Prefix)
 	isrSvc := isr.NewService(redisClient, cfg.Redis.Prefix, htmlSnapshotSvc, contentRepo, albumRepo, thinkingRepo, sysCfgSvc)
 	httpStats := metrics.NewHTTPStats(6 * time.Hour)
-	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
+	fedResolver := fedinfra.NewResolver(fedinfra.NewSafeHTTPClient(10*time.Second), fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
 	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))
 	fedDeliver := appfed.NewDeliveryService(
 		persistence.NewOutboundDeliveryRepository(db),

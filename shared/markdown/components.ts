@@ -146,7 +146,13 @@ export interface ParsedComponentInfo {
 	rawAttrs: string;
 }
 
-const attrRegex = /([A-Za-z][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s]+))/g;
+// Quoted values may contain backslash escapes produced by
+// quoteComponentAttributeValue / the server-side escAttr helper
+// (\" \\ \n), so the regex must consume escaped characters as a unit.
+const attrRegex = /([A-Za-z][\w-]*)\s*=\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|([^\s]+))/g;
+
+const unescapeComponentAttributeValue = (value: string) =>
+	value.replace(/\\(.)/g, (_, ch: string) => (ch === 'n' ? '\n' : ch));
 
 export const parseComponentAttributes = (raw: string) => {
 	if (!raw) {
@@ -162,7 +168,9 @@ export const parseComponentAttributes = (raw: string) => {
 
 	while ((match = attrRegex.exec(trimmed)) !== null) {
 		const key = match[1];
-		const value = match[2] ?? match[3] ?? match[4] ?? '';
+		const quoted = match[2] ?? match[3];
+		const value =
+			quoted !== undefined ? unescapeComponentAttributeValue(quoted) : (match[4] ?? '');
 		if (typeof key === 'string') {
 			attrs[key] = value;
 		}

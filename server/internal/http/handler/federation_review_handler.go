@@ -114,6 +114,14 @@ func (h *FederationReviewHandler) ReviewCitation(c *fiber.Ctx) error {
 	if trimmed := strings.TrimSpace(req.Reason); trimmed != "" {
 		reason = &trimmed
 	}
+	current, err := h.citationRepo.GetByID(c.Context(), id)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.NotFound, "引用不存在")
+	}
+	// Idempotent: repeating the same decision must not re-send callbacks.
+	if current.Status == status {
+		return response.SuccessWithMessage[any](c, nil, "审核结果已是该状态")
+	}
 	if err := h.citationRepo.UpdateStatus(c.Context(), id, status, reason); err != nil {
 		return err
 	}
@@ -162,6 +170,14 @@ func (h *FederationReviewHandler) ReviewMention(c *fiber.Ctx) error {
 	var reason *string
 	if trimmed := strings.TrimSpace(req.Reason); trimmed != "" {
 		reason = &trimmed
+	}
+	current, err := h.mentionRepo.GetByID(c.Context(), id)
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.NotFound, "提及不存在")
+	}
+	// Idempotent: repeating the same decision must not re-send callbacks.
+	if current.Status == status {
+		return response.SuccessWithMessage[any](c, nil, "审核结果已是该状态")
 	}
 	if err := h.mentionRepo.UpdateStatus(c.Context(), id, status, reason); err != nil {
 		return err

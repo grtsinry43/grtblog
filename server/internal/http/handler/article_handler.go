@@ -1003,11 +1003,16 @@ func (h *ArticleHandler) expandFederationContent(ctx context.Context, art *conte
 	}
 	var allInstances []domainfed.FederationInstance
 	var allPosts []domainfed.FederatedPostCache
+	seenInstances := make(map[int64]struct{})
 	for u := range instanceURLs {
-		inst, err := h.instanceRepo.GetByBaseURL(ctx, u)
-		if err != nil || inst == nil {
+		inst := h.resolveFederationInstanceByURL(ctx, u)
+		if inst == nil {
 			continue
 		}
+		if _, ok := seenInstances[inst.ID]; ok {
+			continue
+		}
+		seenInstances[inst.ID] = struct{}{}
 		allInstances = append(allInstances, *inst)
 		posts, err := h.postCacheRepo.ListByInstance(ctx, inst.ID, nil, 100)
 		if err == nil {
@@ -1015,6 +1020,28 @@ func (h *ArticleHandler) expandFederationContent(ctx context.Context, art *conte
 		}
 	}
 	return article.ExpandFederationSignals(contentStr, deliveries, allPosts, allInstances)
+}
+
+// resolveFederationInstanceByURL looks up a federation instance by its base
+// URL. Delivery targets may be stored as bare hosts (from <cite:host|id>
+// markers) while instances persist full URLs with scheme, so fall back to
+// scheme-prefixed candidates when the exact match misses.
+func (h *ArticleHandler) resolveFederationInstanceByURL(ctx context.Context, raw string) *domainfed.FederationInstance {
+	trimmed := strings.TrimRight(strings.TrimSpace(raw), "/")
+	if trimmed == "" {
+		return nil
+	}
+	candidates := []string{trimmed}
+	if !strings.HasPrefix(trimmed, "http://") && !strings.HasPrefix(trimmed, "https://") {
+		candidates = append(candidates, "https://"+trimmed, "http://"+trimmed)
+	}
+	for _, candidate := range candidates {
+		inst, err := h.instanceRepo.GetByBaseURL(ctx, candidate)
+		if err == nil && inst != nil {
+			return inst
+		}
+	}
+	return nil
 }
 
 func mapTOCNodes(nodes []content.TOCNode) []contract.TOCNode {

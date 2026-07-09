@@ -156,11 +156,13 @@ export function useCitationPicker(view: Ref<EditorView | undefined>) {
     close()
   }
 
-  /** 手动输入插入 */
+  /** 手动输入插入（归一化为 hostname，与选文路径保持一致） */
   function insertRaw(instance: string, postId: string) {
     const v = view.value
     if (!v || !instance.trim() || !postId.trim()) return
-    const text = `<cite:${instance.trim()}|${postId.trim()}>`
+    const hostname = extractHostname(instance.trim())
+    if (!hostname) return
+    const text = `<cite:${hostname}|${postId.trim()}>`
     const pos = v.state.selection.main.head
     v.dispatch({ changes: { from: pos, to: pos, insert: text } })
     v.focus()

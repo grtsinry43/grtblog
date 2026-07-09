@@ -29,6 +29,9 @@ type FriendLinkSyncJobRepository interface {
 	Update(ctx context.Context, job *FriendLinkSyncJob) error
 	List(ctx context.Context, options FriendLinkSyncJobListOptions) ([]FriendLinkSyncJob, int64, error)
 	ListProcessable(ctx context.Context, now time.Time, limit int) ([]FriendLinkSyncJob, error)
+	// HasPending reports whether a queued/running job already exists for the
+	// friend link, so schedulers don't pile up duplicate jobs.
+	HasPending(ctx context.Context, friendLinkID int64) (bool, error)
 }
 
 type GlobalNotificationRepository interface {

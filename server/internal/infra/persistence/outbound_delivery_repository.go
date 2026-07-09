@@ -59,9 +59,44 @@ func (r *OutboundDeliveryRepository) GetByRequestID(ctx context.Context, request
 
 func (r *OutboundDeliveryRepository) Update(ctx context.Context, delivery *federation.OutboundDelivery) error {
 	rec := mapOutboundDeliveryToModel(delivery)
+	// Use a map so nullable fields (next_retry_at, error_message, ...) can be
+	// cleared back to NULL; Updates(&struct) skips nil pointers.
 	return r.db.WithContext(ctx).Model(&model.OutboundDelivery{}).
 		Where("id = ?", delivery.ID).
-		Updates(&rec).Error
+		Updates(map[string]any{
+			"target_endpoint":  rec.TargetEndpoint,
+			"payload":          rec.Payload,
+			"status":           rec.Status,
+			"attempt_count":    rec.AttemptCount,
+			"max_attempts":     rec.MaxAttempts,
+			"next_retry_at":    rec.NextRetryAt,
+			"http_status":      rec.HTTPStatus,
+			"response_body":    rec.ResponseBody,
+			"error_message":    rec.ErrorMessage,
+			"remote_ticket_id": rec.RemoteTicketID,
+			"trace_id":         rec.TraceID,
+			"last_callback_at": rec.LastCallbackAt,
+			"updated_at":       time.Now().UTC(),
+		}).Error
+}
+
+// ClaimForSend atomically transitions a delivery into "sending" and bumps the
+// attempt counter. Returns false when another worker already claimed it (or
+// the record is dead). A stale "sending" row (crashed worker) can be
+// re-claimed once its updated_at falls behind staleBefore.
+func (r *OutboundDeliveryRepository) ClaimForSend(ctx context.Context, id int64, staleBefore time.Time) (bool, error) {
+	res := r.db.WithContext(ctx).Model(&model.OutboundDelivery{}).
+		Where("id = ? AND status <> ? AND (status <> ? OR updated_at <= ?)",
+			id, federation.DeliveryStatusDead, federation.DeliveryStatusSending, staleBefore).
+		Updates(map[string]any{
+			"status":        federation.DeliveryStatusSending,
+			"attempt_count": gorm.Expr("attempt_count + 1"),
+			"updated_at":    time.Now().UTC(),
+		})
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
 }
 
 func (r *OutboundDeliveryRepository) List(ctx context.Context, options federation.OutboundDeliveryListOptions) ([]federation.OutboundDelivery, int64, error) {
@@ -110,10 +145,18 @@ func (r *OutboundDeliveryRepository) ListRetryable(ctx context.Context, now time
 	if limit <= 0 {
 		limit = 100
 	}
+	// Include "sending" rows that have been stuck for a while so deliveries
+	// interrupted by a crash between claim and finish are eventually retried.
+	staleSendingBefore := now.Add(-10 * time.Minute)
 	var recs []model.OutboundDelivery
 	if err := r.db.WithContext(ctx).
-		Where("status IN ?", []string{federation.DeliveryStatusQueued, federation.DeliveryStatusFailed, federation.DeliveryStatusTimeout}).
-		Where("(next_retry_at IS NULL OR next_retry_at <= ?)", now).
+		Where(
+			"(status IN ? AND (next_retry_at IS NULL OR next_retry_at <= ?)) OR (status = ? AND updated_at <= ?)",
+			[]string{federation.DeliveryStatusQueued, federation.DeliveryStatusFailed, federation.DeliveryStatusTimeout},
+			now,
+			federation.DeliveryStatusSending,
+			staleSendingBefore,
+		).
 		Order("created_at ASC").
 		Limit(limit).
 		Find(&recs).Error; err != nil {

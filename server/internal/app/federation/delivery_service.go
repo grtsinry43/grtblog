@@ -26,13 +26,18 @@ type CallbackResultCmd struct {
 	RemoteTicketID string
 	Reason         string
 	ProcessedAt    *time.Time
+	// CallerBaseURL is the verified signature source; when set it must match
+	// the delivery target so one instance cannot forge callbacks for another.
+	CallerBaseURL string
 }
 
 var (
-	ErrTargetInstanceEmpty            = errors.New("target instance is empty")
+	ErrTargetInstanceEmpty           = errors.New("target instance is empty")
 	ErrTargetFriendLinkNotFederation = errors.New("target friend link is not federation type")
 	ErrFederationInstanceNotBound    = errors.New("federation instance not bound")
 	ErrFederationInstanceNotActive   = errors.New("federation instance not active")
+	ErrCallbackSourceMismatch        = errors.New("callback source does not match delivery target")
+	ErrSelfTarget                    = errors.New("target instance is this instance itself")
 )
 
 type DeliveryService struct {
@@ -50,6 +55,9 @@ func NewDeliveryService(repo domainfed.OutboundDeliveryRepository, outbound *Out
 }
 
 func (s *DeliveryService) DispatchFriendLink(ctx context.Context, target, message, rssURL string, traceID *string) (*domainfed.OutboundDelivery, error) {
+	if s.outbound != nil && s.outbound.IsSelfTarget(ctx, target) {
+		return nil, ErrSelfTarget
+	}
 	payload, _ := json.Marshal(contract.FederationFriendLinkRequestReq{
 		RequesterURL: "",
 		Message:      message,
@@ -63,6 +71,9 @@ func (s *DeliveryService) DispatchFriendLink(ctx context.Context, target, messag
 }
 
 func (s *DeliveryService) DispatchCitation(ctx context.Context, ev CitationDetected, traceID *string) (*domainfed.OutboundDelivery, error) {
+	if s.outbound != nil && s.outbound.IsSelfTarget(ctx, ev.TargetInstance) {
+		return nil, ErrSelfTarget
+	}
 	targetType := s.resolveCitationTarget(ctx, ev.TargetInstance)
 	payload, _ := json.Marshal(ev)
 	articleID := ev.ArticleID
@@ -87,6 +98,9 @@ func (s *DeliveryService) DispatchCitation(ctx context.Context, ev CitationDetec
 }
 
 func (s *DeliveryService) DispatchMention(ctx context.Context, ev MentionDetected, traceID *string) (*domainfed.OutboundDelivery, error) {
+	if s.outbound != nil && s.outbound.IsSelfTarget(ctx, ev.TargetInstance) {
+		return nil, ErrSelfTarget
+	}
 	targetType := s.resolveCitationTarget(ctx, ev.TargetInstance)
 	// RSS 友链无用户体系，提及无法送达
 	if targetType == "rss" {
@@ -133,6 +147,14 @@ func (s *DeliveryService) HandleCallback(ctx context.Context, cmd CallbackResult
 	item, err := s.repo.GetByRequestID(ctx, strings.TrimSpace(cmd.RequestID))
 	if err != nil {
 		return nil, err
+	}
+	if caller := strings.TrimSpace(cmd.CallerBaseURL); caller != "" {
+		callerHost, callerPort := parseHostPort(caller)
+		targetHost, targetPort := parseHostPort(item.TargetInstanceURL)
+		if callerHost == "" || !strings.EqualFold(callerHost, targetHost) ||
+			(targetPort != "" && callerPort != targetPort) {
+			return nil, ErrCallbackSourceMismatch
+		}
 	}
 	if typ := strings.TrimSpace(cmd.Type); typ != "" && typ != item.DeliveryType {
 		return nil, errors.New("callback type mismatch")
@@ -245,11 +267,14 @@ func (s *DeliveryService) beginSend(ctx context.Context, item *domainfed.Outboun
 	if item.Status == domainfed.DeliveryStatusDead {
 		return false
 	}
-	item.Status = domainfed.DeliveryStatusSending
-	item.AttemptCount++
-	if err := s.repo.Update(ctx, item); err != nil {
+	// Atomic claim: prevents concurrent workers (retry worker vs. manual
+	// retry vs. initial dispatch) from double-sending the same delivery.
+	claimed, err := s.repo.ClaimForSend(ctx, item.ID, time.Now().UTC().Add(-10*time.Minute))
+	if err != nil || !claimed {
 		return false
 	}
+	item.Status = domainfed.DeliveryStatusSending
+	item.AttemptCount++
 	s.publishStatus(ctx, item)
 	return true
 }
@@ -447,4 +472,3 @@ func (s *DeliveryService) resolveCitationTarget(ctx context.Context, target stri
 	}
 	return "unknown"
 }
-

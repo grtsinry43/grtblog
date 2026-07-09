@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { ExternalLink, Quote } from 'lucide-svelte';
+	import { safeHttpUrl } from '$lib/shared/url/safe-url';
 	import type { FriendTimelineItem } from '../types';
 
 	let { item } = $props<{ item: FriendTimelineItem }>();
+
+	const safeUrl = $derived(safeHttpUrl(item.url));
+	const safeCoverImage = $derived(safeHttpUrl(item.cover_image));
 
 	const formatDate = (dateStr: string) => {
 		const date = new Date(dateStr);
@@ -28,13 +32,13 @@
 	<!-- Content Card -->
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
 	<a
-		href={item.url}
+		href={safeUrl || undefined}
 		target="_blank"
 		rel="noopener noreferrer"
 		class="block relative bg-ink-50/50 dark:bg-ink-900/20 rounded-default border border-ink-100 dark:border-ink-800/50 hover:border-jade-500/30 dark:hover:border-jade-400/30 hover:bg-white dark:hover:bg-ink-900 transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] overflow-hidden flex flex-col sm:flex-row max-w-2xl"
 	>
 		<!-- Background Decoration (Only visible if no cover image) -->
-		{#if !item.cover_image}
+		{#if !safeCoverImage}
 			<Quote
 				size={80}
 				strokeWidth={0.5}
@@ -43,12 +47,12 @@
 		{/if}
 
 		<!-- Cover Image (Left Side on Desktop, Top on Mobile) -->
-		{#if item.cover_image}
+		{#if safeCoverImage}
 			<div
 				class="w-full sm:w-40 h-32 sm:h-auto shrink-0 overflow-hidden relative border-b sm:border-b-0 sm:border-r border-ink-100 dark:border-ink-800/50 bg-ink-100 dark:bg-ink-800"
 			>
 				<img
-					src={item.cover_image}
+					src={safeCoverImage}
 					alt={item.title}
 					class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
 					loading="lazy"

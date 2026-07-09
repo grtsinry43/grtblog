@@ -456,7 +456,10 @@ func (h *FederationAdminHandler) FetchRemotePosts(c *fiber.Ctx) error {
 	timelineURL.RawQuery = q.Encode()
 
 	// 拉取远端时间线
-	httpClient := &http.Client{Timeout: 10 * time.Second}
+	if err := fedinfra.ValidateRemoteURL(c.Context(), timelineURL.String()); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "远端 timeline 端点不安全", err)
+	}
+	httpClient := fedinfra.NewSafeHTTPClient(10 * time.Second)
 	req, err := http.NewRequestWithContext(c.Context(), http.MethodGet, timelineURL.String(), nil)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "构建请求失败", err)

@@ -36,7 +36,7 @@ func NewOutboundService(cfgSvc *sysconfig.Service, resolver *fedinfra.Resolver, 
 		cfgSvc:       cfgSvc,
 		resolver:     resolver,
 		instanceRepo: instanceRepo,
-		client:       &http.Client{Timeout: 10 * time.Second},
+		client:       fedinfra.NewSafeHTTPClient(10 * time.Second),
 	}
 }
 
@@ -187,20 +187,62 @@ func (s *OutboundService) resolveEndpoint(ctx context.Context, target string, ke
 	if path == "" {
 		return "", fmt.Errorf("endpoints.%s is empty", key)
 	}
+	endpoint := ""
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		return path, nil
+		endpoint = path
+	} else {
+		base := strings.TrimSpace(endpoints.BaseURL)
+		if base == "" {
+			return "", errors.New("endpoints.base_url is empty")
+		}
+		if !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
+			return "", fmt.Errorf("endpoints.base_url must include scheme: %s", base)
+		}
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
+		endpoint = strings.TrimRight(base, "/") + path
 	}
-	base := strings.TrimSpace(endpoints.BaseURL)
-	if base == "" {
-		return "", errors.New("endpoints.base_url is empty")
+	if err := s.enforceOutboundHTTPS(ctx, endpoint); err != nil {
+		return "", err
 	}
-	if !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
-		return "", fmt.Errorf("endpoints.base_url must include scheme: %s", base)
+	return endpoint, nil
+}
+
+// IsSelfTarget reports whether the given target resolves to this instance
+// itself, guarding against self-referential delivery loops.
+func (s *OutboundService) IsSelfTarget(ctx context.Context, target string) bool {
+	if s.cfgSvc == nil {
+		return false
 	}
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+	settings, err := s.cfgSvc.FederationSettings(ctx)
+	if err != nil {
+		return false
 	}
-	return strings.TrimRight(base, "/") + path, nil
+	selfHost, selfPort := parseHostPort(settings.InstanceURL)
+	targetHost, targetPort := parseHostPort(target)
+	if selfHost == "" || targetHost == "" {
+		return false
+	}
+	if !strings.EqualFold(selfHost, targetHost) {
+		return false
+	}
+	return selfPort == targetPort || selfPort == "" || targetPort == ""
+}
+
+// enforceOutboundHTTPS rejects plain-HTTP endpoints when federation.requireHTTPS is on.
+func (s *OutboundService) enforceOutboundHTTPS(ctx context.Context, endpoint string) error {
+	if s.cfgSvc == nil {
+		return nil
+	}
+	settings, err := s.cfgSvc.FederationSettings(ctx)
+	if err != nil {
+		return err
+	}
+	if settings.RequireHTTPS && strings.HasPrefix(strings.ToLower(endpoint), "http://") {
+		return fmt.Errorf("requireHTTPS enabled, refusing plain http endpoint: %s", endpoint)
+	}
+	return nil
 }
 
 type signingSettings struct {

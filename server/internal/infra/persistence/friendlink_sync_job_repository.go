@@ -108,6 +108,18 @@ func (r *FriendLinkSyncJobRepository) List(ctx context.Context, options social.F
 	return items, total, nil
 }
 
+func (r *FriendLinkSyncJobRepository) HasPending(ctx context.Context, friendLinkID int64) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&model.FriendLinkSyncJob{}).
+		Where("friend_link_id = ?", friendLinkID).
+		Where("status IN ?", []string{social.FriendLinkSyncJobStatusQueued, social.FriendLinkSyncJobStatusRunning}).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (r *FriendLinkSyncJobRepository) ListProcessable(ctx context.Context, now time.Time, limit int) ([]social.FriendLinkSyncJob, error) {
 	if limit <= 0 {
 		limit = 100

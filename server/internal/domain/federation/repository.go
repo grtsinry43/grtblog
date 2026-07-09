@@ -61,6 +61,11 @@ type OutboundDeliveryRepository interface {
 	GetByID(ctx context.Context, id int64) (*OutboundDelivery, error)
 	GetByRequestID(ctx context.Context, requestID string) (*OutboundDelivery, error)
 	Update(ctx context.Context, delivery *OutboundDelivery) error
+	// ClaimForSend atomically moves a delivery into "sending" and increments
+	// attempt_count; returns false when the record was already claimed by a
+	// concurrent worker or is dead. Stale "sending" rows older than
+	// staleBefore may be re-claimed.
+	ClaimForSend(ctx context.Context, id int64, staleBefore time.Time) (bool, error)
 	List(ctx context.Context, options OutboundDeliveryListOptions) ([]OutboundDelivery, int64, error)
 	ListRetryable(ctx context.Context, now time.Time, limit int) ([]OutboundDelivery, error)
 	ListBySourceArticle(ctx context.Context, articleID int64, limit int) ([]OutboundDelivery, error)

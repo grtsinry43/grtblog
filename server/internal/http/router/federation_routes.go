@@ -1,7 +1,6 @@
 package router
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -41,7 +40,7 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	} else {
 		rateLimiter = federation.NewInMemoryRateLimiter()
 	}
-	resolver := federation.NewResolver(&http.Client{Timeout: 10 * time.Second}, cache)
+	resolver := federation.NewResolver(federation.NewSafeHTTPClient(10*time.Second), cache)
 	verifier := federation.NewVerifier(resolver, 5*time.Minute)
 	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
 	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, linkRepo, deps.EventBus)

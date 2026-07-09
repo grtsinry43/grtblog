@@ -198,9 +198,13 @@ func (r *FederatedPostCacheRepository) ListTimeline(ctx context.Context, page, p
 	if pageSize > 100 {
 		pageSize = 100
 	}
-	query := r.db.WithContext(ctx).Model(&model.FederatedPostCache{})
+	// Only expose posts belonging to currently active friend links.
 	var total int64
-	if err := query.Count(&total).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Table("federated_post_cache").
+		Joins("JOIN friend_link ON friend_link.id = federated_post_cache.friend_link_id").
+		Where("friend_link.is_active = ?", true).
+		Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -215,7 +219,8 @@ func (r *FederatedPostCacheRepository) ListTimeline(ctx context.Context, page, p
 	if err := r.db.WithContext(ctx).
 		Table("federated_post_cache").
 		Select("federated_post_cache.*, friend_link.name as friend_link_name, friend_link.url as friend_link_url").
-		Joins("LEFT JOIN friend_link ON friend_link.id = federated_post_cache.friend_link_id").
+		Joins("JOIN friend_link ON friend_link.id = federated_post_cache.friend_link_id").
+		Where("friend_link.is_active = ?", true).
 		Order("federated_post_cache.published_at DESC, federated_post_cache.id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).

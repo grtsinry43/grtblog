@@ -1,12 +1,16 @@
 <script lang="ts">
 	import type { FriendLink } from '../types';
 	import { ExternalLink } from 'lucide-svelte';
+	import { safeHttpUrl } from '$lib/shared/url/safe-url';
 
 	let { friend } = $props<{ friend: FriendLink }>();
+
+	const safeUrl = $derived(safeHttpUrl(friend.url));
+	const safeLogo = $derived(safeHttpUrl(friend.logo));
 </script>
 
 <a
-	href={friend.url}
+	href={safeUrl || undefined}
 	target="_blank"
 	rel="noopener noreferrer"
 	class="group relative flex flex-col p-6 rounded-default border border-ink-200/60 bg-white/40 dark:border-ink-800 dark:bg-ink-900/40 backdrop-blur-sm transition-all duration-500 hover:border-jade-500/40 hover:shadow-[8px_8px_0px_rgba(20,184,166,0.08)] dark:hover:shadow-[8px_8px_0px_rgba(20,184,166,0.03)] noise-surface overflow-hidden"
@@ -27,7 +31,7 @@
 			class="w-13 h-13 rounded-full bg-ink-50 dark:bg-ink-950 flex-shrink-0 border border-ink-200/80 dark:border-ink-700/80 group-hover:border-jade-500/40 transition-all duration-500 overflow-hidden ring-4 ring-transparent group-hover:ring-jade-500/5"
 		>
 			<img
-				src={friend.logo}
+				src={safeLogo || undefined}
 				alt={friend.name}
 				class="w-full h-full object-cover grayscale-[0.4] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-out"
 			/>

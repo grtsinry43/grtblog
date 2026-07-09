@@ -17,7 +17,7 @@ type Client struct {
 
 func NewClient(httpClient *http.Client, signer *Signer) *Client {
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 10 * time.Second}
+		httpClient = NewSafeHTTPClient(10 * time.Second)
 	}
 	return &Client{httpClient: httpClient, signer: signer}
 }

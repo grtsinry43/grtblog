@@ -55,7 +55,10 @@ export function useMentionPicker(view: Ref<EditorView | undefined>) {
   function insertRaw(user: string, instance: string) {
     const v = view.value
     if (!v || !user.trim() || !instance.trim()) return
-    const text = `<@${user.trim()}@${instance.trim()}>`
+    // 归一化为 hostname，与选择路径保持一致，避免出现带 scheme 的标记
+    const hostname = extractHostname(instance.trim())
+    if (!hostname) return
+    const text = `<@${user.trim()}@${hostname}>`
     const pos = v.state.selection.main.head
     v.dispatch({ changes: { from: pos, to: pos, insert: text } })
     v.focus()

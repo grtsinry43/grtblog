@@ -19,7 +19,7 @@ type Resolver struct {
 
 func NewResolver(client *http.Client, cache Cache) *Resolver {
 	if client == nil {
-		client = &http.Client{Timeout: 10 * time.Second}
+		client = NewSafeHTTPClient(10 * time.Second)
 	}
 	return &Resolver{client: client, cache: cache}
 }

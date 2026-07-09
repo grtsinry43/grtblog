@@ -64,17 +64,18 @@ func ExpandFederationSignals(
 		}
 		instance := sub[1]
 		postID := sub[2]
+		instanceHost := extractHost(instance)
 
 		// Find delivery status. Map transient statuses to the
 		// three states the frontend understands: approved / pending / rejected.
 		status := "pending"
-		dKey := "citation|" + instance + "|" + postID
+		dKey := "citation|" + instanceHost + "|" + postID
 		if d, ok := deliveryByKey[dKey]; ok {
 			status = normalizeFrontendStatus(d.Status)
 		}
 
 		// Find cached post data.
-		cacheKey := instance + "|" + postID
+		cacheKey := instanceHost + "|" + postID
 		cached := postByKey[cacheKey]
 
 		title := ""
@@ -99,7 +100,7 @@ func ExpandFederationSignals(
 			}
 		}
 		if postURL == "" {
-			postURL = "https://" + instance + "/posts/" + postID
+			postURL = "https://" + instanceHost + "/posts/" + postID
 		}
 
 		return buildCitationBlock(instance, postID, title, summary, postURL, coverImage, authorName, status)
@@ -115,7 +116,7 @@ func ExpandFederationSignals(
 		instance := sub[2]
 
 		status := "pending"
-		dKey := "mention|" + instance + "|" + user
+		dKey := "mention|" + extractHost(instance) + "|" + user
 		if d, ok := deliveryByKey[dKey]; ok {
 			status = normalizeFrontendStatus(d.Status)
 		}
@@ -186,21 +187,34 @@ func escAttr(s string) string {
 
 func deliveryKey(d *federation.OutboundDelivery) string {
 	host := extractHost(d.TargetInstanceURL)
-	// Extract identifier from payload.
+	// Extract identifier from payload. Payloads are marshaled from the
+	// CitationDetected/MentionDetected event structs (PascalCase keys),
+	// but older/manual records may use snake_case, so accept both.
 	var payload map[string]any
 	if err := json.Unmarshal(d.Payload, &payload); err == nil {
 		switch d.DeliveryType {
 		case federation.DeliveryTypeCitation:
-			if pid, ok := payload["target_post_id"].(string); ok {
+			if pid := firstStringValue(payload, "TargetPostID", "target_post_id"); pid != "" {
 				return "citation|" + host + "|" + pid
 			}
 		case federation.DeliveryTypeMention:
-			if user, ok := payload["mentioned_user"].(string); ok {
+			if user := firstStringValue(payload, "TargetUser", "target_user", "MentionedUser", "mentioned_user"); user != "" {
 				return "mention|" + host + "|" + user
 			}
 		}
 	}
 	return d.DeliveryType + "|" + host + "|" + d.RequestID
+}
+
+func firstStringValue(payload map[string]any, keys ...string) string {
+	for _, key := range keys {
+		if val, ok := payload[key].(string); ok {
+			if trimmed := strings.TrimSpace(val); trimmed != "" {
+				return trimmed
+			}
+		}
+	}
+	return ""
 }
 
 func extractHost(rawURL string) string {

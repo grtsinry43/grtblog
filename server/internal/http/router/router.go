@@ -3,7 +3,6 @@ package router
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -183,7 +182,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	if deps.Redis != nil {
 		fedCache = fedinfra.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 	}
-	fedResolver := fedinfra.NewResolver(&http.Client{Timeout: 10 * time.Second}, fedCache)
+	fedResolver := fedinfra.NewResolver(fedinfra.NewSafeHTTPClient(10*time.Second), fedCache)
 	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, fedInstanceRepo)
 	fedDelivery := appfed.NewDeliveryService(
 		fedOutboundRepo,

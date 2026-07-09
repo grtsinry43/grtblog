@@ -50,7 +50,7 @@ func NewSyncWorker(
 		linkRepo:     linkRepo,
 		syncJobRepo:  syncJobRepo,
 		resolver:     resolver,
-		client:       &http.Client{Timeout: 10 * time.Second},
+		client:       fedinfra.NewSafeHTTPClient(10 * time.Second),
 		eventBus:     eventBus,
 	}
 }
@@ -234,6 +234,9 @@ func (w *SyncWorker) fetchTimelinePosts(ctx context.Context, friendLinkID, insta
 	q.Set("page", "1")
 	q.Set("per_page", "50")
 	u.RawQuery = q.Encode()
+	if err := fedinfra.ValidateRemoteURL(ctx, u.String()); err != nil {
+		return nil, fmt.Errorf("timeline endpoint blocked: %w", err)
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
@@ -303,6 +306,9 @@ func (w *SyncWorker) fetchTimelinePosts(ctx context.Context, friendLinkID, insta
 }
 
 func (w *SyncWorker) syncFromFeedURL(ctx context.Context, friendLinkID int64, instanceID *int64, feedURL string, sourceMethod string) (int, error) {
+	if err := fedinfra.ValidateRemoteURL(ctx, feedURL); err != nil {
+		return 0, fmt.Errorf("feed url blocked: %w", err)
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, feedURL, nil)
 	if err != nil {
 		return 0, err
@@ -354,6 +360,11 @@ func (w *SyncWorker) enqueueFriendLinkJobs(ctx context.Context, now time.Time) e
 			continue
 		}
 		friendLinkID := links[i].ID
+		// Skip if a queued/running job already exists to avoid piling up
+		// duplicates across scheduler ticks.
+		if pending, err := w.syncJobRepo.HasPending(ctx, friendLinkID); err == nil && pending {
+			continue
+		}
 		method := social.FriendLinkSyncJobMethodRSS
 		if links[i].Type == social.FriendLinkTypeFederation {
 			method = social.FriendLinkSyncJobMethodTimeline
@@ -563,7 +574,12 @@ func toSyncJobErrorMessage(err error) *string {
 	}
 	const maxLen = 2000
 	if len(msg) > maxLen {
-		msg = msg[:maxLen]
+		// Truncate on rune boundaries so multi-byte characters aren't split.
+		runes := []rune(msg)
+		if len(runes) > maxLen {
+			runes = runes[:maxLen]
+		}
+		msg = string(runes)
 	}
 	return &msg
 }

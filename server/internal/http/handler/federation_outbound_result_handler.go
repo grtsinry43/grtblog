@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -41,9 +42,14 @@ func (h *FederationOutboundResultHandler) ResultCallback(c *fiber.Ctx) error {
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求解析失败", err)
 	}
+	callerBaseURL := ""
 	if h.verifier != nil {
-		if _, err := h.verifier.VerifyRequest(c.Context(), req, body); err != nil {
+		signature, err := h.verifier.VerifyRequest(c.Context(), req, body)
+		if err != nil {
 			return response.NewBizErrorWithMsg(response.Unauthorized, "签名校验失败")
+		}
+		if signature != nil {
+			callerBaseURL = signature.BaseURL
 		}
 	}
 
@@ -70,8 +76,12 @@ func (h *FederationOutboundResultHandler) ResultCallback(c *fiber.Ctx) error {
 		RemoteTicketID: strings.TrimSpace(payload.RemoteTicketID),
 		Reason:         strings.TrimSpace(payload.Reason),
 		ProcessedAt:    processedAt,
+		CallerBaseURL:  callerBaseURL,
 	})
 	if err != nil {
+		if errors.Is(err, appfed.ErrCallbackSourceMismatch) {
+			return response.NewBizErrorWithMsg(response.Unauthorized, "回调来源与投递目标不一致")
+		}
 		return response.NewBizErrorWithCause(response.ServerError, "回调处理失败", err)
 	}
 	return response.Success(c, contract.FederationOutboundResultResp{

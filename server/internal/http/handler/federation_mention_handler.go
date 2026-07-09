@@ -116,6 +116,9 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 	if !settings.AllowInbound {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
 	}
+	if err := enforceRequireHTTPS(settings, payload.SourceInstanceURL); err != nil {
+		return err
+	}
 	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, payload.SourceInstanceURL, "mention", settings.RateLimits); err != nil {
 		_ = h.events.Publish(c.Context(), appEvent.Generic{
 			EventName: "federation.inbound.rate_limited",
@@ -170,6 +173,16 @@ func (h *FederationMentionHandler) NotifyMention(c *fiber.Ctx) error {
 		CreatedAt:        time.Now().UTC(),
 	}
 	if err := h.mentionRepo.Create(c.Context(), mention); err != nil {
+		// Unique index on source_request_id: a concurrent duplicate request
+		// may have won the race; return the existing record instead.
+		if reqID := strings.TrimSpace(payload.RequestID); reqID != "" {
+			if existing, findErr := h.mentionRepo.FindBySourceRequestID(c.Context(), reqID); findErr == nil && existing != nil {
+				return response.Success(c, contract.FederationMentionNotifyResp{
+					MentionID: existing.ID,
+					Delivered: existing.Status == "approved",
+				})
+			}
+		}
 		return response.NewBizErrorWithCause(response.ServerError, "写入提及失败", err)
 	}
 
@@ -196,6 +209,7 @@ func (h *FederationMentionHandler) isFriendLink(ctx context.Context, baseURL str
 	if h.linkRepo == nil {
 		return false
 	}
-	_, err := h.linkRepo.FindByURL(ctx, strings.TrimRight(strings.TrimSpace(baseURL), "/"))
-	return err == nil
+	link, err := h.linkRepo.FindByURL(ctx, strings.TrimRight(strings.TrimSpace(baseURL), "/"))
+	// Auto-approval must only apply to currently active friend links.
+	return err == nil && link != nil && link.IsActive
 }

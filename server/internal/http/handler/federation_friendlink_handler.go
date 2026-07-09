@@ -100,6 +100,9 @@ func (h *FederationFriendLinkHandler) RequestFriendLink(c *fiber.Ctx) error {
 	if !settings.AllowInbound {
 		return response.NewBizErrorWithMsg(response.Unauthorized, "已关闭入站请求")
 	}
+	if err := enforceRequireHTTPS(settings, requesterURL); err != nil {
+		return err
+	}
 	if err := enforceFederationInboundRateLimit(c.Context(), h.rateLimiter, requesterURL, "friendlink", settings.RateLimits); err != nil {
 		_ = h.events.Publish(c.Context(), appEvent.Generic{
 			EventName: "federation.inbound.rate_limited",
@@ -226,7 +229,11 @@ func (h *FederationFriendLinkHandler) upsertFriendLinkApplication(ctx context.Co
 	app.SignatureKeyID = toOptionalString(keyID)
 	app.SignatureVerified = true
 	app.SourceRequestID = toOptionalString(payload.RequestID)
-	app.Status = social.FriendLinkAppStatusPending
+	// A repeated request must not silently downgrade an already-approved
+	// application back to pending; only refresh metadata in that case.
+	if app.Status != social.FriendLinkAppStatusApproved {
+		app.Status = social.FriendLinkAppStatusPending
+	}
 	if err := h.applicationRepo.Update(ctx, app); err != nil {
 		return nil, false, err
 	}
