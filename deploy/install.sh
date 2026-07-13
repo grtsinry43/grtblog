@@ -162,6 +162,27 @@ random_hex() {
   printf '%s\n' "$result"
 }
 
+read_env_value() {
+  # read_env_value FILE KEY — prints the last matching value without
+  # evaluating the .env file as shell code.
+  local file="$1" key="$2" line value first last
+  line="$(grep -E "^${key}=" "$file" | tail -n1 || true)"
+  [[ -n "$line" ]] || return 1
+
+  value="${line#*=}"
+  value="${value%$'\r'}"
+  if [[ "${#value}" -ge 2 ]]; then
+    first="${value:0:1}"
+    last="${value: -1}"
+    if [[ "$first" == '"' && "$last" == '"' ]] \
+      || [[ "$first" == "'" && "$last" == "'" ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+  fi
+
+  printf '%s\n' "$value"
+}
+
 # ---------------------------------------------------------------------------
 # i18n — Chinese / English bilingual support
 # ---------------------------------------------------------------------------
@@ -629,15 +650,12 @@ info "$(__ VERSION): ${APP_VERSION}"
 section "$(__ STEP7)"
 
 if [[ "$INSTALL_MODE" == "upgrade" ]]; then
-  # Read existing credentials from .env
+  # Read only the values needed below. Sourcing the whole file would also
+  # overwrite the version, image source, and update channel selected above.
   if [[ -f ".env" ]]; then
-    # shellcheck disable=SC1091
-    set +u
-    source .env 2>/dev/null || true
-    set -u
-    POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
-    AUTH_SECRET="${AUTH_SECRET:-}"
-    NGINX_PORT="${NGINX_PORT:-80}"
+    POSTGRES_PASSWORD="$(read_env_value .env POSTGRES_PASSWORD || printf '%s' "$POSTGRES_PASSWORD")"
+    AUTH_SECRET="$(read_env_value .env AUTH_SECRET || printf '%s' "$AUTH_SECRET")"
+    NGINX_PORT="$(read_env_value .env NGINX_PORT || printf '%s' "$NGINX_PORT")"
   fi
   info "$(__ KEEP_CREDS)"
 else
