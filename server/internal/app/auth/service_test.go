@@ -208,6 +208,51 @@ func (f *fakeIdentityRepo) UpdateAdminUser(_ context.Context, userID int64, nick
 	return &updated, nil
 }
 
+func TestRegisterBootstrapsAdminWhenOnlyNonAdminUsersExist(t *testing.T) {
+	repo := newFakeIdentityRepo(&identity.User{
+		ID:       1,
+		Username: "visitor",
+		Email:    "visitor@example.com",
+		IsAdmin:  false,
+		IsActive: true,
+	})
+	svc := &Service{users: repo}
+
+	user, err := svc.Register(context.Background(), RegisterCmd{
+		Username: "admin",
+		Nickname: "Admin",
+		Email:    "admin@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatalf("Register returned error: %v", err)
+	}
+	if !user.IsAdmin {
+		t.Fatalf("expected bootstrap user to be admin")
+	}
+}
+
+func TestRegisterClosedWhenAdminAlreadyExists(t *testing.T) {
+	repo := newFakeIdentityRepo(&identity.User{
+		ID:       1,
+		Username: "admin",
+		Email:    "admin@example.com",
+		IsAdmin:  true,
+		IsActive: true,
+	})
+	svc := &Service{users: repo}
+
+	_, err := svc.Register(context.Background(), RegisterCmd{
+		Username: "another",
+		Nickname: "Another",
+		Email:    "another@example.com",
+		Password: "password123",
+	})
+	if !errors.Is(err, ErrRegisterClosed) {
+		t.Fatalf("expected ErrRegisterClosed, got %v", err)
+	}
+}
+
 func TestRegisterOAuthUserDoesNotReuseExistingAdminOnUsernameConflict(t *testing.T) {
 	repo := newFakeIdentityRepo(&identity.User{
 		ID:       1,

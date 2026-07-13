@@ -1,6 +1,8 @@
 package router
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -209,15 +211,17 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Put("/global-notifications/:id", globalNotificationHandler.Update)
 	admin.Delete("/global-notifications/:id", globalNotificationHandler.Delete)
 
-	setupSvc := setupstate.NewService(identityRepo, sysCfgSvc)
+	setupSvc := setupstate.NewService(identityRepo, sysCfgSvc, deps.DB)
 	admin.Post("/system/complete-upgrade-guide", func(c *fiber.Ctx) error {
 		var body struct {
-			Version string `json:"version"`
+			TaskID string `json:"taskId"`
 		}
-		if err := c.BodyParser(&body); err != nil || body.Version == "" {
-			return response.NewBizErrorWithMsg(response.ParamsError, "version 不能为空")
+		if err := c.BodyParser(&body); err != nil || strings.TrimSpace(body.TaskID) == "" {
+			return response.NewBizErrorWithMsg(response.ParamsError, "taskId 不能为空")
 		}
-		if err := setupSvc.CompleteUpgradeGuide(c.Context(), body.Version); err != nil {
+		if err := setupSvc.CompleteUpgradeGuide(c.Context(), strings.TrimSpace(body.TaskID)); errors.Is(err, setupstate.ErrUnknownUpgradeGuide) {
+			return response.NewBizErrorWithMsg(response.ParamsError, "未知的升级引导任务")
+		} else if err != nil {
 			return response.NewBizErrorWithMsg(response.ServerError, "完成升级引导失败")
 		}
 		return response.SuccessWithMessage[any](c, nil, "升级引导已完成")
@@ -252,6 +256,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	// Telemetry: anonymous error collection for self-improvement
 	telemetryHandler := handler.NewAdminTelemetryHandler(deps.Telemetry)
+	admin.Get("/telemetry/preferences", telemetryHandler.GetPreferences)
+	admin.Put("/telemetry/preferences", telemetryHandler.UpdatePreferences)
 	admin.Get("/telemetry/snapshot", telemetryHandler.GetSnapshot)
 	admin.Get("/telemetry/stats", telemetryHandler.GetStats)
 	admin.Post("/telemetry/reset", telemetryHandler.ResetErrors)

@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import {
-  NButton,
   NConfigProvider,
   NH1,
-  NH2,
   NSpin,
   NStep,
   NSteps,
-  NTag,
   useMessage,
   type GlobalThemeOverrides,
 } from 'naive-ui'
@@ -25,7 +22,8 @@ import { usePreferencesStore } from '@/stores'
 import ThemeColorPopover from '@/views/sign-in/components/ThemeColorPopover.vue'
 
 import { applyEnabledFeatures } from './apply-features'
-import FeatureToggleList from './FeatureToggleList.vue'
+import UpgradeConfigureStep from './components/UpgradeConfigureStep.vue'
+import UpgradeOverviewStep from './components/UpgradeOverviewStep.vue'
 import { getPendingGuides } from './registry'
 
 import type { UpgradeGuideVersion } from './registry'
@@ -59,14 +57,11 @@ const sitePublicUrl = ref('')
 // Resolved from the API + registry
 const guides = ref<UpgradeGuideVersion[]>([])
 const currentStepIndex = ref(0)
+const pageStep = ref<1 | 2>(1)
 const currentGuide = computed(() => guides.value[currentStepIndex.value])
 
 // Feature toggle states per guide step, keyed by feature id
 const featureStates = reactive<Record<string, boolean>>({})
-
-const hasAnyEnabled = computed(
-  () => currentGuide.value?.features.some((f) => featureStates[f.id]) ?? false,
-)
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -74,7 +69,7 @@ async function checkState() {
   loading.value = true
   try {
     const state = await getSetupState()
-    const pending = state.pendingUpgradeGuides ?? []
+    const pending = state.pendingUpgradeGuideTasks ?? []
     if (pending.length === 0) {
       await router.replace({ path: '/' })
       return
@@ -125,17 +120,14 @@ async function finishCurrentStep(skip: boolean) {
 
   submitting.value = true
   try {
-    // Apply enabled feature configs unless skipping
+    // Persist every explicit choice before completing the guide. A failed
+    // write must keep the task pending so the administrator can retry.
     if (!skip) {
-      try {
-        await applyEnabledFeatures([guide], featureStates, sitePublicUrl.value)
-      } catch {
-        message.warning('部分功能配置失败，可在设置中手动配置')
-      }
+      await applyEnabledFeatures([guide], featureStates, sitePublicUrl.value)
     }
 
     // Mark this guide version as completed
-    await completeUpgradeGuide(guide.version)
+    await completeUpgradeGuide(guide.id)
 
     // Move to next step or finish
     if (currentStepIndex.value < guides.value.length - 1) {
@@ -143,6 +135,7 @@ async function finishCurrentStep(skip: boolean) {
       for (const key of Object.keys(featureStates)) {
         delete featureStates[key]
       }
+      pageStep.value = 1
       currentStepIndex.value++
     } else {
       message.success('升级引导已完成')
@@ -150,12 +143,14 @@ async function finishCurrentStep(skip: boolean) {
     }
   } catch (error) {
     if (handleAuthError(error)) return
-    if (!(error instanceof ApiError)) {
-      message.error('操作失败，请稍后重试')
-    }
+    message.error('设置保存失败，引导尚未完成，请重试')
   } finally {
     submitting.value = false
   }
+}
+
+function openConfiguration() {
+  pageStep.value = 2
 }
 
 // ── Left panel helpers ───────────────────────────────────────────────────────
@@ -280,77 +275,38 @@ const latestVersion = computed(() => {
             class="flex flex-1 overflow-y-auto bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
           >
             <div class="mx-auto flex min-h-full w-full max-w-[420px] flex-col justify-center py-4">
-              <!-- Step indicator (multi-guide) -->
-              <div
-                v-if="guides.length > 1"
-                class="mb-6 flex items-center justify-between"
-              >
+              <div class="mb-8 flex items-center justify-between">
                 <div
                   class="text-[10px] font-bold tracking-widest whitespace-nowrap text-neutral-400 uppercase"
                 >
-                  Step {{ currentStepIndex + 1 }} / {{ guides.length }}
+                  第 {{ pageStep }} 步 / 共 2 步
                 </div>
                 <NSteps
-                  :current="currentStepIndex + 1"
+                  :current="pageStep"
                   size="small"
-                  class="ml-4"
-                  :style="{ width: `${guides.length * 48}px` }"
+                  class="ml-4 w-28"
                 >
-                  <NStep
-                    v-for="g in guides"
-                    :key="g.version"
-                  />
+                  <NStep title="版本变化" />
+                  <NStep title="可选设置" />
                 </NSteps>
               </div>
 
-              <!-- Header -->
-              <div class="mb-8">
-                <NTag
-                  size="small"
-                  type="success"
-                  round
-                  :bordered="false"
-                >
-                  {{ currentGuide.tag }}
-                </NTag>
-                <NH2 class="mt-3 mb-0 text-2xl font-bold tracking-tight">
-                  {{ currentGuide.title }}
-                </NH2>
-                <p class="mt-2 text-[13px] leading-relaxed text-neutral-500">
-                  {{ currentGuide.description }}
-                </p>
-              </div>
-
-              <!-- Dynamic feature toggles -->
-              <FeatureToggleList
-                :guides="[currentGuide]"
-                :primary-color-rgb="primaryColorRgb"
-                v-model:states="featureStates"
+              <UpgradeOverviewStep
+                v-if="pageStep === 1"
+                :guide="currentGuide"
+                :submitting="submitting"
+                @continue="openConfiguration"
+                @skip="finishCurrentStep(true)"
               />
-
-              <!-- Actions -->
-              <div
-                class="mt-8 flex items-center justify-between border-t border-neutral-100 pt-6 dark:border-neutral-800"
-              >
-                <NButton
-                  quaternary
-                  size="medium"
-                  :disabled="submitting"
-                  @click="finishCurrentStep(true)"
-                >
-                  暂时跳过
-                </NButton>
-
-                <NButton
-                  type="primary"
-                  size="medium"
-                  :loading="submitting"
-                  @click="finishCurrentStep(false)"
-                  class="min-w-25 shadow-sm"
-                >
-                  {{ hasAnyEnabled ? '启用并继续' : '继续' }}
-                </NButton>
-              </div>
+              <UpgradeConfigureStep
+                v-else
+                v-model:states="featureStates"
+                :feature-guide="currentGuide"
+                :primary-color-rgb="primaryColorRgb"
+                :submitting="submitting"
+                @back="pageStep = 1"
+                @finish="finishCurrentStep(false)"
+              />
             </div>
           </div>
         </div>

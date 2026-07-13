@@ -1,11 +1,37 @@
 package handler
 
 import (
+	"errors"
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/telemetry"
 	"github.com/grtsinry43/grtblog-v2/server/internal/http/response"
 )
+
+func (h *AdminTelemetryHandler) GetPreferences(c *fiber.Ctx) error {
+	if h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "telemetry service 未初始化")
+	}
+	return response.Success(c, h.svc.Preferences(c.UserContext()))
+}
+
+func (h *AdminTelemetryHandler) UpdatePreferences(c *fiber.Ctx) error {
+	if h.svc == nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "telemetry service 未初始化")
+	}
+	var input telemetry.UpdatePreferencesInput
+	if err := c.BodyParser(&input); err != nil {
+		return response.NewBizErrorWithMsg(response.ParamsError, "请求参数无效")
+	}
+	prefs, err := h.svc.UpdatePreferences(c.UserContext(), input)
+	if errors.Is(err, telemetry.ErrInvalidPreferences) {
+		return response.NewBizErrorWithMsg(response.ParamsError, err.Error())
+	}
+	if err != nil {
+		return response.NewBizErrorWithMsg(response.ServerError, "更新遥测设置失败")
+	}
+	return response.Success(c, prefs)
+}
 
 // AdminTelemetryHandler exposes error telemetry data to the admin dashboard.
 type AdminTelemetryHandler struct {

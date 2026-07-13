@@ -63,7 +63,7 @@ export function setupRouterGuard(router: Router) {
     if (to.name === 'signIn') {
       try {
         const setupState = await getCachedSetupState()
-        if (setupState.needsSetup && !setupState.hasUser) {
+        if (setupState.needsSetup && !setupState.hasAdmin) {
           next({ name: 'init' })
           return false
         }
@@ -135,7 +135,7 @@ export function setupRouterGuard(router: Router) {
       upgradeGuideChecked = true
       try {
         const setupState = await getCachedSetupState(true)
-        if (setupState.pendingUpgradeGuides?.length > 0 && user.value.isAdmin) {
+        if (setupState.pendingUpgradeGuideTasks?.length > 0 && user.value.isAdmin) {
           next({ name: 'upgradeGuide' })
           return false
         }

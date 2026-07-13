@@ -106,10 +106,10 @@ export function getSystemUpdateCheck(force = false) {
   })
 }
 
-export function completeUpgradeGuide(version: string) {
+export function completeUpgradeGuide(taskId: string) {
   return request<null>('/admin/system/complete-upgrade-guide', {
     method: 'POST',
-    body: JSON.stringify({ version }),
+    body: JSON.stringify({ taskId }),
   })
 }
 

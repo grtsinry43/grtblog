@@ -54,7 +54,16 @@ export interface SetupStateResponse {
   websiteInfoReady: boolean
   missingWebsiteInfoKeys: string[]
   needsSetup: boolean
-  pendingUpgradeGuides: string[]
+  pendingUpgradeGuideTasks: PendingUpgradeGuide[]
+}
+
+export interface PendingUpgradeGuide {
+  id: string
+  version: string
+  type: string
+  title?: string
+  required?: boolean
+  revision?: number
 }
 
 export function getSetupState() {

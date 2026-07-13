@@ -12,7 +12,6 @@ import {
   NSpin,
   NStep,
   NSteps,
-  NTag,
   useMessage,
   type GlobalThemeOverrides,
 } from 'naive-ui'
@@ -26,12 +25,15 @@ import { getSetupState, login, register } from '@/services/auth'
 import { ApiError } from '@/services/http'
 import { bootstrapObservabilityPages } from '@/services/observability'
 import { completeAllUpgradeGuides } from '@/services/system'
+import { updateTelemetryPreferences } from '@/services/telemetry'
 import { updateWebsiteInfo } from '@/services/website-info'
 import { useUserStore, usePreferencesStore } from '@/stores'
 import ThemeColorPopover from '@/views/sign-in/components/ThemeColorPopover.vue'
 import { applyEnabledFeatures } from '@/views/upgrade-guide/apply-features'
 import FeatureToggleList from '@/views/upgrade-guide/FeatureToggleList.vue'
 import { getAllGuides } from '@/views/upgrade-guide/registry'
+
+import TelemetryConsentStep from './components/TelemetryConsentStep.vue'
 
 import type { FormItemRule } from 'naive-ui'
 
@@ -102,7 +104,9 @@ const form = reactive({
 
 // Feature toggles from the upgrade guide registry
 const allGuides = getAllGuides()
+const featureGuides = allGuides
 const featureStates = reactive<Record<string, boolean>>({})
+const telemetryEnabled = ref(false)
 
 const requiredTrimmedRule = (message: string): FormItemRule => ({
   validator: (_rule, value: string) => !!(value || '').trim(),
@@ -126,7 +130,14 @@ const rules: Record<string, FormItemRule[]> = {
       trigger: ['input', 'blur'],
     },
   ],
-  password: [{ required: true, message: '请输入密码', trigger: ['input', 'blur'] }],
+  password: [
+    { required: true, message: '请输入密码', trigger: ['input', 'blur'] },
+    {
+      validator: (_rule, value: string) => (value || '').length >= 8,
+      message: '密码至少 8 位',
+      trigger: ['input', 'blur'],
+    },
+  ],
   confirmPassword: [
     { required: true, message: '请再次输入密码', trigger: ['input', 'blur'] },
     {
@@ -141,7 +152,7 @@ const rules: Record<string, FormItemRule[]> = {
   keywords: [requiredTrimmedRule('请输入关键词')],
 }
 
-const needsAccountSetup = computed(() => !setupState.value?.hasUser)
+const needsAccountSetup = computed(() => !setupState.value?.hasAdmin)
 const needsWebsiteSetup = computed(() => !setupState.value?.websiteInfoReady)
 
 function normalizePublicURL(url: string) {
@@ -159,7 +170,7 @@ async function loadSetupState() {
       await router.replace({ name: 'signIn' })
       return
     }
-    if (!state.hasUser) {
+    if (!state.hasAdmin) {
       form.publicUrl = window.location.origin
     }
   } catch (error) {
@@ -180,11 +191,21 @@ function goToSignIn() {
   })
 }
 
-const totalSteps = 3
+const totalSteps = 4
+
+const stepMeta: Record<number, { title: string; description: string }> = {
+  1: { title: '创建管理员', description: '请设置您的超级管理员账户。' },
+  2: { title: '站点基本信息', description: '完善站点的基础元数据。' },
+  3: { title: '新功能配置', description: '选择要启用的新功能，也可以稍后在设置中配置。' },
+  4: {
+    title: '帮助我们变得更好',
+    description: '可选的匿名遥测，帮助开源项目更快发现并修复问题。',
+  },
+}
 
 async function handleNextStep() {
   try {
-    // Step 3 (federation) has no required fields, skip validation
+    // Steps 3–4 have no required fields, skip validation
     if (currentStep.value < 3) {
       await formRef.value?.validate()
     }
@@ -244,12 +265,10 @@ async function submitSetup() {
       await Promise.all(tasks)
     }
 
-    // Apply feature configs from registry
-    try {
-      await applyEnabledFeatures(allGuides, featureStates, normalizePublicURL(form.publicUrl))
-    } catch {
-      message.warning('部分功能配置失败，可在设置中手动配置')
-    }
+    // Runtime feature choices and telemetry consent are separate settings,
+    // but both must persist before setup can be considered complete.
+    await applyEnabledFeatures(allGuides, featureStates, normalizePublicURL(form.publicUrl))
+    await updateTelemetryPreferences({ enabled: telemetryEnabled.value })
 
     // Mark all upgrade guides as completed for fresh install
     try {
@@ -312,7 +331,7 @@ onMounted(() => {
       <template v-else-if="setupState">
         <!-- New Setup Split Layout -->
         <div
-          v-if="!setupState.hasUser"
+          v-if="!setupState.hasAdmin"
           class="flex h-screen w-full overflow-hidden"
         >
           <!-- Left: Brand -->
@@ -374,7 +393,7 @@ onMounted(() => {
           <div
             class="flex flex-1 overflow-y-auto bg-white p-8 transition-colors sm:p-12 dark:bg-neutral-900"
           >
-            <div class="mx-auto flex min-h-full w-full max-w-[360px] flex-col justify-center py-4">
+            <div class="mx-auto flex min-h-full w-full max-w-[400px] flex-col justify-center py-4">
               <div class="mb-10">
                 <div class="mb-6 flex items-center justify-between">
                   <div
@@ -385,8 +404,9 @@ onMounted(() => {
                   <NSteps
                     :current="currentStep"
                     size="small"
-                    class="ml-4 w-36"
+                    class="ml-4 w-44"
                   >
+                    <NStep />
                     <NStep />
                     <NStep />
                     <NStep />
@@ -394,22 +414,10 @@ onMounted(() => {
                 </div>
 
                 <NH2 class="m-0 text-2xl font-bold tracking-tight">
-                  {{
-                    currentStep === 1
-                      ? '创建管理员'
-                      : currentStep === 2
-                        ? '站点基本信息'
-                        : '新功能配置'
-                  }}
+                  {{ stepMeta[currentStep]?.title }}
                 </NH2>
                 <p class="mt-2 text-[13px] leading-relaxed text-neutral-500">
-                  {{
-                    currentStep === 1
-                      ? '请设置您的超级管理员账户。'
-                      : currentStep === 2
-                        ? '完善站点的基础元数据。'
-                        : '选择要启用的新功能，也可以稍后在设置中配置。'
-                  }}
+                  {{ stepMeta[currentStep]?.description }}
                 </p>
               </div>
 
@@ -460,7 +468,7 @@ onMounted(() => {
                         v-model:value="form.password"
                         type="password"
                         show-password-on="click"
-                        placeholder="设置登录密码"
+                        placeholder="至少 8 位"
                       >
                       </NInput>
                     </NFormItem>
@@ -536,15 +544,25 @@ onMounted(() => {
                       </NInput>
                     </NFormItem>
                   </div>
-                  <!-- Step 3: Features from registry -->
+                  <!-- Step 3: Features from registry (telemetry excluded) -->
                   <div
-                    v-else
+                    v-else-if="currentStep === 3"
                     key="step3"
                   >
                     <FeatureToggleList
-                      :guides="allGuides"
+                      :guides="featureGuides"
                       :primary-color-rgb="primaryColorRgb"
                       v-model:states="featureStates"
+                    />
+                  </div>
+                  <!-- Step 4: Telemetry consent -->
+                  <div
+                    v-else
+                    key="step4"
+                  >
+                    <TelemetryConsentStep
+                      v-model:enabled="telemetryEnabled"
+                      :primary-color-rgb="primaryColorRgb"
                     />
                   </div>
                 </Transition>

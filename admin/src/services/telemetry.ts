@@ -65,6 +65,28 @@ export interface TelemetryReportRecord {
   durationMs?: number
 }
 
+export interface TelemetryPreferences {
+  enabled: boolean
+  endpoint: string
+  interval: string
+  usingDefaultEndpoint: boolean
+}
+
+export type UpdateTelemetryPreferences = Partial<
+  Pick<TelemetryPreferences, 'enabled' | 'endpoint' | 'interval'>
+>
+
+export function getTelemetryPreferences() {
+  return request<TelemetryPreferences>('/admin/telemetry/preferences')
+}
+
+export function updateTelemetryPreferences(preferences: UpdateTelemetryPreferences) {
+  return request<TelemetryPreferences>('/admin/telemetry/preferences', {
+    method: 'PUT',
+    body: preferences,
+  })
+}
+
 export function getTelemetrySnapshot() {
   return request<TelemetrySnapshot>('/admin/telemetry/snapshot')
 }

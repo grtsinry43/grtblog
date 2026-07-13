@@ -313,7 +313,7 @@ func (h *AuthHandler) Profile(c *fiber.Ctx) error {
 	return response.Success(c, contract.ToUserResp(*user))
 }
 
-// InitState 返回是否需要初始化（无用户时为 false）。
+// InitState 返回是否需要初始化（无管理员时为 false）。
 func (h *AuthHandler) InitState(c *fiber.Ctx) error {
 	initialized, err := h.svc.IsInitialized(c.Context())
 	if err != nil {
@@ -333,17 +333,13 @@ func (h *AuthHandler) SetupState(c *fiber.Ctx) error {
 	if err != nil {
 		return response.NewBizErrorWithMsg(response.ServerError, "获取初始化状态失败")
 	}
-	pending := state.PendingUpgradeGuides
-	if pending == nil {
-		pending = []string{}
-	}
 	return response.Success(c, contract.SetupStateResp{
-		HasUser:                state.HasUser,
-		HasAdmin:               state.HasAdmin,
-		WebsiteInfoReady:       state.WebsiteInfoReady,
-		MissingWebsiteInfoKeys: state.MissingWebsiteInfoKeys,
-		NeedsSetup:             state.NeedsSetup,
-		PendingUpgradeGuides:   pending,
+		HasUser:                  state.HasUser,
+		HasAdmin:                 state.HasAdmin,
+		WebsiteInfoReady:         state.WebsiteInfoReady,
+		MissingWebsiteInfoKeys:   state.MissingWebsiteInfoKeys,
+		NeedsSetup:               state.NeedsSetup,
+		PendingUpgradeGuideTasks: state.PendingUpgradeGuideTasks,
 	})
 }
 

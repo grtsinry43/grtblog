@@ -19,14 +19,14 @@ type Config struct {
 
 // AppConfig contains Fiber specific settings.
 type AppConfig struct {
-	Name                string
-	Port                string
-	Env                 string
-	HTMLSnapshotBaseURL string
-	ProxyHeader         string
-	TrustedProxies      []string
-	TrustedProxyCheck   bool
-	IPValidation        bool
+	Name                     string
+	Port                     string
+	Env                      string
+	HTMLSnapshotBaseURL      string
+	ProxyHeader              string
+	TrustedProxies           []string
+	TrustedProxyCheck        bool
+	IPValidation             bool
 	UpdateCheckEnabled       bool
 	UpdateCheckRepo          string
 	UpdateCheckChannel       string
@@ -89,12 +89,12 @@ func Load() Config {
 				"192.168.0.0/16",
 				"fc00::/7",
 			}),
-			TrustedProxyCheck:  getEnvAsBool("APP_TRUSTED_PROXY_CHECK", true),
-			IPValidation:       getEnvAsBool("APP_IP_VALIDATION", true),
-			UpdateCheckEnabled: getEnvAsBool("APP_UPDATE_CHECK_ENABLED", true),
-			UpdateCheckRepo:    strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog-v2")),
+			TrustedProxyCheck:        getEnvAsBool("APP_TRUSTED_PROXY_CHECK", true),
+			IPValidation:             getEnvAsBool("APP_IP_VALIDATION", true),
+			UpdateCheckEnabled:       getEnvAsBool("APP_UPDATE_CHECK_ENABLED", true),
+			UpdateCheckRepo:          strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog-v2")),
 			UpdateCheckChannel:       strings.TrimSpace(getEnv("APP_UPDATE_CHANNEL", "stable")),
-			TelemetryDefaultEndpoint: strings.TrimSpace(getEnv("TELEMETRY_DEFAULT_ENDPOINT", "")),
+			TelemetryDefaultEndpoint: strings.TrimSpace(getEnv("TELEMETRY_DEFAULT_ENDPOINT", "https://telemetry.grtsinry43.com/collect")),
 		},
 		Database: DatabaseConfig{
 			Driver:      strings.ToLower(getEnv("DB_DRIVER", "postgres")),

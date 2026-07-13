@@ -75,16 +75,58 @@ type FullTelemetrySnapshot struct {
 	Summary     ErrorSummaryInfo `json:"summary"`
 }
 
+// RemoteTelemetrySnapshot deliberately omits sampleMessage. Local snapshots
+// retain it for an administrator's diagnostic preview.
+type RemoteTelemetrySnapshot struct {
+	GeneratedAt time.Time           `json:"generatedAt"`
+	Instance    InstanceInfo        `json:"instance"`
+	Metrics     RuntimeMetrics      `json:"metrics"`
+	Errors      []RemoteErrorDigest `json:"errors"`
+	Panics      []RemoteErrorDigest `json:"panics"`
+	Summary     ErrorSummaryInfo    `json:"summary"`
+}
+
+type RemoteErrorDigest struct {
+	Fingerprint string    `json:"fingerprint"`
+	Kind        ErrorKind `json:"kind"`
+	BizCode     string    `json:"bizCode,omitempty"`
+	Location    string    `json:"location"`
+	Count       int64     `json:"count"`
+	FirstSeen   time.Time `json:"firstSeen"`
+	LastSeen    time.Time `json:"lastSeen"`
+}
+
+func NewRemoteSnapshot(snap *FullTelemetrySnapshot) *RemoteTelemetrySnapshot {
+	if snap == nil {
+		return &RemoteTelemetrySnapshot{}
+	}
+	remote := &RemoteTelemetrySnapshot{
+		GeneratedAt: snap.GeneratedAt, Instance: snap.Instance, Metrics: snap.Metrics, Summary: snap.Summary,
+		Errors: make([]RemoteErrorDigest, 0, len(snap.Errors)), Panics: make([]RemoteErrorDigest, 0, len(snap.Panics)),
+	}
+	for _, digest := range snap.Errors {
+		remote.Errors = append(remote.Errors, remoteErrorDigest(digest))
+	}
+	for _, digest := range snap.Panics {
+		remote.Panics = append(remote.Panics, remoteErrorDigest(digest))
+	}
+	return remote
+}
+
+func remoteErrorDigest(d ErrorDigest) RemoteErrorDigest {
+	return RemoteErrorDigest{Fingerprint: d.Fingerprint, Kind: d.Kind, BizCode: d.BizCode, Location: d.Location, Count: d.Count, FirstSeen: d.FirstSeen, LastSeen: d.LastSeen}
+}
+
 // InstanceInfo contains anonymous, non-PII environment metadata.
 type InstanceInfo struct {
-	InstanceID     string       `json:"instanceId"`
-	Version        string       `json:"version"`
-	GoVersion      string       `json:"goVersion"`
-	OS             string       `json:"os"`
-	Arch           string       `json:"arch"`
-	UptimeSeconds  int64        `json:"uptimeSeconds,omitempty"`
-	DeployMode     string       `json:"deployMode,omitempty"`     // "docker" | "binary" | "unknown"
-	Features       FeatureFlags `json:"features,omitempty"`
+	InstanceID    string       `json:"instanceId"`
+	Version       string       `json:"version"`
+	GoVersion     string       `json:"goVersion"`
+	OS            string       `json:"os"`
+	Arch          string       `json:"arch"`
+	UptimeSeconds int64        `json:"uptimeSeconds,omitempty"`
+	DeployMode    string       `json:"deployMode,omitempty"` // "docker" | "binary" | "unknown"
+	Features      FeatureFlags `json:"features,omitempty"`
 }
 
 // FeatureFlags captures which optional features are enabled.

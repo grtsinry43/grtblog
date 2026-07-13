@@ -61,10 +61,12 @@ type Reporter struct {
 
 // NewReporter creates a Reporter bound to the given telemetry Service.
 func NewReporter(svc *Service) *Reporter {
+	dialer := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
 	return &Reporter{
 		svc: svc,
 		client: &http.Client{
-			Timeout: reportTimeout,
+			Timeout:   reportTimeout,
+			Transport: &http.Transport{DialContext: safeDialContext(dialer)},
 			// Block redirects to prevent SSRF bypass via 30x to internal targets.
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
@@ -72,6 +74,36 @@ func NewReporter(svc *Service) *Reporter {
 		},
 		history: make([]ReportRecord, 0, maxHistorySize),
 	}
+}
+
+// safeDialContext resolves once, rejects every non-public result, and dials a
+// validated IP literal. This closes DNS rebinding/TOCTOU gaps in URL-only SSRF
+// validation while preserving the original hostname for TLS verification.
+func safeDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+	return func(ctx context.Context, network, address string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return nil, err
+		}
+		ips, err := net.DefaultResolver.LookupIP(ctx, "ip", host)
+		if err != nil {
+			return nil, fmt.Errorf("resolve telemetry endpoint: %w", err)
+		}
+		if len(ips) == 0 {
+			return nil, fmt.Errorf("telemetry endpoint resolved to no addresses")
+		}
+		for _, ip := range ips {
+			if !isPublicTelemetryIP(ip) {
+				return nil, fmt.Errorf("telemetry endpoint resolved to non-public address %s", ip)
+			}
+		}
+		return dialer.DialContext(ctx, network, net.JoinHostPort(ips[0].String(), port))
+	}
+}
+
+func isPublicTelemetryIP(ip net.IP) bool {
+	return ip != nil && !ip.IsUnspecified() && !ip.IsLoopback() && !ip.IsPrivate() &&
+		!ip.IsLinkLocalUnicast() && !ip.IsLinkLocalMulticast() && !ip.IsMulticast()
 }
 
 // Run starts the periodic reporting loop. It blocks until ctx is cancelled.
@@ -156,7 +188,7 @@ func (r *Reporter) doReport(ctx context.Context, cfg ReporterConfig) ReportRecor
 		return rec
 	}
 
-	snap := r.svc.FullSnapshot(ctx)
+	snap := NewRemoteSnapshot(r.svc.FullSnapshot(ctx))
 	body, err := json.Marshal(snap)
 	if err != nil {
 		rec := ReportRecord{

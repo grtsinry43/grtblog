@@ -21,16 +21,21 @@ import {
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 
-import { listSysConfigs, updateSysConfigs } from '@/services/sysconfig'
 import {
+  getTelemetryPreferences,
   getTelemetrySnapshot,
   getTelemetryReportHistory,
-  triggerTelemetryReport,
   resetTelemetryErrors,
+  triggerTelemetryReport,
+  updateTelemetryPreferences,
 } from '@/services/telemetry'
 import { formatDate } from '@/utils/format'
 
-import type { TelemetrySnapshot, TelemetryReportRecord } from '@/services/telemetry'
+import type {
+  TelemetryPreferences,
+  TelemetrySnapshot,
+  TelemetryReportRecord,
+} from '@/services/telemetry'
 
 const message = useMessage()
 const loading = ref(true)
@@ -38,25 +43,21 @@ const snapshot = ref<TelemetrySnapshot | null>(null)
 const reportHistory = ref<TelemetryReportRecord[]>([])
 const reporting = ref(false)
 const enabled = ref(false)
+const preferences = ref<TelemetryPreferences | null>(null)
 const loadingToggle = ref(false)
 
 async function fetchData() {
   loading.value = true
   try {
-    const [snap, history, configTree] = await Promise.all([
+    const [snap, history, currentPreferences] = await Promise.all([
       getTelemetrySnapshot(),
       getTelemetryReportHistory(),
-      listSysConfigs(['telemetry.enabled']),
+      getTelemetryPreferences(),
     ])
     snapshot.value = snap
     reportHistory.value = history.history || []
-    // listSysConfigs returns a tree — find the key in root items or nested group items.
-    const enabledCfg =
-      configTree.items?.find((c) => c.key === 'telemetry.enabled') ??
-      (configTree.groups ?? [])
-        .flatMap((g) => g.items ?? [])
-        .find((c) => c.key === 'telemetry.enabled')
-    enabled.value = enabledCfg?.value === 'true' || enabledCfg?.value === true
+    preferences.value = currentPreferences
+    enabled.value = currentPreferences.enabled
   } catch {
     message.error('加载遥测数据失败')
   } finally {
@@ -69,7 +70,8 @@ async function toggleEnabled(val: boolean) {
   loadingToggle.value = true
   enabled.value = val // optimistic update
   try {
-    await updateSysConfigs([{ key: 'telemetry.enabled', value: String(val) }])
+    preferences.value = await updateTelemetryPreferences({ enabled: val })
+    enabled.value = preferences.value.enabled
     message.success(val ? '遥测已启用' : '遥测已禁用')
     await fetchData()
   } catch {

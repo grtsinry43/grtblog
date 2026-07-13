@@ -1,5 +1,7 @@
 package contract
 
+import "github.com/grtsinry43/grtblog-v2/server/internal/app/setupstate"
+
 import (
 	"time"
 
@@ -64,12 +66,12 @@ type InitStateResp struct {
 
 // SetupStateResp 返回初始化准备状态。
 type SetupStateResp struct {
-	HasUser                bool     `json:"hasUser"`
-	HasAdmin               bool     `json:"hasAdmin"`
-	WebsiteInfoReady       bool     `json:"websiteInfoReady"`
-	MissingWebsiteInfoKeys []string `json:"missingWebsiteInfoKeys"`
-	NeedsSetup             bool     `json:"needsSetup"`
-	PendingUpgradeGuides   []string `json:"pendingUpgradeGuides"`
+	HasUser                  bool                          `json:"hasUser"`
+	HasAdmin                 bool                          `json:"hasAdmin"`
+	WebsiteInfoReady         bool                          `json:"websiteInfoReady"`
+	MissingWebsiteInfoKeys   []string                      `json:"missingWebsiteInfoKeys"`
+	NeedsSetup               bool                          `json:"needsSetup"`
+	PendingUpgradeGuideTasks []setupstate.UpgradeGuideTask `json:"pendingUpgradeGuideTasks"`
 }
 
 // TurnstileStateResp 返回 Turnstile 配置状态。

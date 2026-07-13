@@ -20,7 +20,7 @@ import (
 
 var (
 	ErrProviderNotConfigured = errors.New("oauth provider not configured")
-	ErrRegisterClosed        = errors.New("register is only allowed for initial admin setup")
+	ErrRegisterClosed        = errors.New("register is only allowed when no admin exists yet")
 	ErrLastOAuthBinding      = errors.New("cannot unbind last oauth binding for non-admin user")
 	ErrUserDisabled          = errors.New("user disabled")
 	ErrPasswordTooWeak       = errors.New("password must be at least 8 characters")
@@ -126,13 +126,16 @@ func (s *Service) Register(ctx context.Context, cmd RegisterCmd) (*identity.User
 		Password: string(hashed),
 		IsActive: true,
 	}
-	if total, err := s.users.CountUsers(ctx); err != nil {
+	// Bootstrap: allow creating the first admin even if non-admin users already exist
+	// (e.g. OAuth / visitor accounts created before setup finished).
+	admins, err := s.users.ListAdmins(ctx)
+	if err != nil {
 		return nil, err
-	} else if total == 0 {
-		user.IsAdmin = true
-	} else {
+	}
+	if len(admins) > 0 {
 		return nil, ErrRegisterClosed
 	}
+	user.IsAdmin = true
 	if err := s.users.Create(ctx, user); err != nil {
 		return nil, err
 	}
@@ -410,13 +413,13 @@ func (s *Service) UnbindOAuth(ctx context.Context, userID int64, provider string
 	return s.users.UnbindOAuth(ctx, userID, provider)
 }
 
-// IsInitialized 用于判断是否已完成初始化（存在至少一个用户）。
+// IsInitialized 用于判断是否已完成初始化（存在至少一个管理员）。
 func (s *Service) IsInitialized(ctx context.Context) (bool, error) {
-	total, err := s.users.CountUsers(ctx)
+	admins, err := s.users.ListAdmins(ctx)
 	if err != nil {
 		return false, err
 	}
-	return total > 0, nil
+	return len(admins) > 0, nil
 }
 
 func firstNonEmpty(vals ...string) string {

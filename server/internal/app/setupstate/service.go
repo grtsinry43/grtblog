@@ -2,8 +2,8 @@ package setupstate
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,21 +12,25 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	domainconfig "github.com/grtsinry43/grtblog-v2/server/internal/domain/config"
 	"github.com/grtsinry43/grtblog-v2/server/internal/domain/identity"
+	"gorm.io/gorm"
 )
 
 const setupMarkerFileName = ".setupdone"
 
-// Each completed guide is stored as an independent bool key:
-//   system.upgrade_guide.2.1.completed = "true"
-// This avoids read-modify-write races on a shared JSON array.
-const (
-	upgradeGuideKeyPrefix = "system.upgrade_guide."
-	upgradeGuideKeySuffix = ".completed"
-)
+// UpgradeGuideTask is a code-owned task definition. Completion state lives in
+// upgrade_guide_state; presentation remains owned by the admin frontend.
+type UpgradeGuideTask struct {
+	ID       string `json:"id"`
+	Version  string `json:"version"`
+	Type     string `json:"type"`
+	Title    string `json:"title,omitempty"`
+	Required bool   `json:"required,omitempty"`
+	Revision int    `json:"revision,omitempty"`
+}
 
-// allUpgradeGuideVersions lists every version that ships an upgrade guide.
-// To add a guide for a new release, simply append the version string here.
-var allUpgradeGuideVersions = []string{"2.1"}
+var upgradeGuideRegistry = []UpgradeGuideTask{{ID: "2.1-overview-and-features", Version: "2.1", Type: "release-guide", Title: "2.1 版本介绍与功能设置", Revision: 1}}
+
+var ErrUnknownUpgradeGuide = errors.New("unknown upgrade guide")
 
 var requiredWebsiteInfoKeys = []string{
 	"website_name",
@@ -36,23 +40,29 @@ var requiredWebsiteInfoKeys = []string{
 }
 
 type State struct {
-	HasUser                bool
-	HasAdmin               bool
-	WebsiteInfoReady       bool
-	MissingWebsiteInfoKeys []string
-	NeedsSetup             bool
-	PendingUpgradeGuides   []string
+	HasUser                  bool
+	HasAdmin                 bool
+	WebsiteInfoReady         bool
+	MissingWebsiteInfoKeys   []string
+	NeedsSetup               bool
+	PendingUpgradeGuideTasks []UpgradeGuideTask
 }
 
 type Service struct {
 	users  identity.Repository
 	sysCfg *sysconfig.Service
+	db     *gorm.DB
 }
 
-func NewService(users identity.Repository, sysCfg *sysconfig.Service) *Service {
+func NewService(users identity.Repository, sysCfg *sysconfig.Service, db ...*gorm.DB) *Service {
+	var database *gorm.DB
+	if len(db) > 0 {
+		database = db[0]
+	}
 	return &Service{
 		users:  users,
 		sysCfg: sysCfg,
+		db:     database,
 	}
 }
 
@@ -91,67 +101,74 @@ func (s *Service) Evaluate(ctx context.Context) (*State, error) {
 
 	// Only check upgrade guides when initial setup is complete.
 	if !state.NeedsSetup {
-		state.PendingUpgradeGuides = s.pendingGuides(ctx)
+		state.PendingUpgradeGuideTasks, err = s.pendingGuideTasks(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	s.syncMarker(state.NeedsSetup)
 	return state, nil
 }
 
-func upgradeGuideKey(version string) string {
-	return upgradeGuideKeyPrefix + version + upgradeGuideKeySuffix
-}
-
-// pendingGuides returns the list of guide versions that have not been completed yet.
-func (s *Service) pendingGuides(ctx context.Context) []string {
-	keys := make([]string, len(allUpgradeGuideVersions))
-	for i, v := range allUpgradeGuideVersions {
-		keys[i] = upgradeGuideKey(v)
+// pendingGuideTasks derives pending state from the registry revision and persisted decisions.
+func (s *Service) pendingGuideTasks(ctx context.Context) ([]UpgradeGuideTask, error) {
+	if s.db == nil {
+		return append([]UpgradeGuideTask(nil), upgradeGuideRegistry...), nil
 	}
-	items, err := s.sysCfg.ListConfigs(ctx, keys)
-	if err != nil {
-		return nil // transient error → don't show guide
+	type row struct {
+		TaskID   string
+		Revision int
+		Status   string
 	}
-	completed := make(map[string]bool, len(items))
-	for _, item := range items {
-		if strings.TrimSpace(item.Value) == "true" {
-			completed[item.Key] = true
+	var rows []row
+	if err := s.db.WithContext(ctx).Table("upgrade_guide_state").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	states := make(map[string]row, len(rows))
+	for _, r := range rows {
+		states[r.TaskID] = r
+	}
+	pending := make([]UpgradeGuideTask, 0)
+	for _, task := range upgradeGuideRegistry {
+		state, ok := states[task.ID]
+		if !ok || state.Revision < task.Revision || state.Status != "completed" {
+			pending = append(pending, task)
 		}
 	}
-	var pending []string
-	for _, v := range allUpgradeGuideVersions {
-		if !completed[upgradeGuideKey(v)] {
-			pending = append(pending, v)
+	return pending, nil
+}
+
+// CompleteUpgradeGuide marks a registered task revision as completed.
+func (s *Service) CompleteUpgradeGuide(ctx context.Context, taskID string) error {
+	var task UpgradeGuideTask
+	known := false
+	for _, candidate := range upgradeGuideRegistry {
+		if taskID == candidate.ID {
+			task = candidate
+			known = true
+			break
 		}
 	}
-	return pending
+	if !known {
+		return ErrUnknownUpgradeGuide
+	}
+	if s.db == nil {
+		return errors.New("upgrade guide state database unavailable")
+	}
+	return s.db.WithContext(ctx).Exec(`INSERT INTO upgrade_guide_state (task_id, revision, status, selection, decided_at, updated_at) VALUES (?, ?, 'completed', '{}'::jsonb, NOW(), NOW()) ON CONFLICT (task_id) DO UPDATE SET revision=EXCLUDED.revision, status='completed', decided_at=NOW(), updated_at=NOW()`, task.ID, task.Revision).Error
 }
 
-// CompleteUpgradeGuide marks a single guide version as completed.
-// Each version is an independent key, so no read-modify-write is needed.
-func (s *Service) CompleteUpgradeGuide(ctx context.Context, version string) error {
-	valRaw := json.RawMessage(`true`)
-	vt := "bool"
-	_, err := s.sysCfg.UpdateConfigs(ctx, []sysconfig.UpdateItem{
-		{Key: upgradeGuideKey(version), Value: &valRaw, ValueType: &vt},
-	})
-	return err
-}
-
-// CompleteAllUpgradeGuides marks every known guide version as completed.
+// CompleteAllUpgradeGuides marks every guide currently covered by fresh-install setup as completed.
 // Used after fresh installation so the admin is not shown guides for features
 // they just configured during init.
 func (s *Service) CompleteAllUpgradeGuides(ctx context.Context) error {
-	valRaw := json.RawMessage(`true`)
-	vt := "bool"
-	items := make([]sysconfig.UpdateItem, len(allUpgradeGuideVersions))
-	for i, v := range allUpgradeGuideVersions {
-		items[i] = sysconfig.UpdateItem{
-			Key: upgradeGuideKey(v), Value: &valRaw, ValueType: &vt,
+	for _, task := range upgradeGuideRegistry {
+		if err := s.CompleteUpgradeGuide(ctx, task.ID); err != nil {
+			return fmt.Errorf("complete %s: %w", task.ID, err)
 		}
 	}
-	_, err := s.sysCfg.UpdateConfigs(ctx, items)
-	return err
+	return nil
 }
 
 func (s *Service) syncMarker(needsSetup bool) {
