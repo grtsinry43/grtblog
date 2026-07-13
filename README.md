@@ -16,7 +16,6 @@
 
 GrtBlog 是一个面向创作者的博客系统，以纯静态 HTML 分发实现极致首屏速度，通过 WebSocket 实现毫秒级实时更新，并内置联合社交协议让博客不再是孤岛。
 
-> 联合协议仍在内测和修复中，将在 v2.1.0 正式发布。
 > 旧版已归档至 https://github.com/grtsinry43/grtblog-legacy
 
 ## 特性
