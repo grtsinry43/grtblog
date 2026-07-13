@@ -1,0 +1,43 @@
+name: Sync Source to CNB
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-source-to-cnb
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: ${{ vars.CNB_SYNC_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source and tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      # Tag-triggered checkouts use a detached HEAD. Create a real local main
+      # branch so git-sync's push-all operation includes refs/heads/main.
+      - name: Prepare main branch
+        run: git checkout -B main refs/remotes/origin/main
+
+      - name: Sync main and tags to CNB
+        uses: docker://tencentcom/git-sync
+        env:
+          PLUGIN_TARGET_URL: "https://cnb.cool/grtsinry43/grtblog.git"
+          PLUGIN_AUTH_TYPE: "https"
+          PLUGIN_USERNAME: "cnb"
+          PLUGIN_PASSWORD: ${{ secrets.CNB_ACCESS_TOKEN }}
+          PLUGIN_FORCE: "true"
+          PLUGIN_PUSH_ALL: "true"
+          PLUGIN_PUSH_TAGS: "true"
