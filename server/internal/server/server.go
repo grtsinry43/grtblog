@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -64,8 +65,22 @@ type Server struct {
 	version       string
 }
 
+// Options provides testable infrastructure seams while preserving secure
+// production defaults when omitted.
+type Options struct {
+	FederationHTTPClient *http.Client
+	DisableRedis         bool
+}
+
 // New builds a Fiber server with registered routes and middlewares.
 func New(cfg config.Config, db *gorm.DB) *Server {
+	return NewWithOptions(cfg, db, Options{})
+}
+
+// NewWithOptions builds a server with explicitly supplied infrastructure.
+// Production callers should use New; tests may inject an in-memory federation
+// transport without weakening SSRF validation in production.
+func NewWithOptions(cfg config.Config, db *gorm.DB, opts Options) *Server {
 	if err := validateSecurityConfig(cfg); err != nil {
 		log.Fatalf("invalid security configuration: %v", err)
 	}
@@ -203,18 +218,29 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 	}))
 
 	jwtManager := jwt.NewManager(cfg.Auth)
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Addr,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-	})
+	var redisClient *redis.Client
+	if !opts.DisableRedis {
+		redisClient = redis.NewClient(&redis.Options{
+			Addr:     cfg.Redis.Addr,
+			Password: cfg.Redis.Password,
+			DB:       cfg.Redis.DB,
+		})
+	}
 	turnstileClient := turnstile.NewClient(cfg.Turnstile)
 	analyticsSvc := analytics.NewService(cfg, db, redisClient)
 	htmlSnapshotSvc := htmlsnapshot.NewService(contentRepo, cfg.App.HTMLSnapshotBaseURL, redisClient, cfg.Redis.Prefix)
 	isrSvc := isr.NewService(redisClient, cfg.Redis.Prefix, htmlSnapshotSvc, contentRepo, albumRepo, thinkingRepo, sysCfgSvc)
 	httpStats := metrics.NewHTTPStats(6 * time.Hour)
-	fedResolver := fedinfra.NewResolver(fedinfra.NewSafeHTTPClient(10*time.Second), fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix))
-	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db))
+	fedHTTPClient := opts.FederationHTTPClient
+	if fedHTTPClient == nil {
+		fedHTTPClient = fedinfra.NewSafeHTTPClient(10 * time.Second)
+	}
+	var fedCache fedinfra.Cache
+	if redisClient != nil {
+		fedCache = fedinfra.NewRedisCache(redisClient, cfg.Redis.Prefix)
+	}
+	fedResolver := fedinfra.NewResolver(fedHTTPClient, fedCache)
+	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, persistence.NewFederationInstanceRepository(db), fedHTTPClient)
 	fedDeliver := appfed.NewDeliveryService(
 		persistence.NewOutboundDeliveryRepository(db),
 		fedOutbound,
@@ -228,6 +254,7 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 		persistence.NewFriendLinkSyncJobRepository(db),
 		fedResolver,
 		eventBus,
+		fedHTTPClient,
 	)
 
 	// Health state machine.
@@ -257,21 +284,22 @@ func New(cfg config.Config, db *gorm.DB) *Server {
 
 	// 注册路由
 	router.Register(app, router.Dependencies{
-		DB:            db,
-		Config:        cfg,
-		JWTManager:    jwtManager,
-		Turnstile:     turnstileClient,
-		SysConfig:     sysCfgSvc,
-		EventBus:      eventBus,
-		Redis:         redisClient,
-		Analytics:     analyticsSvc,
-		HTTPStats:     httpStats,
-		HTMLSnapshot:  htmlSnapshotSvc,
-		ISR:           isrSvc,
-		HealthState:   healthState,
-		HealthChecker: healthChecker,
-		FedSync:       fedSync,
-		Telemetry:     telemetrySvc,
+		DB:                   db,
+		Config:               cfg,
+		JWTManager:           jwtManager,
+		Turnstile:            turnstileClient,
+		SysConfig:            sysCfgSvc,
+		EventBus:             eventBus,
+		Redis:                redisClient,
+		Analytics:            analyticsSvc,
+		HTTPStats:            httpStats,
+		HTMLSnapshot:         htmlSnapshotSvc,
+		ISR:                  isrSvc,
+		HealthState:          healthState,
+		HealthChecker:        healthChecker,
+		FedSync:              fedSync,
+		Telemetry:            telemetrySvc,
+		FederationHTTPClient: fedHTTPClient,
 	})
 
 	return &Server{

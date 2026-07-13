@@ -30,12 +30,17 @@ type FederationAdminHandler struct {
 	instanceRepo  domainfed.FederationInstanceRepository
 	postCacheRepo domainfed.FederatedPostCacheRepository
 	resolver      *fedinfra.Resolver
+	httpClient    *http.Client
 	events        appEvent.Bus
 }
 
-func NewFederationAdminHandler(cfgSvc *sysconfig.Service, contentRepo content.Repository, deliverySvc *appfed.DeliveryService, instanceRepo domainfed.FederationInstanceRepository, postCacheRepo domainfed.FederatedPostCacheRepository, resolver *fedinfra.Resolver, events appEvent.Bus) *FederationAdminHandler {
+func NewFederationAdminHandler(cfgSvc *sysconfig.Service, contentRepo content.Repository, deliverySvc *appfed.DeliveryService, instanceRepo domainfed.FederationInstanceRepository, postCacheRepo domainfed.FederatedPostCacheRepository, resolver *fedinfra.Resolver, events appEvent.Bus, httpClients ...*http.Client) *FederationAdminHandler {
 	if events == nil {
 		events = appEvent.NopBus{}
+	}
+	httpClient := fedinfra.NewSafeHTTPClient(10 * time.Second)
+	if len(httpClients) > 0 && httpClients[0] != nil {
+		httpClient = httpClients[0]
 	}
 	return &FederationAdminHandler{
 		cfgSvc:        cfgSvc,
@@ -44,6 +49,7 @@ func NewFederationAdminHandler(cfgSvc *sysconfig.Service, contentRepo content.Re
 		instanceRepo:  instanceRepo,
 		postCacheRepo: postCacheRepo,
 		resolver:      resolver,
+		httpClient:    httpClient,
 		events:        events,
 	}
 }
@@ -459,7 +465,10 @@ func (h *FederationAdminHandler) FetchRemotePosts(c *fiber.Ctx) error {
 	if err := fedinfra.ValidateRemoteURL(c.Context(), timelineURL.String()); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "远端 timeline 端点不安全", err)
 	}
-	httpClient := fedinfra.NewSafeHTTPClient(10 * time.Second)
+	httpClient := h.httpClient
+	if httpClient == nil {
+		httpClient = fedinfra.NewSafeHTTPClient(10 * time.Second)
+	}
 	req, err := http.NewRequestWithContext(c.Context(), http.MethodGet, timelineURL.String(), nil)
 	if err != nil {
 		return response.NewBizErrorWithCause(response.ServerError, "构建请求失败", err)

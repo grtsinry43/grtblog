@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,23 +44,24 @@ import (
 
 // Dependencies collects the shared instances that handlers require.
 type Dependencies struct {
-	DB            *gorm.DB
-	Config        config.Config
-	JWTManager    *jwt.Manager
-	Turnstile     *turnstile.Client
-	SysConfig     *sysconfig.Service
-	EventBus      appEvent.Bus
-	Redis         *redis.Client
-	Analytics     *analytics.Service
-	HTTPStats     *metrics.HTTPStats
-	Observability *observability.Service
-	HTMLSnapshot  *htmlsnapshot.Service
-	ISR           *isr.Service
-	OwnerStatus   *ownerstatus.Service
-	HealthState   *health.State
-	HealthChecker *health.Checker
-	FedSync       *appfed.SyncWorker
-	Telemetry     *telemetry.Service
+	DB                   *gorm.DB
+	Config               config.Config
+	JWTManager           *jwt.Manager
+	Turnstile            *turnstile.Client
+	SysConfig            *sysconfig.Service
+	EventBus             appEvent.Bus
+	Redis                *redis.Client
+	Analytics            *analytics.Service
+	HTTPStats            *metrics.HTTPStats
+	Observability        *observability.Service
+	HTMLSnapshot         *htmlsnapshot.Service
+	ISR                  *isr.Service
+	OwnerStatus          *ownerstatus.Service
+	HealthState          *health.State
+	HealthChecker        *health.Checker
+	FedSync              *appfed.SyncWorker
+	Telemetry            *telemetry.Service
+	FederationHTTPClient *http.Client
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -182,8 +184,9 @@ func Register(app *fiber.App, deps Dependencies) {
 	if deps.Redis != nil {
 		fedCache = fedinfra.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 	}
-	fedResolver := fedinfra.NewResolver(fedinfra.NewSafeHTTPClient(10*time.Second), fedCache)
-	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, fedInstanceRepo)
+	fedHTTPClient := federationHTTPClient(deps)
+	fedResolver := fedinfra.NewResolver(fedHTTPClient, fedCache)
+	fedOutbound := appfed.NewOutboundService(sysCfgSvc, fedResolver, fedInstanceRepo, fedHTTPClient)
 	fedDelivery := appfed.NewDeliveryService(
 		fedOutboundRepo,
 		fedOutbound,
@@ -251,6 +254,13 @@ func Register(app *fiber.App, deps Dependencies) {
 	registerFederationRoutes(app, deps)
 	registerInternalRoutes(app, deps)
 	registerAdminSPA(app)
+}
+
+func federationHTTPClient(deps Dependencies) *http.Client {
+	if deps.FederationHTTPClient != nil {
+		return deps.FederationHTTPClient
+	}
+	return fedinfra.NewSafeHTTPClient(10 * time.Second)
 }
 
 // registerAdminSPA serves the admin Vue SPA with client-side routing support.

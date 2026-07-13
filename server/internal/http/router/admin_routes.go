@@ -3,7 +3,6 @@ package router
 import (
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -129,13 +128,14 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	if deps.Redis != nil {
 		cache = fedinfra.NewRedisCache(deps.Redis, deps.Config.Redis.Prefix)
 	}
-	resolver := fedinfra.NewResolver(fedinfra.NewSafeHTTPClient(10*time.Second), cache)
-	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
+	fedHTTPClient := federationHTTPClient(deps)
+	resolver := fedinfra.NewResolver(fedHTTPClient, cache)
+	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo, fedHTTPClient)
 	outboundRepo := persistence.NewOutboundDeliveryRepository(deps.DB)
 	friendLinkRepo := persistence.NewFriendLinkRepository(deps.DB)
 	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, friendLinkRepo, deps.EventBus)
 	postCacheRepo := persistence.NewFederatedPostCacheRepository(deps.DB)
-	federationAdminHandler := handler.NewFederationAdminHandler(sysCfgSvc, contentRepo, deliverySvc, instanceRepo, postCacheRepo, resolver, deps.EventBus)
+	federationAdminHandler := handler.NewFederationAdminHandler(sysCfgSvc, contentRepo, deliverySvc, instanceRepo, postCacheRepo, resolver, deps.EventBus, fedHTTPClient)
 	federationReviewHandler := handler.NewFederationReviewHandler(
 		persistence.NewFederatedCitationRepository(deps.DB),
 		persistence.NewFederatedMentionRepository(deps.DB),

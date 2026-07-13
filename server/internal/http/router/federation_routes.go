@@ -40,9 +40,10 @@ func registerFederationRoutes(app *fiber.App, deps Dependencies) {
 	} else {
 		rateLimiter = federation.NewInMemoryRateLimiter()
 	}
-	resolver := federation.NewResolver(federation.NewSafeHTTPClient(10*time.Second), cache)
+	fedHTTPClient := federationHTTPClient(deps)
+	resolver := federation.NewResolver(fedHTTPClient, cache)
 	verifier := federation.NewVerifier(resolver, 5*time.Minute)
-	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo)
+	outbound := appfed.NewOutboundService(sysCfgSvc, resolver, instanceRepo, fedHTTPClient)
 	deliverySvc := appfed.NewDeliveryService(outboundRepo, outbound, linkRepo, deps.EventBus)
 
 	wellKnownLimiter := newRateLimiter(deps, limiter.Config{

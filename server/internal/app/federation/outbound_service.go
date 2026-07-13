@@ -31,12 +31,16 @@ type OutboundService struct {
 	client       *http.Client
 }
 
-func NewOutboundService(cfgSvc *sysconfig.Service, resolver *fedinfra.Resolver, instanceRepo domainfed.FederationInstanceRepository) *OutboundService {
+func NewOutboundService(cfgSvc *sysconfig.Service, resolver *fedinfra.Resolver, instanceRepo domainfed.FederationInstanceRepository, httpClients ...*http.Client) *OutboundService {
+	httpClient := fedinfra.NewSafeHTTPClient(10 * time.Second)
+	if len(httpClients) > 0 && httpClients[0] != nil {
+		httpClient = httpClients[0]
+	}
 	return &OutboundService{
 		cfgSvc:       cfgSvc,
 		resolver:     resolver,
 		instanceRepo: instanceRepo,
-		client:       fedinfra.NewSafeHTTPClient(10 * time.Second),
+		client:       httpClient,
 	}
 }
 

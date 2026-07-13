@@ -14,6 +14,20 @@ jobs:
   server:
     name: Server (Go)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: server
@@ -30,6 +44,27 @@ jobs:
 
       - run: go build ./...
       - run: go vet ./...
+      - run: go test ./...
+
+      - name: Install Goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@v3.27.1
+
+      - name: Prepare federation E2E databases
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE DATABASE grtblog_e2e_a;
+          CREATE DATABASE grtblog_e2e_b;
+          SQL
+          goose -dir migrations postgres 'postgres://postgres:postgres@127.0.0.1:5432/grtblog_e2e_a?sslmode=disable' up
+          goose -dir migrations postgres 'postgres://postgres:postgres@127.0.0.1:5432/grtblog_e2e_b?sslmode=disable' up
+
+      - name: Federation E2E
+        env:
+          FEDERATION_E2E_DB_DSN_A: postgres://postgres:postgres@127.0.0.1:5432/grtblog_e2e_a?sslmode=disable
+          FEDERATION_E2E_DB_DSN_B: postgres://postgres:postgres@127.0.0.1:5432/grtblog_e2e_b?sslmode=disable
+        run: make test-federation-e2e
 
   admin:
     name: Admin (Vue)

@@ -40,9 +40,14 @@ func NewSyncWorker(
 	syncJobRepo social.FriendLinkSyncJobRepository,
 	resolver *fedinfra.Resolver,
 	eventBus appEvent.Bus,
+	httpClients ...*http.Client,
 ) *SyncWorker {
 	if eventBus == nil {
 		eventBus = appEvent.NopBus{}
+	}
+	httpClient := fedinfra.NewSafeHTTPClient(10 * time.Second)
+	if len(httpClients) > 0 && httpClients[0] != nil {
+		httpClient = httpClients[0]
 	}
 	return &SyncWorker{
 		instanceRepo: instanceRepo,
@@ -50,7 +55,7 @@ func NewSyncWorker(
 		linkRepo:     linkRepo,
 		syncJobRepo:  syncJobRepo,
 		resolver:     resolver,
-		client:       fedinfra.NewSafeHTTPClient(10 * time.Second),
+		client:       httpClient,
 		eventBus:     eventBus,
 	}
 }
