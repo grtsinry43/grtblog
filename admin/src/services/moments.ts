@@ -17,7 +17,6 @@ export interface MomentListItem {
   likes: number
   comments: number
   isTop: boolean
-  isHot: boolean
   isOriginal: boolean
   isPublished: boolean
   allowComment: boolean
@@ -52,7 +51,6 @@ export interface MomentDetail {
   shortUrl: string
   isPublished: boolean
   isTop: boolean
-  isHot: boolean
   isOriginal: boolean
   allowComment: boolean
   extInfo?: ContentExtInfo | null

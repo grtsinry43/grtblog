@@ -6,7 +6,6 @@ import {
   NPagination,
   NSpace,
   NPopconfirm,
-  NTooltip,
   NDropdown,
 } from 'naive-ui'
 import { defineComponent, onMounted, ref, Transition } from 'vue'
@@ -23,6 +22,7 @@ import {
   batchDeleteMoments,
 } from '@/services/moments'
 import { listWebsiteInfo } from '@/services/website-info'
+import ContentQuickPreview from '@/views/shared/content-editor/components/ContentQuickPreview.vue'
 
 import type { MomentListItem } from '@/services/moments'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
@@ -151,23 +151,10 @@ export default defineComponent({
         render: (row) => (
           <div class='font-medium text-gray-700 dark:text-gray-200'>
             <span>{row.title}</span>
-            {row.isHot && (
-              <NTooltip trigger='hover'>
-                {{
-                  trigger: () => (
-                    <span class='ml-2 iconify size-4 cursor-help align-middle text-red-500 ph--fire-fill' />
-                  ),
-                  default: () => (
-                    <div class='flex flex-col gap-y-0.5'>
-                      <span class='font-bold'>热门手记</span>
-                      <span class='text-xs opacity-80'>
-                        热门标准：浏览量 &gt; 1000 或 点赞数 &gt; 50
-                      </span>
-                    </div>
-                  ),
-                }}
-              </NTooltip>
-            )}
+            <ContentQuickPreview
+              contentType='moment'
+              contentId={row.id}
+            />
             <div
               class='inline-block cursor-pointer'
               onClick={() => {

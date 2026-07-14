@@ -16,6 +16,7 @@ import { ScrollContainer } from '@/components'
 import { useTable } from '@/composables/table/use-table'
 import { useDiscreteApi } from '@/composables/useDiscreteApi'
 import { deletePage, listPages, batchSetPageEnabled, batchDeletePages } from '@/services/page'
+import ContentQuickPreview from '@/views/shared/content-editor/components/ContentQuickPreview.vue'
 
 import type { PageListItem } from '@/services/page'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
@@ -125,6 +126,10 @@ export default defineComponent({
                 内置
               </NTag>
             )}
+            <ContentQuickPreview
+              contentType='page'
+              contentId={row.id}
+            />
           </div>
         ),
       },

@@ -23,8 +23,9 @@ import {
   batchDeleteArticles,
 } from '@/services/articles'
 import { listWebsiteInfo } from '@/services/website-info'
+import ContentQuickPreview from '@/views/shared/content-editor/components/ContentQuickPreview.vue'
 
-import Preview from './preview.vue'
+import { useHotArticleThresholds } from './composables/use-hot-article-thresholds'
 
 import type { ArticleListItem } from '@/services/articles'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
@@ -35,6 +36,7 @@ export default defineComponent({
     const router = useRouter()
     const { message } = useDiscreteApi()
     const { data, loading, pagination, refresh } = useTable<ArticleListItem>(listArticles)
+    const { description: hotArticleDescription } = useHotArticleThresholds()
     const checkedRowKeys = ref<DataTableRowKey[]>([])
     const publicUrl = ref('')
 
@@ -154,26 +156,16 @@ export default defineComponent({
                   default: () => (
                     <div class='flex flex-col gap-y-0.5'>
                       <span class='font-bold'>热门文章</span>
-                      <span class='text-xs opacity-80'>
-                        热门标准：浏览量 &gt; 1000 或 点赞数 &gt; 50
-                      </span>
+                      <span class='text-xs opacity-80'>{hotArticleDescription.value}</span>
                     </div>
                   ),
                 }}
               </NTooltip>
             )}
-            <NTooltip trigger='hover'>
-              {{
-                trigger: () => (
-                  <span class='dark:text-gray-40 ml-2 iconify size-4 cursor-help align-middle text-black/50 ph--file-search' />
-                ),
-                default: () => (
-                  <ScrollContainer class='max-h-80 max-w-120 overflow-auto text-sm'>
-                    <Preview articleId={row.id} />
-                  </ScrollContainer>
-                ),
-              }}
-            </NTooltip>
+            <ContentQuickPreview
+              contentType='article'
+              contentId={row.id}
+            />
             <div
               class='inline-block cursor-pointer'
               onClick={() => {
