@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useLeaveConfirm } from '@/composables'
 import { useImageExtInfo } from '@/composables/use-image-ext-info'
-import { createArticle, getArticle, updateArticle, type ArticleDetail } from '@/services/articles'
+import { createArticle, getArticle, updateArticle } from '@/services/articles'
 
 import type { ContentExtInfo } from '@/types/ext-info'
 

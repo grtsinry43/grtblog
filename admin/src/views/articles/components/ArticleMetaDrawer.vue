@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import {
   NAlert,
-  NAutoComplete,
   NButton,
   NDivider,
   NDrawer,
   NDrawerContent,
-  NDynamicTags,
   NEmpty,
   NForm,
   NFormItem,
@@ -21,11 +19,13 @@ import {
 
 import ImageInput from '@/components/image-picker/ImageInput.vue'
 import AiSummaryAssist from '@/views/shared/content-editor/components/AiSummaryAssist.vue'
+import ContentTagSelect from '@/views/shared/content-editor/components/ContentTagSelect.vue'
 
 import type { ArticleEditorForm } from '../composables/use-article-form'
 import type { NewCategoryModalState } from '../composables/use-taxonomy-select'
 import type { ArticleDetail } from '@/services/articles'
 import type { FederationOutboundInteractionResp } from '@/types/federation'
+import type { ContentTagOption } from '@/views/shared/content-editor/model/content-tags'
 import type { SelectOption } from 'naive-ui'
 
 type FederationSignalType = 'mention' | 'citation'
@@ -46,9 +46,9 @@ const form = defineModel<ArticleEditorForm>('form', { required: true })
 
 defineProps<{
   categoryOptions: SelectOption[]
-  dynamicTags: string[]
-  tagSearchValue: string
-  autoCompleteOptions: { label: string; value: string }[]
+  tagOptions: ContentTagOption[]
+  tagsLoading: boolean
+  tagCreating: boolean
   newCategoryModal: NewCategoryModalState
   aiSummaryLoading: boolean
   aiSummaryResult: string
@@ -71,12 +71,10 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:tagSearchValue': [value: string]
   'update:isYearSummary': [value: boolean]
   'update:yearSummaryYear': [value: number | null]
   openCategoryModal: []
-  tagsChange: [value: string[]]
-  addTag: [value: string]
+  createTag: [name: string]
   generateAiSummary: []
   adoptAiSummary: []
   dismissAiSummary: []
@@ -84,13 +82,6 @@ const emit = defineEmits<{
   resetAllFederationSignals: []
   resetFederationSignal: [row: FederationSignalRow]
 }>()
-
-function onTagEnter(event: KeyboardEvent, value: string) {
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    emit('addTag', value)
-  }
-}
 
 function outboundStatusTagType(status?: string | null) {
   const normalized = (status || '').trim().toLowerCase()
@@ -161,31 +152,15 @@ function emitResetRow(row: FederationSignalRow) {
               label="标签"
               :show-feedback="false"
             >
-              <div class="flex w-full flex-col gap-2">
-                <NDynamicTags
-                  :value="dynamicTags"
-                  @update:value="$emit('tagsChange', $event)"
-                />
-                <div class="flex items-center gap-2">
-                  <NAutoComplete
-                    :value="tagSearchValue"
-                    :options="autoCompleteOptions"
-                    placeholder="搜索或创建标签"
-                    class="flex-1"
-                    :input-props="{
-                      onKeydown: (event: KeyboardEvent) => onTagEnter(event, tagSearchValue),
-                    }"
-                    @update:value="$emit('update:tagSearchValue', $event)"
-                    @select="$emit('addTag', $event)"
-                  />
-                  <NButton
-                    quaternary
-                    size="small"
-                    @click="$emit('addTag', tagSearchValue)"
-                    >添加</NButton
-                  >
-                </div>
-              </div>
+              <ContentTagSelect
+                v-model="form.tagIds"
+                :options="tagOptions"
+                :loading="tagsLoading"
+                :creating="tagCreating"
+                noun="标签"
+                class="w-full"
+                @create="$emit('createTag', $event)"
+              />
             </NFormItem>
           </NForm>
         </div>

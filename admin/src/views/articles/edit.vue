@@ -43,13 +43,13 @@ const { form, saving, imageProcessing, isCreating, fetch, save, extInfo, baseExt
 // 将表单中的响应式属性传给 Hook，实现双向绑定
 const {
   categoryOptions,
-  dynamicTags,
-  tagSearchValue,
-  autoCompleteOptions,
+  tagOptions,
+  tagsLoading,
+  tagCreating,
+  selectedTags,
   newCatModal,
   setInitialTags,
-  handleTagsChange,
-  addTagFromSearch,
+  createAndSelectTag,
   createNewCategory,
 } = useTaxonomySelect(toRef(form, 'tagIds'), toRef(form, 'categoryId'), message)
 
@@ -69,8 +69,6 @@ const federationInteractionsError = ref('')
 const federationOutbounds = ref<FederationOutboundInteractionResp[]>([])
 const resetAllFederationLoading = ref(false)
 const resetSignalLoadingKeys = ref<Record<string, boolean>>({})
-
-type FederationSignalType = FederationSignalRow['type']
 
 const { loading: aiGenerating, generate: handleAIGenerate } = useAiTitleGeneration({
   getContent: () => form.content,
@@ -298,20 +296,6 @@ const federationSignalRows = computed<FederationSignalRow[]>(() => {
   })
 })
 
-function outboundStatusTagType(status?: string | null) {
-  const normalized = (status || '').trim().toLowerCase()
-  if (normalized === 'approved' || normalized === 'accepted') return 'success'
-  if (normalized === 'queued' || normalized === 'sending') return 'warning'
-  if (
-    normalized === 'rejected' ||
-    normalized === 'failed' ||
-    normalized === 'timeout' ||
-    normalized === 'dead'
-  )
-    return 'error'
-  return 'default'
-}
-
 function outboundStatusText(status?: string | null) {
   const normalized = (status || '').trim().toLowerCase()
   switch (normalized) {
@@ -421,9 +405,7 @@ async function handleResetAllFederationSignals() {
 function buildPreviewPayload() {
   const nowIso = new Date().toISOString()
   const safeExtInfo = extInfo.value ? JSON.parse(JSON.stringify(toRaw(extInfo.value))) : null
-  const safeTags = loadedArticle.value?.tags
-    ? JSON.parse(JSON.stringify(toRaw(loadedArticle.value.tags)))
-    : []
+  const safeTags = JSON.parse(JSON.stringify(toRaw(selectedTags.value)))
   return {
     id: loadedArticle.value?.id ?? 0,
     title: form.title,
@@ -528,6 +510,7 @@ watch(
     form.isTop,
     form.allowComment,
     form.isOriginal,
+    form.tagIds,
     extInfo.value,
   ],
   () => {
@@ -749,9 +732,9 @@ watch([isYearSummary, yearSummaryYear], () => {
       v-model:show="showMeta"
       v-model:form="form"
       :category-options="categoryOptions"
-      :dynamic-tags="dynamicTags"
-      :tag-search-value="tagSearchValue"
-      :auto-complete-options="autoCompleteOptions"
+      :tag-options="tagOptions"
+      :tags-loading="tagsLoading"
+      :tag-creating="tagCreating"
       :new-category-modal="newCatModal"
       :ai-summary-loading="aiSummaryLoading"
       :ai-summary-result="aiSummaryResult"
@@ -771,12 +754,10 @@ watch([isYearSummary, yearSummaryYear], () => {
       :reset-signal-loading-keys="resetSignalLoadingKeys"
       :format-date-time="formatDateTime"
       :signal-status-text="signalStatusText"
-      @update:tag-search-value="tagSearchValue = $event"
       @update:is-year-summary="isYearSummary = $event"
       @update:year-summary-year="yearSummaryYear = $event ?? new Date().getFullYear()"
       @open-category-modal="newCatModal.show = true"
-      @tags-change="handleTagsChange"
-      @add-tag="addTagFromSearch"
+      @create-tag="createAndSelectTag"
       @generate-ai-summary="handleAISummary"
       @adopt-ai-summary="adoptAISummary"
       @dismiss-ai-summary="dismissAISummary"
