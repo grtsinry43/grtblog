@@ -42,7 +42,6 @@ const {
   form,
   formDrawerVisible,
   saving,
-  currentEventFields,
   testModalVisible,
   testEventName,
   historyDrawerVisible,

@@ -180,7 +180,7 @@ async function handlePreview() {
       if (previewData.variables) {
         variables = JSON.parse(previewData.variables)
       }
-    } catch (e) {
+    } catch {
       message.error('JSON 格式错误，请检查变量')
       return
     }
@@ -191,7 +191,7 @@ async function handlePreview() {
     previewData.subject = res.subject
     previewData.htmlBody = res.htmlBody
     previewData.textBody = res.textBody
-  } catch (err) {
+  } catch {
     //
   } finally {
     previewLoading.value = false

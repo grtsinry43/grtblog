@@ -46,7 +46,7 @@ async function handleTemplateChange(code: string) {
       if (details && details.fields) {
         form.variables = generatePreviewData(details.fields)
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
@@ -64,7 +64,7 @@ async function handleSend() {
       if (form.variables) {
         variables = JSON.parse(form.variables)
       }
-    } catch (e) {
+    } catch {
       message.error('JSON 格式错误')
       loading.value = false
       return
@@ -75,7 +75,7 @@ async function handleSend() {
       variables: variables,
     })
     message.success('邮件发送任务已提交')
-  } catch (err) {
+  } catch {
     //
   } finally {
     loading.value = false

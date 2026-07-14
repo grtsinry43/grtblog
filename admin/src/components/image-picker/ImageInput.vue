@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import ImagePickerModal from './ImagePickerModal.vue'
 
-const props = defineProps<{
+defineProps<{
   value: string | null
 }>()
 

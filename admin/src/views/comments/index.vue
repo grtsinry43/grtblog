@@ -8,7 +8,6 @@ import {
   PinOutline,
   PersonOutline,
   GlobeOutline,
-  LogoChrome,
   LaptopOutline,
   LocationOutline,
   MailOutline,
@@ -25,18 +24,14 @@ import {
   NSpace,
   NButton,
   useMessage,
-  useDialog,
-  NResult,
   NSpin,
   NPopconfirm,
   NInput,
-  NPopselect,
   NIcon,
-  NEllipsis,
   NSwitch,
   NPagination,
 } from 'naive-ui'
-import { h, ref, computed } from 'vue'
+import { ref, computed } from 'vue'
 
 import { ScrollContainer, EmptyPlaceholder, UserAvatar } from '@/components'
 import {
@@ -53,7 +48,6 @@ import { CommentStatus, type Comment, type CommentListResponse } from '@/types/c
 import CommentSource from './components/CommentSource.vue'
 
 const message = useMessage()
-const dialog = useDialog()
 const queryClient = useQueryClient()
 
 const activeStatus = ref<string>('all')
@@ -62,7 +56,7 @@ const pageSize = ref(20)
 const onlyUnviewed = ref(false)
 
 // Fetch comments
-const { data, isLoading, isError } = useQuery({
+const { data, isLoading } = useQuery({
   queryKey: ['comments', activeStatus, page, pageSize, onlyUnviewed],
   queryFn: () =>
     listComments({

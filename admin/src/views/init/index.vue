@@ -214,7 +214,7 @@ async function handleNextStep() {
     } else {
       await submitSetup()
     }
-  } catch (e) {
+  } catch {
     // Validation failed
   }
 }

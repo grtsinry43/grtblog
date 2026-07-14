@@ -9,7 +9,7 @@ import twc from '@/utils/tailwindColor'
 import type { ECharts } from 'echarts'
 import type { Ref } from 'vue'
 
-export function useDashboardCharts(stats: Ref<any>, isLoading: Ref<boolean>) {
+export function useDashboardCharts(stats: Ref<any>) {
   const { sidebarMenu, navigationMode, themeColor, isDark } = toRefsPreferencesStore()
 
   const mainTrendTab = ref('traffic')

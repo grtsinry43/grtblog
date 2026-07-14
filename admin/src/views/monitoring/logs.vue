@@ -6,7 +6,7 @@ import {
   Pause16Filled,
   Play16Filled,
 } from '@vicons/fluent'
-import { useIntervalFn, useScroll } from '@vueuse/core'
+import { useIntervalFn } from '@vueuse/core'
 import { NButton, NCard, NEmpty, NIcon, NLog, NSpin, NTag } from 'naive-ui'
 import { nextTick, ref, watch } from 'vue'
 
@@ -30,7 +30,7 @@ const {
 })
 
 // Auto-refresh every 10 seconds
-const { pause, resume, isActive } = useIntervalFn(() => {
+useIntervalFn(() => {
   refetch()
 }, 10000)
 

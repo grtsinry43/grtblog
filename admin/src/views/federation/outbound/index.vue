@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
-import { NDataTable, NButton, NTag, NInput, NSpace, NCard, NSelect } from 'naive-ui'
+import { NDataTable, NButton, NTag, NInput, NCard, NSelect } from 'naive-ui'
 import { h, ref } from 'vue'
 
 import { ScrollContainer } from '@/components'
@@ -8,10 +8,7 @@ import { getFederationOutboundLog } from '@/services/federation-admin'
 
 import DetailDrawer from './DetailDrawer.vue'
 
-import type {
-  FederationOutboundDeliveryResp,
-  FederationOutboundDeliveryListResp,
-} from '@/types/federation'
+import type { FederationOutboundDeliveryResp } from '@/types/federation'
 import type { DataTableColumns } from 'naive-ui'
 
 const page = ref(1)

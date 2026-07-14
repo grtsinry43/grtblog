@@ -174,7 +174,7 @@ async function handleSave() {
     }
     formVisible.value = false
     refresh()
-  } catch (e) {
+  } catch {
     // Error handling is generic in request
   } finally {
     saving.value = false
@@ -186,7 +186,7 @@ async function handleDelete(row: GlobalNotificationItem) {
     await deleteGlobalNotification(row.id)
     message.success('删除成功')
     refresh()
-  } catch (e) {
+  } catch {
     // Error handling
   }
 }

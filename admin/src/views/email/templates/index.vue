@@ -116,7 +116,7 @@ async function handleDelete(row: EmailTemplate) {
     await deleteEmailTemplate(row.code)
     message.success('删除成功')
     fetchData()
-  } catch (err) {
+  } catch {
     //
   }
 }

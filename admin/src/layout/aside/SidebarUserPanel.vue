@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useMessage } from 'naive-ui'
 import { computed } from 'vue'
 
 import { ButtonAnimation } from '@/components'
@@ -10,8 +9,6 @@ import { toRefsPreferencesStore, toRefsUserStore } from '@/stores'
 const { sidebarMenu } = toRefsPreferencesStore()
 
 const { user } = toRefsUserStore()
-
-const message = useMessage()
 
 const displayName = computed(() => user.value.nickname || user.value.username || '未命名用户')
 const displaySubtitle = computed(

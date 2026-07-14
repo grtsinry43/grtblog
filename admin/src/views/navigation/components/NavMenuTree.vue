@@ -1,13 +1,6 @@
 <script setup lang="ts">
 // 引入 Ionicons5 图标
-import {
-  ReorderTwo,
-  CreateOutline,
-  Add,
-  TrashBinOutline,
-  FolderOpenOutline,
-  DocumentTextOutline,
-} from '@vicons/ionicons5'
+import { ReorderTwo, CreateOutline, Add, TrashBinOutline } from '@vicons/ionicons5'
 import {
   NButton,
   NTag,

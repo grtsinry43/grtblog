@@ -14,20 +14,21 @@ const enabled = defineModel<boolean>('enabled', { default: false })
       class="rounded-lg border border-neutral-100 p-5 dark:border-neutral-800"
       :style="
         enabled && primaryColorRgb
-          ? { borderColor: `rgba(${primaryColorRgb}, 0.35)`, background: `rgba(${primaryColorRgb}, 0.04)` }
+          ? {
+              borderColor: `rgba(${primaryColorRgb}, 0.35)`,
+              background: `rgba(${primaryColorRgb}, 0.04)`,
+            }
           : undefined
       "
     >
       <div class="flex items-start justify-between gap-4">
         <div class="flex items-start gap-3">
           <span
-            class="iconify ph--heartbeat mt-0.5 text-xl"
+            class="mt-0.5 iconify text-xl ph--heartbeat"
             :style="primaryColorRgb ? { color: `rgb(${primaryColorRgb})` } : undefined"
           ></span>
           <div>
-            <div class="text-sm font-medium text-neutral-800 dark:text-neutral-100">
-              匿名遥测
-            </div>
+            <div class="text-sm font-medium text-neutral-800 dark:text-neutral-100">匿名遥测</div>
             <p class="mt-1 text-xs leading-relaxed text-neutral-500">
               完全可选。开启后只会发送脱敏后的运行数据，帮助我们更快发现并修复问题。
             </p>
@@ -39,7 +40,9 @@ const enabled = defineModel<boolean>('enabled', { default: false })
 
     <div class="space-y-4 text-xs leading-relaxed text-neutral-500">
       <div>
-        <div class="mb-1.5 text-[11px] font-semibold tracking-wide text-neutral-700 uppercase dark:text-neutral-200">
+        <div
+          class="mb-1.5 text-[11px] font-semibold tracking-wide text-neutral-700 uppercase dark:text-neutral-200"
+        >
           我们会收集
         </div>
         <ul class="list-disc space-y-1 pl-4">
@@ -50,7 +53,9 @@ const enabled = defineModel<boolean>('enabled', { default: false })
       </div>
 
       <div>
-        <div class="mb-1.5 text-[11px] font-semibold tracking-wide text-neutral-700 uppercase dark:text-neutral-200">
+        <div
+          class="mb-1.5 text-[11px] font-semibold tracking-wide text-neutral-700 uppercase dark:text-neutral-200"
+        >
           我们不会收集
         </div>
         <ul class="list-disc space-y-1 pl-4">

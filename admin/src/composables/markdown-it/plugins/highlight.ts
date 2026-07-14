@@ -10,7 +10,7 @@ export const highlightPlugin: MarkdownExtension = (md) => {
           return `<pre class="hljs"><code>${
             hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
           }</code></pre>`
-        } catch (__) {}
+        } catch {}
       }
       return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>'
     },

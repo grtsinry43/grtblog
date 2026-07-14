@@ -12,7 +12,7 @@ import {
   NFormItem,
   useMessage,
 } from 'naive-ui'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 // Components
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'

@@ -11,7 +11,7 @@ import {
   NButton,
   useMessage,
 } from 'naive-ui'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 
 import { retryFederationOutboundLog } from '@/services/federation-admin'
 
@@ -51,10 +51,6 @@ function handleRetry() {
   if (props.delivery?.id) {
     retry(props.delivery.id)
   }
-}
-
-function handleClose() {
-  emit('update:show', false)
 }
 </script>
 

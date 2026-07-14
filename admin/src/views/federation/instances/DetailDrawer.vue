@@ -18,8 +18,6 @@ import { computed, watch } from 'vue'
 import { ScrollContainer } from '@/components'
 import { getFederationInstanceDetail } from '@/services/federation-admin'
 
-import type { FederationInstanceDetailResp } from '@/types/federation'
-
 const props = defineProps<{
   show: boolean
   instanceId?: number

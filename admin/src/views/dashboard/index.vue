@@ -90,7 +90,7 @@ const {
   distributionChart,
   sourceChart,
   topContentChart,
-} = useDashboardCharts(stats, isLoading)
+} = useDashboardCharts(stats)
 
 const mainTrendTabs = [
   { label: '流量', value: 'traffic' },

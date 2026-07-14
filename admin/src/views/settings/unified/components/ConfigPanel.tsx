@@ -315,7 +315,7 @@ export default defineComponent({
               ) : (
                 <div class='space-y-6'>
                   {tree.value.items && tree.value.items.length > 0 && (
-                                       <NForm
+                    <NForm
                       labelPlacement={isMaxSm.value ? 'top' : 'left'}
                       labelWidth={isMaxSm.value ? undefined : 160}
                     >

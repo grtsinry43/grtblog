@@ -30,10 +30,6 @@ const templateInvalid = Decoration.mark({
   attributes: { title: '未知模板变量' },
 })
 
-function normalizeExpr(expr: string) {
-  return expr.replace(/\s+/g, ' ').trim()
-}
-
 const DEFAULT_VALID_VARIABLES = ['.Name', '.OccurredAt', '.SiteURL']
 
 function isValidTemplateExpression(expression: string, validFields: string[]): boolean {

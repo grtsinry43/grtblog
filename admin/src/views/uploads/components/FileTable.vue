@@ -8,7 +8,7 @@ import { formatDateZhCN as formatDate, formatFileSize } from '@/utils/format'
 import type { UploadFileResponse } from '@/services/uploads'
 import type { DataTableColumns } from 'naive-ui'
 
-const props = defineProps<{
+defineProps<{
   files: UploadFileResponse[]
   loading: boolean
 }>()

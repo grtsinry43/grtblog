@@ -46,13 +46,6 @@ const displayTitle = computed(() => {
   return props.initialTitle || '未知来源'
 })
 
-const displayLink = computed(() => {
-  // In a real app, you might want to link to the public site
-  // For now, we can perhaps link to the admin edit page or just perform no action
-  // If we had the public URL base, we could link there.
-  return null
-})
-
 const typeTag = computed(() => {
   if (isArticle.value) return { type: 'info' as const, icon: DocumentTextOutline, label: '文章' }
   if (isPage.value) return { type: 'success' as const, icon: NewspaperOutline, label: '页面' }

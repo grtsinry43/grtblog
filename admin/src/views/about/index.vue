@@ -10,7 +10,6 @@ defineOptions({
   name: 'About',
 })
 
-const APP_NAME = import.meta.env.VITE_APP_NAME
 const version = ref('')
 const commit = ref('')
 const { dependencies, devDependencies } = packageJson
