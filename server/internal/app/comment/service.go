@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	defaultMaxDepth        = 3
 	commentContentMaxRunes = 500
+	maxCommentDepth        = int16(10)
 )
 
 type RequestMeta struct {
@@ -48,7 +48,6 @@ type Service struct {
 	sysCfg         *sysconfig.Service
 	clientInfo     ClientInfoResolver
 	geoIP          GeoIPResolver
-	maxDepthLimit  int
 	events         appEvent.Bus
 }
 
@@ -71,7 +70,6 @@ func NewService(
 		sysCfg:         sysCfg,
 		clientInfo:     clientInfo,
 		geoIP:          geoIP,
-		maxDepthLimit:  defaultMaxDepth,
 		events:         events,
 	}
 }
@@ -101,10 +99,15 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 	if err := s.ensureAreaCommentable(ctx, cmd.AreaID); err != nil {
 		return nil, err
 	}
+	rootID := int64(0)
+	var parentComment *domaincomment.Comment
 	if cmd.ParentID != nil {
-		if err := s.ensureParentValid(ctx, cmd.AreaID, *cmd.ParentID); err != nil {
+		parent, err := s.ensureParentValid(ctx, cmd.AreaID, *cmd.ParentID)
+		if err != nil {
 			return nil, err
 		}
+		parentComment = parent
+		rootID = commentRootID(parent)
 	}
 
 	user, err := s.userRepo.FindByID(ctx, userID)
@@ -152,6 +155,8 @@ func (s *Service) CreateCommentLogin(ctx context.Context, userID int64, cmd Crea
 		CanReply: true,
 		Status:   status,
 		ParentID: cmd.ParentID,
+		RootID:   rootID,
+		Depth:    nextCommentDepth(parentComment, rootID),
 	}
 	s.applyRequestMeta(commentEntity, meta)
 	commentEntity.Avatar = s.resolveCommentAvatar(ctx, commentEntity, nil)
@@ -184,10 +189,15 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 	if err := s.ensureAreaCommentable(ctx, cmd.AreaID); err != nil {
 		return nil, err
 	}
+	rootID := int64(0)
+	var parentComment *domaincomment.Comment
 	if cmd.ParentID != nil {
-		if err := s.ensureParentValid(ctx, cmd.AreaID, *cmd.ParentID); err != nil {
+		parent, err := s.ensureParentValid(ctx, cmd.AreaID, *cmd.ParentID)
+		if err != nil {
 			return nil, err
 		}
+		parentComment = parent
+		rootID = commentRootID(parent)
 	}
 
 	nickname := strings.TrimSpace(cmd.NickName)
@@ -218,6 +228,8 @@ func (s *Service) CreateCommentVisitor(ctx context.Context, cmd CreateCommentVis
 		CanReply:  true,
 		Status:    status,
 		ParentID:  cmd.ParentID,
+		RootID:    rootID,
+		Depth:     nextCommentDepth(parentComment, rootID),
 	}
 	s.applyRequestMeta(commentEntity, meta)
 	commentEntity.Avatar = s.resolveCommentAvatar(ctx, commentEntity, nil)
@@ -250,6 +262,8 @@ func (s *Service) ImportComment(ctx context.Context, cmd ImportCommentCmd) (*dom
 		return nil, domaincomment.ErrCommentContentEmpty
 	}
 
+	rootID := int64(0)
+	depth := int16(1)
 	if cmd.ParentID != nil {
 		parent, err := s.repo.FindByID(ctx, *cmd.ParentID)
 		if err != nil {
@@ -260,6 +274,16 @@ func (s *Service) ImportComment(ctx context.Context, cmd ImportCommentCmd) (*dom
 		}
 		if parent.AreaID != cmd.AreaID {
 			return nil, domaincomment.ErrCommentParentNotFound
+		}
+		rootID = commentRootID(parent)
+		depth = nextCommentDepth(parent, rootID)
+	} else if cmd.ID != nil && *cmd.ID > 0 {
+		rootID = *cmd.ID
+	}
+
+	if cmd.RootID != nil && *cmd.RootID > 0 {
+		if rootID <= 0 || *cmd.RootID != rootID {
+			return nil, domaincomment.ErrCommentRootInvalid
 		}
 	}
 
@@ -296,6 +320,8 @@ func (s *Service) ImportComment(ctx context.Context, cmd ImportCommentCmd) (*dom
 		CanReply:          boolOrDefault(cmd.CanReply, true),
 		Status:            status,
 		ParentID:          normalizeInt64Ptr(cmd.ParentID),
+		RootID:            rootID,
+		Depth:             depth,
 		CreatedAt:         timeOrZero(cmd.CreatedAt),
 		UpdatedAt:         timeOrZero(cmd.UpdatedAt),
 		DeletedAt:         cmd.DeletedAt,
@@ -322,38 +348,47 @@ func (s *Service) ListPublicComments(ctx context.Context, cmd ListPublicComments
 	}
 	page, size := normalizePage(cmd.Page, cmd.PageSize)
 
-	items, err := s.repo.ListPublicByAreaID(ctx, domaincomment.PublicListOptions{
+	options := domaincomment.PublicListOptions{
 		AreaID:          cmd.AreaID,
 		ViewerAuthorID:  cmd.ViewerAuthorID,
 		ViewerVisitorID: strings.TrimSpace(cmd.ViewerVisitorID),
-	})
+	}
+	roots, total, err := s.repo.ListPublicRootsByAreaID(ctx, options, page, size)
 	if err != nil {
 		return nil, err
 	}
 
-	s.populateCommentOwnership(items, cmd.ViewerAuthorID, cmd.ViewerVisitorID)
-	s.populateCommentAvatars(ctx, items)
-	tree := buildCommentTree(items)
-	assignFloors(tree)
-	total := len(tree)
-	start := (page - 1) * size
-	if start >= total {
+	threads := buildCommentThreads(roots, nil)
+	if len(threads) == 0 {
 		return &PublicCommentPage{
 			Items:             []*CommentNode{},
-			Total:             int64(total),
+			Total:             total,
 			Page:              page,
 			Size:              size,
 			IsClosed:          area.IsClosed,
 			RequireModeration: requireModeration,
 		}, nil
 	}
-	end := start + size
-	if end > total {
-		end = total
+	rootIDs := make([]int64, 0, len(threads))
+	pageItems := make([]*domaincomment.Comment, 0, len(threads))
+	for _, thread := range threads {
+		rootIDs = append(rootIDs, thread.Comment.ID)
+		pageItems = append(pageItems, thread.Comment)
+	}
+	replies, err := s.repo.ListPublicRepliesByRootIDs(ctx, options, rootIDs)
+	if err != nil {
+		return nil, err
+	}
+	pageItems = append(pageItems, replies...)
+	s.populateCommentOwnership(pageItems, cmd.ViewerAuthorID, cmd.ViewerVisitorID)
+	s.populateCommentAvatars(ctx, pageItems)
+	attachThreadReplies(threads, replies)
+	for _, thread := range threads {
+		assignChildFloors(thread)
 	}
 	return &PublicCommentPage{
-		Items:             tree[start:end],
-		Total:             int64(total),
+		Items:             threads,
+		Total:             total,
 		Page:              page,
 		Size:              size,
 		IsClosed:          area.IsClosed,
@@ -457,7 +492,7 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 	if parent.IsFederated {
 		return nil, domaincomment.ErrCommentReplyDisabled
 	}
-	if err := s.ensureParentValid(ctx, parent.AreaID, parent.ID); err != nil {
+	if _, err := s.ensureParentValid(ctx, parent.AreaID, parent.ID); err != nil {
 		return nil, err
 	}
 	adminUser, err := s.userRepo.FindByID(ctx, cmd.AdminID)
@@ -485,6 +520,8 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 		CanReply: true,
 		Status:   domaincomment.CommentStatusApproved,
 		ParentID: &parent.ID,
+		RootID:   commentRootID(parent),
+		Depth:    nextCommentDepth(parent, commentRootID(parent)),
 	}
 	reply.Avatar = s.resolveCommentAvatar(ctx, reply, nil)
 	if err := s.repo.Create(ctx, reply); err != nil {
@@ -884,41 +921,54 @@ func (s *Service) ensureAreaCommentable(ctx context.Context, areaID int64) error
 	return nil
 }
 
-func (s *Service) ensureParentValid(ctx context.Context, areaID int64, parentID int64) error {
+func (s *Service) ensureParentValid(ctx context.Context, areaID int64, parentID int64) (*domaincomment.Comment, error) {
 	parent, err := s.repo.FindByID(ctx, parentID)
 	if err != nil {
 		if errors.Is(err, domaincomment.ErrCommentNotFound) {
-			return domaincomment.ErrCommentParentNotFound
+			return nil, domaincomment.ErrCommentParentNotFound
 		}
-		return err
+		return nil, err
 	}
 	if parent.AreaID != areaID {
-		return domaincomment.ErrCommentParentNotFound
+		return nil, domaincomment.ErrCommentParentNotFound
 	}
 	if !parent.CanReply {
-		return domaincomment.ErrCommentReplyDisabled
+		return nil, domaincomment.ErrCommentReplyDisabled
 	}
+	if commentDepth(parent) >= maxCommentDepth {
+		return nil, domaincomment.ErrCommentTooDeep
+	}
+	return parent, nil
+}
 
-	chainLength := 1
-	current := parent
-	for current.ParentID != nil {
-		if chainLength+1 >= s.maxDepthLimit {
-			return domaincomment.ErrCommentTooDeep
-		}
-		next, err := s.repo.FindByID(ctx, *current.ParentID)
-		if err != nil {
-			if errors.Is(err, domaincomment.ErrCommentNotFound) {
-				return domaincomment.ErrCommentParentNotFound
-			}
-			return err
-		}
-		chainLength++
-		current = next
+func commentRootID(item *domaincomment.Comment) int64 {
+	if item == nil {
+		return 0
 	}
-	if chainLength+1 > s.maxDepthLimit {
-		return domaincomment.ErrCommentTooDeep
+	if item.RootID > 0 {
+		return item.RootID
 	}
-	return nil
+	return item.ID
+}
+
+func commentDepth(item *domaincomment.Comment) int16 {
+	if item == nil {
+		return 0
+	}
+	if item.Depth > 0 {
+		return item.Depth
+	}
+	if item.ParentID == nil {
+		return 1
+	}
+	return 2
+}
+
+func nextCommentDepth(parent *domaincomment.Comment, rootID int64) int16 {
+	if parent == nil || rootID <= 0 {
+		return 1
+	}
+	return commentDepth(parent) + 1
 }
 
 func (s *Service) populateCommentOwnership(items []*domaincomment.Comment, viewerAuthorID *int64, viewerVisitorID string) {
@@ -942,60 +992,53 @@ func (s *Service) populateCommentOwnership(items []*domaincomment.Comment, viewe
 	}
 }
 
-func buildCommentTree(items []*domaincomment.Comment) []*CommentNode {
-	nodes := make(map[int64]*CommentNode, len(items))
-	for _, item := range items {
-		nodes[item.ID] = &CommentNode{Comment: item}
-	}
-
-	var roots []*CommentNode
-	for _, item := range items {
-		node := nodes[item.ID]
-		if item.ParentID != nil {
-			if parent, ok := nodes[*item.ParentID]; ok {
-				parent.Children = append(parent.Children, node)
-				continue
-			}
+func buildCommentThreads(roots, replies []*domaincomment.Comment) []*CommentNode {
+	threads := make([]*CommentNode, 0, len(roots))
+	for _, root := range roots {
+		if root == nil {
+			continue
 		}
-		roots = append(roots, node)
+		floor := ""
+		if root.Floor > 0 {
+			floor = fmt.Sprintf("%d", root.Floor)
+		}
+		threads = append(threads, &CommentNode{Comment: root, Floor: floor})
 	}
-	return roots
+	attachThreadReplies(threads, replies)
+	return threads
 }
 
-// assignFloors assigns chronological floor numbers to the comment tree.
-// Root comments get sequential floors (1, 2, 3…) based on creation time.
-// Children are reordered chronologically and get sub-floors (e.g. 1-1, 1-2).
-// After assignment, roots are sorted back to display order (pinned first, newest first).
-func assignFloors(roots []*CommentNode) {
-	if len(roots) == 0 {
-		return
+func attachThreadReplies(threads []*CommentNode, replies []*domaincomment.Comment) {
+	threadByRootID := make(map[int64]*CommentNode, len(threads))
+	commentByID := make(map[int64]*domaincomment.Comment, len(threads)+len(replies))
+	for _, thread := range threads {
+		if thread == nil || thread.Comment == nil {
+			continue
+		}
+		thread.Children = nil
+		threadByRootID[thread.Comment.ID] = thread
+		commentByID[thread.Comment.ID] = thread.Comment
 	}
-
-	// Sort roots chronologically (oldest first) to assign floor numbers.
-	sort.SliceStable(roots, func(i, j int) bool {
-		ci, cj := roots[i].Comment, roots[j].Comment
-		if !ci.CreatedAt.Equal(cj.CreatedAt) {
-			return ci.CreatedAt.Before(cj.CreatedAt)
+	for _, reply := range replies {
+		if reply != nil {
+			commentByID[reply.ID] = reply
 		}
-		return ci.ID < cj.ID
-	})
-
-	for i, root := range roots {
-		root.Floor = fmt.Sprintf("%d", i+1)
-		assignChildFloors(root)
 	}
-
-	// Sort back to display order: pinned first, then newest first.
-	sort.SliceStable(roots, func(i, j int) bool {
-		ci, cj := roots[i].Comment, roots[j].Comment
-		if ci.IsTop != cj.IsTop {
-			return ci.IsTop
+	for _, reply := range replies {
+		if reply == nil {
+			continue
 		}
-		if !ci.CreatedAt.Equal(cj.CreatedAt) {
-			return ci.CreatedAt.After(cj.CreatedAt)
+		thread, ok := threadByRootID[commentRootID(reply)]
+		if !ok {
+			continue
 		}
-		return ci.ID > cj.ID
-	})
+		if reply.ParentID != nil {
+			if parent, exists := commentByID[*reply.ParentID]; exists {
+				reply.ReplyToNickName = parent.NickName
+			}
+		}
+		thread.Children = append(thread.Children, &CommentNode{Comment: reply})
+	}
 }
 
 func assignChildFloors(node *CommentNode) {
@@ -1012,7 +1055,6 @@ func assignChildFloors(node *CommentNode) {
 	})
 	for i, child := range node.Children {
 		child.Floor = fmt.Sprintf("%s-%d", node.Floor, i+1)
-		assignChildFloors(child)
 	}
 }
 

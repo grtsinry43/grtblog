@@ -46,6 +46,8 @@ type Comment struct {
 	Status            string         `gorm:"column:status;size:20;not null"`
 	IsEdited          bool           `gorm:"column:is_edited"`
 	ParentID          *int64         `gorm:"column:parent_id"`
+	RootID            int64          `gorm:"column:root_id;not null"`
+	Depth             int16          `gorm:"column:depth;not null"`
 	CreatedAt         time.Time      `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt         time.Time      `gorm:"column:updated_at;autoUpdateTime"`
 	DeletedAt         gorm.DeletedAt `gorm:"column:deleted_at;index"`

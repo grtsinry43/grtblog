@@ -117,7 +117,7 @@ func (h *CommentHandler) CreateCommentVisitor(c *fiber.Ctx) error {
 }
 
 // ListCommentTree godoc
-// @Summary 获取评论树（公开，根评论分页）
+// @Summary 获取评论楼层（公开，根评论分页）
 // @Tags Comment
 // @Produce json
 // @Param areaId path int true "评论区ID"
@@ -611,6 +611,8 @@ func (h *CommentHandler) mapCommentError(c *fiber.Ctx, err error) error {
 		return response.NewBizErrorWithMsg(response.ParamsError, "父评论不存在")
 	case errors.Is(err, domaincomment.ErrCommentTooDeep):
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论层级过深")
+	case errors.Is(err, domaincomment.ErrCommentRootInvalid):
+		return response.NewBizErrorWithMsg(response.ParamsError, "评论楼层根节点与父评论不一致")
 	case errors.Is(err, domaincomment.ErrCommentContentEmpty):
 		return response.NewBizErrorWithMsg(response.ParamsError, "评论内容不能为空")
 	case errors.Is(err, domaincomment.ErrCommentContentTooLong):
@@ -711,6 +713,8 @@ func toCreateCommentResp(entity *domaincomment.Comment) contract.CreateCommentRe
 		Status:            entity.Status,
 		IsEdited:          entity.IsEdited,
 		ParentID:          entity.ParentID,
+		RootID:            entity.RootID,
+		Depth:             entity.Depth,
 		CreatedAt:         entity.CreatedAt,
 		UpdatedAt:         entity.UpdatedAt,
 		DeletedAt:         entity.DeletedAt,
@@ -719,7 +723,18 @@ func toCreateCommentResp(entity *domaincomment.Comment) contract.CreateCommentRe
 }
 
 func toCommentNodeResp(node *comment.CommentNode) contract.CommentNodeResp {
-	resp := contract.CommentNodeResp{
+	resp := contract.CommentNodeResp{CommentItemResp: toCommentItemResp(node)}
+	if len(node.Children) > 0 {
+		resp.Children = make([]contract.CommentItemResp, len(node.Children))
+		for i, child := range node.Children {
+			resp.Children[i] = toCommentItemResp(child)
+		}
+	}
+	return resp
+}
+
+func toCommentItemResp(node *comment.CommentNode) contract.CommentItemResp {
+	return contract.CommentItemResp{
 		ID:                node.Comment.ID,
 		AreaID:            node.Comment.AreaID,
 		Floor:             node.Floor,
@@ -743,18 +758,14 @@ func toCommentNodeResp(node *comment.CommentNode) contract.CommentNodeResp {
 		Status:            node.Comment.Status,
 		IsEdited:          node.Comment.IsEdited,
 		ParentID:          node.Comment.ParentID,
+		RootID:            node.Comment.RootID,
+		Depth:             node.Comment.Depth,
+		ReplyToNickName:   node.Comment.ReplyToNickName,
 		CreatedAt:         node.Comment.CreatedAt,
 		UpdatedAt:         node.Comment.UpdatedAt,
 		DeletedAt:         node.Comment.DeletedAt,
 		IsDeleted:         node.Comment.DeletedAt != nil,
 	}
-	if len(node.Children) > 0 {
-		resp.Children = make([]contract.CommentNodeResp, len(node.Children))
-		for i, child := range node.Children {
-			resp.Children[i] = toCommentNodeResp(child)
-		}
-	}
-	return resp
 }
 
 func toAdminCommentResp(item *domaincomment.Comment) contract.AdminCommentResp {
@@ -792,6 +803,8 @@ func toAdminCommentResp(item *domaincomment.Comment) contract.AdminCommentResp {
 		Status:            item.Status,
 		IsEdited:          item.IsEdited,
 		ParentID:          int64PtrToString(item.ParentID),
+		RootID:            strconv.FormatInt(item.RootID, 10),
+		Depth:             item.Depth,
 		CreatedAt:         item.CreatedAt,
 		UpdatedAt:         item.UpdatedAt,
 		DeletedAt:         item.DeletedAt,

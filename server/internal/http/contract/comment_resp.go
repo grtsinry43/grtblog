@@ -25,6 +25,41 @@ type CreateCommentResp struct {
 	Status            string     `json:"status"`
 	IsEdited          bool       `json:"isEdited"`
 	ParentID          *int64     `json:"parentId"`
+	RootID            int64      `json:"rootId"`
+	Depth             int16      `json:"depth"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+	DeletedAt         *time.Time `json:"deletedAt,omitempty"`
+	IsDeleted         bool       `json:"isDeleted"`
+}
+
+type CommentItemResp struct {
+	ID                int64      `json:"id"`
+	AreaID            int64      `json:"areaId"`
+	Floor             string     `json:"floor,omitempty"`
+	Content           *string    `json:"content"`
+	NickName          *string    `json:"nickName"`
+	Avatar            *string    `json:"avatar"`
+	Location          *string    `json:"location"`
+	Platform          *string    `json:"platform"`
+	Browser           *string    `json:"browser"`
+	Website           *string    `json:"website"`
+	IsOwner           bool       `json:"isOwner"`
+	IsFriend          bool       `json:"isFriend"`
+	IsAuthor          bool       `json:"isAuthor"`
+	IsViewed          bool       `json:"isViewed"`
+	IsTop             bool       `json:"isTop"`
+	IsMy              bool       `json:"isMy"`
+	IsFederated       bool       `json:"isFederated"`
+	FederatedProtocol *string    `json:"federatedProtocol"`
+	FederatedActor    *string    `json:"federatedActor"`
+	CanReply          bool       `json:"canReply"`
+	Status            string     `json:"status"`
+	IsEdited          bool       `json:"isEdited"`
+	ParentID          *int64     `json:"parentId"`
+	RootID            int64      `json:"rootId"`
+	Depth             int16      `json:"depth"`
+	ReplyToNickName   *string    `json:"replyToNickName,omitempty"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
 	DeletedAt         *time.Time `json:"deletedAt,omitempty"`
@@ -32,34 +67,8 @@ type CreateCommentResp struct {
 }
 
 type CommentNodeResp struct {
-	ID                int64             `json:"id"`
-	AreaID            int64             `json:"areaId"`
-	Floor             string            `json:"floor,omitempty"`
-	Content           *string           `json:"content"`
-	NickName          *string           `json:"nickName"`
-	Avatar            *string           `json:"avatar"`
-	Location          *string           `json:"location"`
-	Platform          *string           `json:"platform"`
-	Browser           *string           `json:"browser"`
-	Website           *string           `json:"website"`
-	IsOwner           bool              `json:"isOwner"`
-	IsFriend          bool              `json:"isFriend"`
-	IsAuthor          bool              `json:"isAuthor"`
-	IsViewed          bool              `json:"isViewed"`
-	IsTop             bool              `json:"isTop"`
-	IsMy              bool              `json:"isMy"`
-	IsFederated       bool              `json:"isFederated"`
-	FederatedProtocol *string           `json:"federatedProtocol"`
-	FederatedActor    *string           `json:"federatedActor"`
-	CanReply          bool              `json:"canReply"`
-	Status            string            `json:"status"`
-	IsEdited          bool              `json:"isEdited"`
-	ParentID          *int64            `json:"parentId"`
-	CreatedAt         time.Time         `json:"createdAt"`
-	UpdatedAt         time.Time         `json:"updatedAt"`
-	DeletedAt         *time.Time        `json:"deletedAt,omitempty"`
-	IsDeleted         bool              `json:"isDeleted"`
-	Children          []CommentNodeResp `json:"children,omitempty"`
+	CommentItemResp
+	Children []CommentItemResp `json:"children,omitempty"`
 }
 
 type PublicCommentListResp struct {
@@ -101,6 +110,8 @@ type AdminCommentResp struct {
 	Status            string     `json:"status"`
 	IsEdited          bool       `json:"isEdited"`
 	ParentID          *string    `json:"parentId"`
+	RootID            string     `json:"rootId"`
+	Depth             int16      `json:"depth"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
 	DeletedAt         *time.Time `json:"deletedAt,omitempty"`

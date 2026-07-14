@@ -1,9 +1,8 @@
 <script lang="ts">
 	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
-	import type { CommentNode } from '$lib/features/comment/types';
+	import type { CommentItem } from '$lib/features/comment/types';
 	import { createRelativeTimeTicker, formatRelativeTimeWithSeconds } from '$lib/shared/utils/date';
 	import { MessageSquare, Monitor, MapPin, Pin, Pencil, Trash2, Check, X } from 'lucide-svelte';
-	import CommentItem from './CommentItem.svelte';
 	import CommentForm from './CommentForm.svelte';
 	import CommentVerifiedIcon from './CommentVerifiedIcon.svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
@@ -13,8 +12,10 @@
 	import { editComment, deleteOwnComment } from '$lib/features/comment/api';
 	import { getOrCreateVisitorId } from '$lib/shared/visitor/visitor-id';
 	import { toast } from 'svelte-sonner';
+	import { onDestroy } from 'svelte';
+	import { scrollToElementById } from '$lib/shared/dom/scroll-to-element';
 
-	let { comment, floor }: { comment: CommentNode; floor?: string | number } = $props();
+	let { comment, floor }: { comment: CommentItem; floor?: string | number } = $props();
 	let relativeTime = $state('');
 	let isEditing = $state(false);
 	let editContent = $state('');
@@ -23,8 +24,14 @@
 	const replyingToStore = commentAreaCtx.selectModelData((data) => data?.replyingTo ?? null);
 	const isClosedStore = commentAreaCtx.selectModelData((data) => data?.isClosed ?? false);
 	const areaIdStore = commentAreaCtx.selectModelData((data) => data?.areaId ?? 0);
+	const highlightedCommentIdStore = commentAreaCtx.selectModelData(
+		(data) => data?.highlightedCommentId ?? null
+	);
 	const { updateModelData } = commentAreaCtx.useModelActions();
 	const queryClient = useQueryClient();
+	let targetHighlightTimer: ReturnType<typeof setTimeout> | null = null;
+	let isTargetHighlightLocked = false;
+	let isManagingTargetHighlight = false;
 
 	const editMutation = createMutation(() => ({
 		mutationFn: async () => {
@@ -92,12 +99,46 @@
 	const handleReply = () => {
 		if (comment.isDeleted || !comment.canReply) return;
 		updateModelData((prev) => (prev ? { ...prev, replyingTo: comment } : prev));
-		const item = document.getElementById(`comment-${comment.id}`);
+		const item = scrollToElementById(`comment-${comment.id}`);
 		if (item) {
-			item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			const textarea = item.querySelector('textarea');
 			textarea?.focus();
 		}
+	};
+
+	const setHighlightedComment = (commentId: number | null) => {
+		updateModelData((prev) => (prev ? { ...prev, highlightedCommentId: commentId } : prev));
+	};
+
+	const handleReplyTargetEnter = () => {
+		if (!comment.parentId) return;
+		isManagingTargetHighlight = true;
+		setHighlightedComment(comment.parentId);
+	};
+
+	const handleReplyTargetLeave = () => {
+		if (isTargetHighlightLocked) return;
+		if ($highlightedCommentIdStore === comment.parentId) {
+			setHighlightedComment(null);
+		}
+		isManagingTargetHighlight = false;
+	};
+
+	const handleReplyTargetClick = () => {
+		if (!comment.parentId) return;
+		if (targetHighlightTimer) clearTimeout(targetHighlightTimer);
+		isTargetHighlightLocked = true;
+		isManagingTargetHighlight = true;
+		setHighlightedComment(comment.parentId);
+		scrollToElementById(`comment-${comment.parentId}`);
+		targetHighlightTimer = setTimeout(() => {
+			isTargetHighlightLocked = false;
+			isManagingTargetHighlight = false;
+			if ($highlightedCommentIdStore === comment.parentId) {
+				setHighlightedComment(null);
+			}
+			targetHighlightTimer = null;
+		}, 1800);
 	};
 
 	const cx = (...args: (string | boolean | undefined | null)[]) => args.filter(Boolean).join(' ');
@@ -151,9 +192,24 @@
 		});
 		return () => stop();
 	});
+
+	onDestroy(() => {
+		if (targetHighlightTimer) clearTimeout(targetHighlightTimer);
+		if (isManagingTargetHighlight && $highlightedCommentIdStore === comment.parentId) {
+			setHighlightedComment(null);
+		}
+	});
 </script>
 
-<div class="flex gap-4 group relative" id="comment-{comment.id}" in:fly={{ y: 20, duration: 300 }}>
+<div
+	class={cx(
+		'group relative flex scroll-mt-24 gap-4 rounded-default transition-[background-color,box-shadow] duration-300',
+		$highlightedCommentIdStore === comment.id &&
+			'bg-jade-50/70 shadow-[0_0_0_3px_rgba(16,185,129,0.18)] dark:bg-jade-950/20'
+	)}
+	id="comment-{comment.id}"
+	in:fly={{ y: 20, duration: 300 }}
+>
 	<!-- Avatar -->
 	<div class="flex-shrink-0 pt-1">
 		<img
@@ -250,6 +306,20 @@
 					comment.isDeleted && 'opacity-60 italic'
 				)}
 			>
+				{#if comment.parentId && comment.replyToNickName && !comment.isDeleted}
+					<button
+						type="button"
+						class="mr-1 inline-flex text-xs text-jade-600 underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none dark:text-jade-400"
+						onmouseenter={handleReplyTargetEnter}
+						onmouseleave={handleReplyTargetLeave}
+						onfocus={handleReplyTargetEnter}
+						onblur={handleReplyTargetLeave}
+						onclick={handleReplyTargetClick}
+						aria-label={`定位到 ${comment.replyToNickName} 的评论`}
+					>
+						回复 @{comment.replyToNickName}
+					</button>
+				{/if}
 				{#if comment.isDeleted}
 					<p class="text-ink-400 dark:text-ink-500">该评论已被删除</p>
 				{:else if isEditing}
@@ -351,15 +421,6 @@
 		{#if $replyingToStore && $replyingToStore.id === comment.id}
 			<div class="mt-3" in:fly={{ y: -10, duration: 200 }}>
 				<CommentForm parentId={comment.id} />
-			</div>
-		{/if}
-
-		<!-- Recursive Children -->
-		{#if comment.children && comment.children.length > 0}
-			<div class="mt-4 space-y-6">
-				{#each comment.children as child (child.id)}
-					<CommentItem comment={child} floor={child.floor} />
-				{/each}
 			</div>
 		{/if}
 	</div>

@@ -931,6 +931,16 @@ func (s *Service) handleCreateAsComment(ctx context.Context, baseURL string, act
 	}
 	if parent != nil {
 		entity.ParentID = &parent.ID
+		entity.RootID = parent.RootID
+		if entity.RootID <= 0 {
+			entity.RootID = parent.ID
+		}
+		entity.Depth = parent.Depth + 1
+		if entity.Depth <= 1 {
+			entity.Depth = 2
+		}
+	} else {
+		entity.Depth = 1
 	}
 	return s.commentRepo.Create(ctx, entity)
 }

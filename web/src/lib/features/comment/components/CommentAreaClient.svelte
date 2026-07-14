@@ -29,6 +29,7 @@
 		isError: false,
 		replyingTo: null,
 		editingComment: null,
+		highlightedCommentId: null,
 		isLoggedIn: $userStore.isLogin,
 		guestName: '',
 		guestEmail: '',

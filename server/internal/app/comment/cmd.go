@@ -114,6 +114,7 @@ type ImportCommentCmd struct {
 	CanReply          *bool
 	Status            *string
 	ParentID          *int64
+	RootID            *int64
 	CreatedAt         *time.Time
 	UpdatedAt         *time.Time
 	DeletedAt         *time.Time

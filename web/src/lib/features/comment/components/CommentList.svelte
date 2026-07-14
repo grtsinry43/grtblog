@@ -18,7 +18,18 @@
 	{:else if $commentsStore && $commentsStore.length > 0}
 		<div class="space-y-6">
 			{#each $commentsStore as comment (comment.id)}
-				<CommentItem {comment} floor={comment.floor} />
+				<div>
+					<CommentItem {comment} floor={comment.floor} />
+					{#if comment.children && comment.children.length > 0}
+						<div
+							class="ml-6 mt-4 space-y-6 border-l border-ink-200/70 pl-4 dark:border-ink-700/70 sm:ml-12 sm:pl-6"
+						>
+							{#each comment.children as reply (reply.id)}
+								<CommentItem comment={reply} floor={reply.floor} />
+							{/each}
+						</div>
+					{/if}
+				</div>
 			{/each}
 		</div>
 	{:else}

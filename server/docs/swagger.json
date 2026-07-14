@@ -4597,7 +4597,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "统计天数（默认30，最大180）",
+                        "description": "统计天数（默认30，最大90）",
                         "name": "days",
                         "in": "query"
                     }
@@ -5908,7 +5908,7 @@
                 "tags": [
                     "Comment"
                 ],
-                "summary": "获取评论树（公开，根评论分页）",
+                "summary": "获取评论楼层（公开，根评论分页）",
                 "parameters": [
                     {
                         "type": "integer",
@@ -8316,6 +8316,9 @@
                 "deletedAt": {
                     "type": "string"
                 },
+                "depth": {
+                    "type": "integer"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -8365,6 +8368,9 @@
                     "type": "string"
                 },
                 "platform": {
+                    "type": "string"
+                },
+                "rootId": {
                     "type": "string"
                 },
                 "status": {
@@ -9352,7 +9358,7 @@
                 }
             }
         },
-        "contract.CommentNodeResp": {
+        "contract.CommentItemResp": {
             "type": "object",
             "properties": {
                 "areaId": {
@@ -9367,12 +9373,6 @@
                 "canReply": {
                     "type": "boolean"
                 },
-                "children": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/contract.CommentNodeResp"
-                    }
-                },
                 "content": {
                     "type": "string"
                 },
@@ -9381,6 +9381,9 @@
                 },
                 "deletedAt": {
                     "type": "string"
+                },
+                "depth": {
+                    "type": "integer"
                 },
                 "federatedActor": {
                     "type": "string"
@@ -9432,6 +9435,113 @@
                 },
                 "platform": {
                     "type": "string"
+                },
+                "replyToNickName": {
+                    "type": "string"
+                },
+                "rootId": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "contract.CommentNodeResp": {
+            "type": "object",
+            "properties": {
+                "areaId": {
+                    "type": "integer"
+                },
+                "avatar": {
+                    "type": "string"
+                },
+                "browser": {
+                    "type": "string"
+                },
+                "canReply": {
+                    "type": "boolean"
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contract.CommentItemResp"
+                    }
+                },
+                "content": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "depth": {
+                    "type": "integer"
+                },
+                "federatedActor": {
+                    "type": "string"
+                },
+                "federatedProtocol": {
+                    "type": "string"
+                },
+                "floor": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isAuthor": {
+                    "type": "boolean"
+                },
+                "isDeleted": {
+                    "type": "boolean"
+                },
+                "isEdited": {
+                    "type": "boolean"
+                },
+                "isFederated": {
+                    "type": "boolean"
+                },
+                "isFriend": {
+                    "type": "boolean"
+                },
+                "isMy": {
+                    "type": "boolean"
+                },
+                "isOwner": {
+                    "type": "boolean"
+                },
+                "isTop": {
+                    "type": "boolean"
+                },
+                "isViewed": {
+                    "type": "boolean"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "parentId": {
+                    "type": "integer"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "replyToNickName": {
+                    "type": "string"
+                },
+                "rootId": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
@@ -9550,6 +9660,9 @@
                 "deletedAt": {
                     "type": "string"
                 },
+                "depth": {
+                    "type": "integer"
+                },
                 "federatedActor": {
                     "type": "string"
                 },
@@ -9597,6 +9710,9 @@
                 },
                 "platform": {
                     "type": "string"
+                },
+                "rootId": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
@@ -11647,6 +11763,9 @@
                 },
                 "platform": {
                     "type": "string"
+                },
+                "rootId": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"

@@ -30,6 +30,8 @@ export interface Comment {
   isTop: boolean
   status: CommentStatus
   parentId?: string
+  rootId: string
+  depth: number
   createdAt: string
   updatedAt: string
   deletedAt?: string

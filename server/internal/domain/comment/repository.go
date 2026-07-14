@@ -29,7 +29,8 @@ type CommentRepository interface {
 	SetAreaClosed(ctx context.Context, areaID int64, isClosed bool) error
 	FindByID(ctx context.Context, id int64) (*Comment, error)
 	FindByFederatedObjectID(ctx context.Context, objectID string) (*Comment, error)
-	ListPublicByAreaID(ctx context.Context, options PublicListOptions) ([]*Comment, error)
+	ListPublicRootsByAreaID(ctx context.Context, options PublicListOptions, page, pageSize int) ([]*Comment, int64, error)
+	ListPublicRepliesByRootIDs(ctx context.Context, options PublicListOptions, rootIDs []int64) ([]*Comment, error)
 	ListForAdmin(ctx context.Context, options AdminListOptions) ([]*Comment, int64, error)
 	Create(ctx context.Context, comment *Comment) error
 	Update(ctx context.Context, comment *Comment) error

@@ -286,9 +286,73 @@ func (r *CommentRepository) FindByFederatedObjectID(ctx context.Context, objectI
 	return &entity, nil
 }
 
-func (r *CommentRepository) ListPublicByAreaID(ctx context.Context, options comment.PublicListOptions) ([]*comment.Comment, error) {
+func (r *CommentRepository) ListPublicRootsByAreaID(
+	ctx context.Context,
+	options comment.PublicListOptions,
+	page int,
+	pageSize int,
+) ([]*comment.Comment, int64, error) {
+	countQuery := r.publicCommentQuery(ctx, options).Where("parent_id IS NULL")
+	var total int64
+	if err := countQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if total == 0 {
+		return []*comment.Comment{}, 0, nil
+	}
+
+	type publicRootRow struct {
+		model.Comment
+		Floor int64 `gorm:"column:floor"`
+	}
+	var recs []publicRootRow
+	offset := (page - 1) * pageSize
+	if err := r.publicCommentQuery(ctx, options).
+		Select(`"comment".*, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS floor`).
+		Where("parent_id IS NULL").
+		Order("is_top DESC, created_at DESC, id DESC").
+		Offset(offset).
+		Limit(pageSize).
+		Find(&recs).Error; err != nil {
+		return nil, 0, err
+	}
+
+	out := make([]*comment.Comment, len(recs))
+	for i, rec := range recs {
+		entity := mapCommentToDomain(rec.Comment)
+		entity.Floor = rec.Floor
+		out[i] = &entity
+	}
+	return out, total, nil
+}
+
+func (r *CommentRepository) ListPublicRepliesByRootIDs(
+	ctx context.Context,
+	options comment.PublicListOptions,
+	rootIDs []int64,
+) ([]*comment.Comment, error) {
+	if len(rootIDs) == 0 {
+		return []*comment.Comment{}, nil
+	}
+
+	query := r.publicCommentQuery(ctx, options)
 	var recs []model.Comment
-	query := r.db.WithContext(ctx).Unscoped().Where("area_id = ?", options.AreaID)
+	if err := query.
+		Where("root_id IN ?", rootIDs).
+		Where("parent_id IS NOT NULL").
+		Order("created_at ASC, id ASC").
+		Find(&recs).Error; err != nil {
+		return nil, err
+	}
+
+	return mapCommentModelsToDomain(recs), nil
+}
+
+func (r *CommentRepository) publicCommentQuery(
+	ctx context.Context,
+	options comment.PublicListOptions,
+) *gorm.DB {
+	query := r.db.WithContext(ctx).Unscoped().Model(&model.Comment{}).Where("area_id = ?", options.AreaID)
 
 	approvedCond := "status = ?"
 	args := []any{comment.CommentStatusApproved}
@@ -303,19 +367,16 @@ func (r *CommentRepository) ListPublicByAreaID(ctx context.Context, options comm
 		args = append(args, visitorID)
 	}
 
-	if err := query.
-		Where("("+approvedCond+")", args...).
-		Order("is_top DESC, created_at DESC, id DESC").
-		Find(&recs).Error; err != nil {
-		return nil, err
-	}
+	return query.Where("("+approvedCond+")", args...)
+}
 
+func mapCommentModelsToDomain(recs []model.Comment) []*comment.Comment {
 	out := make([]*comment.Comment, len(recs))
 	for i, rec := range recs {
 		entity := mapCommentToDomain(rec)
 		out[i] = &entity
 	}
-	return out, nil
+	return out
 }
 
 func (r *CommentRepository) ListForAdmin(ctx context.Context, options comment.AdminListOptions) ([]*comment.Comment, int64, error) {
@@ -392,6 +453,18 @@ func (r *CommentRepository) Create(ctx context.Context, commentEntity *comment.C
 		return err
 	}
 	commentEntity.ID = rec.ID
+	commentEntity.RootID = rec.RootID
+	if commentEntity.RootID <= 0 {
+		// PostgreSQL derives root_id in a BEFORE INSERT trigger. Keep the domain
+		// entity correct even if the driver's RETURNING clause only populated id.
+		commentEntity.RootID = rec.ID
+	}
+	commentEntity.Depth = rec.Depth
+	if commentEntity.Depth <= 0 {
+		if commentEntity.ParentID == nil {
+			commentEntity.Depth = 1
+		}
+	}
 	commentEntity.CreatedAt = rec.CreatedAt
 	commentEntity.UpdatedAt = rec.UpdatedAt
 	return nil
@@ -1400,6 +1473,8 @@ func mapCommentToDomain(rec model.Comment) comment.Comment {
 		Status:            status,
 		IsEdited:          rec.IsEdited,
 		ParentID:          rec.ParentID,
+		RootID:            rec.RootID,
+		Depth:             rec.Depth,
 		CreatedAt:         rec.CreatedAt,
 		UpdatedAt:         rec.UpdatedAt,
 		DeletedAt:         timeToPtr(rec.DeletedAt),
@@ -1442,6 +1517,8 @@ func mapCommentToModel(entity *comment.Comment) model.Comment {
 		Status:            status,
 		IsEdited:          entity.IsEdited,
 		ParentID:          entity.ParentID,
+		RootID:            entity.RootID,
+		Depth:             entity.Depth,
 		CreatedAt:         entity.CreatedAt,
 		UpdatedAt:         entity.UpdatedAt,
 		DeletedAt:         gorm.DeletedAt{Time: timeToValue(entity.DeletedAt), Valid: entity.DeletedAt != nil},

@@ -84,6 +84,7 @@ type ImportCommentReq struct {
 	CanReply          *bool      `json:"canReply,omitempty"`
 	Status            *string    `json:"status,omitempty"`
 	ParentID          *int64     `json:"parentId,omitempty"`
+	RootID            *int64     `json:"rootId,omitempty"`
 	CreatedAt         *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt         *time.Time `json:"updatedAt,omitempty"`
 	DeletedAt         *time.Time `json:"deletedAt,omitempty"`

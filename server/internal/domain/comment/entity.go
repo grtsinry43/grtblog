@@ -45,6 +45,10 @@ type Comment struct {
 	AreaRefID         *int64
 	AreaClosed        *bool
 	ParentID          *int64
+	RootID            int64
+	Depth             int16
+	Floor             int64
+	ReplyToNickName   *string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	DeletedAt         *time.Time

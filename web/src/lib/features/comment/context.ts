@@ -1,13 +1,14 @@
 import { createModelDataContext } from 'svatoms';
-import type { CommentNode } from '$lib/features/comment/types';
+import type { CommentItem, CommentNode } from '$lib/features/comment/types';
 
 export type CommentAreaModel = {
 	areaId: number;
 	comments: CommentNode[];
 	isLoading: boolean;
 	isError: boolean;
-	replyingTo: CommentNode | null;
-	editingComment: CommentNode | null;
+	replyingTo: CommentItem | null;
+	editingComment: CommentItem | null;
+	highlightedCommentId: number | null;
 	isLoggedIn: boolean;
 	guestName: string;
 	guestEmail: string;
@@ -29,6 +30,7 @@ export const commentAreaCtx = createModelDataContext<CommentAreaModel>({
 		isError: false,
 		replyingTo: null,
 		editingComment: null,
+		highlightedCommentId: null,
 		isLoggedIn: false,
 		guestName: '',
 		guestEmail: '',

@@ -36,13 +36,15 @@ export type CommentCreateResponse = {
 	status: string;
 	isEdited: boolean;
 	parentId?: number | null;
+	rootId: number;
+	depth: number;
 	createdAt: string;
 	updatedAt: string;
 	deletedAt?: string | null;
 	isDeleted: boolean;
 };
 
-export type CommentNode = {
+export type CommentItem = {
 	id: number;
 	areaId: number;
 	floor?: string;
@@ -66,11 +68,17 @@ export type CommentNode = {
 	status: string;
 	isEdited: boolean;
 	parentId?: number | null;
+	rootId: number;
+	depth: number;
+	replyToNickName?: string | null;
 	createdAt: string;
 	updatedAt: string;
 	deletedAt?: string | null;
 	isDeleted: boolean;
-	children?: CommentNode[];
+};
+
+export type CommentNode = CommentItem & {
+	children?: CommentItem[];
 };
 
 export type CommentListResponse = {
