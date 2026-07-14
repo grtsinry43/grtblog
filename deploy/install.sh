@@ -113,6 +113,148 @@ choose() {
   fi
 }
 
+parse_multi_selection() {
+  # parse_multi_selection "1,3-5" max — stores unique 1-based indices in
+  # SELECTED_INDICES. Accepts comma/space separated values, ranges, or all/a.
+  local input="$1" max="$2" token start end index seen=" "
+  SELECTED_INDICES=()
+  input="${input//,/ }"
+
+  for token in $input; do
+    if [[ "$token" == "all" || "$token" == "a" ]]; then
+      SELECTED_INDICES=()
+      for ((index = 1; index <= max; index++)); do
+        SELECTED_INDICES+=("$index")
+      done
+      return 0
+    fi
+
+    if [[ "$token" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+      start=$((10#${BASH_REMATCH[1]}))
+      end=$((10#${BASH_REMATCH[2]}))
+      if ((start < 1 || end > max || start > end)); then
+        return 1
+      fi
+      for ((index = start; index <= end; index++)); do
+        if [[ "$seen" != *" $index "* ]]; then
+          SELECTED_INDICES+=("$index")
+          seen+="$index "
+        fi
+      done
+    elif [[ "$token" =~ ^[0-9]+$ ]]; then
+      index=$((10#$token))
+      if ((index < 1 || index > max)); then
+        return 1
+      fi
+      if [[ "$seen" != *" $index "* ]]; then
+        SELECTED_INDICES+=("$index")
+        seen+="$index "
+      fi
+    else
+      return 1
+    fi
+  done
+
+  ((${#SELECTED_INDICES[@]} > 0))
+}
+
+cleanup_old_grtblog_images() {
+  # cleanup_old_grtblog_images health_status
+  # Lists local server/renderer images that are not used by the current
+  # Compose services, then lets an interactive user remove selected tags.
+  local health_status="$1" row repository tag short_id created_since size ref full_id is_current
+  local current_id candidate_index answer selected_index removed=0 failed=0
+  local -a current_image_ids=() image_refs=() image_labels=() selected_refs=()
+
+  section "$(__ OLD_IMAGES_TITLE)"
+  info "$(__ OLD_IMAGES_SCANNING)"
+
+  while IFS= read -r current_id; do
+    [[ -n "$current_id" ]] || continue
+    full_id="$(docker image inspect --format '{{.Id}}' "$current_id" 2>/dev/null || true)"
+    [[ -n "$full_id" ]] && current_image_ids+=("$full_id")
+  done < <($COMPOSE_CMD images -q server renderer 2>/dev/null | sort -u || true)
+
+  while IFS= read -r row; do
+    IFS=$'\t' read -r repository tag short_id created_since size <<<"$row"
+    [[ "$repository" =~ (^|/)grtblog-(server|renderer)$ ]] || continue
+    [[ -n "$tag" && "$tag" != "<none>" ]] || continue
+
+    ref="${repository}:${tag}"
+    full_id="$(docker image inspect --format '{{.Id}}' "$ref" 2>/dev/null || true)"
+    [[ -n "$full_id" ]] || continue
+
+    is_current="false"
+    for current_id in "${current_image_ids[@]}"; do
+      if [[ "$full_id" == "$current_id" ]]; then
+        is_current="true"
+        break
+      fi
+    done
+    [[ "$is_current" == "false" ]] || continue
+
+    image_refs+=("$ref")
+    image_labels+=("${ref}  ${short_id}  ${created_since}  ${size}")
+  done < <(docker image ls --format '{{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}\t{{.Size}}')
+
+  if ((${#image_refs[@]} == 0)); then
+    ok "$(__ OLD_IMAGES_NONE)"
+    return 0
+  fi
+
+  info "$(__ OLD_IMAGES_FOUND): ${#image_refs[@]}"
+  for ((candidate_index = 0; candidate_index < ${#image_labels[@]}; candidate_index++)); do
+    printf '    %s%d)%s %s\n' \
+      "$(_c '1;35')" "$((candidate_index + 1))" "$(_c '0')" "${image_labels[$candidate_index]}"
+  done
+
+  if [[ "$health_status" != "true" ]]; then
+    warn "$(__ OLD_IMAGES_UNHEALTHY_SKIP)"
+    return 0
+  fi
+  if [[ "$NONINTERACTIVE" == "1" ]]; then
+    warn "$(__ OLD_IMAGES_NONINTERACTIVE_SKIP)"
+    return 0
+  fi
+
+  while true; do
+    prompt_value "$(__ OLD_IMAGES_SELECT) "
+    read -r answer
+    if [[ -z "$answer" ]]; then
+      info "$(__ OLD_IMAGES_SKIPPED)"
+      return 0
+    fi
+    if parse_multi_selection "$answer" "${#image_refs[@]}"; then
+      break
+    fi
+    warn "$(__ OLD_IMAGES_INVALID)"
+  done
+
+  printf '\n'
+  info "$(__ OLD_IMAGES_SELECTED):"
+  for selected_index in "${SELECTED_INDICES[@]}"; do
+    ref="${image_refs[$((selected_index - 1))]}"
+    selected_refs+=("$ref")
+    info "  ${ref}"
+  done
+
+  if ! ask_yn "$(__ OLD_IMAGES_CONFIRM) ${#selected_refs[@]}" "n"; then
+    info "$(__ OLD_IMAGES_SKIPPED)"
+    return 0
+  fi
+
+  for ref in "${selected_refs[@]}"; do
+    if docker image rm "$ref" >/dev/null; then
+      ok "$(__ OLD_IMAGE_REMOVED): ${ref}"
+      removed=$((removed + 1))
+    else
+      warn "$(__ OLD_IMAGE_REMOVE_FAIL): ${ref}"
+      failed=$((failed + 1))
+    fi
+  done
+  info "$(__ OLD_IMAGES_RESULT): ${removed} $(__ OLD_IMAGES_REMOVED), ${failed} $(__ OLD_IMAGES_FAILED)"
+}
+
 http_get() {
   # http_get URL output_file — returns 0 on success
   local url="$1" output="$2"
@@ -292,6 +434,22 @@ MSG_en_UPGRADE_LATER="To upgrade later:"
 MSG_en_DOCS="Documentation"
 MSG_en_DONE="Done!"
 MSG_en_WAITING="waiting"
+MSG_en_OLD_IMAGES_TITLE="Historical Image Cleanup"
+MSG_en_OLD_IMAGES_SCANNING="Scanning historical grtblog-server and grtblog-renderer images..."
+MSG_en_OLD_IMAGES_NONE="No removable historical GrtBlog images found"
+MSG_en_OLD_IMAGES_FOUND="Historical images found"
+MSG_en_OLD_IMAGES_UNHEALTHY_SKIP="Health check did not pass; keeping historical images for rollback."
+MSG_en_OLD_IMAGES_NONINTERACTIVE_SKIP="Non-interactive mode: scan completed without deleting images."
+MSG_en_OLD_IMAGES_SELECT="Select images to delete (e.g. 1,3-5; all; Enter to skip):"
+MSG_en_OLD_IMAGES_INVALID="Invalid selection. Enter numbers or ranges shown above."
+MSG_en_OLD_IMAGES_SELECTED="Images selected for deletion"
+MSG_en_OLD_IMAGES_CONFIRM="Delete the selected image tags? Count:"
+MSG_en_OLD_IMAGES_SKIPPED="Historical image cleanup skipped"
+MSG_en_OLD_IMAGE_REMOVED="Removed"
+MSG_en_OLD_IMAGE_REMOVE_FAIL="Could not remove (it may still be used by another container)"
+MSG_en_OLD_IMAGES_RESULT="Cleanup result"
+MSG_en_OLD_IMAGES_REMOVED="removed"
+MSG_en_OLD_IMAGES_FAILED="failed"
 
 # --- Chinese strings ---
 MSG_zh_ENTER_CHOICE="请输入选项"
@@ -390,6 +548,22 @@ MSG_zh_UPGRADE_LATER="后续升级命令:"
 MSG_zh_DOCS="文档"
 MSG_zh_DONE="完成！"
 MSG_zh_WAITING="等待中"
+MSG_zh_OLD_IMAGES_TITLE="历史镜像清理"
+MSG_zh_OLD_IMAGES_SCANNING="正在扫描 grtblog-server 和 grtblog-renderer 的历史镜像..."
+MSG_zh_OLD_IMAGES_NONE="未发现可清理的 GrtBlog 历史镜像"
+MSG_zh_OLD_IMAGES_FOUND="发现历史镜像"
+MSG_zh_OLD_IMAGES_UNHEALTHY_SKIP="健康检查未通过，已保留历史镜像以便回滚。"
+MSG_zh_OLD_IMAGES_NONINTERACTIVE_SKIP="非交互模式：扫描已完成，不会自动删除镜像。"
+MSG_zh_OLD_IMAGES_SELECT="请选择要删除的镜像（如 1,3-5；all 全选；回车跳过）："
+MSG_zh_OLD_IMAGES_INVALID="选择无效，请输入上方编号或编号区间。"
+MSG_zh_OLD_IMAGES_SELECTED="将删除以下镜像"
+MSG_zh_OLD_IMAGES_CONFIRM="确认删除所选镜像标签？数量："
+MSG_zh_OLD_IMAGES_SKIPPED="已跳过历史镜像清理"
+MSG_zh_OLD_IMAGE_REMOVED="已删除"
+MSG_zh_OLD_IMAGE_REMOVE_FAIL="删除失败（镜像可能仍被其他容器使用）"
+MSG_zh_OLD_IMAGES_RESULT="清理结果"
+MSG_zh_OLD_IMAGES_REMOVED="个已删除"
+MSG_zh_OLD_IMAGES_FAILED="个失败"
 
 # ---------------------------------------------------------------------------
 # Language selection (before anything else)
@@ -873,6 +1047,13 @@ else
   warn "$(__ HEALTH_TIMEOUT) ${MAX_WAIT}s."
   warn "$(__ HEALTH_TIP)"
   info "  ${COMPOSE_CMD} logs -f"
+fi
+
+# Historical application images are useful for rollback, so only offer
+# deletion after an upgrade. A failed health check still performs the scan,
+# but keeps every image automatically.
+if [[ "$INSTALL_MODE" == "upgrade" ]]; then
+  cleanup_old_grtblog_images "$HEALTHY"
 fi
 
 # ---------------------------------------------------------------------------
