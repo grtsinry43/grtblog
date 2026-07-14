@@ -22,6 +22,12 @@ by @grtsinry43 · github.com/grtsinry43
 ================================================================
 EOF
 
+# Both renderer and server write to the same bind-mounted storage directories.
+# Normalize them to the shared app UID before dropping privileges so a renderer
+# restart cannot leave root-owned paths that block server-side ISR writes.
+mkdir -p /assets /app/storage/meta/isr/manifests
+chown -R app:app /assets /app/storage/meta
+
 # Sync client assets to the shared volume so nginx can serve them
 # directly as static files (survives renderer restarts/crashes).
 #
@@ -30,12 +36,15 @@ EOF
 # them, and deleting `_app` first creates a guaranteed 404 window.
 if [ -d /assets ]; then
 	echo "[entrypoint] Syncing client assets..."
-	mkdir -p /assets
-	cp -a /app/build/client/. /assets/
+	su-exec app cp -R /app/build/client/. /assets/
 	echo "[entrypoint] Client assets synced."
 fi
 
-mkdir -p /app/storage/meta/isr/manifests
-find /app/build/client -type f | sed 's#^/app/build/client/##' | sort > "/app/storage/meta/isr/manifests/${APP_VERSION}.txt"
+su-exec app sh -c '
+	find /app/build/client -type f \
+		| sed "s#^/app/build/client/##" \
+		| sort \
+		> "/app/storage/meta/isr/manifests/${APP_VERSION}.txt"
+' sh
 
-exec node /app/build/index.js
+exec su-exec app node /app/build/index.js

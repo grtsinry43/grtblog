@@ -27,7 +27,10 @@ ENV NODE_ENV=production \
     APP_VERSION=${APP_VERSION} \
     BUILD_COMMIT=${BUILD_COMMIT}
 
-RUN corepack enable
+RUN apk add --no-cache su-exec \
+    && addgroup -g 10001 -S app \
+    && adduser -u 10001 -S app -G app \
+    && corepack enable
 
 COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
