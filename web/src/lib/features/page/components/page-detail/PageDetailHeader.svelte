@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageDetail } from '$lib/features/page/types';
 	import { Calendar, Clock } from 'lucide-svelte';
-	import { formatDateCN } from '$lib/shared/utils/date';
+	import { formatDateCN, isDifferentDay } from '$lib/shared/utils/date';
 	import { calculateReadingTime, formatReadingTime } from '$lib/shared/utils/reading-time';
 	import Badge from '$lib/ui/primitives/badge/Badge.svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
@@ -13,6 +13,7 @@
 
 	let { page }: Props = $props();
 	const readingTime = $derived(calculateReadingTime(page.content));
+	const showUpdated = $derived(isDifferentDay(page.createdAt, page.contentUpdatedAt));
 </script>
 
 <header class="max-w-4xl space-y-6">
@@ -33,7 +34,9 @@
 		>
 			<span class="flex items-center gap-1.5">
 				<Calendar size={12} />
-				{formatDateCN(page.createdAt)}
+				{formatDateCN(page.createdAt)}{#if showUpdated}<span class="text-ink-400/70"
+						>（更新于 {formatDateCN(page.contentUpdatedAt)}）</span
+					>{/if}
 			</span>
 			<span class="flex items-center gap-1.5"
 				><Clock size={12} /> {formatReadingTime(readingTime)}</span
