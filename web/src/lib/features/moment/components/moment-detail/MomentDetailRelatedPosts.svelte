@@ -60,7 +60,7 @@
 
 	{#if $relatedPostsStore.length === 0}
 		<div
-			class="rounded-default border border-dashed border-ink-200/70 bg-ink-50/30 p-3 text-[10px] text-ink-400"
+			class="rounded-default border border-dashed border-ink-200/70 bg-ink-50/30 p-3 text-[10px] text-ink-400 dark:border-ink-800/40 dark:bg-ink-900/20 dark:text-ink-500"
 		>
 			暂无同期文章
 		</div>

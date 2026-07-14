@@ -1,4 +1,5 @@
 import type { TOCNode } from '$lib/shared/types/toc';
+import type { ContentExtInfo } from '$lib/shared/markdown/image-ext-info';
 
 export type { TOCNode };
 
@@ -34,6 +35,20 @@ export type MomentRelatedPost = {
 	createdAt: string;
 };
 
+export type MomentWeather = 'sunny' | 'cloudy' | 'overcast' | 'rainy' | 'snowy' | 'windy' | 'foggy';
+
+export type MomentMood = 'joyful' | 'calm' | 'excited' | 'tired' | 'sad';
+
+export type MomentAtmosphere = {
+	weather?: MomentWeather;
+	mood?: MomentMood;
+	[key: string]: unknown;
+};
+
+export type MomentExtInfo = ContentExtInfo & {
+	moment?: MomentAtmosphere;
+};
+
 export type MomentDetail = {
 	id: number;
 	title: string;
@@ -45,6 +60,7 @@ export type MomentDetail = {
 	authorId: number;
 	shortUrl: string;
 	image?: string[];
+	extInfo?: MomentExtInfo | null;
 	columnId?: number | null;
 	columnName?: string;
 	columnShortUrl?: string;

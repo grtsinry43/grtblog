@@ -5,10 +5,10 @@
 	import DetailMarkdownContent from '$lib/ui/detail/DetailMarkdownContent.svelte';
 	import DetailActionBar from '$lib/ui/detail/DetailActionBar.svelte';
 	import { formatDateCN, isDifferentDay } from '$lib/shared/utils/date';
-	import { Sun } from 'lucide-svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import TagList from '$lib/features/tag/components/TagList.svelte';
 	import { RollingNumber } from '$lib/ui/animation';
+	import MomentAtmosphere from './MomentAtmosphere.svelte';
 
 	interface Props {
 		moment: MomentDetail;
@@ -49,9 +49,7 @@
 							>（更新于 {formatDateCN(moment.contentUpdatedAt)}）</span
 						>{/if}
 				</div>
-				<div class="shrink-0 text-ink-800/40 dark:text-ink-200/40">
-					<Sun size={18} stroke-width={1.5} />
-				</div>
+				<MomentAtmosphere atmosphere={moment.extInfo?.moment} />
 			</div>
 
 			<h1

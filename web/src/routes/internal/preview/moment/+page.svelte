@@ -19,6 +19,7 @@
 		contentHash?: string;
 		shortUrl?: string;
 		image?: string[];
+		extInfo?: MomentDetailModel['extInfo'];
 		columnId?: number | null;
 		columnName?: string;
 		columnShortUrl?: string;
@@ -54,6 +55,7 @@
 			authorId: payload.authorId ?? 0,
 			shortUrl: payload.shortUrl ?? '',
 			image: payload.image ?? [],
+			extInfo: payload.extInfo ?? null,
 			columnId: payload.columnId ?? null,
 			columnName: payload.columnName ?? undefined,
 			columnShortUrl: payload.columnShortUrl ?? undefined,

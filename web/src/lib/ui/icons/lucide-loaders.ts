@@ -19,6 +19,16 @@ import GitBranch from 'lucide-svelte/icons/git-branch';
 import List from 'lucide-svelte/icons/list';
 import Mail from 'lucide-svelte/icons/mail';
 import Rss from 'lucide-svelte/icons/rss';
+import Cloud from 'lucide-svelte/icons/cloud';
+import CloudFog from 'lucide-svelte/icons/cloud-fog';
+import CloudRain from 'lucide-svelte/icons/cloud-rain';
+import CloudSnow from 'lucide-svelte/icons/cloud-snow';
+import CloudSun from 'lucide-svelte/icons/cloud-sun';
+import Frown from 'lucide-svelte/icons/frown';
+import Heart from 'lucide-svelte/icons/heart';
+import MoonStar from 'lucide-svelte/icons/moon-star';
+import Smile from 'lucide-svelte/icons/smile';
+import Wind from 'lucide-svelte/icons/wind';
 
 export type LucideIconComponent = Component<{
 	size?: number;
@@ -47,7 +57,17 @@ const lucideIcons = {
 	list: List,
 	github: GitBranch,
 	mail: Mail,
-	rss: Rss
+	rss: Rss,
+	cloud: Cloud,
+	'cloud-fog': CloudFog,
+	'cloud-rain': CloudRain,
+	'cloud-snow': CloudSnow,
+	'cloud-sun': CloudSun,
+	frown: Frown,
+	heart: Heart,
+	'moon-star': MoonStar,
+	smile: Smile,
+	wind: Wind
 } as const;
 
 export type LucideIconKey = keyof typeof lucideIcons;

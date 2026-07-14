@@ -6,7 +6,13 @@ import { useLeaveConfirm } from '@/composables'
 import { useImageExtInfo } from '@/composables/use-image-ext-info'
 import { createMoment, getMoment, updateMoment } from '@/services/moments'
 
-import type { ContentExtInfo } from '@/types/ext-info'
+import {
+  mergeMomentAtmosphere,
+  normalizeMomentMood,
+  normalizeMomentWeather,
+} from '../model/moment-atmosphere'
+
+import type { ContentExtInfo, MomentMood, MomentWeather } from '@/types/ext-info'
 
 function joinImages(images?: string[]) {
   return (images ?? []).join('\n')
@@ -49,14 +55,17 @@ export function useMomentForm() {
     isTop: false,
     isOriginal: true,
     allowComment: true,
+    weather: null as MomentWeather | null,
+    mood: null as MomentMood | null,
   })
 
   const baseExtInfo = ref<ContentExtInfo | null>(null)
-  const { extInfo, processing } = useImageExtInfo({
+  const { extInfo: imageExtInfo, processing } = useImageExtInfo({
     content: toRef(form, 'content'),
     extraImages: toRef(form, 'image'),
     baseExtInfo,
   })
+  const extInfo = computed(() => mergeMomentAtmosphere(imageExtInfo.value, form.weather, form.mood))
 
   const takeSnapshot = () => JSON.stringify(form)
   const isDirty = computed(
@@ -85,6 +94,8 @@ export function useMomentForm() {
       form.isTop = data.isTop
       form.isOriginal = data.isOriginal
       form.allowComment = data.allowComment
+      form.weather = normalizeMomentWeather(data.extInfo?.moment?.weather)
+      form.mood = normalizeMomentMood(data.extInfo?.moment?.mood)
       baseExtInfo.value = data.extInfo ?? null
 
       initialSnapshot.value = takeSnapshot()

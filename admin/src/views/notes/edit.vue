@@ -8,7 +8,6 @@ import {
   NDivider,
   NDrawer,
   NDrawerContent,
-  NDynamicTags,
   NForm,
   NFormItem,
   NInput,
@@ -17,7 +16,6 @@ import {
   NSelect,
   NSwitch,
   useMessage,
-  NAutoComplete,
 } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref, watch, toRef } from 'vue'
 
@@ -27,6 +25,7 @@ import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
 import { publishFederationActivityPub } from '@/services/federation-admin'
 import { useEditorStats } from '@/views/articles/composables/use-editor-stats'
 import AiSummaryAssist from '@/views/shared/content-editor/components/AiSummaryAssist.vue'
+import ContentTagSelect from '@/views/shared/content-editor/components/ContentTagSelect.vue'
 import EditorStatsOverlay from '@/views/shared/content-editor/components/EditorStatsOverlay.vue'
 import {
   useAiSummaryGeneration,
@@ -34,6 +33,7 @@ import {
 } from '@/views/shared/content-editor/composables/use-ai-tools'
 import { usePreviewFrame } from '@/views/shared/content-editor/composables/use-preview-frame'
 
+import MomentAtmosphereFields from './components/MomentAtmosphereFields.vue'
 import { useMomentForm } from './composables/use-moment-form'
 import { useMomentTaxonomySelect } from './composables/use-moment-taxonomy-select'
 
@@ -43,18 +43,17 @@ defineOptions({ name: 'NoteEdit' })
 
 const message = useMessage()
 
-const { form, saving, imageProcessing, isCreating, fetch, save } = useMomentForm()
+const { form, saving, imageProcessing, extInfo, isCreating, fetch, save } = useMomentForm()
 
 const {
   columnOptions,
   topicOptions,
-  dynamicTopics,
-  topicSearchValue,
-  autoCompleteOptions,
+  topicsLoading,
+  topicCreating,
+  selectedTopics,
   newColumnModal,
   setInitialTopics,
-  handleTopicsChange,
-  addTopicFromSearch,
+  createAndSelectTopic,
   createNewColumn,
 } = useMomentTaxonomySelect(toRef(form, 'topicIds'), toRef(form, 'columnId'), message)
 
@@ -176,20 +175,15 @@ function buildPreviewPayload() {
     contentHash: loadedMoment.value?.contentHash ?? '',
     shortUrl: form.shortUrl,
     image: splitImages(form.image),
+    extInfo: extInfo.value,
     columnId: form.columnId,
     columnName: selectedColumn?.label ? String(selectedColumn.label) : undefined,
     commentAreaId: null,
     toc: undefined,
-    topics: form.topicIds.map((id, index) => {
-      const topicOption = topicOptions.value.find((option) => option.value === id)
-      const dynamicName = dynamicTopics.value[index]
-      const name = (topicOption?.label ? String(topicOption.label) : dynamicName || '').trim()
-      return { id, name: name || `话题 ${id}` }
-    }),
+    topics: selectedTopics.value,
     metrics: loadedMoment.value ? { views: 0, likes: 0, comments: 0 } : undefined,
     isPublished: form.isPublished,
     isTop: form.isTop,
-    isHot: loadedMoment.value?.isHot ?? false,
     isOriginal: form.isOriginal,
     createdAt: loadedMoment.value?.createdAt ?? nowIso,
     updatedAt: nowIso,
@@ -225,6 +219,8 @@ watch(
     form.isTop,
     form.isOriginal,
     form.allowComment,
+    form.weather,
+    form.mood,
   ],
   () => {
     schedulePreviewPayload()
@@ -484,34 +480,30 @@ watch(previewUrl, () => {
                 label="话题"
                 :show-feedback="false"
               >
-                <div class="flex w-full flex-col gap-2">
-                  <NDynamicTags
-                    :value="dynamicTopics"
-                    @update:value="handleTopicsChange"
-                  />
-                  <div class="flex items-center gap-2">
-                    <NAutoComplete
-                      v-model:value="topicSearchValue"
-                      :options="autoCompleteOptions"
-                      placeholder="搜索或创建话题"
-                      class="flex-1"
-                      @select="addTopicFromSearch"
-                      :input-props="{
-                        onKeydown: (e: KeyboardEvent) => {
-                          if (e.key === 'Enter') addTopicFromSearch(topicSearchValue)
-                        },
-                      }"
-                    />
-                    <NButton
-                      quaternary
-                      size="small"
-                      @click="addTopicFromSearch(topicSearchValue)"
-                      >添加</NButton
-                    >
-                  </div>
-                </div>
+                <ContentTagSelect
+                  v-model="form.topicIds"
+                  :options="topicOptions"
+                  :loading="topicsLoading"
+                  :creating="topicCreating"
+                  noun="话题"
+                  class="w-full"
+                  @create="createAndSelectTopic"
+                />
               </NFormItem>
             </NForm>
+          </div>
+
+          <NDivider style="margin: 0" />
+
+          <div class="space-y-4">
+            <div class="flex items-center gap-2 text-sm font-medium">
+              <div class="iconify ph--cloud-sun" />
+              <span>此刻</span>
+            </div>
+            <MomentAtmosphereFields
+              v-model:weather="form.weather"
+              v-model:mood="form.mood"
+            />
           </div>
 
           <NDivider style="margin: 0" />

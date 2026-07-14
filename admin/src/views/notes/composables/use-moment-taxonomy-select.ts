@@ -1,9 +1,10 @@
-import { ref, onMounted, reactive, computed } from 'vue'
+import { onMounted, reactive, shallowRef } from 'vue'
 
-import { listColumns, listTags, createTag, createColumn } from '@/services/taxonomy'
+import { createColumn, listColumns } from '@/services/taxonomy'
+import { useContentTagSelect } from '@/views/shared/content-editor/composables/use-content-tag-select'
 
 import type { MomentTopic } from '@/services/moments'
-import type { SelectOption, MessageApi } from 'naive-ui'
+import type { MessageApi, SelectOption } from 'naive-ui'
 import type { Ref } from 'vue'
 
 export function useMomentTaxonomySelect(
@@ -11,10 +12,16 @@ export function useMomentTaxonomySelect(
   formColumnId: Ref<number | null>,
   message: MessageApi,
 ) {
-  const columnOptions = ref<SelectOption[]>([])
-  const topicOptions = ref<SelectOption[]>([])
-  const dynamicTopics = ref<string[]>([])
-  const topicSearchValue = ref('')
+  const columnOptions = shallowRef<SelectOption[]>([])
+  const {
+    options: topicOptions,
+    loading: topicsLoading,
+    creating: topicCreating,
+    selectedItems: selectedTopics,
+    loadOptions: loadTopicOptions,
+    setInitialItems,
+    createAndSelect: createAndSelectTopic,
+  } = useContentTagSelect({ selectedIds: formTopicIds, noun: '话题', message })
 
   const newColumnModal = reactive({
     show: false,
@@ -25,53 +32,19 @@ export function useMomentTaxonomySelect(
 
   async function fetchOptions() {
     try {
-      const [columns, topics] = await Promise.all([listColumns(), listTags()])
-      columnOptions.value = columns.map((c) => ({ label: c.name, value: c.id }))
-      topicOptions.value = topics.map((t) => ({ label: t.name, value: t.id }))
-    } catch (e) {
-      console.error('Fetch moment taxonomy failed', e)
+      const [columns] = await Promise.all([listColumns(), loadTopicOptions()])
+      columnOptions.value = columns.map((column) => ({
+        label: column.name,
+        value: column.id,
+      }))
+    } catch (error) {
+      console.error('Fetch moment taxonomy failed', error)
+      message.error('加载分区失败')
     }
   }
 
   function setInitialTopics(topics: MomentTopic[]) {
-    dynamicTopics.value = topics.map((t) => t.name)
-    formTopicIds.value = topics.map((t) => t.id)
-  }
-
-  async function handleTopicsChange(newTopics: string[]) {
-    const ids: number[] = []
-    const nextDynamicTopics: string[] = []
-
-    for (const topicStr of newTopics) {
-      const trimmed = topicStr.trim()
-      if (!trimmed) continue
-
-      const existing = topicOptions.value.find((t) => t.label === trimmed)
-      if (existing) {
-        ids.push(existing.value as number)
-        nextDynamicTopics.push(trimmed)
-      } else {
-        try {
-          const created = await createTag(trimmed)
-          topicOptions.value.push({ label: created.name, value: created.id })
-          ids.push(created.id)
-          nextDynamicTopics.push(created.name)
-        } catch (e) {
-          message.error('创建话题失败')
-        }
-      }
-    }
-
-    dynamicTopics.value = nextDynamicTopics
-    formTopicIds.value = ids
-  }
-
-  function addTopicFromSearch(value: string) {
-    if (!value?.trim()) return
-    if (!dynamicTopics.value.includes(value)) {
-      handleTopicsChange([...dynamicTopics.value, value])
-    }
-    topicSearchValue.value = ''
+    setInitialItems(topics)
   }
 
   async function createNewColumn() {
@@ -84,34 +57,29 @@ export function useMomentTaxonomySelect(
         name: newColumnModal.name,
         shortUrl: newColumnModal.slug,
       })
-      columnOptions.value.push({ label: res.name, value: res.id })
+      columnOptions.value = [...columnOptions.value, { label: res.name, value: res.id }]
       formColumnId.value = res.id
       newColumnModal.show = false
       newColumnModal.name = ''
       newColumnModal.slug = ''
-    } catch (e) {
+    } catch {
       message.error('创建分区失败')
     } finally {
       newColumnModal.loading = false
     }
   }
 
-  const autoCompleteOptions = computed(() => {
-    return topicOptions.value.map((t) => ({ label: t.label as string, value: t.label as string }))
-  })
-
   onMounted(fetchOptions)
 
   return {
     columnOptions,
     topicOptions,
-    dynamicTopics,
-    topicSearchValue,
-    autoCompleteOptions,
+    topicsLoading,
+    topicCreating,
+    selectedTopics,
     newColumnModal,
     setInitialTopics,
-    handleTopicsChange,
-    addTopicFromSearch,
+    createAndSelectTopic,
     createNewColumn,
   }
 }
