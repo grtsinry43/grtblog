@@ -19,6 +19,7 @@ export interface MarkdownComponentDefinition {
 	attrs: MarkdownComponentAttribute[];
 	body?: MarkdownComponentBody;
 	insertTemplate: string;
+	showInSlashMenu?: boolean;
 }
 
 export const markdownComponents: MarkdownComponentDefinition[] = [
@@ -98,6 +99,7 @@ export const markdownComponents: MarkdownComponentDefinition[] = [
 		name: 'fed-citation',
 		label: 'Federation Citation',
 		description: '联合引用卡片（服务端生成）',
+		showInSlashMenu: false,
 		attrs: [
 			{ key: 'instance', label: '实例' },
 			{ key: 'post-id', label: '文章ID' },
@@ -114,6 +116,7 @@ export const markdownComponents: MarkdownComponentDefinition[] = [
 		name: 'fed-mention',
 		label: 'Federation Mention',
 		description: '联合提及（服务端生成）',
+		showInSlashMenu: false,
 		attrs: [
 			{ key: 'user', label: '用户' },
 			{ key: 'instance', label: '实例' },

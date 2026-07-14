@@ -40,12 +40,14 @@ const baseOptions: Completion[] = [
   },
 ]
 
-const componentOptions: Completion[] = markdownComponents.map((component) => ({
-  label: component.label,
-  type: 'variable' as const,
-  apply: component.insertTemplate,
-  detail: component.description || component.name,
-}))
+const componentOptions: Completion[] = markdownComponents
+  .filter((component) => component.showInSlashMenu !== false && component.insertTemplate.trim())
+  .map((component) => ({
+    label: component.label,
+    type: 'variable' as const,
+    apply: component.insertTemplate,
+    detail: component.description || component.name,
+  }))
 
 const options: Completion[] = [...baseOptions, ...componentOptions]
 
