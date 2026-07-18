@@ -2,7 +2,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { ArrowClockwise24Regular, Flash24Regular, Rocket24Regular } from '@vicons/fluent'
 import {
-  NAlert,
   NButton,
   NCard,
   NDataTable,
@@ -13,7 +12,6 @@ import {
   NInput,
   NInputGroup,
   NInputGroupLabel,
-  NSpace,
   NSpin,
   NSwitch,
   NTag,
@@ -30,6 +28,8 @@ import {
   getObservabilityPages,
   invalidateObservabilityPages,
 } from '@/services/observability'
+
+import RouteCatalogTree from './components/RouteCatalogTree.vue'
 
 import type {
   ObservabilityInvalidateReport,
@@ -320,31 +320,11 @@ function triggerInvalidate() {
           title="路由目录"
           class="lg:col-span-5"
         >
-          <NEmpty
-            v-if="!routeCatalog?.items?.length"
-            description="暂无路由目录"
+          <RouteCatalogTree
+            :routes="routeCatalog?.items ?? []"
+            :total="routeCatalog?.total ?? 0"
+            :truncated="routeCatalog?.truncated ?? false"
           />
-          <NSpace
-            v-else
-            size="small"
-          >
-            <NTag
-              v-for="item in routeCatalog.items"
-              :key="item"
-              size="small"
-              type="default"
-            >
-              {{ item }}
-            </NTag>
-          </NSpace>
-          <NAlert
-            v-if="routeCatalog?.truncated"
-            class="mt-3"
-            type="info"
-            :show-icon="false"
-          >
-            路由列表已截断，可调大 route_limit 查询更多。
-          </NAlert>
         </NCard>
       </div>
 
