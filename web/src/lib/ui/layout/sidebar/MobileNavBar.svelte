@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolvePath } from '$lib/shared/utils/resolve-path';
+	import { resolveHref, resolvePath } from '$lib/shared/utils/resolve-path';
 	import type { NavMenuItem } from '$lib/features/navigation/types';
 	import { buildMomentPath, buildPostPath } from '$lib/shared/utils/content-path';
 	import DynamicLucideIcon from '$lib/ui/icons/DynamicLucideIcon.svelte';
@@ -352,7 +352,7 @@
 								{/if}
 
 								<a
-									href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolvePath(item.url)}
+									href={/^(https?:|\/\/)/i.test(item.url) ? item.url : resolveHref(item.url)}
 									onclick={handleNavigate}
 									class="flex min-w-0 flex-1 items-center gap-3 text-left"
 								>
@@ -415,7 +415,7 @@
 									{#each item.children as sub (sub.url)}
 										{@const subActive = isActive(sub.url)}
 										<a
-											href={/^(https?:|\/\/)/i.test(sub.url) ? sub.url : resolvePath(sub.url)}
+											href={/^(https?:|\/\/)/i.test(sub.url) ? sub.url : resolveHref(sub.url)}
 											onclick={handleNavigate}
 											class="group/sub relative flex items-center gap-3 rounded-lg ml-2 mr-2 py-2.5 pl-[54px] pr-4 text-left transition-colors
                                             {subActive
