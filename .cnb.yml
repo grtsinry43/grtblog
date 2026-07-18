@@ -1,6 +1,8 @@
 $:
   api_trigger_mirror_images:
     - name: Mirror release images from GHCR
+      runner:
+        cpus: 1
       docker:
         image: quay.io/skopeo/stable:v1.22.2-immutable@sha256:4a16d57b37617a04b3d643079a477a2848efe892dffcdf0ce56df4262b65f810
       stages:

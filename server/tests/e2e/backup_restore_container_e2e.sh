@@ -66,8 +66,13 @@ wait_for_backup() {
 	return 1
 }
 
-echo "[backup-e2e] building and starting isolated stack on port $BACKUP_E2E_PORT"
-compose up --build -d
+if [ -n "${BACKUP_E2E_SERVER_IMAGE:-}" ]; then
+	echo "[backup-e2e] starting prebuilt isolated stack on port $BACKUP_E2E_PORT"
+	compose up --no-build -d
+else
+	echo "[backup-e2e] building and starting isolated stack on port $BACKUP_E2E_PORT"
+	compose up --build -d
+fi
 wait_for_api
 
 curl -fsS -H 'Content-Type: application/json' \

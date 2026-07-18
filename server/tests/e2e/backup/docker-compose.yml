@@ -22,6 +22,7 @@ services:
       retries: 30
 
   server:
+    image: "${BACKUP_E2E_SERVER_IMAGE:-grtblog-backup-e2e-server:local}"
     build:
       context: ../../../..
       dockerfile: deploy/docker/server.Dockerfile

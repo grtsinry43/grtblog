@@ -41,6 +41,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ steps.go-version.outputs.version }}
+          cache-dependency-path: server/go.sum
 
       - run: go build ./...
       - run: go vet ./...
@@ -97,7 +98,27 @@ jobs:
         working-directory: server
     steps:
       - uses: actions/checkout@v4
-      - run: make test-backup-e2e
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backup E2E server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/server.Dockerfile
+          load: true
+          tags: grtblog-backup-e2e-server:ci
+          build-args: |
+            APP_VERSION=backup-e2e
+            BUILD_COMMIT=backup-e2e
+          cache-from: type=gha,scope=backup-e2e-server
+          cache-to: type=gha,mode=max,scope=backup-e2e-server
+
+      - name: Run backup and restore E2E
+        env:
+          BACKUP_E2E_SERVER_IMAGE: grtblog-backup-e2e-server:ci
+        run: make test-backup-e2e
 
   web:
     name: Web (SvelteKit)
