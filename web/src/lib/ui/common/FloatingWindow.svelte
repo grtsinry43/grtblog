@@ -120,8 +120,14 @@
 
 {#if hasBeenOpened}
 	<!-- Backdrop for mobile -->
-	{#if isVisible && isMobile}
-		<div class="fixed inset-0 z-[998]" onclick={() => windowStore.close()} aria-hidden="true"></div>
+	{#if isMobile}
+		<div
+			class="floating-window__mobile-backdrop fixed inset-0 z-[998]"
+			class:floating-window__mobile-backdrop--open={isVisible}
+			class:floating-window__mobile-backdrop--exit={!isVisible}
+			onclick={() => windowStore.close()}
+			aria-hidden="true"
+		></div>
 	{/if}
 
 	<div
@@ -130,10 +136,11 @@
         {isMobile
 			? 'inset-x-0 bottom-0 w-full rounded-t-default border-t border-ink-200/50 dark:border-ink-700/50 shadow-2xl noise-strong'
 			: 'w-[90vw] rounded-default border border-ink-200/50 dark:border-ink-700/50 shadow-float dark:shadow-glass md:min-w-[450px] md:max-w-[92vw] md:resize'}"
-		class:floating-window--hidden={!isVisible}
+		class:floating-window--hidden={!isVisible && !isMobile}
 		class:floating-window--enter={isVisible}
 		class:floating-window--enter-mobile={isVisible && isMobile}
 		class:floating-window--enter-desktop={isVisible && !isMobile}
+		class:floating-window--exit-mobile={!isVisible && isMobile}
 		class:window-expanded={windowStore.isExpanded && !isMobile}
 		style={windowStyle}
 		use:draggable={{ handle: '.window-header', onMove: handleMove }}
@@ -232,6 +239,23 @@
 		animation: float-window-slide-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
 	}
 
+	.floating-window--exit-mobile {
+		pointer-events: none;
+		animation: float-window-slide-out 360ms cubic-bezier(0.4, 0, 1, 1) both;
+	}
+
+	.floating-window__mobile-backdrop {
+		visibility: hidden;
+	}
+
+	.floating-window__mobile-backdrop--open {
+		visibility: visible;
+	}
+
+	.floating-window__mobile-backdrop--exit {
+		animation: float-window-backdrop-exit 360ms linear both;
+	}
+
 	.noise-strong::after {
 		opacity: 0.35 !important;
 		mix-blend-mode: soft-light !important;
@@ -323,10 +347,42 @@
 
 	@keyframes float-window-slide-in {
 		0% {
-			transform: translateY(600px);
+			transform: translateY(calc(100% + env(safe-area-inset-bottom) + 1rem));
 		}
 		100% {
 			transform: translateY(0);
+		}
+	}
+
+	@keyframes float-window-slide-out {
+		0% {
+			visibility: visible;
+			transform: translateY(0);
+		}
+		99% {
+			visibility: visible;
+		}
+		100% {
+			visibility: hidden;
+			transform: translateY(calc(100% + env(safe-area-inset-bottom) + 1rem));
+		}
+	}
+
+	@keyframes float-window-backdrop-exit {
+		0%,
+		99% {
+			visibility: visible;
+		}
+		100% {
+			visibility: hidden;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.floating-window--enter-mobile,
+		.floating-window--exit-mobile,
+		.floating-window__mobile-backdrop--exit {
+			animation-duration: 1ms;
 		}
 	}
 </style>
