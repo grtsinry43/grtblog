@@ -105,7 +105,11 @@ func (s *Service) createLocked(ctx context.Context, triggerType string) (*backup
 
 func (s *Service) RunScheduler(ctx context.Context) {
 	s.runScheduledIfDue(ctx)
-	ticker := time.NewTicker(30 * time.Second)
+	interval := s.cfg.SchedulerPollInterval
+	if interval <= 0 {
+		interval = 30 * time.Second
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 		select {

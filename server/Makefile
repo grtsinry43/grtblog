@@ -6,7 +6,7 @@ SWAG ?= swag
 SWAG_ENTRY ?= cmd/api/main.go
 SWAG_OUT ?= docs
 
-.PHONY: migrate-up migrate-down migrate-status migrate-version migrate-create docs test-federation-e2e
+.PHONY: migrate-up migrate-down migrate-status migrate-version migrate-create docs test-federation-e2e test-backup-e2e
 
 migrate-up:
 	$(GOOSE) -dir $(MIGRATIONS_DIR) $(GOOSE_DRIVER) "$(DB_DSN)" up
@@ -31,3 +31,6 @@ docs:
 
 test-federation-e2e:
 	go test -tags=federation_e2e -v ./tests/e2e -run '^TestFederationBetweenTwoIsolatedInstances$$' -count=1
+
+test-backup-e2e:
+	sh ./tests/e2e/backup_restore_container_e2e.sh

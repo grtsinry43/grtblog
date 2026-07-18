@@ -86,12 +86,26 @@ func restorePostgres(ctx context.Context, binary, databaseDSN, dumpPath string) 
 	if strings.TrimSpace(binary) == "" {
 		binary = "pg_restore"
 	}
+	postgresEnv, err := postgresCommandEnv(databaseDSN)
+	if err != nil {
+		return err
+	}
+	databaseName := ""
+	for _, value := range postgresEnv {
+		if strings.HasPrefix(value, "PGDATABASE=") {
+			databaseName = strings.TrimPrefix(value, "PGDATABASE=")
+			break
+		}
+	}
+	if databaseName == "" {
+		return errors.New("postgres database name is missing")
+	}
 	args := []string{
 		"--clean", "--if-exists", "--no-owner", "--no-privileges", "--single-transaction",
-		dumpPath,
+		"--dbname=" + databaseName, dumpPath,
 	}
 	cmd := exec.CommandContext(ctx, binary, args...)
-	cmd.Env = append(os.Environ(), "PGDATABASE="+databaseDSN)
+	cmd.Env = append(os.Environ(), postgresEnv...)
 	var output bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &output, &output
 	if err := cmd.Run(); err != nil {

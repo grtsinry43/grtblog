@@ -1,0 +1,58 @@
+name: grtblog-backup-e2e
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: grtblog
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d grtblog"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  server:
+    build:
+      context: ../../../..
+      dockerfile: deploy/docker/server.Dockerfile
+      args:
+        APP_VERSION: backup-e2e
+        BUILD_COMMIT: backup-e2e
+    environment:
+      APP_ENV: test
+      APP_PORT: "8080"
+      AUTH_SECRET: backup-e2e-secret-that-is-longer-than-32-characters
+      DB_DRIVER: postgres
+      DB_DSN: postgres://postgres:postgres@postgres:5432/grtblog?sslmode=disable
+      REDIS_ADDR: redis:6379
+      REDIS_PREFIX: "backup-e2e:"
+      TURNSTILE_ENABLED: "false"
+      HTMLSNAPSHOT_BASE_URL: http://127.0.0.1:9
+      APP_UPDATE_CHECK_ENABLED: "false"
+      BACKUP_SCHEDULER_POLL_INTERVAL: 1s
+      BACKUP_COMMAND_TIMEOUT: 5m
+    ports:
+      - "${BACKUP_E2E_PORT:-18080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - backup_uploads:/app/storage/uploads
+      - backup_archives:/app/storage/backups
+    restart: always
+
+volumes:
+  backup_uploads:
+  backup_archives:

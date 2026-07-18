@@ -72,6 +72,16 @@ export function getSetupState() {
   })
 }
 
+export function restoreSiteDuringSetup(file: File, confirmation: string) {
+  const body = new FormData()
+  body.append('archive', file)
+  body.append('confirmation', confirmation)
+  return request<{ backup: { id: string }; restore: { state: string } }>('/auth/setup-restore', {
+    method: 'POST',
+    body,
+  })
+}
+
 export interface AccessInfoResponse {
   user: UserInfo
   roles: string[]

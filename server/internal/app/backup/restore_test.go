@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -69,6 +70,36 @@ func TestUploadSwapRollbackAndCommit(t *testing.T) {
 	assertTestFile(t, filepath.Join(uploads, "new", "site.txt"), "new-site")
 	if _, err := os.Stat(filepath.Join(uploads, "old")); !os.IsNotExist(err) {
 		t.Fatalf("old upload tree still exists after commit: %v", err)
+	}
+}
+
+func TestRestorePostgresPassesDatabaseNameAndConnectionEnvironment(t *testing.T) {
+	root := t.TempDir()
+	argsPath := filepath.Join(root, "args")
+	envPath := filepath.Join(root, "env")
+	scriptPath := filepath.Join(root, "pg_restore")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$ARGS_OUTPUT\"\nprintf '%s|%s|%s|%s' \"$PGHOST\" \"$PGUSER\" \"$PGPASSWORD\" \"$PGDATABASE\" > \"$ENV_OUTPUT\"\n"
+	if err := os.WriteFile(scriptPath, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("ARGS_OUTPUT", argsPath)
+	t.Setenv("ENV_OUTPUT", envPath)
+	if err := restorePostgres(context.Background(), scriptPath, "postgres://siteuser:secret@database:5432/site?sslmode=disable", filepath.Join(root, "site.dump")); err != nil {
+		t.Fatal(err)
+	}
+	args, err := os.ReadFile(argsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(args), "--dbname=site") {
+		t.Fatalf("database name argument is missing: %s", args)
+	}
+	env, err := os.ReadFile(envPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(env) != "database|siteuser|secret|site" {
+		t.Fatalf("unexpected postgres environment: %s", env)
 	}
 }
 

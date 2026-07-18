@@ -62,6 +62,10 @@ func registerAuthRoutes(v2 fiber.Router, deps Dependencies, sysCfgSvc *sysconfig
 
 	authGroup.Post("/register", credentialLimiter, authHandler.Register)
 	authGroup.Post("/login", credentialLimiter, authHandler.Login)
+	if deps.Backup != nil {
+		setupRestoreHandler := handler.NewSetupRestoreHandler(setupStateSvc, deps.Backup)
+		authGroup.Post("/setup-restore", credentialLimiter, setupRestoreHandler.Upload)
+	}
 
 	authGroup.Get("/init-state", probeLimiter, authHandler.InitState)
 	authGroup.Get("/setup-state", probeLimiter, authHandler.SetupState)

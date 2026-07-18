@@ -88,6 +88,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+  backup-e2e:
+    name: Backup & Restore (Containers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - run: make test-backup-e2e
+
   web:
     name: Web (SvelteKit)
     runs-on: ubuntu-latest

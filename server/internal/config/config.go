@@ -81,6 +81,7 @@ type BackupConfig struct {
 	PGRestoreBin             string
 	TicketTTL                time.Duration
 	CommandTimeout           time.Duration
+	SchedulerPollInterval    time.Duration
 	RestoreMaxArchiveBytes   int64
 	RestoreMaxExtractedBytes int64
 }
@@ -145,6 +146,7 @@ func Load() Config {
 			PGRestoreBin:             getEnv("BACKUP_PG_RESTORE_BIN", "pg_restore"),
 			TicketTTL:                getEnvAsDuration("BACKUP_DOWNLOAD_TICKET_TTL", 10*time.Minute),
 			CommandTimeout:           getEnvAsDuration("BACKUP_COMMAND_TIMEOUT", 30*time.Minute),
+			SchedulerPollInterval:    getEnvAsDuration("BACKUP_SCHEDULER_POLL_INTERVAL", 30*time.Second),
 			RestoreMaxArchiveBytes:   getEnvAsInt64("BACKUP_RESTORE_MAX_ARCHIVE_BYTES", 10<<30),
 			RestoreMaxExtractedBytes: getEnvAsInt64("BACKUP_RESTORE_MAX_EXTRACTED_BYTES", 50<<30),
 		},
