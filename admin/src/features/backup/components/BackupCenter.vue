@@ -20,6 +20,7 @@ import { formatDate } from '@/utils/format'
 import { useBackups } from '../composables/use-backups'
 
 import BackupList from './BackupList.vue'
+import LocalRestoreDevHint from './LocalRestoreDevHint.vue'
 
 const message = useMessage()
 const {
@@ -226,6 +227,7 @@ function restoreAlertType() {
       title="覆盖恢复"
       :bordered="false"
     >
+      <LocalRestoreDevHint />
       <NAlert
         v-if="restoreStatus && restoreStatus.state !== 'idle'"
         :type="restoreAlertType()"
