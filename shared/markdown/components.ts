@@ -57,6 +57,25 @@ export const markdownComponents: MarkdownComponentDefinition[] = [
 		insertTemplate: '::: callout type="info" title=""\n这里输入提示内容\n:::'
 	},
 	{
+		name: 'details',
+		label: 'Details',
+		description: '可折叠内容块',
+		attrs: [
+			{ key: 'summary', label: '折叠标题', placeholder: '点击查看详情' },
+			{
+				key: 'open',
+				label: '默认展开',
+				defaultValue: 'false',
+				inputType: 'switch'
+			}
+		],
+		body: {
+			label: '折叠内容',
+			placeholder: '这里输入折叠后的正文'
+		},
+		insertTemplate: '::: details summary="点击查看详情" open="false"\n这里输入折叠内容\n:::'
+	},
+	{
 		name: 'timeline',
 		label: 'Timeline',
 		description: '时间轴',

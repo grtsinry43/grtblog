@@ -46,3 +46,38 @@ func TestBuildSummaryTruncatesExtractedText(t *testing.T) {
 		t.Fatalf("expected %d runes, got %d", defaultSummaryRuneLimit, len([]rune(got)))
 	}
 }
+
+func TestGenerateTOCOnlyIncludesHeadingNodes(t *testing.T) {
+	content := strings.Join([]string{
+		"# 正常标题",
+		"",
+		"普通段落里的 # 井号不是标题。",
+		"",
+		"`# 行内代码也不是标题`",
+		"",
+		"```markdown",
+		"# 围栏代码块里的伪标题",
+		"```",
+		"",
+		"    # 缩进代码块里的伪标题",
+		"",
+		"| 列一 | 列二 |",
+		"| --- | --- |",
+		"| # 表格里的井号 | 内容 |",
+		"",
+		"<div># HTML 块里的井号</div>",
+		"",
+		"## 子标题",
+	}, "\n")
+
+	got := GenerateTOC(content)
+	if len(got) != 1 {
+		t.Fatalf("expected one root heading, got %#v", got)
+	}
+	if got[0].Name != "正常标题" {
+		t.Fatalf("expected root heading %q, got %q", "正常标题", got[0].Name)
+	}
+	if len(got[0].Children) != 1 || got[0].Children[0].Name != "子标题" {
+		t.Fatalf("expected only the real child heading, got %#v", got[0].Children)
+	}
+}

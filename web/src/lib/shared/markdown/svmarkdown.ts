@@ -19,6 +19,7 @@ import MarkdownTd from '$lib/ui/markdown/MarkdownTd.svelte';
 import YearCard from '$lib/ui/markdown/YearCard.svelte';
 import LinkCard from '$lib/ui/markdown/LinkCard.svelte';
 import Callout from '$lib/ui/markdown/Callout.svelte';
+import MarkdownDetails from '$lib/ui/markdown/MarkdownDetails.svelte';
 import Gallery from '$lib/ui/markdown/Gallery.svelte';
 import Timeline from '$lib/ui/markdown/Timeline.svelte';
 import ChatHistory from '$lib/ui/markdown/ChatHistory.svelte';
@@ -55,6 +56,7 @@ export const markdownComponents: SvmdComponentMap = {
 	code: MarkdownCodeBlock,
 	gallery: Gallery,
 	callout: Callout,
+	details: MarkdownDetails,
 	timeline: Timeline,
 	'chat-history': ChatHistory,
 	'year-card': YearCard,

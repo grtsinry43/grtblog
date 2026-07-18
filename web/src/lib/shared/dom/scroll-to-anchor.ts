@@ -13,8 +13,24 @@ export const scrollToAnchor = (
 	if (!root) return;
 	const target = root.querySelector(`#${CSS.escape(anchor)}`) as HTMLElement | null;
 	if (!target) return;
-	const offset = 80;
-	const top = target.getBoundingClientRect().top + window.scrollY - offset;
-	window.scrollTo({ top, behavior });
+
+	let collapsedAncestor = target.parentElement?.closest<HTMLDetailsElement>('details') ?? null;
+	let expandedDetails = false;
+	while (collapsedAncestor) {
+		if (!collapsedAncestor.open) {
+			collapsedAncestor.open = true;
+			expandedDetails = true;
+		}
+		collapsedAncestor =
+			collapsedAncestor.parentElement?.closest<HTMLDetailsElement>('details') ?? null;
+	}
+
+	const scroll = () => {
+		const offset = 80;
+		const top = target.getBoundingClientRect().top + window.scrollY - offset;
+		window.scrollTo({ top, behavior });
+	};
+	if (expandedDetails) requestAnimationFrame(scroll);
+	else scroll();
 	if (typeof history !== 'undefined') history.replaceState(null, '', `#${anchor}`);
 };
