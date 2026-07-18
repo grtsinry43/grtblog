@@ -15,7 +15,6 @@ env:
   DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  CNB_REGISTRY: docker.cnb.cool
   CNB_REPO: grtsinry43/grtblog
   CNB_ACCESS_TOKEN: ${{ secrets.CNB_ACCESS_TOKEN }}
 
@@ -162,14 +161,6 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Log in to CNB Docker Registry
-        if: ${{ needs.prepare.outputs.channel == 'stable' && env.CNB_ACCESS_TOKEN != '' }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.CNB_REGISTRY }}
-          username: cnb
-          password: ${{ env.CNB_ACCESS_TOKEN }}
-
       - name: Compute image tags
         id: imagetags
         env:
@@ -188,10 +179,6 @@ jobs:
           if [[ "$CHANNEL" == "stable" && -n "${dockerhub_namespace}" && -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
             image_refs+=("docker.io/${dockerhub_namespace}/${IMAGE_NAME}")
           fi
-          if [[ "$CHANNEL" == "stable" && -n "${CNB_ACCESS_TOKEN:-}" ]]; then
-            image_refs+=("${CNB_REGISTRY}/${CNB_REPO}/${IMAGE_NAME}")
-          fi
-
           for ref in "${image_refs[@]}"; do
             tags+=("-t" "${ref}:${VERSION}")
             if [[ "$CHANNEL" == "stable" ]]; then
@@ -215,10 +202,144 @@ jobs:
             ${{ steps.imagetags.outputs.tags }} \
             $(printf "${GHCR_IMAGE}@sha256:%s " *)
 
-  # ── 4. GitHub Release (stable = release, preview = prerelease) ──
+  # ── 4. Mirror stable images from GHCR inside CNB ──
+  mirror-cnb:
+    if: ${{ needs.prepare.outputs.channel == 'stable' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [prepare, merge]
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve source image digests
+        id: digests
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          resolve_digest() {
+            local image="$1"
+            docker buildx imagetools inspect \
+              "${GHCR_REGISTRY}/${GHCR_OWNER}/${image}:${VERSION}" \
+              --format '{{json .Manifest}}' | jq -er '.digest'
+          }
+
+          server_digest="$(resolve_digest grtblog-server)"
+          renderer_digest="$(resolve_digest grtblog-renderer)"
+          echo "server_digest=$server_digest" >> "$GITHUB_OUTPUT"
+          echo "renderer_digest=$renderer_digest" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger CNB image mirror
+        id: trigger
+        env:
+          CNB_TOKEN: ${{ env.CNB_ACCESS_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.ref_name }}
+          RENDERER_DIGEST: ${{ steps.digests.outputs.renderer_digest }}
+          SERIES: ${{ needs.prepare.outputs.major }}.${{ needs.prepare.outputs.minor }}
+          SERVER_DIGEST: ${{ steps.digests.outputs.server_digest }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          : "${CNB_TOKEN:?CNB_ACCESS_TOKEN is required for stable releases}"
+
+          payload="$(jq -cn \
+            --arg branch main \
+            --arg event api_trigger_mirror_images \
+            --arg title "Mirror release images ${RELEASE_TAG}" \
+            --arg version "$VERSION" \
+            --arg series "$SERIES" \
+            --arg serverDigest "$SERVER_DIGEST" \
+            --arg rendererDigest "$RENDERER_DIGEST" \
+            '{
+              branch: $branch,
+              event: $event,
+              title: $title,
+              env: {
+                VERSION: $version,
+                SERIES: $series,
+                SERVER_DIGEST: $serverDigest,
+                RENDERER_DIGEST: $rendererDigest
+              }
+            }')"
+
+          response="$(curl --silent --show-error --fail-with-body \
+            --request POST \
+            --url "https://api.cnb.cool/${CNB_REPO}/-/build/start" \
+            --header "Authorization: Bearer ${CNB_TOKEN}" \
+            --header 'Accept: application/vnd.cnb.api+json' \
+            --header 'Content-Type: application/json' \
+            --data "$payload")"
+
+          if [[ "$(jq -r '.success' <<< "$response")" != "true" ]]; then
+            echo "CNB rejected the mirror build request" >&2
+            jq . <<< "$response" >&2
+            exit 1
+          fi
+
+          sn="$(jq -er '.sn' <<< "$response")"
+          build_url="$(jq -er '.buildLogUrl' <<< "$response")"
+          echo "sn=$sn" >> "$GITHUB_OUTPUT"
+          echo "build_url=$build_url" >> "$GITHUB_OUTPUT"
+          echo "CNB mirror build: $build_url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Wait for CNB image mirror
+        env:
+          BUILD_URL: ${{ steps.trigger.outputs.build_url }}
+          CNB_TOKEN: ${{ env.CNB_ACCESS_TOKEN }}
+          SN: ${{ steps.trigger.outputs.sn }}
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 3300))
+
+          while (( SECONDS < deadline )); do
+            response="$(curl --silent --show-error --fail-with-body \
+              --retry 5 \
+              --retry-all-errors \
+              --retry-delay 3 \
+              --request GET \
+              --url "https://api.cnb.cool/${CNB_REPO}/-/build/status/${SN}" \
+              --header "Authorization: Bearer ${CNB_TOKEN}" \
+              --header 'Accept: application/vnd.cnb.api+json')"
+            status="$(jq -r '.status // "unknown"' <<< "$response" | tr '[:upper:]' '[:lower:]')"
+            echo "CNB mirror status: $status"
+
+            case "$status" in
+              success)
+                echo "CNB image mirror completed: $BUILD_URL" >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+                ;;
+              error|failed|failure|cancel|canceled|cancelled)
+                echo "CNB image mirror failed: $BUILD_URL" >&2
+                exit 1
+                ;;
+            esac
+
+            sleep 15
+          done
+
+          echo "Timed out waiting for CNB image mirror: $BUILD_URL" >&2
+          exit 1
+
+  # ── 5. GitHub Release (stable = release, preview = prerelease) ──
   create-github-release:
     runs-on: ubuntu-latest
-    needs: [prepare, merge]
+    needs: [prepare, merge, mirror-cnb]
+    if: >-
+      ${{
+        always() &&
+        needs.prepare.result == 'success' &&
+        needs.merge.result == 'success' &&
+        (needs.prepare.outputs.channel != 'stable' || needs.mirror-cnb.result == 'success')
+      }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

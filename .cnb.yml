@@ -1,0 +1,74 @@
+$:
+  api_trigger_mirror_images:
+    - name: Mirror release images from GHCR
+      docker:
+        image: quay.io/skopeo/stable:v1.22.2-immutable@sha256:4a16d57b37617a04b3d643079a477a2848efe892dffcdf0ce56df4262b65f810
+      stages:
+        - name: Validate mirror request
+          script: |
+            set -eu
+
+            : "${VERSION:?VERSION is required}"
+            : "${SERIES:?SERIES is required}"
+            : "${SERVER_DIGEST:?SERVER_DIGEST is required}"
+            : "${RENDERER_DIGEST:?RENDERER_DIGEST is required}"
+
+            case "$SERVER_DIGEST" in
+              sha256:*) ;;
+              *) echo "Invalid server digest: $SERVER_DIGEST" >&2; exit 1 ;;
+            esac
+            case "$RENDERER_DIGEST" in
+              sha256:*) ;;
+              *) echo "Invalid renderer digest: $RENDERER_DIGEST" >&2; exit 1 ;;
+            esac
+
+        - name: Log in to CNB Docker Registry
+          script: |
+            set -eu
+            printf '%s' "$CNB_TOKEN" | skopeo login \
+              --username "$CNB_TOKEN_USER_NAME" \
+              --password-stdin \
+              "$CNB_DOCKER_REGISTRY"
+
+        - name: Mirror and verify release images
+          script: |
+            set -eu
+
+            mirror_image() {
+              image_name="$1"
+              expected_digest="$2"
+              source_ref="docker://ghcr.io/grtsinry43/${image_name}@${expected_digest}"
+              target_ref="docker://${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}/${image_name}"
+
+              echo "Mirroring ${image_name}@${expected_digest}"
+              GODEBUG=http2client=0 skopeo copy \
+                --all \
+                --preserve-digests \
+                --retry-times 8 \
+                --image-parallel-copies 1 \
+                "$source_ref" \
+                "${target_ref}:${VERSION}"
+
+              actual_digest="$(GODEBUG=http2client=0 skopeo inspect \
+                --format '{{.Digest}}' \
+                "${target_ref}:${VERSION}")"
+              if [ "$actual_digest" != "$expected_digest" ]; then
+                echo "Digest mismatch for ${image_name}: expected ${expected_digest}, got ${actual_digest}" >&2
+                exit 1
+              fi
+
+              for alias in "$SERIES" stable latest; do
+                GODEBUG=http2client=0 skopeo copy \
+                  --all \
+                  --preserve-digests \
+                  --retry-times 3 \
+                  --image-parallel-copies 1 \
+                  "${target_ref}:${VERSION}" \
+                  "${target_ref}:${alias}"
+              done
+
+              echo "Verified ${image_name}@${expected_digest}"
+            }
+
+            mirror_image grtblog-server "$SERVER_DIGEST"
+            mirror_image grtblog-renderer "$RENDERER_DIGEST"
