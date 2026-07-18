@@ -25,3 +25,18 @@ export interface BackupDownloadTicket {
   url: string
   expiresAt: string
 }
+
+export interface BackupSchedule {
+  enabled: boolean
+  intervalHours: number
+  retentionCount: number
+  nextRunAt?: string
+  lastRunAt?: string
+  updatedAt: string
+}
+
+export interface UpdateBackupScheduleRequest {
+  enabled: boolean
+  intervalHours: number
+  retentionCount: number
+}

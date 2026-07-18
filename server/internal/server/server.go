@@ -384,6 +384,9 @@ func (s *Server) Start() error {
 	if s.telemetrySvc != nil {
 		go s.telemetrySvc.Reporter().Run(s.ctx)
 	}
+	if s.backupSvc != nil {
+		go s.backupSvc.RunScheduler(s.ctx)
+	}
 
 	addr := fmt.Sprintf(":%s", s.cfg.App.Port)
 	return s.app.Listen(addr)

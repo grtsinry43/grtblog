@@ -38,3 +38,12 @@ type DownloadTicket struct {
 	ExpiresAt time.Time
 	CreatedAt time.Time
 }
+
+type Schedule struct {
+	Enabled        bool       `json:"enabled"`
+	IntervalHours  int        `json:"intervalHours"`
+	RetentionCount int        `json:"retentionCount"`
+	NextRunAt      *time.Time `json:"nextRunAt,omitempty"`
+	LastRunAt      *time.Time `json:"lastRunAt,omitempty"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
+}

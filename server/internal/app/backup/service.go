@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,11 +61,15 @@ func (s *Service) CreateManual(ctx context.Context) (*backupdomain.Record, error
 	if !s.mu.TryLock() {
 		return nil, backupdomain.ErrBackupRunning
 	}
+	return s.createLocked(ctx, "manual")
+}
+
+func (s *Service) createLocked(ctx context.Context, triggerType string) (*backupdomain.Record, error) {
 	now := time.Now().UTC()
 	id := uuid.NewString()
 	item := &backupdomain.Record{
 		ID: id, Filename: fmt.Sprintf("grtblog-backup-%s-%s.tar.gz", now.Format("20060102T150405Z"), id[:8]),
-		Status: backupdomain.StatusQueued, Stage: "queued", TriggerType: "manual", CreatedAt: now,
+		Status: backupdomain.StatusQueued, Stage: "queued", TriggerType: triggerType, CreatedAt: now,
 	}
 	if err := s.repo.Create(ctx, item); err != nil {
 		s.mu.Unlock()
@@ -81,6 +86,39 @@ func (s *Service) CreateManual(ctx context.Context) (*backupdomain.Record, error
 		s.run(jobCtx, item)
 	}()
 	return item, nil
+}
+
+func (s *Service) RunScheduler(ctx context.Context) {
+	s.runScheduledIfDue(ctx)
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.runScheduledIfDue(ctx)
+		}
+	}
+}
+
+func (s *Service) runScheduledIfDue(ctx context.Context) {
+	if !s.mu.TryLock() {
+		return
+	}
+	claimed, _, err := s.repo.TryClaimSchedule(ctx, time.Now().UTC())
+	if err != nil {
+		s.mu.Unlock()
+		log.Printf("[backup] claim scheduled run failed: %v", err)
+		return
+	}
+	if !claimed {
+		s.mu.Unlock()
+		return
+	}
+	if _, err := s.createLocked(ctx, "scheduled"); err != nil {
+		log.Printf("[backup] create scheduled backup failed: %v", err)
+	}
 }
 
 func (s *Service) run(ctx context.Context, item *backupdomain.Record) {
@@ -190,6 +228,11 @@ func (s *Service) run(ctx context.Context, item *backupdomain.Record) {
 	item.Status, item.Stage, item.CompletedAt = backupdomain.StatusCompleted, "completed", &completed
 	item.SizeBytes, item.SHA256, item.ErrorMessage = stat.Size(), archiveSum, ""
 	_ = s.repo.Update(context.Background(), item)
+	if item.TriggerType == "scheduled" {
+		if err := s.pruneScheduled(context.Background()); err != nil {
+			log.Printf("[backup] retention cleanup failed: %v", err)
+		}
+	}
 }
 
 func (s *Service) List(ctx context.Context) ([]backupdomain.Record, error) { return s.repo.List(ctx) }
@@ -241,6 +284,68 @@ func (s *Service) ResolveDownload(ctx context.Context, token string) (*backupdom
 		return nil, "", err
 	}
 	return item, path, nil
+}
+
+func (s *Service) GetSchedule(ctx context.Context) (*backupdomain.Schedule, error) {
+	return s.repo.GetSchedule(ctx)
+}
+
+func (s *Service) UpdateSchedule(ctx context.Context, enabled bool, intervalHours, retentionCount int) (*backupdomain.Schedule, error) {
+	if intervalHours < 1 || intervalHours > 8760 {
+		return nil, errors.New("backup interval must be between 1 and 8760 hours")
+	}
+	if retentionCount < 1 || retentionCount > 100 {
+		return nil, errors.New("backup retention must be between 1 and 100")
+	}
+	current, err := s.repo.GetSchedule(ctx)
+	if err != nil {
+		return nil, err
+	}
+	wasEnabled := current.Enabled
+	previousInterval := current.IntervalHours
+	current.Enabled = enabled
+	current.IntervalHours = intervalHours
+	current.RetentionCount = retentionCount
+	if enabled && (!wasEnabled || previousInterval != intervalHours || current.NextRunAt == nil) {
+		next := time.Now().UTC().Add(time.Duration(intervalHours) * time.Hour)
+		current.NextRunAt = &next
+	} else if !enabled {
+		current.NextRunAt = nil
+	}
+	if err := s.repo.SaveSchedule(ctx, current); err != nil {
+		return nil, err
+	}
+	return current, nil
+}
+
+func (s *Service) SetPinned(ctx context.Context, id string, pinned bool) error {
+	return s.repo.SetPinned(ctx, id, pinned)
+}
+
+func (s *Service) pruneScheduled(ctx context.Context) error {
+	schedule, err := s.repo.GetSchedule(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := s.repo.List(ctx)
+	if err != nil {
+		return err
+	}
+	retained := 0
+	for i := range items {
+		item := items[i]
+		if item.TriggerType != "scheduled" || item.Status != backupdomain.StatusCompleted || item.Pinned {
+			continue
+		}
+		retained++
+		if retained <= schedule.RetentionCount {
+			continue
+		}
+		if err := s.Delete(ctx, item.ID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Service) archivePath(filename string) string {

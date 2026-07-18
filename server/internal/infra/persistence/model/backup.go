@@ -33,3 +33,16 @@ type BackupDownloadTicket struct {
 }
 
 func (BackupDownloadTicket) TableName() string { return "backup_ops.download_ticket" }
+
+type BackupScheduleConfig struct {
+	ID             int16      `gorm:"column:id;primaryKey"`
+	Enabled        bool       `gorm:"column:enabled"`
+	IntervalHours  int        `gorm:"column:interval_hours"`
+	RetentionCount int        `gorm:"column:retention_count"`
+	NextRunAt      *time.Time `gorm:"column:next_run_at"`
+	LastRunAt      *time.Time `gorm:"column:last_run_at"`
+	CreatedAt      time.Time  `gorm:"column:created_at"`
+	UpdatedAt      time.Time  `gorm:"column:updated_at"`
+}
+
+func (BackupScheduleConfig) TableName() string { return "backup_ops.schedule_config" }

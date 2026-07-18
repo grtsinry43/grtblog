@@ -95,6 +95,71 @@ func (r *BackupRepository) DeleteExpiredTickets(ctx context.Context) error {
 	return r.db.WithContext(ctx).Where("expires_at <= ?", time.Now().UTC()).Delete(&model.BackupDownloadTicket{}).Error
 }
 
+func (r *BackupRepository) GetSchedule(ctx context.Context) (*backupdomain.Schedule, error) {
+	var rec model.BackupScheduleConfig
+	if err := r.db.WithContext(ctx).Where("id = ?", 1).First(&rec).Error; err != nil {
+		return nil, err
+	}
+	return scheduleFromModel(rec), nil
+}
+
+func (r *BackupRepository) SaveSchedule(ctx context.Context, schedule *backupdomain.Schedule) error {
+	now := time.Now().UTC()
+	updates := map[string]any{
+		"enabled": schedule.Enabled, "interval_hours": schedule.IntervalHours,
+		"retention_count": schedule.RetentionCount, "next_run_at": schedule.NextRunAt,
+		"updated_at": now,
+	}
+	if err := r.db.WithContext(ctx).Model(&model.BackupScheduleConfig{}).Where("id = ?", 1).Updates(updates).Error; err != nil {
+		return err
+	}
+	schedule.UpdatedAt = now
+	return nil
+}
+
+func (r *BackupRepository) TryClaimSchedule(ctx context.Context, now time.Time) (bool, *backupdomain.Schedule, error) {
+	var claimed bool
+	var result *backupdomain.Schedule
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var rec model.BackupScheduleConfig
+		if err := tx.Raw("SELECT * FROM backup_ops.schedule_config WHERE id = 1 FOR UPDATE").Scan(&rec).Error; err != nil {
+			return err
+		}
+		if !rec.Enabled || rec.NextRunAt == nil || rec.NextRunAt.After(now) {
+			result = scheduleFromModel(rec)
+			return nil
+		}
+		next := now.Add(time.Duration(rec.IntervalHours) * time.Hour)
+		updates := map[string]any{"last_run_at": now, "next_run_at": next, "updated_at": now}
+		if err := tx.Model(&model.BackupScheduleConfig{}).Where("id = ?", 1).Updates(updates).Error; err != nil {
+			return err
+		}
+		rec.LastRunAt, rec.NextRunAt, rec.UpdatedAt = &now, &next, now
+		result = scheduleFromModel(rec)
+		claimed = true
+		return nil
+	})
+	return claimed, result, err
+}
+
+func (r *BackupRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
+	result := r.db.WithContext(ctx).Model(&model.BackupRecord{}).Where("id = ?", id).Update("pinned", pinned)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return backupdomain.ErrNotFound
+	}
+	return nil
+}
+
+func scheduleFromModel(rec model.BackupScheduleConfig) *backupdomain.Schedule {
+	return &backupdomain.Schedule{
+		Enabled: rec.Enabled, IntervalHours: rec.IntervalHours, RetentionCount: rec.RetentionCount,
+		NextRunAt: rec.NextRunAt, LastRunAt: rec.LastRunAt, UpdatedAt: rec.UpdatedAt,
+	}
+}
+
 func backupRecordToModel(item backupdomain.Record) model.BackupRecord {
 	return model.BackupRecord{
 		ID: item.ID, Filename: item.Filename, Status: string(item.Status), Stage: item.Stage,

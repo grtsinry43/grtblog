@@ -15,6 +15,16 @@ import (
 
 type BackupHandler struct{ svc *backupapp.Service }
 
+type updateBackupScheduleRequest struct {
+	Enabled        bool `json:"enabled"`
+	IntervalHours  int  `json:"intervalHours"`
+	RetentionCount int  `json:"retentionCount"`
+}
+
+type updateBackupPinRequest struct {
+	Pinned bool `json:"pinned"`
+}
+
 func NewBackupHandler(svc *backupapp.Service) *BackupHandler { return &BackupHandler{svc: svc} }
 
 func (h *BackupHandler) List(c *fiber.Ctx) error {
@@ -76,6 +86,37 @@ func (h *BackupHandler) Download(c *fiber.Ctx) error {
 	c.Set(fiber.HeaderContentDisposition, fmt.Sprintf("attachment; filename=%q", item.Filename))
 	c.Set(fiber.HeaderCacheControl, "private, no-store")
 	return c.SendFile(path)
+}
+
+func (h *BackupHandler) GetSchedule(c *fiber.Ctx) error {
+	schedule, err := h.svc.GetSchedule(c.UserContext())
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "获取备份计划失败", err)
+	}
+	return response.Success(c, schedule)
+}
+
+func (h *BackupHandler) UpdateSchedule(c *fiber.Ctx) error {
+	var req updateBackupScheduleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	schedule, err := h.svc.UpdateSchedule(c.UserContext(), req.Enabled, req.IntervalHours, req.RetentionCount)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "备份计划参数无效", err)
+	}
+	return response.SuccessWithMessage(c, schedule, "备份计划已更新")
+}
+
+func (h *BackupHandler) SetPinned(c *fiber.Ctx) error {
+	var req updateBackupPinRequest
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if err := h.svc.SetPinned(c.UserContext(), c.Params("id"), req.Pinned); err != nil {
+		return mapBackupError(err, "更新备份固定状态失败")
+	}
+	return response.SuccessWithMessage(c, fiber.Map{"id": c.Params("id"), "pinned": req.Pinned}, "备份已更新")
 }
 
 func mapBackupError(err error, message string) error {

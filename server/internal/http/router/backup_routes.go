@@ -22,7 +22,10 @@ func registerBackupRoutes(v2 fiber.Router, deps Dependencies) {
 	backups := v2.Group("/admin/backups", authMiddleware, adminMiddleware)
 	backups.Get("", h.List)
 	backups.Post("", h.Create)
+	backups.Get("/schedule", h.GetSchedule)
+	backups.Put("/schedule", h.UpdateSchedule)
 	backups.Get("/:id", h.Get)
 	backups.Delete("/:id", h.Delete)
+	backups.Patch("/:id/pin", h.SetPinned)
 	backups.Post("/:id/download-ticket", h.IssueDownloadTicket)
 }

@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 var (
@@ -21,4 +22,8 @@ type Repository interface {
 	CreateTicket(context.Context, DownloadTicket) error
 	ResolveTicket(context.Context, string) (*Record, error)
 	DeleteExpiredTickets(context.Context) error
+	GetSchedule(context.Context) (*Schedule, error)
+	SaveSchedule(context.Context, *Schedule) error
+	TryClaimSchedule(context.Context, time.Time) (bool, *Schedule, error)
+	SetPinned(context.Context, string, bool) error
 }

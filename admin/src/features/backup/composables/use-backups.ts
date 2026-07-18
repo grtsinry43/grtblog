@@ -4,16 +4,22 @@ import {
   createBackup,
   createBackupDownloadTicket,
   deleteBackup,
+  getBackupSchedule,
   listBackups,
+  setBackupPinned,
+  updateBackupSchedule,
 } from '../api/backup-api'
 
-import type { BackupRecord } from '../model/types'
+import type { BackupRecord, BackupSchedule, UpdateBackupScheduleRequest } from '../model/types'
 
 export function useBackups() {
   const records = shallowRef<BackupRecord[]>([])
   const loading = shallowRef(false)
   const creating = shallowRef(false)
   const deletingId = shallowRef<string | null>(null)
+  const schedule = shallowRef<BackupSchedule | null>(null)
+  const scheduleLoading = shallowRef(false)
+  const scheduleSaving = shallowRef(false)
   let timer: ReturnType<typeof setInterval> | undefined
 
   async function refresh(silent = false) {
@@ -51,6 +57,30 @@ export function useBackups() {
     window.location.assign(new URL(ticket.url, window.location.origin).toString())
   }
 
+  async function loadSchedule() {
+    scheduleLoading.value = true
+    try {
+      schedule.value = await getBackupSchedule()
+    } finally {
+      scheduleLoading.value = false
+    }
+  }
+
+  async function saveSchedule(payload: UpdateBackupScheduleRequest) {
+    scheduleSaving.value = true
+    try {
+      schedule.value = await updateBackupSchedule(payload)
+      return schedule.value
+    } finally {
+      scheduleSaving.value = false
+    }
+  }
+
+  async function setPinned(id: string, pinned: boolean) {
+    await setBackupPinned(id, pinned)
+    records.value = records.value.map((item) => (item.id === id ? { ...item, pinned } : item))
+  }
+
   function startPolling() {
     stopPolling()
     timer = setInterval(() => {
@@ -67,11 +97,27 @@ export function useBackups() {
 
   onMounted(() => {
     void refresh()
+    void loadSchedule()
     startPolling()
   })
   onActivated(startPolling)
   onDeactivated(stopPolling)
   onBeforeUnmount(stopPolling)
 
-  return { records, loading, creating, deletingId, refresh, create, remove, download }
+  return {
+    records,
+    loading,
+    creating,
+    deletingId,
+    schedule,
+    scheduleLoading,
+    scheduleSaving,
+    refresh,
+    create,
+    remove,
+    download,
+    loadSchedule,
+    saveSchedule,
+    setPinned,
+  }
 }

@@ -14,6 +14,7 @@ defineProps<{
 const emit = defineEmits<{
   download: [id: string]
   delete: [id: string]
+  pin: [id: string, pinned: boolean]
 }>()
 
 const statusMeta: Record<
@@ -130,6 +131,17 @@ function formatSize(size: number) {
             >
               <template #icon><span class="iconify ph--download-simple" /></template>
               下载
+            </NButton>
+            <NButton
+              size="small"
+              tertiary
+              :type="item.pinned ? 'warning' : 'default'"
+              :title="item.pinned ? '取消固定' : '固定备份，避免被保留策略清理'"
+              @click="emit('pin', item.id, !item.pinned)"
+            >
+              <template #icon>
+                <span :class="item.pinned ? 'iconify ph--push-pin-fill' : 'iconify ph--push-pin'" />
+              </template>
             </NButton>
             <NPopconfirm
               :disabled="item.status === 'queued' || item.status === 'running'"
