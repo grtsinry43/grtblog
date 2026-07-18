@@ -15,6 +15,7 @@ type Config struct {
 	Turnstile TurnstileConfig
 	Redis     RedisConfig
 	GeoIP     GeoIPConfig
+	Backup    BackupConfig
 }
 
 // AppConfig contains Fiber specific settings.
@@ -72,6 +73,19 @@ type GeoIPConfig struct {
 	ASNURL      string
 }
 
+// BackupConfig controls whole-site archive creation and download tickets.
+type BackupConfig struct {
+	RootDir                  string
+	UploadDir                string
+	PGDumpBin                string
+	PGRestoreBin             string
+	TicketTTL                time.Duration
+	CommandTimeout           time.Duration
+	SchedulerPollInterval    time.Duration
+	RestoreMaxArchiveBytes   int64
+	RestoreMaxExtractedBytes int64
+}
+
 // Load builds a Config struct with sane defaults overridden by environment variables.
 func Load() Config {
 	return Config{
@@ -92,7 +106,7 @@ func Load() Config {
 			TrustedProxyCheck:        getEnvAsBool("APP_TRUSTED_PROXY_CHECK", true),
 			IPValidation:             getEnvAsBool("APP_IP_VALIDATION", true),
 			UpdateCheckEnabled:       getEnvAsBool("APP_UPDATE_CHECK_ENABLED", true),
-			UpdateCheckRepo:          strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog-v2")),
+			UpdateCheckRepo:          strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog")),
 			UpdateCheckChannel:       strings.TrimSpace(getEnv("APP_UPDATE_CHANNEL", "stable")),
 			TelemetryDefaultEndpoint: strings.TrimSpace(getEnv("TELEMETRY_DEFAULT_ENDPOINT", "https://telemetry.grtsinry43.com/collect")),
 		},
@@ -124,6 +138,17 @@ func Load() Config {
 			DownloadURL: getEnv("GEOIP_DB_URL", "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"),
 			ASNPath:     getEnv("GEOIP_ASN_DB_PATH", "storage/geoip/GeoLite2-ASN.mmdb"),
 			ASNURL:      getEnv("GEOIP_ASN_DB_URL", "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb"),
+		},
+		Backup: BackupConfig{
+			RootDir:                  getEnv("BACKUP_ROOT_DIR", "storage/backups"),
+			UploadDir:                getEnv("BACKUP_UPLOAD_DIR", "storage/uploads"),
+			PGDumpBin:                getEnv("BACKUP_PG_DUMP_BIN", "pg_dump"),
+			PGRestoreBin:             getEnv("BACKUP_PG_RESTORE_BIN", "pg_restore"),
+			TicketTTL:                getEnvAsDuration("BACKUP_DOWNLOAD_TICKET_TTL", 10*time.Minute),
+			CommandTimeout:           getEnvAsDuration("BACKUP_COMMAND_TIMEOUT", 30*time.Minute),
+			SchedulerPollInterval:    getEnvAsDuration("BACKUP_SCHEDULER_POLL_INTERVAL", 30*time.Second),
+			RestoreMaxArchiveBytes:   getEnvAsInt64("BACKUP_RESTORE_MAX_ARCHIVE_BYTES", 10<<30),
+			RestoreMaxExtractedBytes: getEnvAsInt64("BACKUP_RESTORE_MAX_EXTRACTED_BYTES", 50<<30),
 		},
 	}
 }
@@ -198,4 +223,16 @@ func getEnvAsInt(key string, fallback int) int {
 		return fallback
 	}
 	return i
+}
+
+func getEnvAsInt64(key string, fallback int64) int64 {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
 }

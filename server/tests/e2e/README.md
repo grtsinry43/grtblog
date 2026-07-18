@@ -29,3 +29,16 @@ make test-federation-e2e
 没有设置这两个 DSN 时，测试会安全跳过。数据库必须是临时空库；测试会向其中写入 fixture。GitHub Actions 的 `server` job 会自动创建两个数据库、运行 Goose migration、执行测试，任务结束后 PostgreSQL service 自动销毁。
 
 测试使用 build tag `federation_e2e`，不会混入普通 `go test ./...`。
+
+## 完整备份与恢复容器 E2E
+
+`make test-backup-e2e` 会构建正式 server 镜像，并启动隔离的 PostgreSQL 17、Redis 和 server 容器。测试实际执行以下往返，不会复用本机数据库或存储：
+
+- 注册管理员，写入数据库探针和真实上传卷文件
+- 运行 `pg_dump`，轮询后台任务，使用签名链接下载并检查 `tar.gz` manifest
+- 到期触发计划备份并固定归档
+- 篡改数据库与上传卷，从历史备份触发服务重启和离线 `pg_restore`
+- 验证数据库值、原上传文件和额外文件删除均已恢复
+- 清空业务 schema 模拟全新安装，再通过初始化恢复接口上传归档并验证管理员回归
+
+测试结束后会删除专属 Compose 项目及临时 volume。需要本机已安装 Docker Compose、curl、jq 和 tar。

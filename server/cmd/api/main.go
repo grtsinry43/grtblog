@@ -49,8 +49,12 @@ func main() {
 		}
 	}()
 
-	<-ctx.Done()
-	log.Println("shutdown signal received")
+	select {
+	case <-ctx.Done():
+		log.Println("shutdown signal received")
+	case <-srv.RestoreRequests():
+		log.Println("full-site restore requested; shutting down for offline restore")
+	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

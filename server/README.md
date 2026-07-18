@@ -49,6 +49,16 @@ make migrate-create NAME=add_posts_table
 
 The Make targets are thin wrappers around `goose` and rely on it being installed in your `PATH`. Feel free to call the Goose binary directly if you prefer more control.
 
+## Local full-site restore
+
+When the API is started directly with `go run ./cmd/api`, requesting a full-site restore makes the API exit, but there is no container restart policy or entrypoint to execute the offline restore. After the API process has exited, run:
+
+```bash
+make restore-and-run
+```
+
+The target executes the pending restore first and starts the API only after it succeeds. It loads the same `.env` as the API and requires a compatible `pg_restore` in `PATH`. Docker Compose deployments do not need this command because their server entrypoint and restart policy perform the same sequence automatically.
+
 ## API documentation (Swagger + Scalar)
 
 Swagger annotations (via [swaggo/swag](https://github.com/swaggo/swag)) describe the HTTP handlers and generate an OpenAPI schema that fuels the Scalar UI.

@@ -9,19 +9,20 @@ import {
   NH1,
   NH2,
   NInput,
+  NModal,
   NSpin,
   NStep,
   NSteps,
   useMessage,
   type GlobalThemeOverrides,
 } from 'naive-ui'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, shallowRef } from 'vue'
 
 import noiseBg from '@/assets/noise.png'
 import { getConfigProviderProps } from '@/composables'
 import ThemeModePopover from '@/layout/header/action/ThemeModePopover.vue'
 import router from '@/router'
-import { getSetupState, login, register } from '@/services/auth'
+import { getSetupState, login, register, restoreSiteDuringSetup } from '@/services/auth'
 import { ApiError } from '@/services/http'
 import { bootstrapObservabilityPages } from '@/services/observability'
 import { completeAllUpgradeGuides } from '@/services/system'
@@ -89,6 +90,11 @@ const submitting = ref(false)
 const setupState = ref<Awaited<ReturnType<typeof getSetupState>> | null>(null)
 const formRef = ref<InstanceType<typeof NForm> | null>(null)
 const currentStep = ref(1)
+const restoreArchiveInput = shallowRef<HTMLInputElement | null>(null)
+const restoreArchive = shallowRef<File | null>(null)
+const restoreConfirmation = shallowRef('')
+const restoreModalVisible = shallowRef(false)
+const restoreSubmitting = shallowRef(false)
 
 const form = reactive({
   username: '',
@@ -298,6 +304,38 @@ async function submitSetup() {
   }
 }
 
+function chooseSetupRestoreArchive() {
+  restoreArchiveInput.value?.click()
+}
+
+function handleSetupRestoreArchive(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  restoreArchive.value = file
+  restoreConfirmation.value = ''
+  restoreModalVisible.value = true
+}
+
+async function submitSetupRestore() {
+  if (!restoreArchive.value || restoreConfirmation.value !== 'OVERWRITE') return
+  restoreSubmitting.value = true
+  try {
+    await restoreSiteDuringSetup(restoreArchive.value, restoreConfirmation.value)
+    message.warning('备份已校验，服务即将重启并恢复原站点。恢复完成后请使用原管理员账号登录。', {
+      duration: 12000,
+    })
+    restoreModalVisible.value = false
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      message.error('导入备份失败，请确认文件来自 grtblog 完整备份')
+    }
+  } finally {
+    restoreSubmitting.value = false
+  }
+}
+
 onMounted(() => {
   loadSetupState()
 })
@@ -440,6 +478,29 @@ onMounted(() => {
                     key="step1"
                     class="space-y-0.5"
                   >
+                    <NAlert
+                      type="info"
+                      :show-icon="false"
+                      class="mb-5"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <span class="text-xs">已有完整站点备份？可以跳过普通初始化。</span>
+                        <NButton
+                          size="tiny"
+                          secondary
+                          type="primary"
+                          @click="chooseSetupRestoreArchive"
+                          >从备份恢复</NButton
+                        >
+                      </div>
+                    </NAlert>
+                    <input
+                      ref="restoreArchiveInput"
+                      type="file"
+                      accept=".tar.gz,application/gzip"
+                      class="hidden"
+                      @change="handleSetupRestoreArchive"
+                    />
                     <NFormItem
                       label="账号"
                       path="username"
@@ -688,6 +749,51 @@ onMounted(() => {
           </div>
         </div>
       </template>
+
+      <NModal
+        v-model:show="restoreModalVisible"
+        preset="card"
+        title="从完整备份恢复"
+        :closable="!restoreSubmitting"
+        :mask-closable="!restoreSubmitting"
+        style="width: min(540px, calc(100vw - 32px))"
+      >
+        <NAlert
+          type="warning"
+          class="mb-4"
+        >
+          这会跳过普通初始化，用备份中的原管理员、配置、内容、互动和上传文件恢复整个站点。自定义归档可能执行数据库代码，只应使用你信任的
+          grtblog 备份。
+        </NAlert>
+        <div class="mb-4 rounded-md bg-neutral-100 px-3 py-2 text-sm dark:bg-neutral-800">
+          {{ restoreArchive?.name }}
+        </div>
+        <p class="mb-2 text-sm">
+          请输入 <code class="font-mono font-semibold">OVERWRITE</code> 确认：
+        </p>
+        <NInput
+          v-model:value="restoreConfirmation"
+          :disabled="restoreSubmitting"
+          placeholder="OVERWRITE"
+          @keyup.enter="restoreConfirmation === 'OVERWRITE' && submitSetupRestore()"
+        />
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <NButton
+              :disabled="restoreSubmitting"
+              @click="restoreModalVisible = false"
+              >取消</NButton
+            >
+            <NButton
+              type="warning"
+              :loading="restoreSubmitting"
+              :disabled="restoreConfirmation !== 'OVERWRITE'"
+              @click="submitSetupRestore"
+              >上传并恢复</NButton
+            >
+          </div>
+        </template>
+      </NModal>
     </div>
   </NConfigProvider>
 </template>

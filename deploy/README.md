@@ -85,7 +85,7 @@ APP_UPDATE_CHANNEL=stable
 ## 2) Start
 
 ```bash
-mkdir -p storage/html storage/uploads storage/geoip
+mkdir -p storage/html storage/uploads storage/backups storage/geoip
 
 # Prebuilt images:
 docker compose up -d
@@ -154,7 +154,25 @@ Admin panel URL: `http://localhost:${NGINX_PORT:-80}/admin/`
 - `redis_data` volume: Redis AOF data
 - `./storage/html`: ISR/HTML snapshots + renderer 客户端资源 (`_app/*`)
 - `./storage/uploads`: uploaded files
+- `./storage/backups`: whole-site backup archives
 - `./storage/geoip`: GeoIP db cache
+
+## Whole-site backup and restore
+
+管理后台的“设置 → 备份与恢复”支持手动备份、计划备份、保留份数、固定归档、安全下载，以及从历史归档或本地 `tar.gz` 覆盖恢复。完整备份包含 `public` schema 中的全部站点数据和 `storage/uploads`，归档可能含账号、访问令牌和第三方密钥，必须按敏感数据保存。
+
+恢复分为两个阶段：运行中的 API 先校验归档和 SHA-256，然后优雅退出；容器重启时，入口脚本在 Goose migration 和 API 启动前执行单事务 `pg_restore`，并切换上传文件。官方 Compose 已配置 `restart: unless-stopped` 和持久化的 `./storage/backups`，无需手工进入数据库操作。
+
+可配置项：
+
+- `BACKUP_COMMAND_TIMEOUT`：单次备份或恢复的最长时间，默认 `30m`
+- `BACKUP_DOWNLOAD_TICKET_TTL`：签名下载链接有效期，默认 `10m`
+- `BACKUP_RESTORE_MAX_ARCHIVE_BYTES`：上传归档上限，默认 10 GiB
+- `BACKUP_RESTORE_MAX_EXTRACTED_BYTES`：解压后总量上限，默认 50 GiB
+
+初始化恢复接口只在数据库完全没有用户时开放；站点已有用户后必须以管理员身份从设置页恢复。只应恢复自己信任的 grtblog 归档，因为 PostgreSQL 归档本质上包含可执行的数据库定义。
+
+备份工具要求 `DB_DSN` 使用 `postgres://` 或 `postgresql://` URL；官方 Compose 已按此格式配置。连接密码只通过 libpq 环境变量传给 `pg_dump` / `pg_restore`，不会出现在命令行参数中。
 
 ## Routing behavior
 
@@ -183,7 +201,7 @@ server {
     ssl_certificate_key /path/to/privkey.pem;
 
     # ---------- 基础设置 ----------
-    client_max_body_size 200M;          # 与内层保持一致
+    client_max_body_size 10G;           # 如需上传完整备份，需覆盖归档上限
 
     # ---------- 透传真实 IP ----------
     # 内层 nginx 通过 X-Real-IP 识别客户端 IP，务必在此设置

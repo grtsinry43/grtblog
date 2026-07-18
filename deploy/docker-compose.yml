@@ -29,8 +29,12 @@ services:
       REDIS_PREFIX: "${REDIS_PREFIX:-grtblog:}"
       HTMLSNAPSHOT_BASE_URL: "http://renderer:3000"
       APP_UPDATE_CHECK_ENABLED: "${APP_UPDATE_CHECK_ENABLED:-true}"
-      APP_UPDATE_CHECK_REPO: "${APP_UPDATE_CHECK_REPO:-grtsinry43/grtblog-v2}"
+      APP_UPDATE_CHECK_REPO: "${APP_UPDATE_CHECK_REPO:-grtsinry43/grtblog}"
       APP_UPDATE_CHANNEL: "${APP_UPDATE_CHANNEL:-stable}"
+      BACKUP_COMMAND_TIMEOUT: "${BACKUP_COMMAND_TIMEOUT:-30m}"
+      BACKUP_DOWNLOAD_TICKET_TTL: "${BACKUP_DOWNLOAD_TICKET_TTL:-10m}"
+      BACKUP_RESTORE_MAX_ARCHIVE_BYTES: "${BACKUP_RESTORE_MAX_ARCHIVE_BYTES:-10737418240}"
+      BACKUP_RESTORE_MAX_EXTRACTED_BYTES: "${BACKUP_RESTORE_MAX_EXTRACTED_BYTES:-53687091200}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,6 +46,7 @@ services:
       - ./storage/html:/app/storage/html
       - ./storage/meta:/app/storage/meta
       - ./storage/uploads:/app/storage/uploads
+      - ./storage/backups:/app/storage/backups
       - ./storage/geoip:/app/storage/geoip
     networks:
       - grtblog-internal

@@ -22,11 +22,13 @@ import (
 
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/article"
+	backupapp "github.com/grtsinry43/grtblog-v2/server/internal/app/backup"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/cleanup"
 	appfed "github.com/grtsinry43/grtblog-v2/server/internal/app/federation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
+	mediaapp "github.com/grtsinry43/grtblog-v2/server/internal/app/media"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/sysconfig"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/telemetry"
 	"github.com/grtsinry43/grtblog-v2/server/internal/buildinfo"
@@ -62,6 +64,7 @@ type Server struct {
 	cleanupSvc    *cleanup.Service
 	healthChecker *health.Checker
 	telemetrySvc  *telemetry.Service
+	backupSvc     *backupapp.Service
 	version       string
 }
 
@@ -98,6 +101,14 @@ func NewWithOptions(cfg config.Config, db *gorm.DB, opts Options) *Server {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	bodyLimit := sysCfgSvc.UploadMaxSizeBytes(ctx)
+	if restoreLimit := cfg.Backup.RestoreMaxArchiveBytes; restoreLimit > int64(bodyLimit) {
+		maxInt := int64(^uint(0) >> 1)
+		if restoreLimit > maxInt {
+			bodyLimit = int(maxInt)
+		} else {
+			bodyLimit = int(restoreLimit)
+		}
+	}
 
 	app := fiber.New(fiber.Config{
 		AppName:           cfg.App.Name,
@@ -281,6 +292,19 @@ func NewWithOptions(cfg config.Config, db *gorm.DB, opts Options) *Server {
 	})
 
 	telemetrySvc := telemetry.NewService(errorCollector, db, httpStats, htmlSnapshotSvc, nil, sysCfgSvc, cfg.App.TelemetryDefaultEndpoint)
+	mediaGate := mediaapp.NewMutationGate()
+	backupSvc := backupapp.NewService(
+		ctx,
+		cfg.Backup,
+		db,
+		persistence.NewBackupRepository(db),
+		backupapp.CommandPostgresDumper{Binary: cfg.Backup.PGDumpBin, DSN: cfg.Database.DSN},
+		sysCfgSvc,
+		mediaGate,
+	)
+	if err := backupSvc.Initialize(ctx); err != nil {
+		log.Printf("[backup] initialize failed: %v", err)
+	}
 
 	// 注册路由
 	router.Register(app, router.Dependencies{
@@ -300,6 +324,8 @@ func NewWithOptions(cfg config.Config, db *gorm.DB, opts Options) *Server {
 		FedSync:              fedSync,
 		Telemetry:            telemetrySvc,
 		FederationHTTPClient: fedHTTPClient,
+		Backup:               backupSvc,
+		MediaGate:            mediaGate,
 	})
 
 	return &Server{
@@ -318,6 +344,7 @@ func NewWithOptions(cfg config.Config, db *gorm.DB, opts Options) *Server {
 		cleanupSvc:    cleanup.NewService(persistence.NewCleanupRepository(db)),
 		healthChecker: healthChecker,
 		telemetrySvc:  telemetrySvc,
+		backupSvc:     backupSvc,
 		version:       buildinfo.Version(),
 	}
 }
@@ -364,6 +391,9 @@ func (s *Server) Start() error {
 	// 启动遥测上报后台任务
 	if s.telemetrySvc != nil {
 		go s.telemetrySvc.Reporter().Run(s.ctx)
+	}
+	if s.backupSvc != nil {
+		go s.backupSvc.RunScheduler(s.ctx)
 	}
 
 	addr := fmt.Sprintf(":%s", s.cfg.App.Port)
@@ -464,6 +494,13 @@ func (s *Server) syncHotArticles() {
 // App exposes the underlying Fiber instance for testing.
 func (s *Server) App() *fiber.App {
 	return s.app
+}
+
+func (s *Server) RestoreRequests() <-chan struct{} {
+	if s.backupSvc == nil {
+		return nil
+	}
+	return s.backupSvc.RestoreRequests()
 }
 
 func logRequestError(c *fiber.Ctx, kind string, detail string) {

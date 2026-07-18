@@ -119,7 +119,7 @@ curl -fsSL "$BASE_URL/deploy/nginx/nginx.conf"    -o nginx/nginx.conf
 #   IMAGE_REPO_PREFIX=docker.cnb.cool/grtsinry43/grtblog/
 
 # 启动
-mkdir -p storage/html storage/uploads storage/geoip
+mkdir -p storage/html storage/uploads storage/backups storage/geoip
 docker compose up -d
 ```
 
@@ -129,6 +129,8 @@ docker compose up -d
 
 - 博客首页: `http://your-server-ip`
 - 管理后台: `http://your-server-ip/admin/`
+
+完整站点备份位于管理后台“设置 → 备份与恢复”：可手动或定时导出数据库、配置、内容、互动记录与上传文件，生成可下载的 `tar.gz`。恢复会覆盖整个网站并自动重启服务；全新安装也可以在初始化页直接上传完整备份。
 
 ### 本地构建部署
 
@@ -140,7 +142,7 @@ cd grtblog/deploy
 cp .env.example .env
 # 编辑 .env：设置密码和密钥（IMAGE_REPO_PREFIX 留空）
 
-mkdir -p storage/html storage/uploads storage/geoip
+mkdir -p storage/html storage/uploads storage/backups storage/geoip
 docker compose up -d --build
 ```
 

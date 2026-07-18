@@ -41,7 +41,7 @@ func registerUserRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler *
 	friendLinks.Post("/applications", friendLinkHandler.SubmitApplication)
 
 	uploadRepo := persistence.NewUploadFileRepository(deps.DB)
-	uploadSvc := mediaapp.NewService(uploadRepo, "", deps.EventBus)
+	uploadSvc := mediaapp.NewService(uploadRepo, deps.Config.Backup.UploadDir, deps.EventBus, deps.MediaGate)
 	uploadHandler := handler.NewUploadHandler(uploadSvc)
 	v2.Post("/upload", authMiddleware, adminMiddleware, uploadHandler.UploadFile)
 	v2.Get("/uploads", authMiddleware, adminMiddleware, uploadHandler.ListUploads)
