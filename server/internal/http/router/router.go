@@ -16,6 +16,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/adminnotification"
 	appai "github.com/grtsinry43/grtblog-v2/server/internal/app/ai"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/analytics"
+	backupapp "github.com/grtsinry43/grtblog-v2/server/internal/app/backup"
 	appcomment "github.com/grtsinry43/grtblog-v2/server/internal/app/comment"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/email"
 	appEvent "github.com/grtsinry43/grtblog-v2/server/internal/app/event"
@@ -24,6 +25,7 @@ import (
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/health"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/isr"
+	mediaapp "github.com/grtsinry43/grtblog-v2/server/internal/app/media"
 	appnav "github.com/grtsinry43/grtblog-v2/server/internal/app/navigation"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/observability"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/ownerstatus"
@@ -62,6 +64,8 @@ type Dependencies struct {
 	FedSync              *appfed.SyncWorker
 	Telemetry            *telemetry.Service
 	FederationHTTPClient *http.Client
+	Backup               *backupapp.Service
+	MediaGate            *mediaapp.MutationGate
 }
 
 // Register wires up all HTTP endpoints with middlewares.
@@ -242,6 +246,7 @@ func Register(app *fiber.App, deps Dependencies) {
 	registerPageAuthRoutes(v2, deps)
 	registerCommentAuthRoutes(v2, deps)
 	registerAdminRoutes(v2, deps, websiteInfoHandler, navMenuHandler, sysCfgSvc, wsManager, aiSvc)
+	registerBackupRoutes(v2, deps)
 	registerTaxonomyAdminRoutes(v2, deps)
 	registerWebhookAdminRoutes(v2, deps, webhookSvc)
 

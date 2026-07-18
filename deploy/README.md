@@ -85,7 +85,7 @@ APP_UPDATE_CHANNEL=stable
 ## 2) Start
 
 ```bash
-mkdir -p storage/html storage/uploads storage/geoip
+mkdir -p storage/html storage/uploads storage/backups storage/geoip
 
 # Prebuilt images:
 docker compose up -d
@@ -154,6 +154,7 @@ Admin panel URL: `http://localhost:${NGINX_PORT:-80}/admin/`
 - `redis_data` volume: Redis AOF data
 - `./storage/html`: ISR/HTML snapshots + renderer 客户端资源 (`_app/*`)
 - `./storage/uploads`: uploaded files
+- `./storage/backups`: whole-site backup archives
 - `./storage/geoip`: GeoIP db cache
 
 ## Routing behavior

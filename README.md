@@ -119,7 +119,7 @@ curl -fsSL "$BASE_URL/deploy/nginx/nginx.conf"    -o nginx/nginx.conf
 #   IMAGE_REPO_PREFIX=docker.cnb.cool/grtsinry43/grtblog/
 
 # 启动
-mkdir -p storage/html storage/uploads storage/geoip
+mkdir -p storage/html storage/uploads storage/backups storage/geoip
 docker compose up -d
 ```
 
@@ -140,7 +140,7 @@ cd grtblog/deploy
 cp .env.example .env
 # 编辑 .env：设置密码和密钥（IMAGE_REPO_PREFIX 留空）
 
-mkdir -p storage/html storage/uploads storage/geoip
+mkdir -p storage/html storage/uploads storage/backups storage/geoip
 docker compose up -d --build
 ```
 

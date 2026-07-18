@@ -7,7 +7,7 @@ if [ "$#" -gt 0 ]; then
 	exec "$@"
 fi
 
-mkdir -p /app/storage/html /app/storage/meta/isr /app/storage/uploads /app/storage/geoip
+mkdir -p /app/storage/html /app/storage/meta/isr /app/storage/uploads /app/storage/backups /app/storage/geoip
 chown -R app:app /app/storage
 
 # Run database migrations before starting server

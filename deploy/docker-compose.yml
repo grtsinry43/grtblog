@@ -42,6 +42,7 @@ services:
       - ./storage/html:/app/storage/html
       - ./storage/meta:/app/storage/meta
       - ./storage/uploads:/app/storage/uploads
+      - ./storage/backups:/app/storage/backups
       - ./storage/geoip:/app/storage/geoip
     networks:
       - grtblog-internal

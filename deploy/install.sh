@@ -687,10 +687,11 @@ fi
 # =========================================================================
 section "$(__ STEP3)"
 
-mkdir -p storage/html storage/meta/isr storage/uploads storage/geoip nginx
+mkdir -p storage/html storage/meta/isr storage/uploads storage/backups storage/geoip nginx
 ok "storage/html"
 ok "storage/meta/isr"
 ok "storage/uploads"
+ok "storage/backups"
 ok "storage/geoip"
 ok "nginx/"
 

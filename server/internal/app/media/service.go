@@ -33,9 +33,10 @@ type Service struct {
 	repo      media.Repository
 	uploadDir string
 	events    appEvent.Bus
+	gate      *MutationGate
 }
 
-func NewService(repo media.Repository, uploadDir string, events appEvent.Bus) *Service {
+func NewService(repo media.Repository, uploadDir string, events appEvent.Bus, gates ...*MutationGate) *Service {
 	trimmed := strings.TrimSpace(uploadDir)
 	if trimmed == "" {
 		trimmed = filepath.Join("storage", "uploads")
@@ -43,10 +44,15 @@ func NewService(repo media.Repository, uploadDir string, events appEvent.Bus) *S
 	if events == nil {
 		events = appEvent.NopBus{}
 	}
+	var gate *MutationGate
+	if len(gates) > 0 {
+		gate = gates[0]
+	}
 	return &Service{
 		repo:      repo,
 		uploadDir: trimmed,
 		events:    events,
+		gate:      gate,
 	}
 }
 
@@ -86,6 +92,9 @@ type indexedDiskFile struct {
 }
 
 func (s *Service) Upload(ctx context.Context, file *multipart.FileHeader, fileType string) (*UploadResult, error) {
+	unlock := s.beginMutation()
+	defer unlock()
+
 	if file == nil {
 		return nil, errors.New("file is required")
 	}
@@ -189,6 +198,9 @@ func (s *Service) List(ctx context.Context, page int, size int) (*ListResult, er
 }
 
 func (s *Service) SyncIndex(ctx context.Context) (*SyncResult, error) {
+	unlock := s.beginMutation()
+	defer unlock()
+
 	existing, err := s.repo.ListAll(ctx)
 	if err != nil {
 		return nil, err
@@ -299,6 +311,9 @@ func (s *Service) Rename(ctx context.Context, id int64, name string) (*media.Upl
 }
 
 func (s *Service) Delete(ctx context.Context, id int64) (*media.UploadFile, error) {
+	unlock := s.beginMutation()
+	defer unlock()
+
 	file, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err

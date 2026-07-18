@@ -49,7 +49,7 @@ RUN CGO_ENABLED=0 GOOS=linux \
 
 FROM alpine:3.21 AS runtime
 
-RUN apk add --no-cache ca-certificates tzdata su-exec \
+RUN apk add --no-cache ca-certificates tzdata su-exec postgresql17-client \
   && addgroup -g 10001 -S app \
   && adduser -u 10001 -S app -G app
 
@@ -62,7 +62,7 @@ COPY --from=builder /src/server/migrations /app/migrations
 COPY --from=admin-builder /app/dist /app/admin
 COPY deploy/docker/server-entrypoint.sh /usr/local/bin/server-entrypoint.sh
 
-RUN mkdir -p /app/storage/html /app/storage/uploads /app/storage/geoip \
+RUN mkdir -p /app/storage/html /app/storage/uploads /app/storage/backups /app/storage/geoip \
   && chown -R app:app /app \
   && chmod +x /usr/local/bin/server-entrypoint.sh
 
