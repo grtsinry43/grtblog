@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { UnifiedTimelineItem } from './types';
-import { groupTimelineForMobile } from './utils';
+import type { TimelineByYearResponse, UnifiedTimelineItem } from './types';
+import { flattenAndLayoutTimeline, groupTimelineForMobile } from './utils';
 
 const item = (
 	id: string,
@@ -35,5 +35,27 @@ describe('groupTimelineForMobile', () => {
 		]);
 		expect(years[0].stats).toEqual({ posts: 1, moments: 1, thinkings: 1 });
 		expect(years[1].months[0].entries[0].side).toBe('right');
+	});
+});
+
+describe('flattenAndLayoutTimeline', () => {
+	it('uses only the first comma-separated moment image', () => {
+		const data: TimelineByYearResponse = {
+			'2024': {
+				posts: [],
+				moments: [
+					{
+						title: 'Moment',
+						shortUrl: 'moment',
+						url: '/moments/moment',
+						image: ' https://example.com/one.jpg, https://example.com/two.jpg ',
+						publishedAt: '2024-01-03T00:00:00Z'
+					}
+				],
+				thinkings: []
+			}
+		};
+
+		expect(flattenAndLayoutTimeline(data).items[0]?.image).toBe('https://example.com/one.jpg');
 	});
 });

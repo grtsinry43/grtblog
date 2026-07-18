@@ -8,6 +8,9 @@ import type {
 
 const createEmptyStats = (): TimelineStats => ({ posts: 0, moments: 0, thinkings: 0 });
 
+const firstCommaSeparatedImage = (value?: string): string | undefined =>
+	value?.split(',', 1)[0]?.trim() || undefined;
+
 const incrementStats = (stats: TimelineStats, type: UnifiedTimelineItem['type']) => {
 	if (type === 'post') stats.posts++;
 	if (type === 'moment') stats.moments++;
@@ -101,7 +104,7 @@ export const flattenAndLayoutTimeline = (
 				type: 'moment',
 				title: moment.title,
 				url: moment.url,
-				image: moment.image,
+				image: firstCommaSeparatedImage(moment.image),
 				publishedAt: new Date(moment.publishedAt),
 				year
 			});

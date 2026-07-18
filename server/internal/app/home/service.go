@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	defaultRangeDays      = 365
-	maxRangeDays          = 730
-	githubBaseURL         = "https://api.github.com"
-	githubStatsCacheTTL   = time.Hour
+	defaultRangeDays    = 365
+	maxRangeDays        = 730
+	githubBaseURL       = "https://api.github.com"
+	githubStatsCacheTTL = time.Hour
 )
 
 var (
@@ -389,7 +389,7 @@ func (s *Service) GetTimelineByYear(ctx context.Context) (map[string]TimelineYea
 	for _, item := range moments {
 		yearKey, publishedAt := toYearKeyAndPublishedAt(item.CreatedAt, siteTZ)
 		bucket := ensureTimelineBucket(timeline, yearKey)
-		image := optionalString(item.Image)
+		image := firstCommaSeparatedImageURL(optionalString(item.Image))
 		if image == "" {
 			image = extractFirstImageURL(item.Content)
 		}
@@ -673,6 +673,11 @@ func extractFirstImageURL(content string) string {
 		return sanitizeImageURL(matched[1])
 	}
 	return ""
+}
+
+func firstCommaSeparatedImageURL(raw string) string {
+	first, _, _ := strings.Cut(raw, ",")
+	return sanitizeImageURL(first)
 }
 
 func sanitizeImageURL(raw string) string {
