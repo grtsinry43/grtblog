@@ -106,7 +106,7 @@ func Load() Config {
 			TrustedProxyCheck:        getEnvAsBool("APP_TRUSTED_PROXY_CHECK", true),
 			IPValidation:             getEnvAsBool("APP_IP_VALIDATION", true),
 			UpdateCheckEnabled:       getEnvAsBool("APP_UPDATE_CHECK_ENABLED", true),
-			UpdateCheckRepo:          strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog-v2")),
+			UpdateCheckRepo:          strings.TrimSpace(getEnv("APP_UPDATE_CHECK_REPO", "grtsinry43/grtblog")),
 			UpdateCheckChannel:       strings.TrimSpace(getEnv("APP_UPDATE_CHANNEL", "stable")),
 			TelemetryDefaultEndpoint: strings.TrimSpace(getEnv("TELEMETRY_DEFAULT_ENDPOINT", "https://telemetry.grtsinry43.com/collect")),
 		},

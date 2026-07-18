@@ -402,7 +402,7 @@ MSG_en_DOWNLOAD_FALLBACK="Primary source failed, trying fallback..."
 MSG_en_DOWNLOADED_FB="downloaded (fallback)"
 MSG_en_DOWNLOAD_FAIL="Failed to download from all sources"
 MSG_en_STEP9="Step 9/11: Generate .env"
-MSG_en_UPGRADE_ENV="Upgrade mode: updating version and image source in .env"
+MSG_en_UPGRADE_ENV="Upgrade mode: updating managed deployment settings in .env"
 MSG_en_ENV_UPDATED=".env updated (upgrade)"
 MSG_en_ENV_CREATED=".env created"
 MSG_en_STEP10="Step 10/11: Pull & Start"
@@ -516,7 +516,7 @@ MSG_zh_DOWNLOAD_FALLBACK="主源下载失败，尝试备用源..."
 MSG_zh_DOWNLOADED_FB="下载完成（备用源）"
 MSG_zh_DOWNLOAD_FAIL="所有源均下载失败"
 MSG_zh_STEP9="步骤 9/11: 生成 .env"
-MSG_zh_UPGRADE_ENV="升级模式：更新 .env 中的版本和镜像源"
+MSG_zh_UPGRADE_ENV="升级模式：更新 .env 中由安装器管理的部署配置"
 MSG_zh_ENV_UPDATED=".env 已更新（升级）"
 MSG_zh_ENV_CREATED=".env 已创建"
 MSG_zh_STEP10="步骤 10/11: 拉取镜像并启动"
@@ -597,6 +597,7 @@ DOCKER_MIRROR="${DOCKER_MIRROR:-}"
 NGINX_PORT="${NGINX_PORT:-80}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
 AUTH_SECRET="${AUTH_SECRET:-}"
+DEFAULT_UPDATE_CHECK_REPO="grtsinry43/grtblog"
 
 GITHUB_RAW_BASE="https://raw.githubusercontent.com/grtsinry43/grtblog/main"
 CNB_RAW_BASE="https://cnb.cool/grtsinry43/grtblog/-/git/raw/main"
@@ -921,7 +922,8 @@ download_with_fallback "nginx/nginx.conf" "nginx/nginx.conf" || exit 1
 section "$(__ STEP9)"
 
 if [[ "$INSTALL_MODE" == "upgrade" ]]; then
-  # Upgrade: only update APP_VERSION, IMAGE_REPO_PREFIX, APP_UPDATE_CHANNEL
+  # Upgrade installer-managed deployment settings while preserving credentials
+  # and user-owned application configuration.
   info "$(__ UPGRADE_ENV)"
 
   # Use sed to update specific keys in-place
@@ -941,6 +943,17 @@ if [[ "$INSTALL_MODE" == "upgrade" ]]; then
     sed -i.bak "s|^APP_UPDATE_CHANNEL=.*|APP_UPDATE_CHANNEL=${APP_UPDATE_CHANNEL}|" .env
   else
     printf '\nAPP_UPDATE_CHANNEL=%s\n' "$APP_UPDATE_CHANNEL" >> .env
+  fi
+
+  # The official release repository moved from grtblog-v2 to grtblog. Migrate
+  # the retired official value and fill a missing key, while preserving an
+  # explicitly configured custom release repository.
+  if grep -q '^APP_UPDATE_CHECK_REPO=' .env; then
+    if grep -q '^APP_UPDATE_CHECK_REPO=grtsinry43/grtblog-v2[[:space:]]*$' .env; then
+      sed -i.bak "s|^APP_UPDATE_CHECK_REPO=.*|APP_UPDATE_CHECK_REPO=${DEFAULT_UPDATE_CHECK_REPO}|" .env
+    fi
+  else
+    printf '\nAPP_UPDATE_CHECK_REPO=%s\n' "$DEFAULT_UPDATE_CHECK_REPO" >> .env
   fi
 
   if grep -q '^DOCKER_MIRROR=' .env; then
@@ -970,7 +983,7 @@ REDIS_PREFIX=grtblog:
 AUTH_SECRET=${AUTH_SECRET}
 
 APP_UPDATE_CHECK_ENABLED=true
-APP_UPDATE_CHECK_REPO=grtsinry43/grtblog-v2
+APP_UPDATE_CHECK_REPO=${DEFAULT_UPDATE_CHECK_REPO}
 APP_UPDATE_CHANNEL=${APP_UPDATE_CHANNEL}
 
 # Admin panel (build-time, baked into JS bundle)
