@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import type { TimelineStats } from '../utils';
+	import { prefersReducedMotion } from 'svelte/motion';
+	import type { TimelineStats } from '../types';
 
 	let { year, monthName, monthStats, yearStats } = $props<{
 		year: string;
@@ -19,8 +20,16 @@
 		{#key year}
 			<div
 				class="absolute right-0 top-0 font-mono text-6xl font-bold leading-none text-ink-100 mix-blend-difference"
-				in:fly={{ y: 50, duration: 600, easing: cubicOut }}
-				out:fly={{ y: -50, duration: 600, easing: cubicOut }}
+				in:fly={{
+					y: prefersReducedMotion.current ? 0 : 50,
+					duration: prefersReducedMotion.current ? 0 : 600,
+					easing: cubicOut
+				}}
+				out:fly={{
+					y: prefersReducedMotion.current ? 0 : -50,
+					duration: prefersReducedMotion.current ? 0 : 600,
+					easing: cubicOut
+				}}
 			>
 				{year}
 			</div>

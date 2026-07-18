@@ -1,15 +1,47 @@
 type TimelineGestureOptions = {
 	enabled?: boolean;
 	isActive: () => boolean;
-	onDeltaX: (deltaX: number) => void;
+	canConsume: (delta: number) => boolean;
+	onDelta: (delta: number) => void;
 };
+
+type WheelAxis = 'x' | 'y' | null;
 
 const AXIS_LOCK_THRESHOLD = 8;
 const CLICK_SUPPRESS_DISTANCE = 6;
 const CLICK_SUPPRESS_MS = 180;
+const WHEEL_GESTURE_GAP_MS = 120;
+const WHEEL_SIGNAL_THRESHOLD = 6;
+const HORIZONTAL_INTENT_RATIO = 0.8;
+const DOM_DELTA_LINE = 1;
+const DOM_DELTA_PAGE = 2;
 
 const isTouchLikePointer = (event: PointerEvent) =>
 	event.pointerType === 'touch' || event.pointerType === 'pen';
+
+export const normalizeWheelDelta = (event: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY'>) => {
+	const multiplier =
+		event.deltaMode === DOM_DELTA_LINE
+			? 16
+			: event.deltaMode === DOM_DELTA_PAGE
+				? typeof window === 'undefined'
+					? 800
+					: window.innerHeight
+				: 1;
+
+	return {
+		x: event.deltaX * multiplier,
+		y: event.deltaY * multiplier
+	};
+};
+
+export const resolveWheelAxis = (x: number, y: number, shiftKey = false): WheelAxis => {
+	const absX = Math.abs(x);
+	const absY = Math.abs(y);
+	if (Math.max(absX, absY) < WHEEL_SIGNAL_THRESHOLD) return null;
+	if (shiftKey || absX >= absY * HORIZONTAL_INTENT_RATIO) return 'x';
+	return 'y';
+};
 
 export function timelineGesture(node: HTMLElement, initialOptions: TimelineGestureOptions) {
 	let options = initialOptions;
@@ -19,10 +51,35 @@ export function timelineGesture(node: HTMLElement, initialOptions: TimelineGestu
 	let pointerStartY = 0;
 	let lastPointerX = 0;
 	let dragDistance = 0;
-	let lockedAxis: 'x' | 'y' | null = null;
+	let lockedPointerAxis: WheelAxis = null;
 	let suppressClickUntil = 0;
 
+	let wheelAxis: WheelAxis = null;
+	let wheelX = 0;
+	let wheelY = 0;
+	let lastWheelAt = 0;
+	let pendingDelta = 0;
+	let animationFrame = 0;
+
 	const isEnabled = () => options.enabled !== false;
+
+	const flushDelta = () => {
+		animationFrame = 0;
+		const delta = pendingDelta;
+		pendingDelta = 0;
+		if (delta !== 0) options.onDelta(delta);
+	};
+
+	const queueDelta = (delta: number) => {
+		pendingDelta += delta;
+		if (!animationFrame) animationFrame = requestAnimationFrame(flushDelta);
+	};
+
+	const resetWheelGesture = () => {
+		wheelAxis = null;
+		wheelX = 0;
+		wheelY = 0;
+	};
 
 	const suppressDragEndClick = (event: MouseEvent) => {
 		if (Date.now() > suppressClickUntil) return;
@@ -42,21 +99,29 @@ export function timelineGesture(node: HTMLElement, initialOptions: TimelineGestu
 		pointerActive = false;
 		pointerId = null;
 		dragDistance = 0;
-		lockedAxis = null;
+		lockedPointerAxis = null;
 	};
 
 	const handleWheel = (event: WheelEvent) => {
 		if (!isEnabled() || !options.isActive()) return;
-		const absDeltaX = Math.abs(event.deltaX);
-		const absDeltaY = Math.abs(event.deltaY);
-		const hasHorizontalSignal =
-			(event.shiftKey && absDeltaY > 0.5) || (absDeltaX > 0.5 && absDeltaX >= absDeltaY);
-		if (!hasHorizontalSignal) return;
 
-		const delta = event.shiftKey && absDeltaX <= 0.5 ? event.deltaY : event.deltaX;
-		if (delta === 0) return;
-		event.preventDefault();
-		options.onDeltaX(delta);
+		const now = performance.now();
+		if (now - lastWheelAt > WHEEL_GESTURE_GAP_MS) resetWheelGesture();
+		lastWheelAt = now;
+
+		const normalized = normalizeWheelDelta(event);
+		const deltaX = event.shiftKey && Math.abs(normalized.x) < 0.5 ? normalized.y : normalized.x;
+		const deltaY = event.shiftKey ? 0 : normalized.y;
+		wheelX += deltaX;
+		wheelY += deltaY;
+
+		if (!wheelAxis) {
+			wheelAxis = resolveWheelAxis(wheelX, wheelY, event.shiftKey);
+		}
+
+		if (wheelAxis !== 'x' || deltaX === 0 || !options.canConsume(deltaX)) return;
+		if (event.cancelable) event.preventDefault();
+		queueDelta(deltaX);
 	};
 
 	const handlePointerDown = (event: PointerEvent) => {
@@ -66,11 +131,11 @@ export function timelineGesture(node: HTMLElement, initialOptions: TimelineGestu
 		pointerStartX = lastPointerX = event.clientX;
 		pointerStartY = event.clientY;
 		dragDistance = 0;
-		lockedAxis = null;
+		lockedPointerAxis = null;
 		try {
 			node.setPointerCapture(event.pointerId);
 		} catch {
-			// Ignore platforms that do not support pointer capture for this target.
+			// Pointer capture is optional on older touch browsers.
 		}
 	};
 
@@ -81,23 +146,24 @@ export function timelineGesture(node: HTMLElement, initialOptions: TimelineGestu
 
 		const totalDx = event.clientX - pointerStartX;
 		const totalDy = event.clientY - pointerStartY;
-		if (!lockedAxis) {
+		if (!lockedPointerAxis) {
 			if (Math.abs(totalDx) < AXIS_LOCK_THRESHOLD && Math.abs(totalDy) < AXIS_LOCK_THRESHOLD) {
 				return;
 			}
-			lockedAxis = Math.abs(totalDx) > Math.abs(totalDy) ? 'x' : 'y';
+			lockedPointerAxis = Math.abs(totalDx) > Math.abs(totalDy) ? 'x' : 'y';
 		}
-		if (lockedAxis !== 'x') return;
+		if (lockedPointerAxis !== 'x') return;
 
-		const deltaX = event.clientX - lastPointerX;
+		const pointerDelta = event.clientX - lastPointerX;
 		lastPointerX = event.clientX;
-		dragDistance += Math.abs(deltaX);
-		if (deltaX === 0) return;
-		event.preventDefault();
-		options.onDeltaX(deltaX);
+		dragDistance += Math.abs(pointerDelta);
+		const timelineDelta = -pointerDelta;
+		if (timelineDelta === 0 || !options.canConsume(timelineDelta)) return;
+		if (event.cancelable) event.preventDefault();
+		queueDelta(timelineDelta);
 	};
 
-	window.addEventListener('wheel', handleWheel, { passive: false });
+	node.addEventListener('wheel', handleWheel, { passive: false });
 	node.addEventListener('pointerdown', handlePointerDown);
 	node.addEventListener('pointermove', handlePointerMove, { passive: false });
 	node.addEventListener('pointerup', stopPointerGesture);
@@ -110,7 +176,8 @@ export function timelineGesture(node: HTMLElement, initialOptions: TimelineGestu
 		},
 		destroy() {
 			stopPointerGesture();
-			window.removeEventListener('wheel', handleWheel);
+			if (animationFrame) cancelAnimationFrame(animationFrame);
+			node.removeEventListener('wheel', handleWheel);
 			node.removeEventListener('pointerdown', handlePointerDown);
 			node.removeEventListener('pointermove', handlePointerMove);
 			node.removeEventListener('pointerup', stopPointerGesture);

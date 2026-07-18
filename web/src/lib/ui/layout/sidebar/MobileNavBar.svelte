@@ -30,7 +30,7 @@
 
 	// Interpolation progress: 0 (top/capsule) -> 1 (scrolled/full)
 	let navProgress = $derived(Math.max(0, Math.min((scrollY || 0) / 50, 1)));
-	let domDetailTitle = $state('');
+	let domPageTitle = $state('');
 
 	const websiteInfoStore = websiteInfoCtx.selectModelData((data) => data ?? null);
 	const websiteNameStore = websiteInfoCtx.selectModelData(
@@ -48,7 +48,7 @@
 	const tocActiveAnchorStore = detailPanelCtx.selectModelData((data) => data?.activeAnchor ?? null);
 	const { updateModelData: updateDetailPanel } = detailPanelCtx.useModelActions();
 
-	const currentTitle = $derived($detailTitleStore || domDetailTitle);
+	const currentTitle = $derived($detailTitleStore || domPageTitle);
 	const showPageTitle = $derived(navProgress > 0.5 && Boolean(currentTitle));
 
 	type TocTone = 'jade' | 'cinnabar' | 'ink';
@@ -120,24 +120,22 @@
 	$effect(() => {
 		const pathname = page.url.pathname;
 		const detailTitle = $detailTitleStore;
-		const kind = $detailKindStore;
 		if (!browser) {
-			domDetailTitle = '';
+			domPageTitle = '';
 			return;
 		}
 		if (detailTitle) {
-			domDetailTitle = '';
+			domPageTitle = '';
 			return;
 		}
-		// Only pick up DOM h1 on detail pages (post/moment), not on list/home pages
-		if (!kind) {
-			domDetailTitle = '';
+		if (pathname === '/' || pathname === '') {
+			domPageTitle = '';
 			return;
 		}
 		tick().then(() => {
 			if (page.url.pathname !== pathname) return;
 			const heading = document.querySelector('main article h1, main h1');
-			domDetailTitle = heading?.textContent?.trim() ?? '';
+			domPageTitle = heading?.textContent?.trim() ?? '';
 		});
 	});
 

@@ -40,6 +40,12 @@ export type TimelineByYearResponse = Record<string, TimelineYearData>;
 
 export type TimelineItemType = 'post' | 'moment' | 'thinking' | 'yearSummary';
 
+export type TimelineStats = {
+	posts: number;
+	moments: number;
+	thinkings: number;
+};
+
 export type UnifiedTimelineItem = {
 	id: string;
 	type: TimelineItemType;
@@ -53,4 +59,22 @@ export type UnifiedTimelineItem = {
 	targetX?: number;
 	targetY?: number;
 	monthIndex?: number;
+};
+
+export type MobileTimelineEntry = {
+	item: UnifiedTimelineItem;
+	side: 'left' | 'right';
+};
+
+export type MobileTimelineMonth = {
+	month: number;
+	stats: TimelineStats;
+	entries: MobileTimelineEntry[];
+};
+
+export type MobileTimelineYear = {
+	year: string;
+	stats: TimelineStats;
+	summary?: UnifiedTimelineItem;
+	months: MobileTimelineMonth[];
 };

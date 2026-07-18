@@ -2,12 +2,7 @@
 	import type { TimelineItemType, UnifiedTimelineItem } from '../types';
 	import { ArrowUpRight, MessageSquare, Newspaper, Zap } from 'lucide-svelte';
 
-	let { item } = $props<{
-		item: UnifiedTimelineItem;
-		index: number;
-		scrollProgress: number; // 0 to 1
-		visibleIndex: number;
-	}>();
+	let { item } = $props<{ item: UnifiedTimelineItem }>();
 
 	const isSummary = $derived(item.type === 'yearSummary');
 	const aspectRatio = $derived(isSummary ? 'aspect-[3/2]' : 'aspect-[2/1]');
@@ -30,7 +25,7 @@
 </script>
 
 <div
-	class="timeline-item group relative flex w-[200px] shrink-0 flex-col items-center justify-center {aspectRatio} snap-center transition-all duration-700 ease-out sm:w-[240px]"
+	class="timeline-item group relative flex w-[200px] shrink-0 flex-col items-center justify-center {aspectRatio} snap-center transition-all duration-700 ease-out motion-reduce:transition-none sm:w-[240px]"
 	style="--bg-image: url('{item.image || '/noise.png'}');"
 >
 	<!-- Card Container -->

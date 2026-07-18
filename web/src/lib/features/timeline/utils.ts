@@ -1,9 +1,65 @@
-import type { TimelineByYearResponse, UnifiedTimelineItem } from './types';
+import type {
+	MobileTimelineMonth,
+	MobileTimelineYear,
+	TimelineByYearResponse,
+	TimelineStats,
+	UnifiedTimelineItem
+} from './types';
 
-export type TimelineStats = {
-	posts: number;
-	moments: number;
-	thinkings: number;
+const createEmptyStats = (): TimelineStats => ({ posts: 0, moments: 0, thinkings: 0 });
+
+const incrementStats = (stats: TimelineStats, type: UnifiedTimelineItem['type']) => {
+	if (type === 'post') stats.posts++;
+	if (type === 'moment') stats.moments++;
+	if (type === 'thinking') stats.thinkings++;
+};
+
+export const groupTimelineForMobile = (items: UnifiedTimelineItem[]): MobileTimelineYear[] => {
+	const years = new Map<
+		string,
+		{
+			stats: TimelineStats;
+			summary?: UnifiedTimelineItem;
+			months: Map<number, MobileTimelineMonth>;
+		}
+	>();
+	let entryIndex = 0;
+
+	for (const item of items) {
+		let year = years.get(item.year);
+		if (!year) {
+			year = { stats: createEmptyStats(), months: new Map() };
+			years.set(item.year, year);
+		}
+
+		if (item.type === 'yearSummary') {
+			year.summary = item;
+			continue;
+		}
+
+		const monthNumber = item.publishedAt.getMonth() + 1;
+		let month = year.months.get(monthNumber);
+		if (!month) {
+			month = { month: monthNumber, stats: createEmptyStats(), entries: [] };
+			year.months.set(monthNumber, month);
+		}
+
+		incrementStats(year.stats, item.type);
+		incrementStats(month.stats, item.type);
+		month.entries.push({
+			item,
+			side: entryIndex++ % 2 === 0 ? 'left' : 'right'
+		});
+	}
+
+	return [...years.entries()]
+		.sort(([left], [right]) => Number(left) - Number(right))
+		.map(([year, value]) => ({
+			year,
+			stats: value.stats,
+			summary: value.summary,
+			months: [...value.months.values()].sort((left, right) => left.month - right.month)
+		}));
 };
 
 export const flattenAndLayoutTimeline = (
@@ -113,7 +169,7 @@ export const flattenAndLayoutTimeline = (
 			year: String(y),
 			month: m + 1,
 			x: monthStartX[i] + monthWidths[i] / 2,
-			stats: { posts: 0, moments: 0, thinkings: 0 }
+			stats: createEmptyStats()
 		});
 		if (!yearStats[String(y)]) {
 			yearStats[String(y)] = { posts: 0, moments: 0, thinkings: 0 };

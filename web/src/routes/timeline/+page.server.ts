@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { getTimelineByYear } from '$lib/features/timeline/api';
-import { flattenAndLayoutTimeline } from '$lib/features/timeline/utils';
+import { flattenAndLayoutTimeline, groupTimelineForMobile } from '$lib/features/timeline/utils';
 import { trackISRDeps } from '$lib/server/isr-deps';
 
 export const load: PageServerLoad = async (event) => {
@@ -14,6 +14,7 @@ export const load: PageServerLoad = async (event) => {
 		timelineItems: layout.items,
 		timelineMonths: layout.months,
 		yearStats: layout.yearStats,
-		totalWidth: layout.totalWidth
+		totalWidth: layout.totalWidth,
+		mobileTimelineYears: groupTimelineForMobile(layout.items)
 	};
 };

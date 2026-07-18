@@ -6,7 +6,10 @@
 
 	let {
 		children,
+		x = 0,
 		y = 20,
+		rotate = 0,
+		scale = 1,
 		duration = 800,
 		delay = 0,
 		threshold = 0.1,
@@ -15,7 +18,10 @@
 		class: className = ''
 	} = $props<{
 		children: Snippet;
+		x?: number;
 		y?: number;
+		rotate?: number;
+		scale?: number;
 		duration?: number;
 		delay?: number;
 		threshold?: number;
@@ -67,6 +73,15 @@
 	const currentTranslateY = $derived(
 		isSpringDriven ? y * (1 - progress.current) : reducedMotion || visible ? 0 : y
 	);
+	const currentTranslateX = $derived(
+		isSpringDriven ? x * (1 - progress.current) : reducedMotion || visible ? 0 : x
+	);
+	const currentRotate = $derived(
+		isSpringDriven ? rotate * (1 - progress.current) : reducedMotion || visible ? 0 : rotate
+	);
+	const currentScale = $derived(
+		isSpringDriven ? scale + (1 - scale) * progress.current : reducedMotion || visible ? 1 : scale
+	);
 
 	const currentBlur = $derived(
 		isSpringDriven ? Math.max(0, 3 * (1 - progress.current)) : reducedMotion || visible ? 0 : 3
@@ -77,7 +92,8 @@
 	class={className}
 	use:intersect={{ onEnter, threshold, rootMargin }}
 	style:opacity={currentOpacity}
-	style:transform="translateY({currentTranslateY}px)"
+	style:transform="translate3d({currentTranslateX}px, {currentTranslateY}px, 0) rotate({currentRotate}deg)
+	scale({currentScale})"
 	style:filter="blur({currentBlur}px)"
 	style:transition={!useSpring && !reducedMotion
 		? `opacity ${duration}ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms, transform ${duration}ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms, filter ${duration}ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms`
