@@ -5,12 +5,20 @@ import {
   createBackupDownloadTicket,
   deleteBackup,
   getBackupSchedule,
+  getRestoreStatus,
   listBackups,
   setBackupPinned,
   updateBackupSchedule,
+  requestBackupRestore,
+  uploadBackupForRestore,
 } from '../api/backup-api'
 
-import type { BackupRecord, BackupSchedule, UpdateBackupScheduleRequest } from '../model/types'
+import type {
+  BackupRecord,
+  BackupSchedule,
+  RestoreStatus,
+  UpdateBackupScheduleRequest,
+} from '../model/types'
 
 export function useBackups() {
   const records = shallowRef<BackupRecord[]>([])
@@ -20,6 +28,8 @@ export function useBackups() {
   const schedule = shallowRef<BackupSchedule | null>(null)
   const scheduleLoading = shallowRef(false)
   const scheduleSaving = shallowRef(false)
+  const restoreStatus = shallowRef<RestoreStatus | null>(null)
+  const restoring = shallowRef(false)
   let timer: ReturnType<typeof setInterval> | undefined
 
   async function refresh(silent = false) {
@@ -81,6 +91,32 @@ export function useBackups() {
     records.value = records.value.map((item) => (item.id === id ? { ...item, pinned } : item))
   }
 
+  async function loadRestoreStatus() {
+    restoreStatus.value = await getRestoreStatus()
+  }
+
+  async function restoreExisting(id: string, confirmation: string) {
+    restoring.value = true
+    try {
+      restoreStatus.value = await requestBackupRestore(id, confirmation)
+      return restoreStatus.value
+    } finally {
+      restoring.value = false
+    }
+  }
+
+  async function restoreUpload(file: File, confirmation: string) {
+    restoring.value = true
+    try {
+      const result = await uploadBackupForRestore(file, confirmation)
+      records.value = [result.backup, ...records.value]
+      restoreStatus.value = result.restore
+      return result.restore
+    } finally {
+      restoring.value = false
+    }
+  }
+
   function startPolling() {
     stopPolling()
     timer = setInterval(() => {
@@ -98,6 +134,7 @@ export function useBackups() {
   onMounted(() => {
     void refresh()
     void loadSchedule()
+    void loadRestoreStatus()
     startPolling()
   })
   onActivated(startPolling)
@@ -112,6 +149,8 @@ export function useBackups() {
     schedule,
     scheduleLoading,
     scheduleSaving,
+    restoreStatus,
+    restoring,
     refresh,
     create,
     remove,
@@ -119,5 +158,8 @@ export function useBackups() {
     loadSchedule,
     saveSchedule,
     setPinned,
+    loadRestoreStatus,
+    restoreExisting,
+    restoreUpload,
   }
 }

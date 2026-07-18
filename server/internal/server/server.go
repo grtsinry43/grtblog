@@ -101,6 +101,14 @@ func NewWithOptions(cfg config.Config, db *gorm.DB, opts Options) *Server {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	bodyLimit := sysCfgSvc.UploadMaxSizeBytes(ctx)
+	if restoreLimit := cfg.Backup.RestoreMaxArchiveBytes; restoreLimit > int64(bodyLimit) {
+		maxInt := int64(^uint(0) >> 1)
+		if restoreLimit > maxInt {
+			bodyLimit = int(maxInt)
+		} else {
+			bodyLimit = int(restoreLimit)
+		}
+	}
 
 	app := fiber.New(fiber.Config{
 		AppName:           cfg.App.Name,
@@ -486,6 +494,13 @@ func (s *Server) syncHotArticles() {
 // App exposes the underlying Fiber instance for testing.
 func (s *Server) App() *fiber.App {
 	return s.app
+}
+
+func (s *Server) RestoreRequests() <-chan struct{} {
+	if s.backupSvc == nil {
+		return nil
+	}
+	return s.backupSvc.RestoreRequests()
 }
 
 func logRequestError(c *fiber.Ctx, kind string, detail string) {

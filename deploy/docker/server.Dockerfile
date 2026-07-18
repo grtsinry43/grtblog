@@ -47,6 +47,10 @@ RUN CGO_ENABLED=0 GOOS=linux \
   -X github.com/grtsinry43/grtblog-v2/server/internal/buildinfo.BuildCommit=${BUILD_COMMIT}" \
   -o /out/grtblog-server ./cmd/api
 
+RUN CGO_ENABLED=0 GOOS=linux \
+  go build -trimpath -ldflags="-s -w" \
+  -o /out/grtblog-restore ./cmd/restore
+
 FROM alpine:3.21 AS runtime
 
 RUN apk add --no-cache ca-certificates tzdata su-exec postgresql17-client \
@@ -56,6 +60,7 @@ RUN apk add --no-cache ca-certificates tzdata su-exec postgresql17-client \
 WORKDIR /app
 
 COPY --from=builder /out/grtblog-server /app/grtblog-server
+COPY --from=builder /out/grtblog-restore /app/grtblog-restore
 COPY --from=builder /out/goose /usr/local/bin/goose
 COPY --from=builder /src/server/docs /app/docs
 COPY --from=builder /src/server/migrations /app/migrations

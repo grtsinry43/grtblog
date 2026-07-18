@@ -15,6 +15,7 @@ const emit = defineEmits<{
   download: [id: string]
   delete: [id: string]
   pin: [id: string, pinned: boolean]
+  restore: [id: string]
 }>()
 
 const statusMeta: Record<
@@ -142,6 +143,16 @@ function formatSize(size: number) {
               <template #icon>
                 <span :class="item.pinned ? 'iconify ph--push-pin-fill' : 'iconify ph--push-pin'" />
               </template>
+            </NButton>
+            <NButton
+              size="small"
+              tertiary
+              type="warning"
+              title="用这份备份覆盖整个网站"
+              :disabled="item.status !== 'completed'"
+              @click="emit('restore', item.id)"
+            >
+              <template #icon><span class="iconify ph--arrow-counter-clockwise" /></template>
             </NButton>
             <NPopconfirm
               :disabled="item.status === 'queued' || item.status === 'running'"

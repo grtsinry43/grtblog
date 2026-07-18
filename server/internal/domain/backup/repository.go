@@ -7,9 +7,11 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("backup not found")
-	ErrBackupRunning = errors.New("another backup is already running")
-	ErrInvalidTicket = errors.New("invalid or expired download ticket")
+	ErrNotFound       = errors.New("backup not found")
+	ErrBackupRunning  = errors.New("another backup is already running")
+	ErrInvalidTicket  = errors.New("invalid or expired download ticket")
+	ErrRestorePending = errors.New("a full-site restore is pending")
+	ErrRestoreConfirmation = errors.New("restore confirmation does not match OVERWRITE")
 )
 
 type Repository interface {

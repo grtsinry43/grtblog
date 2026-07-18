@@ -41,10 +41,11 @@ func TestSnapshotUploadsAndWriteArchive(t *testing.T) {
 	}
 	archivePath := filepath.Join(root, "backup.tar.gz")
 	manifest := Manifest{
-		FormatVersion: ArchiveFormatVersion,
-		BackupID:      "backup-id",
-		CreatedAt:     time.Now().UTC(),
-		Checksums:     checksums,
+		FormatVersion:   ArchiveFormatVersion,
+		BackupID:        "backup-id",
+		CreatedAt:       time.Now().UTC(),
+		Checksums:       checksums,
+		UploadFileCount: 1,
 	}
 	if err := writeArchive(context.Background(), archivePath, dumpPath, snapshot, manifest); err != nil {
 		t.Fatal(err)
@@ -65,6 +66,24 @@ func TestSnapshotUploadsAndWriteArchive(t *testing.T) {
 	}
 	if string(entries[archiveUploadPath]) != "uploaded-content" {
 		t.Fatalf("unexpected upload content: %q", entries[archiveUploadPath])
+	}
+	inspected, err := inspectArchive(context.Background(), archivePath, 1<<20, 1<<20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inspected.BackupID != manifest.BackupID {
+		t.Fatalf("unexpected inspected backup id: %s", inspected.BackupID)
+	}
+	extracted := filepath.Join(root, "extracted")
+	if _, err := extractArchive(context.Background(), archivePath, extracted, 1<<20, 1<<20); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := os.ReadFile(filepath.Join(extracted, "files", "uploads", "pictures", "sample.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(restored) != "uploaded-content" {
+		t.Fatalf("unexpected extracted content: %q", restored)
 	}
 }
 

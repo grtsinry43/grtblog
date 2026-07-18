@@ -40,3 +40,21 @@ export interface UpdateBackupScheduleRequest {
   intervalHours: number
   retentionCount: number
 }
+
+export type RestoreState = 'idle' | 'pending_restart' | 'running' | 'succeeded' | 'failed'
+
+export interface RestoreStatus {
+  state: RestoreState
+  requestId?: string
+  backupId?: string
+  archiveFilename?: string
+  message?: string
+  requestedAt?: string
+  startedAt?: string
+  completedAt?: string
+}
+
+export interface ImportRestoreResult {
+  backup: BackupRecord
+  restore: RestoreStatus
+}

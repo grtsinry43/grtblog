@@ -9,11 +9,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,21 +29,26 @@ import (
 )
 
 type Service struct {
-	cfg       config.BackupConfig
-	db        *gorm.DB
-	repo      backupdomain.Repository
-	dumper    PostgresDumper
-	sysConfig *sysconfig.Service
-	mediaGate *mediaapp.MutationGate
-	rootCtx   context.Context
-	mu        sync.Mutex
+	cfg            config.BackupConfig
+	db             *gorm.DB
+	repo           backupdomain.Repository
+	dumper         PostgresDumper
+	sysConfig      *sysconfig.Service
+	mediaGate      *mediaapp.MutationGate
+	rootCtx        context.Context
+	mu             sync.Mutex
+	restorePending atomic.Bool
+	restoreCh      chan struct{}
 }
 
 func NewService(rootCtx context.Context, cfg config.BackupConfig, db *gorm.DB, repo backupdomain.Repository, dumper PostgresDumper, sysConfig *sysconfig.Service, mediaGate *mediaapp.MutationGate) *Service {
 	if rootCtx == nil {
 		rootCtx = context.Background()
 	}
-	return &Service{cfg: cfg, db: db, repo: repo, dumper: dumper, sysConfig: sysConfig, mediaGate: mediaGate, rootCtx: rootCtx}
+	return &Service{
+		cfg: cfg, db: db, repo: repo, dumper: dumper, sysConfig: sysConfig,
+		mediaGate: mediaGate, rootCtx: rootCtx, restoreCh: make(chan struct{}, 1),
+	}
 }
 
 func (s *Service) Initialize(ctx context.Context) error {
@@ -54,10 +61,18 @@ func (s *Service) Initialize(ctx context.Context) error {
 	if err := s.repo.MarkInterrupted(ctx); err != nil {
 		return err
 	}
+	if _, _, err := loadRestoreRequest(s.cfg.RootDir); err == nil {
+		s.restorePending.Store(true)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
 	return s.repo.DeleteExpiredTickets(ctx)
 }
 
 func (s *Service) CreateManual(ctx context.Context) (*backupdomain.Record, error) {
+	if s.restorePending.Load() {
+		return nil, backupdomain.ErrRestorePending
+	}
 	if !s.mu.TryLock() {
 		return nil, backupdomain.ErrBackupRunning
 	}
@@ -103,6 +118,9 @@ func (s *Service) RunScheduler(ctx context.Context) {
 }
 
 func (s *Service) runScheduledIfDue(ctx context.Context) {
+	if s.restorePending.Load() {
+		return
+	}
 	if !s.mu.TryLock() {
 		return
 	}
@@ -241,6 +259,9 @@ func (s *Service) Get(ctx context.Context, id string) (*backupdomain.Record, err
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
+	if s.restorePending.Load() {
+		return backupdomain.ErrRestorePending
+	}
 	item, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return err
@@ -321,6 +342,144 @@ func (s *Service) UpdateSchedule(ctx context.Context, enabled bool, intervalHour
 func (s *Service) SetPinned(ctx context.Context, id string, pinned bool) error {
 	return s.repo.SetPinned(ctx, id, pinned)
 }
+
+func (s *Service) RequestRestore(ctx context.Context, id, confirmation string) (*RestoreStatus, error) {
+	if confirmation != "OVERWRITE" {
+		return nil, backupdomain.ErrRestoreConfirmation
+	}
+	if !s.mu.TryLock() {
+		return nil, backupdomain.ErrBackupRunning
+	}
+	defer s.mu.Unlock()
+	return s.requestRestoreLocked(ctx, id)
+}
+
+func (s *Service) ImportAndRequestRestore(ctx context.Context, reader io.Reader, confirmation string) (*backupdomain.Record, *RestoreStatus, error) {
+	if confirmation != "OVERWRITE" {
+		return nil, nil, backupdomain.ErrRestoreConfirmation
+	}
+	if !s.mu.TryLock() {
+		return nil, nil, backupdomain.ErrBackupRunning
+	}
+	defer s.mu.Unlock()
+	if s.restorePending.Load() {
+		return nil, nil, backupdomain.ErrRestorePending
+	}
+	id := uuid.NewString()
+	now := time.Now().UTC()
+	filename := fmt.Sprintf("grtblog-import-%s-%s.tar.gz", now.Format("20060102T150405Z"), id[:8])
+	tempPath := filepath.Join(s.cfg.RootDir, ".work", id+".upload")
+	file, err := os.OpenFile(tempPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, nil, err
+	}
+	limit := s.cfg.RestoreMaxArchiveBytes
+	if limit <= 0 {
+		limit = 1 << 62
+	}
+	limited := &io.LimitedReader{R: &contextReader{ctx: ctx, reader: reader}, N: limit + 1}
+	written, copyErr := io.Copy(file, limited)
+	closeErr := file.Close()
+	if copyErr != nil || closeErr != nil || (limit > 0 && written > limit) {
+		_ = os.Remove(tempPath)
+		if copyErr != nil {
+			return nil, nil, copyErr
+		}
+		if closeErr != nil {
+			return nil, nil, closeErr
+		}
+		return nil, nil, fmt.Errorf("backup archive exceeds %d bytes", limit)
+	}
+	manifest, err := inspectArchive(ctx, tempPath, s.cfg.RestoreMaxArchiveBytes, s.cfg.RestoreMaxExtractedBytes)
+	if err != nil {
+		_ = os.Remove(tempPath)
+		return nil, nil, err
+	}
+	finalPath := s.archivePath(filename)
+	if err := os.Rename(tempPath, finalPath); err != nil {
+		_ = os.Remove(tempPath)
+		return nil, nil, err
+	}
+	stat, err := os.Stat(finalPath)
+	if err != nil {
+		_ = os.Remove(finalPath)
+		return nil, nil, err
+	}
+	sha, err := hashPath(finalPath)
+	if err != nil {
+		_ = os.Remove(finalPath)
+		return nil, nil, err
+	}
+	completed := now
+	item := &backupdomain.Record{
+		ID: id, Filename: filename, Status: backupdomain.StatusCompleted, Stage: "completed",
+		TriggerType: "imported", SizeBytes: stat.Size(), SHA256: sha, AppVersion: manifest.AppVersion,
+		MigrationVersion: manifest.MigrationVersion, DBServerVersion: manifest.DBServerVersion,
+		SiteName: manifest.SiteName, SiteURL: manifest.SiteURL, UploadFileCount: manifest.UploadFileCount,
+		CreatedAt: now, StartedAt: &now, CompletedAt: &completed,
+	}
+	if err := s.repo.Create(ctx, item); err != nil {
+		_ = os.Remove(finalPath)
+		return nil, nil, err
+	}
+	status, err := s.requestRestoreRecordLocked(item, manifest)
+	if err != nil {
+		return item, nil, err
+	}
+	return item, status, nil
+}
+
+func (s *Service) requestRestoreLocked(ctx context.Context, id string) (*RestoreStatus, error) {
+	if s.restorePending.Load() {
+		return nil, backupdomain.ErrRestorePending
+	}
+	item, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if item.Status != backupdomain.StatusCompleted {
+		return nil, errors.New("backup is not ready for restore")
+	}
+	manifest, err := inspectArchive(ctx, s.archivePath(item.Filename), s.cfg.RestoreMaxArchiveBytes, s.cfg.RestoreMaxExtractedBytes)
+	if err != nil {
+		return nil, err
+	}
+	return s.requestRestoreRecordLocked(item, manifest)
+}
+
+func (s *Service) requestRestoreRecordLocked(item *backupdomain.Record, manifest *Manifest) (*RestoreStatus, error) {
+	now := time.Now().UTC()
+	request := RestoreRequest{
+		ID: uuid.NewString(), BackupID: manifest.BackupID,
+		ArchiveFilename: filepath.Base(item.Filename), RequestedAt: now,
+	}
+	if err := writeJSONAtomic(s.cfg.RootDir, restoreRequestFilename, request); err != nil {
+		return nil, err
+	}
+	status := RestoreStatus{
+		State: "pending_restart", RequestID: request.ID, BackupID: request.BackupID,
+		ArchiveFilename: request.ArchiveFilename, Message: "恢复请求已校验，服务即将重启并离线恢复",
+		RequestedAt: &now,
+	}
+	if err := writeRestoreStatus(s.cfg.RootDir, status); err != nil {
+		_ = os.Remove(filepath.Join(s.cfg.RootDir, restoreRequestFilename))
+		return nil, err
+	}
+	s.restorePending.Store(true)
+	time.AfterFunc(750*time.Millisecond, func() {
+		select {
+		case s.restoreCh <- struct{}{}:
+		default:
+		}
+	})
+	return &status, nil
+}
+
+func (s *Service) GetRestoreStatus() (*RestoreStatus, error) {
+	return readRestoreStatus(s.cfg.RootDir)
+}
+
+func (s *Service) RestoreRequests() <-chan struct{} { return s.restoreCh }
 
 func (s *Service) pruneScheduled(ctx context.Context) error {
 	schedule, err := s.repo.GetSchedule(ctx)

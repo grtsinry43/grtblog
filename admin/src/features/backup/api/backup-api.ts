@@ -4,6 +4,8 @@ import type {
   BackupDownloadTicket,
   BackupRecord,
   BackupSchedule,
+  ImportRestoreResult,
+  RestoreStatus,
   UpdateBackupScheduleRequest,
 } from '../model/types'
 
@@ -40,4 +42,22 @@ export function setBackupPinned(id: string, pinned: boolean) {
     method: 'PATCH',
     body: { pinned },
   })
+}
+
+export function getRestoreStatus() {
+  return request<RestoreStatus>(`${basePath}/restore-status`)
+}
+
+export function requestBackupRestore(id: string, confirmation: string) {
+  return request<RestoreStatus>(`${basePath}/${encodeURIComponent(id)}/restore`, {
+    method: 'POST',
+    body: { confirmation },
+  })
+}
+
+export function uploadBackupForRestore(file: File, confirmation: string) {
+  const body = new FormData()
+  body.append('archive', file)
+  body.append('confirmation', confirmation)
+  return request<ImportRestoreResult>(`${basePath}/restore-upload`, { method: 'POST', body })
 }
