@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { ArrowLeft, Share2, ArrowUp, Home, MessageSquare } from 'lucide-svelte';
+	import { ArrowLeft, ArrowUp, Home, MessageSquare } from 'lucide-svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import Button from '$lib/ui/primitives/button/Button.svelte';
 	import { browser } from '$app/environment';
 	import { toast } from 'svelte-sonner';
+	import ShareAction from '$lib/ui/share/ShareAction.svelte';
 
 	interface Props {
 		title: string;
@@ -47,28 +48,6 @@
 			history.back();
 		} else {
 			window.location.href = '/';
-		}
-	}
-
-	async function handleShare() {
-		if (!browser) return;
-		const shareData = {
-			title: title,
-			url: window.location.href
-		};
-
-		try {
-			if (navigator.share) {
-				await navigator.share(shareData);
-			} else {
-				await navigator.clipboard.writeText(window.location.href);
-				toast.success('链接已复制到剪贴板');
-			}
-		} catch (err) {
-			if ((err as Error).name !== 'AbortError') {
-				console.error('Share failed:', err);
-				toast.error('分享失败，请重试');
-			}
 		}
 	}
 </script>
@@ -149,15 +128,12 @@
 					</Button>
 				{/if}
 
-				<Button
-					variant="ghost"
-					size="sm"
-					class="!h-9 !w-9 !p-0 text-ink-500 hover:bg-ink-100/50 hover:text-jade-600 dark:text-ink-400 dark:hover:bg-ink-800/50 dark:hover:text-jade-400"
-					onclick={handleShare}
-					title="分享文章"
-				>
-					<Share2 size={18} />
-				</Button>
+				<ShareAction
+					iconSize={18}
+					buttonTitle="分享文章"
+					className="inline-flex h-9 w-9 items-center justify-center rounded-default text-ink-500 transition-colors hover:bg-ink-100/50 hover:text-jade-600 dark:text-ink-400 dark:hover:bg-ink-800/50 dark:hover:text-jade-400"
+					shareTitle={title}
+				/>
 
 				<div class="h-4 w-px bg-ink-100 dark:bg-ink-800/60"></div>
 

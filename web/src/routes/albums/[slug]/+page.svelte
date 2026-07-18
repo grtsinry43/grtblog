@@ -315,6 +315,9 @@
 			likes={$metricsStore?.likes ?? 0}
 			comments={$metricsStore?.comments ?? 0}
 			tone="jade"
+			shareTitle={$album.title}
+			shareDescription={$album.description ?? ''}
+			shareImageUrl={$album.cover ?? ''}
 		/>
 
 		<DetailCommentSection

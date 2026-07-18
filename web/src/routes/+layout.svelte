@@ -475,6 +475,8 @@
 		<QueryRoot
 			loader={() => import('$lib/features/user-center/components/UserCenterWindow.svelte')}
 		/>
+	{:else if windowStore.kind === 'share-poster'}
+		<QueryRoot loader={() => import('$lib/ui/share/SharePosterWindow.svelte')} />
 	{:else if windowStore.kind !== 'login'}
 		<div class="flex flex-col gap-3"></div>
 	{/if}

@@ -97,6 +97,9 @@
 			likes={moment.metrics?.likes ?? 0}
 			comments={moment.metrics?.comments ?? 0}
 			tone="cinnabar"
+			shareTitle={moment.title}
+			shareDescription={moment.summary}
+			shareImageUrl={moment.image?.[0] ?? ''}
 		/>
 
 		<div class="mt-24 flex justify-center opacity-40">

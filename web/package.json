@@ -37,6 +37,7 @@
 		"@types/markdown-it": "^14.1.2",
 		"@types/markdown-it-container": "^4.0.0",
 		"@types/node": "^26.1.1",
+		"@types/qrcode": "^1.5.6",
 		"@vitest/browser-playwright": "^4.1.10",
 		"@vitest/coverage-v8": "^4.1.10",
 		"eslint": "^10.6.0",
@@ -76,6 +77,7 @@
 		"markdown-it": "^14.3.0",
 		"markdown-it-container": "^4.0.0",
 		"ofetch": "^1.5.1",
+		"qrcode": "^1.5.4",
 		"svatoms": "^0.2.0",
 		"svelte-sonner": "^1.1.1",
 		"svmarkdown": "^0.1.3"

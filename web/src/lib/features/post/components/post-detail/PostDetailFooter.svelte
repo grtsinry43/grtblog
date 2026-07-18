@@ -1,11 +1,7 @@
 <script lang="ts">
-	import { Share2 } from 'lucide-svelte';
 	import Button from '$lib/ui/primitives/button/Button.svelte';
+	import ShareAction from '$lib/ui/share/ShareAction.svelte';
 </script>
-
-{#snippet shareContent()}
-	<Share2 size={14} />
-{/snippet}
 
 {#snippet topContent()}
 	返回顶部
@@ -16,11 +12,9 @@
 >
 	<div class="flex items-center gap-3">
 		<span class="font-mono text-[9px] tracking-widest text-ink-400 uppercase">分享此文</span>
-		<Button
-			variant="ghost"
-			class="h-auto p-1.5 text-ink-400 hover:text-jade-600"
-			title="分享"
-			content={shareContent}
+		<ShareAction
+			iconSize={14}
+			className="inline-flex h-auto items-center justify-center rounded-default p-1.5 text-ink-400 transition-colors hover:text-jade-600"
 		/>
 	</div>
 	<Button

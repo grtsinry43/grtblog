@@ -12,6 +12,9 @@
 	const contentStore = postDetailCtx.selectModelData((data) => data?.content ?? '');
 	const tocStore = postDetailCtx.selectModelData((data) => data?.toc ?? [], { equals: sameToc });
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
+	const postTitleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
+	const postSummaryStore = postDetailCtx.selectModelData((data) => data?.summary ?? '');
+	const postCoverStore = postDetailCtx.selectModelData((data) => data?.cover ?? '');
 	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
 		equals: sameMetrics
 	});
@@ -49,6 +52,9 @@
 			likes={$metricsStore?.likes ?? 0}
 			comments={$metricsStore?.comments ?? 0}
 			tone="jade"
+			shareTitle={$postTitleStore}
+			shareDescription={$postSummaryStore}
+			shareImageUrl={$postCoverStore}
 		/>
 		<PostDetailComments />
 	</main>

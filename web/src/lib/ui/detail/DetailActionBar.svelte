@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { MessageCircle, Share2 } from 'lucide-svelte';
+	import { MessageCircle } from 'lucide-svelte';
 	import ContentLikeButton from '$lib/features/analytics/components/ContentLikeButton.svelte';
 	import type { TrackLikeContentType } from '$lib/features/analytics/types';
-	import { toast } from 'svelte-sonner';
 	import { RollingNumber } from '$lib/ui/animation';
+	import ShareAction from '$lib/ui/share/ShareAction.svelte';
 
 	interface Props {
 		contentType: TrackLikeContentType;
@@ -11,9 +11,21 @@
 		likes?: number;
 		comments?: number;
 		tone?: 'jade' | 'cinnabar';
+		shareTitle?: string;
+		shareDescription?: string;
+		shareImageUrl?: string;
 	}
 
-	let { contentType, contentId, likes = 0, comments = 0, tone = 'jade' }: Props = $props();
+	let {
+		contentType,
+		contentId,
+		likes = 0,
+		comments = 0,
+		tone = 'jade',
+		shareTitle = '',
+		shareDescription = '',
+		shareImageUrl = ''
+	}: Props = $props();
 
 	const toneClass = $derived(
 		tone === 'cinnabar'
@@ -25,21 +37,6 @@
 		const commentSection = document.querySelector('[data-comment-area]');
 		if (commentSection) {
 			commentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-		}
-	}
-
-	async function handleShare() {
-		const url = window.location.href;
-		const title = document.title;
-		if (navigator.share) {
-			try {
-				await navigator.share({ title, url });
-			} catch {
-				/* user cancelled */
-			}
-		} else {
-			await navigator.clipboard.writeText(url);
-			toast.success('链接已复制到剪贴板');
 		}
 	}
 </script>
@@ -67,12 +64,12 @@
 
 	<span aria-hidden="true" class="h-4 w-px bg-ink-200/60 dark:bg-ink-700/40"></span>
 
-	<button
-		type="button"
-		class="inline-flex items-center gap-2 text-sm text-ink-400 transition-colors {toneClass}"
-		onclick={handleShare}
-	>
-		<Share2 size={14} />
-		<span>分享</span>
-	</button>
+	<ShareAction
+		label="分享"
+		iconSize={14}
+		className="inline-flex items-center gap-2 text-sm text-ink-400 transition-colors {toneClass}"
+		{shareTitle}
+		{shareDescription}
+		{shareImageUrl}
+	/>
 </div>
