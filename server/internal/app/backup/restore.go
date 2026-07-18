@@ -13,10 +13,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/grtsinry43/grtblog-v2/server/internal/config"
 )
 
-func ExecutePendingRestore(ctx context.Context, cfg config.BackupConfig, databaseDSN string) error {
+const bootstrapVersionFile = "storage/meta/isr/.bootstrap-version"
+
+func ExecutePendingRestore(ctx context.Context, cfg config.BackupConfig, databaseDSN string, redisCfg config.RedisConfig) error {
 	request, requestPath, err := loadRestoreRequest(cfg.RootDir)
 	if err != nil {
 		return err
@@ -70,6 +74,9 @@ func ExecutePendingRestore(ctx context.Context, cfg config.BackupConfig, databas
 		return fail(err)
 	}
 	cleanupErr := swap.Commit()
+	if err := clearDerivedState(ctx, redisCfg); err != nil {
+		return fail(fmt.Errorf("clear derived state: %w", err))
+	}
 
 	completed := time.Now().UTC()
 	status.State, status.Message, status.CompletedAt = "succeeded", "站点已从备份完整恢复", &completed
@@ -80,6 +87,43 @@ func ExecutePendingRestore(ctx context.Context, cfg config.BackupConfig, databas
 		return err
 	}
 	return os.Remove(requestPath)
+}
+
+func clearDerivedState(ctx context.Context, cfg config.RedisConfig) error {
+	prefix := strings.TrimSpace(cfg.Prefix)
+	if prefix == "" {
+		return errors.New("Redis prefix is required")
+	}
+
+	client := redis.NewClient(&redis.Options{
+		Addr: cfg.Addr, Password: cfg.Password, DB: cfg.DB,
+	})
+	defer client.Close()
+
+	var cursor uint64
+	var keys []string
+	for {
+		batch, next, err := client.Scan(ctx, cursor, prefix+"*", 500).Result()
+		if err != nil {
+			return err
+		}
+		keys = append(keys, batch...)
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+	for start := 0; start < len(keys); start += 500 {
+		end := min(start+500, len(keys))
+		if err := client.Unlink(ctx, keys[start:end]...).Err(); err != nil {
+			return err
+		}
+	}
+
+	if err := os.Remove(bootstrapVersionFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func restorePostgres(ctx context.Context, binary, databaseDSN, dumpPath string) error {

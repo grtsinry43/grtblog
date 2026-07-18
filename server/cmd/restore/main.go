@@ -21,7 +21,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	log.Println("[restore] pending full-site restore detected")
-	if err := backupapp.ExecutePendingRestore(ctx, cfg.Backup, cfg.Database.DSN); err != nil {
+	if err := backupapp.ExecutePendingRestore(ctx, cfg.Backup, cfg.Database.DSN, cfg.Redis); err != nil {
 		log.Fatalf("[restore] failed: %v", err)
 	}
 	log.Println("[restore] full-site restore completed")

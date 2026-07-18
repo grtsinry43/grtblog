@@ -129,6 +129,8 @@ curl -fsS -X PATCH -H "Authorization: Bearer $token" -H 'Content-Type: applicati
 compose exec -T postgres psql -U postgres -d grtblog -v ON_ERROR_STOP=1 \
 	-c "UPDATE public.backup_e2e_probe SET value = 'after-backup' WHERE id = 1" >/dev/null
 compose exec -T -u app server sh -c 'printf %s after-backup-file > /app/storage/uploads/e2e/probe.txt && printf %s extra-file > /app/storage/uploads/e2e/extra.txt'
+compose exec -T redis redis-cli MSET 'backup-e2e:restore-stale' 'stale' 'backup-e2e:isr:url:%2F' 'stale' >/dev/null
+compose exec -T -u app server sh -c 'mkdir -p /app/storage/html /app/storage/meta/isr && printf %s stale > /app/storage/html/index.html && printf %s backup-e2e > /app/storage/meta/isr/.bootstrap-version'
 
 server_id=$(compose ps -q server)
 started_before=$(docker inspect -f '{{.State.StartedAt}}' "$server_id")
@@ -168,6 +170,23 @@ if [ "$database_value" != "before-backup" ]; then
 	exit 1
 fi
 compose exec -T -u app server sh -c 'test "$(cat /app/storage/uploads/e2e/probe.txt)" = before-backup-file && test ! -e /app/storage/uploads/e2e/extra.txt'
+if [ "$(compose exec -T redis redis-cli --raw EXISTS 'backup-e2e:restore-stale' | tr -d '\r')" != "0" ]; then
+	echo "[backup-e2e] restore did not clear derived Redis state" >&2
+	exit 1
+fi
+
+attempt=0
+while [ "$attempt" -lt 30 ]; do
+	if compose logs --no-color server | grep -q 'bootstrap start reason=empty_isr_index'; then
+		break
+	fi
+	attempt=$((attempt + 1))
+	sleep 1
+done
+if [ "$attempt" -eq 30 ]; then
+	echo "[backup-e2e] restore did not trigger a full ISR bootstrap" >&2
+	exit 1
+fi
 
 echo "[backup-e2e] simulating a fresh install and restoring through the setup endpoint"
 compose stop server >/dev/null
@@ -211,4 +230,4 @@ if [ "$database_value" != "before-backup" ]; then
 fi
 compose exec -T -u app server sh -c 'test "$(cat /app/storage/uploads/e2e/probe.txt)" = before-backup-file'
 
-echo "[backup-e2e] PASS: archive, download, scheduler, offline restore, uploads, and initial-setup restore"
+echo "[backup-e2e] PASS: archive, download, scheduler, offline restore, derived-state rebuild, uploads, and initial-setup restore"
