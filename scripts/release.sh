@@ -505,10 +505,21 @@ section "Create Tag"
 git tag -a "$VERSION" -m "release(${CHANNEL}): ${VERSION}"
 info "created annotated tag: ${VERSION}"
 
+# CLI 是独立 Go 子模块（module github.com/grtsinry43/grtblog/cli/v2），
+# 需要一个 cli/ 前缀的 tag，`go install .../cli/v2/cmd/grtblog@${VERSION}` 才能解析到精确版本。
+CLI_TAG="cli/${VERSION}"
+if git rev-parse -q --verify "refs/tags/$CLI_TAG" >/dev/null 2>&1; then
+  warn "CLI tag already exists: ${CLI_TAG}"
+else
+  git tag -a "$CLI_TAG" -m "release(cli): ${VERSION}"
+  info "created annotated tag: ${CLI_TAG}"
+fi
+
 if [[ "$PUSH_TAG" == "true" ]]; then
   section "Push Tag"
   git push origin "$VERSION"
-  info "pushed tag to origin: ${VERSION}"
+  git push origin "$CLI_TAG"
+  info "pushed tags to origin: ${VERSION}, ${CLI_TAG}"
 fi
 
 section "CI Follow-up"
@@ -531,9 +542,11 @@ info "release channel: ${CHANNEL}"
 info "release notes in HEAD: ${RELEASE_FILE}"
 info "release archive in HEAD: ${INDEX_FILE}"
 info "created git tag: ${VERSION}"
+info "created CLI tag: ${CLI_TAG}"
 if [[ "$PUSH_TAG" == "true" ]]; then
   info "remote push: completed"
 else
   next_step "push when ready:"
   next_step "  git push origin ${VERSION}"
+  next_step "  git push origin ${CLI_TAG}"
 fi
