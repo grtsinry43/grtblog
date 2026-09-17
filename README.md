@@ -176,7 +176,7 @@ cd web && pnpm i && pnpm dev     # :5173
 ## 项目结构
 
 ```
-grtblog-v2/
+grtblog/
 ├── server/         # Go 后端（控制平面）
 ├── web/            # SvelteKit 前台（渲染平面）
 ├── admin/          # Vue 3 管理后台
