@@ -82,7 +82,7 @@ importers:
         version: 6.1.0
       exifreader:
         specifier: ^4.41.0
-        version: 4.41.0
+        version: 4.41.1
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -1620,8 +1620,8 @@ packages:
   evtd@0.2.4:
     resolution: {integrity: sha512-qaeGN5bx63s/AXgQo8gj6fBkxge+OoLddLniox5qtLAEY5HSnuSlISXVPxnSae1dWblvTh4/HoMIB+mbMsvZzw==}
 
-  exifreader@4.41.0:
-    resolution: {integrity: sha512-P3nPeh6GWs5D5RZdRZ6q/LorHPmmeDgKsowduqRabtTFiqMD2bc5eTN+Dhq00O9BCuV2eksu3oOJh4ZaZvkK0A==}
+  exifreader@4.41.1:
+    resolution: {integrity: sha512-cHEtwlt6OmqEnWO906/ZURHym4gzRJ2VNQObeSEqhoBRk9oPFoHyPsrermUZ4JHE4T4o46mLbcJfF3r9PPVXdg==}
     hasBin: true
 
   expect-type@1.4.0:
@@ -4355,7 +4355,7 @@ snapshots:
 
   evtd@0.2.4: {}
 
-  exifreader@4.41.0:
+  exifreader@4.41.1:
     optionalDependencies:
       '@xmldom/xmldom': 0.9.10
 
