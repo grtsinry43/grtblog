@@ -9,6 +9,7 @@ import (
 	appdiscovery "github.com/grtsinry43/grtblog-v2/server/internal/app/discovery"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendlink"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/friendtimeline"
+	"github.com/grtsinry43/grtblog-v2/server/internal/app/gamelookup"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/globalnotification"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/home"
 	"github.com/grtsinry43/grtblog-v2/server/internal/app/htmlsnapshot"
@@ -28,6 +29,19 @@ func registerPublicRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler
 	ownerStatusHandler := handler.NewOwnerStatusHandler(deps.OwnerStatus)
 	public.Get("/owner-status", ownerStatusHandler.GetStatus)
 	v2.Get("/onlineStatus", ownerStatusHandler.GetStatus)
+
+	gameLookupHandler := handler.NewGameLookupHandler(gamelookup.NewService(deps.Redis, deps.Config.Redis.Prefix))
+	gameLookupGuard := public.Group("/game-lookup", newRateLimiter(deps, limiter.Config{
+		Max:        30,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return response.NewBizErrorWithMsg(response.TooManyRequests, "")
+		},
+	}))
+	gameLookupGuard.Get("/", gameLookupHandler.Lookup)
 
 	public.Get("/website-info", websiteInfoHandler.PublicList)
 	public.Get("/nav-menus", navMenuHandler.ListPublic)

@@ -15,6 +15,7 @@
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import { authModalStore } from '$lib/shared/stores/authModalStore';
 	import { ownerStatusStore } from '$lib/features/owner-status/store.svelte';
+	import OwnerStatusCard from '$lib/features/owner-status/components/OwnerStatusCard.svelte';
 	import { User } from 'lucide-svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context';
 	import { detailPanelCtx } from '$lib/shared/detail-panel/context';
@@ -61,14 +62,7 @@
 		($detailKindStore === 'post' && $relatedMomentsStore.length > 0) ||
 			($detailKindStore === 'moment' && $relatedPostsStore.length > 0)
 	);
-	const ownerStatus = $derived(ownerStatusStore.status);
-	const ownerOnline = $derived(ownerStatus.ok === 1);
-	const adminPanelOnline = $derived(ownerStatus.adminPanelOnline === true);
-
-	function formatOwnerTime(timestamp?: number): string {
-		if (!timestamp || !Number.isFinite(timestamp) || timestamp <= 0) return '未知';
-		return new Date(timestamp * 1000).toLocaleString('zh-CN', { hour12: false });
-	}
+	const ownerOnline = $derived(ownerStatusStore.status.ok === 1);
 
 	const isActive = (href: string) =>
 		page.url.pathname === href || page.url.pathname.startsWith(href + '/');
@@ -263,34 +257,8 @@
 				transition:fly={{ y: -12, duration: 380, easing: cubicOut, opacity: 0 }}
 				class="no-scrollbar relative z-10 flex max-h-[75vh] flex-col overflow-y-auto px-2 pb-6 pt-0"
 			>
-				<div
-					class="mb-3 rounded-default border border-ink-200 bg-white/70 px-3 py-2 dark:border-ink-700 dark:bg-ink-900/60"
-				>
-					<div class="flex items-center justify-between gap-2">
-						<div class="text-xs font-medium text-ink-700 dark:text-ink-200">
-							{ownerOnline ? '站长在线中' : '站长暂时离线'}
-						</div>
-						<span
-							class="rounded-full px-2 py-0.5 text-[10px] {adminPanelOnline
-								? 'bg-jade-100 text-jade-700 dark:bg-jade-900/40 dark:text-jade-300'
-								: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300'}"
-						>
-							Admin {adminPanelOnline ? '在线' : '离线'}
-						</span>
-					</div>
-					<div class="mt-1 text-[11px] text-ink-500 dark:text-ink-400">
-						{#if ownerOnline}
-							正在使用 {ownerStatus.process || '未知应用'}
-						{:else}
-							暂无实时活动
-						{/if}
-						· {formatOwnerTime(ownerStatus.timestamp)}
-					</div>
-					{#if ownerStatus.extend}
-						<p class="mt-1 text-[11px] leading-4 text-ink-500 dark:text-ink-400">
-							{ownerStatus.extend}
-						</p>
-					{/if}
+				<div class="mb-3">
+					<OwnerStatusCard variant="inline" />
 				</div>
 
 				<div class="flex flex-col gap-1">

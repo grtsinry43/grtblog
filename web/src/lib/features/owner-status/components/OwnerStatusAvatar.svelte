@@ -2,21 +2,14 @@
 	import { ownerStatusStore } from '$lib/features/owner-status/store.svelte';
 	import { websiteInfoCtx } from '$lib/features/website-info/context';
 	import { resolveHomeThemeConfig } from '$lib/features/home/theme';
+	import OwnerStatusCard from './OwnerStatusCard.svelte';
 
 	const websiteInfoStore = websiteInfoCtx.selectModelData((m) => m ?? null);
 	const siteAvatar = $derived(resolveHomeThemeConfig($websiteInfoStore).hero?.avatarUrl || '');
 
-	const status = $derived(ownerStatusStore.status);
-	const isOnline = $derived(status.ok === 1);
-	const adminPanelOnline = $derived(status.adminPanelOnline === true);
-	const media = $derived(status.media ?? null);
+	const isOnline = $derived(ownerStatusStore.status.ok === 1);
 
 	let showDetails = $state(false);
-
-	const formatTimestamp = (timestamp?: number): string => {
-		if (!timestamp || !Number.isFinite(timestamp) || timestamp <= 0) return '未知';
-		return new Date(timestamp * 1000).toLocaleString('zh-CN', { hour12: false });
-	};
 </script>
 
 <div
@@ -55,60 +48,9 @@
 
 	{#if showDetails}
 		<div
-			class="absolute left-[calc(100%+0.75rem)] top-0 z-60 w-72 rounded-default border border-ink-200 bg-white/95 p-3 shadow-xl backdrop-blur-sm dark:border-ink-700 dark:bg-ink-900/95"
+			class="absolute left-[calc(100%+0.75rem)] top-0 z-60 w-80 rounded-default border border-ink-200 bg-white/95 p-3 shadow-xl backdrop-blur-sm dark:border-ink-700 dark:bg-ink-900/95"
 		>
-			<div class="flex items-start justify-between gap-2">
-				<div class="flex flex-col">
-					<span class="text-sm font-serif font-semibold text-ink-900 dark:text-ink-100">
-						{isOnline ? '站长在线中' : '站长暂时离线'}
-					</span>
-					<span class="text-[11px] text-ink-500 dark:text-ink-400">
-						最后活跃：{formatTimestamp(status.timestamp)}
-					</span>
-				</div>
-				<span
-					class="rounded-full px-2 py-0.5 text-[10px] font-medium {adminPanelOnline
-						? 'bg-jade-100 text-jade-700 dark:bg-jade-900/40 dark:text-jade-300'
-						: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300'}"
-				>
-					Admin 面板{adminPanelOnline ? '在线' : '离线'}
-				</span>
-			</div>
-
-			<div
-				class="mt-2 rounded-default border border-ink-100 bg-ink-50/80 p-2 dark:border-ink-800 dark:bg-ink-950/70"
-			>
-				<p class="text-xs leading-5 text-ink-700 dark:text-ink-300">
-					{#if isOnline}
-						正在使用 <span class="font-medium text-jade-700 dark:text-jade-300"
-							>{status.process || '未知应用'}</span
-						>
-					{:else}
-						当前未上报实时活动
-					{/if}
-				</p>
-				{#if status.extend}
-					<p class="mt-1 text-[11px] leading-4 text-ink-500 dark:text-ink-400">{status.extend}</p>
-				{/if}
-			</div>
-
-			{#if media?.title}
-				<div
-					class="mt-2 flex items-center gap-2 rounded-default border border-ink-100 p-2 dark:border-ink-800"
-				>
-					<img
-						src={media.thumbnail || siteAvatar}
-						alt={media.title}
-						class="h-9 w-9 rounded-default object-cover"
-					/>
-					<div class="min-w-0">
-						<p class="truncate text-xs font-medium text-ink-900 dark:text-ink-100">{media.title}</p>
-						<p class="truncate text-[11px] text-ink-500 dark:text-ink-400">
-							{media.artist || '未知艺术家'}
-						</p>
-					</div>
-				</div>
-			{/if}
+			<OwnerStatusCard variant="popover" />
 		</div>
 	{/if}
 </div>

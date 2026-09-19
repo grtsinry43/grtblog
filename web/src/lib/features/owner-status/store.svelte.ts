@@ -7,6 +7,8 @@ const defaultOwnerStatus: OwnerStatus = {
 	ok: 0,
 	process: '',
 	extend: '',
+	category: '',
+	game: null,
 	media: null,
 	timestamp: 0,
 	adminPanelOnline: false
@@ -86,6 +88,8 @@ class OwnerStatusStore {
 			ok,
 			process: typeof payload.process === 'string' ? payload.process : '',
 			extend: typeof payload.extend === 'string' ? payload.extend : '',
+			category: typeof payload.category === 'string' ? payload.category : '',
+			game: payload.game ?? null,
 			media: payload.media ?? null,
 			timestamp,
 			adminPanelOnline: payload.adminPanelOnline === true
