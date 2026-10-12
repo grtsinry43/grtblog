@@ -8,9 +8,9 @@
     "preview": "vitepress preview"
   },
   "dependencies": {
-    "@fontsource-variable/victor-mono": "^5.2.8",
-    "@fontsource/google-sans": "^5.2.1",
-    "@fontsource/noto-serif-sc": "^5.2.9",
-    "vue": "^3.5.39"
+    "@fontsource-variable/victor-mono": "^5.3.0",
+    "@fontsource/google-sans": "^5.3.2",
+    "@fontsource/noto-serif-sc": "^5.3.1",
+    "vue": "^3.5.43"
   }
 }
