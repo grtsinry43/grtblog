@@ -20,7 +20,7 @@
 	<div class="space-y-4">
 		<div class="flex items-center gap-3">
 			<Badge variant="soft">页面</Badge>
-			<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase">站点内容</span>
+			<span class="font-mono text-[10px] tracking-[0.3em] text-ink-400 uppercase">站点内容</span>
 		</div>
 
 		<h1
@@ -30,7 +30,7 @@
 		</h1>
 
 		<div
-			class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase"
+			class="flex flex-wrap items-center gap-5 font-mono text-[10px] tracking-widest text-ink-400 uppercase"
 		>
 			<span class="flex items-center gap-1.5">
 				<Calendar size={12} />

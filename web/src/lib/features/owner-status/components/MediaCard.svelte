@@ -48,7 +48,7 @@
 
 		{#if paused}
 			<span
-				class="inline-flex flex-none items-center gap-0.5 rounded-full bg-ink-100 px-1.5 py-0.5 text-[9px] text-ink-500 dark:bg-ink-800 dark:text-ink-400"
+				class="inline-flex flex-none items-center gap-0.5 rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] text-ink-500 dark:bg-ink-800 dark:text-ink-400"
 			>
 				<Pause class="h-2.5 w-2.5" />
 				暂停

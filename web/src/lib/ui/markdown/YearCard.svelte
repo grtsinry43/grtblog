@@ -47,7 +47,7 @@
 	<div class="relative z-10 flex flex-1 flex-col justify-center px-6 py-2">
 		<div class="mb-1 flex items-center gap-3">
 			<span
-				class="text-[9px] font-bold tracking-[0.25em] text-jade-600 uppercase dark:text-jade-400"
+				class="text-[10px] font-bold tracking-[0.25em] text-jade-600 uppercase dark:text-jade-400"
 				>year summary</span
 			>
 			<div

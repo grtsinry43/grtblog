@@ -7,6 +7,9 @@
 	import PostDetailTocSidebar from './PostDetailTocSidebar.svelte';
 	import PostDetailLeadIn from './PostDetailLeadIn.svelte';
 	import DetailActionBar from '$lib/ui/detail/DetailActionBar.svelte';
+	import SelectionToolbar from '$lib/features/reading/components/SelectionToolbar.svelte';
+	import { readingPosition } from '$lib/features/reading/reading-position';
+	import { toast } from 'svelte-sonner';
 
 	const aiSummaryStore = postDetailCtx.selectModelData((data) => data?.aiSummary ?? '');
 	const contentStore = postDetailCtx.selectModelData((data) => data?.content ?? '');
@@ -18,6 +21,7 @@
 	const metricsStore = postDetailCtx.selectModelData((data) => data?.metrics ?? null, {
 		equals: sameMetrics
 	});
+	const commentAreaIdStore = postDetailCtx.selectModelData((data) => data?.commentAreaId ?? null);
 
 	let contentRoot: HTMLElement | null = $state(null);
 	let activeAnchor: string | null = $state(null);
@@ -29,7 +33,24 @@
 	const handleActiveAnchorChange = (anchor: string | null) => {
 		activeAnchor = anchor;
 	};
+
+	$effect(() => {
+		if (!contentRoot || !$postIdStore) return;
+		const handle = readingPosition(contentRoot, {
+			key: `article:${$postIdStore}`,
+			onResumeAvailable: (ratio, resume) => {
+				toast(`上次读到 ${Math.round(ratio * 100)}%`, {
+					description: '要从上次的位置继续吗？',
+					duration: 8000,
+					action: { label: '继续阅读', onClick: resume }
+				});
+			}
+		});
+		return () => handle.destroy();
+	});
 </script>
+
+<SelectionToolbar {contentRoot} title={$postTitleStore} allowQuote={!!$commentAreaIdStore} />
 
 <div class="grid gap-10 lg:grid-cols-[1fr_220px] lg:gap-16">
 	<main class="min-w-0">

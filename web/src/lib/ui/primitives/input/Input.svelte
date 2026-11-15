@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { type Snippet } from 'svelte';
-	import { type FullAutoFill } from 'svelte/elements';
+	import { type FullAutoFill, type HTMLInputAttributes } from 'svelte/elements';
 
-	interface Props {
+	interface Props extends Omit<HTMLInputAttributes, 'value' | 'class' | 'type'> {
 		value?: string;
 		placeholder?: string;
 		type?: string;
@@ -15,6 +15,8 @@
 		variant?: 'default' | 'underline';
 		inputClass?: string;
 		class?: string;
+		/** Inline error message; also marks the field aria-invalid. */
+		error?: string;
 		oninput?: (e: Event) => void;
 	}
 
@@ -31,13 +33,17 @@
 		variant = 'default',
 		inputClass: inputClassName = '',
 		class: className = '',
-		oninput
+		error,
+		oninput,
+		...rest
 	}: Props = $props();
 
+	const errorId = $derived(id ? `${id}-error` : undefined);
+
 	const baseInputClasses =
-		'h-9 w-full rounded-default border border-ink-100/50 bg-ink-50/50 px-3.5 text-[13px] font-normal text-ink-900 placeholder:text-ink-300 transition-all duration-300 outline-none hover:border-ink-200 hover:bg-white focus:border-jade-500/40 focus:bg-white focus:ring-4 focus:ring-jade-500/5 dark:border-ink-800/30 dark:bg-ink-900/40 dark:text-ink-100 dark:placeholder:text-ink-600 dark:hover:border-ink-700 dark:hover:bg-ink-950/60 dark:focus:border-jade-500/40 dark:focus:bg-ink-950';
+		'h-9 w-full rounded-default border border-ink-100/50 bg-ink-50/50 px-3.5 text-[13px] font-normal text-ink-900 placeholder:text-ink-400 transition-all duration-300 outline-none hover:border-ink-200 hover:bg-white focus:border-jade-500/50 focus:bg-white focus:ring-4 focus:ring-jade-500/10 dark:border-ink-800/30 dark:bg-ink-900/40 dark:text-ink-100 dark:placeholder:text-ink-600 dark:hover:border-ink-700 dark:hover:bg-ink-950/60 dark:focus:border-jade-500/40 dark:focus:bg-ink-950';
 	const underlineInputClasses =
-		'h-9 w-full bg-transparent px-0 pb-1 text-[13px] font-normal text-ink-900 placeholder:text-ink-300 transition-colors duration-300 appearance-none rounded-none outline-none border-0 border-b border-ink-200/80 ring-0 shadow-none focus:ring-0 focus:ring-transparent focus:shadow-none focus:border-ink-400 dark:border-ink-700 dark:text-ink-100 dark:placeholder:text-ink-600 dark:focus:border-ink-200';
+		'h-9 w-full bg-transparent px-0 pb-1 text-[13px] font-normal text-ink-900 placeholder:text-ink-400 transition-colors duration-300 appearance-none rounded-none outline-none border-0 border-b border-ink-200/80 ring-0 shadow-none focus:ring-0 focus:ring-transparent focus:shadow-none focus:border-ink-400 dark:border-ink-700 dark:text-ink-100 dark:placeholder:text-ink-600 dark:focus:border-ink-200';
 	const underlineWrapperClasses =
 		'after:pointer-events-none after:absolute after:left-0 after:right-0 after:bottom-0 after:h-[2px] after:origin-left after:scale-x-0 after:bg-jade-600/70 after:transition-transform after:duration-300 group-focus-within:after:scale-x-100 dark:after:bg-jade-500/70';
 
@@ -58,6 +64,7 @@
 			variant === 'underline' ? underlineInputClasses : baseInputClasses,
 			icon && (variant === 'underline' ? 'pl-6' : 'pl-10'),
 			'pr-3.5',
+			error && '!border-cinnabar-400/70 focus:!ring-cinnabar-500/10',
 			inputClassName
 		)
 	);
@@ -80,6 +87,14 @@
 		{disabled}
 		{placeholder}
 		{oninput}
+		aria-invalid={error ? true : undefined}
+		aria-describedby={error ? errorId : undefined}
+		{...rest}
 		class={inputClasses}
 	/>
+	{#if error}
+		<p id={errorId} class="mt-1.5 text-micro text-cinnabar-600 dark:text-cinnabar-400" role="alert">
+			{error}
+		</p>
+	{/if}
 </div>

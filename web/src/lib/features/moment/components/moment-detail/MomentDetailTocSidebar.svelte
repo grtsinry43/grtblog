@@ -18,7 +18,7 @@
 		{#if toc.length > 0}
 			<div class="space-y-5">
 				<span
-					class="block border-b border-ink-800/10 pb-2 font-mono text-[8px] font-bold tracking-[0.4em] text-ink-400 uppercase"
+					class="block border-b border-ink-800/10 pb-2 font-mono text-[10px] font-bold tracking-[0.4em] text-ink-400 uppercase"
 				>
 					目录
 				</span>

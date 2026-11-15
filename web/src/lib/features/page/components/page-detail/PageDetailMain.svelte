@@ -35,7 +35,7 @@
 		<DetailMarkdownContent
 			content={page.content}
 			toc={page.toc}
-			className="markdown-body max-w-none text-[15px] leading-[1.8] font-normal text-ink-800 md:text-base dark:text-ink-200"
+			className="markdown-body reading-body max-w-none text-[15px] leading-[1.8] font-normal text-ink-800 md:text-base dark:text-ink-200"
 			onContentRootChange={handleContentRootChange}
 			onActiveAnchorChange={handleActiveAnchorChange}
 		/>

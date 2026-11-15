@@ -14,7 +14,7 @@
 			<Loader2 class="animate-spin text-ink-300" />
 		</div>
 	{:else if $isErrorStore}
-		<div class="text-center py-10 text-sm text-red-500">加载评论失败</div>
+		<div class="text-center py-10 text-sm text-cinnabar-500">加载评论失败</div>
 	{:else if $commentsStore && $commentsStore.length > 0}
 		<div class="space-y-6">
 			{#each $commentsStore as comment (comment.id)}

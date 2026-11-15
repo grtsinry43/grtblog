@@ -45,13 +45,13 @@
 			<div class="mt-0.5 flex items-center gap-2">
 				{#if friend.category}
 					<span
-						class="text-[9px] text-jade-600 dark:text-jade-400 font-mono font-bold uppercase tracking-widest bg-jade-500/5 px-1 rounded-sm"
+						class="text-[10px] text-jade-600 dark:text-jade-400 font-mono font-bold uppercase tracking-widest bg-jade-500/5 px-1 rounded-sm"
 					>
 						{friend.category}
 					</span>
 				{:else}
 					<span
-						class="text-[9px] text-ink-400 dark:text-ink-500 font-mono uppercase tracking-widest"
+						class="text-[10px] text-ink-400 dark:text-ink-500 font-mono uppercase tracking-widest"
 					>
 						友人
 					</span>

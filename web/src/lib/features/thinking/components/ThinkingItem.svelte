@@ -36,7 +36,7 @@
 		>
 			{new Date(item.createdAt).getMonth() + 1}.{new Date(item.createdAt).getDate()}
 		</div>
-		<div class="text-[9px] font-serif text-jade-600/70 dark:text-jade-400/70 italic">
+		<div class="text-[10px] font-serif text-jade-600/70 dark:text-jade-400/70 italic">
 			{new Date(item.createdAt).getFullYear()}
 		</div>
 	</div>

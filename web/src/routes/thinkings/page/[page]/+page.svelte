@@ -68,6 +68,7 @@
 	<PageHeader
 		title="思考"
 		tag="Thoughts"
+		meta={$total ? `${$total} 条` : undefined}
 		subtitle="在喧嚣中寻觅一丝宁静"
 		description="记录深思熟虑后的感悟，或是对世界的细微观察。"
 	/>

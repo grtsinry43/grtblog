@@ -64,7 +64,7 @@
 			: 'border-ink-200/80 dark:border-ink-700/70'}"
 	>
 		<span
-			class="font-mono text-[9px] font-bold tracking-[0.18em] {isSummary
+			class="font-mono text-[10px] font-bold tracking-[0.18em] {isSummary
 				? 'text-jade-300 dark:text-jade-700'
 				: 'text-jade-700 dark:text-jade-400'}"
 		>
@@ -99,7 +99,7 @@
 	</div>
 
 	<div
-		class="mt-5 flex items-center gap-1.5 font-mono text-[9px] tracking-[0.12em] {isSummary
+		class="mt-5 flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] {isSummary
 			? 'text-white/65 dark:text-ink-500'
 			: 'text-ink-400 transition-colors group-hover:text-jade-700 dark:text-ink-500 dark:group-hover:text-jade-400'}"
 	>

@@ -74,7 +74,7 @@
 					<span class="font-medium text-xs text-ink-800 dark:text-ink-200 truncate"
 						>{item.author.name}</span
 					>
-					<time class="font-mono text-[9px] text-ink-400 dark:text-ink-500"
+					<time class="font-mono text-[10px] text-ink-400 dark:text-ink-500"
 						>{formatDate(item.published_at)}</time
 					>
 				</div>

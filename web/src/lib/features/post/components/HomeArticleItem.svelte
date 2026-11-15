@@ -39,7 +39,7 @@
 		>
 			{#if post.isTop}
 				<span
-					class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
+					class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[10px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
 				>
 					<Pin size={9} strokeWidth={2} class="rotate-45" />
 				</span>

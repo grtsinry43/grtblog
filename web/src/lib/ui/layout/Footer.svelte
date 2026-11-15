@@ -111,18 +111,18 @@
 					onclick={onOpenPresence}
 					class="flex items-center gap-2 w-fit transition-colors underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none {presenceConnected
 						? 'text-jade-700/80 dark:text-jade-400/80'
-						: 'text-red-600 dark:text-red-400'}"
+						: 'text-amber-700 dark:text-amber-400'}"
 				>
 					<span class="relative flex h-1.5 w-1.5">
 						<span
 							class="absolute inline-flex h-full w-full rounded-full opacity-75 {presenceConnected
 								? 'bg-jade-400'
-								: 'bg-red-400'}"
+								: 'bg-amber-400'}"
 						></span>
 						<span
 							class="relative inline-flex rounded-full h-1.5 w-1.5 {presenceConnected
 								? 'bg-jade-500'
-								: 'bg-red-500'}"
+								: 'bg-amber-500'}"
 						></span>
 					</span>
 					<span class="text-[10px] font-mono">
@@ -182,18 +182,18 @@
 					onclick={onOpenPresence}
 					class="flex items-center gap-2 w-fit transition-colors underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none {presenceConnected
 						? 'text-jade-700/80 dark:text-jade-400/80'
-						: 'text-red-600 dark:text-red-400'}"
+						: 'text-amber-700 dark:text-amber-400'}"
 				>
 					<span class="relative flex h-1.5 w-1.5">
 						<span
 							class="absolute inline-flex h-full w-full rounded-full opacity-75 {presenceConnected
 								? 'bg-jade-400'
-								: 'bg-red-400'}"
+								: 'bg-amber-400'}"
 						></span>
 						<span
 							class="relative inline-flex rounded-full h-1.5 w-1.5 {presenceConnected
 								? 'bg-jade-500'
-								: 'bg-red-500'}"
+								: 'bg-amber-500'}"
 						></span>
 					</span>
 					<span class="text-[10px] font-mono">

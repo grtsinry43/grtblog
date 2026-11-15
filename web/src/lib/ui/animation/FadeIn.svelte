@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { Spring } from 'svelte/motion';
 	import { intersect } from '$lib/shared/actions/intersect';
+	import { isVisibleOnFirstPaint } from '$lib/shared/dom/first-paint';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -33,6 +34,7 @@
 	// visible=true for SSR; CSS fallback path toggles this
 	let visible = $state(true);
 	let reducedMotion = $state(false);
+	let node: HTMLDivElement | undefined = $state();
 
 	// Initialize at 1 so SSR renders fully visible content.
 	// On client mount we snap to 0; on intersect we animate to 1.
@@ -41,7 +43,8 @@
 	$effect(() => {
 		if (browser) {
 			reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-			if (!reducedMotion) {
+			// Content already painted by SSR stays put; hiding it would flash on hydration.
+			if (!reducedMotion && !isVisibleOnFirstPaint(node)) {
 				if (useSpring) {
 					// Snap to hidden instantly (no animation) — intersect will reverse this
 					progress.set(0, { instant: true });
@@ -89,6 +92,7 @@
 </script>
 
 <div
+	bind:this={node}
 	class={className}
 	use:intersect={{ onEnter, threshold, rootMargin }}
 	style:opacity={currentOpacity}

@@ -188,7 +188,10 @@
 					disabled={updateProfileMutation.isPending || profileForm.nickname === meStore?.nickname}
 				>
 					{#if updateProfileMutation.isPending}
-						<span class="loading loading-spinner loading-xs"></span>
+						<span
+							class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+							aria-hidden="true"
+						></span>
 					{:else}
 						<Check size={14} />
 					{/if}
@@ -261,7 +264,10 @@
 									disabled={bindingLoadingProvider === provider.key}
 								>
 									{#if bindingLoadingProvider === provider.key}
-										<span class="loading loading-spinner loading-xs"></span>
+										<span
+											class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+											aria-hidden="true"
+										></span>
 									{:else}
 										<LinkIcon size={14} />
 									{/if}

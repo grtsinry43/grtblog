@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { resolvePath } from '$lib/shared/utils/resolve-path';
-	import { goto } from '$app/navigation';
 	import { Calendar, Eye, Heart, ExternalLink, Sparkles, Pin } from 'lucide-svelte';
 	import type { PostSummary } from '$lib/features/post/types';
 	import { buildPostPath, buildCategoryPath } from '$lib/shared/utils/content-path';
@@ -18,29 +17,26 @@
 	};
 
 	const showUpdated = $derived(isDifferentDay(post.createdAt, post.contentUpdatedAt));
-
-	const handleCategoryClick = (e: MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-		if (!post.categoryShortUrl) return;
-		goto(resolvePath(buildCategoryPath(post.categoryShortUrl)));
-	};
 </script>
 
-<a
-	href={resolvePath(buildPostPath(post.shortUrl))}
-	class="group relative flex flex-col gap-3 px-4 py-4 sm:px-6 sm:py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 w-full outline-none"
+<!-- The title link stretches over the whole card (after:inset-0) so the category link can be a real sibling link. -->
+<article
+	class="group relative flex flex-col gap-3 px-4 py-4 sm:px-6 sm:py-6 border-b border-ink-100/50 dark:border-ink-800/50 last:border-0 w-full"
 >
 	<!-- Title -->
 	<h2
 		class="font-serif text-xl sm:text-2xl font-medium text-ink-900 dark:text-ink-100 group-hover:text-jade-600 dark:group-hover:text-jade-400 transition-colors duration-200"
 	>
-		<span>{post.title}</span>
+		<a
+			href={resolvePath(buildPostPath(post.shortUrl))}
+			class="outline-none after:absolute after:inset-0 after:rounded-default focus-visible:after:ring-2 focus-visible:after:ring-jade-500/40"
+			>{post.title}</a
+		>
 		{#if post.isTop}
 			<span
-				class="inline-flex shrink-0 items-center gap-0.5 ml-1.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
+				class="inline-flex shrink-0 items-center gap-0.5 ml-1.5 align-middle px-1 py-px text-[10px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
 			>
-				<Pin size={9} strokeWidth={2} class="rotate-45" />
+				<Pin size={9} strokeWidth={2} class="rotate-45" aria-label="置顶" />
 			</span>
 		{/if}
 	</h2>
@@ -65,14 +61,13 @@
 
 		<!-- Category -->
 		{#if post.categoryShortUrl}
-			<button
-				type="button"
-				class="flex items-center gap-1.5 bg-transparent border-0 p-0 text-left cursor-pointer hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
-				onclick={handleCategoryClick}
+			<a
+				href={resolvePath(buildCategoryPath(post.categoryShortUrl))}
+				class="relative z-10 flex items-center gap-1.5 rounded-default hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
 			>
 				<Sparkles size={14} strokeWidth={1.5} />
 				<span>{post.categoryName || '未分类'}</span>
-			</button>
+			</a>
 		{:else}
 			<div class="flex items-center gap-1.5">
 				<Sparkles size={14} strokeWidth={1.5} />
@@ -108,4 +103,4 @@
 			</div>
 		</div>
 	</div>
-</a>
+</article>

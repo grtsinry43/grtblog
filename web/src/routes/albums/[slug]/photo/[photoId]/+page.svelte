@@ -892,11 +892,11 @@
 						>
 					</div>
 					{#if totalBytes > 0}
-						<span class="mb-1 block font-mono text-[9px] text-white/35"
+						<span class="mb-1 block font-mono text-[10px] text-white/35"
 							>{formatBytes(loadedBytes)} / {formatBytes(totalBytes)}</span
 						>
 					{:else if loadedBytes > 0}
-						<span class="mb-1 block font-mono text-[9px] text-white/35"
+						<span class="mb-1 block font-mono text-[10px] text-white/35"
 							>已接收 {formatBytes(loadedBytes)}</span
 						>
 					{/if}

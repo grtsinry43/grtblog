@@ -1,5 +1,7 @@
 <script lang="ts">
-	interface Props {
+	import { type HTMLTextareaAttributes } from 'svelte/elements';
+
+	interface Props extends Omit<HTMLTextareaAttributes, 'value' | 'class'> {
 		value?: string;
 		placeholder?: string;
 		rows?: number;
@@ -8,6 +10,8 @@
 		resize?: 'none' | 'vertical' | 'horizontal' | 'both';
 		textareaClass?: string;
 		class?: string;
+		/** Inline error message; also marks the field aria-invalid. */
+		error?: string;
 		oninput?: (e: Event) => void;
 	}
 
@@ -20,13 +24,17 @@
 		resize = 'vertical',
 		textareaClass: textareaClassName = '',
 		class: className = '',
-		oninput
+		error,
+		oninput,
+		...rest
 	}: Props = $props();
 
+	const errorId = $derived(rest.id ? `${rest.id}-error` : undefined);
+
 	const baseTextareaClasses =
-		'w-full rounded-default border border-ink-100/50 bg-ink-50/50 px-3.5 py-2 text-[13px] font-normal text-ink-900 placeholder:text-ink-300 transition-all duration-300 outline-none hover:border-ink-200 hover:bg-white focus:border-jade-500/40 focus:bg-white focus:ring-4 focus:ring-jade-500/5 dark:border-ink-800/30 dark:bg-ink-700/40 dark:text-ink-100 dark:placeholder:text-ink-600 dark:hover:border-ink-700 dark:hover:bg-ink-950/60 dark:focus:border-jade-500/40 dark:focus:bg-ink-950';
+		'w-full rounded-default border border-ink-100/50 bg-ink-50/50 px-3.5 py-2 text-[13px] font-normal text-ink-900 placeholder:text-ink-400 transition-all duration-300 outline-none hover:border-ink-200 hover:bg-white focus:border-jade-500/50 focus:bg-white focus:ring-4 focus:ring-jade-500/10 dark:border-ink-800/30 dark:bg-ink-900/40 dark:text-ink-100 dark:placeholder:text-ink-600 dark:hover:border-ink-700 dark:hover:bg-ink-950/60 dark:focus:border-jade-500/40 dark:focus:bg-ink-950';
 	const underlineTextareaClasses =
-		'w-full bg-transparent px-0 pb-1 text-[13px] font-normal text-ink-900 placeholder:text-ink-300 transition-colors duration-300 appearance-none rounded-none outline-none border-0 border-b border-ink-200/80 ring-0 shadow-none focus:ring-0 focus:ring-transparent focus:shadow-none focus:border-ink-400 dark:border-ink-700 dark:text-ink-100 dark:placeholder:text-ink-600 dark:focus:border-ink-200';
+		'w-full bg-transparent px-0 pb-1 text-[13px] font-normal text-ink-900 placeholder:text-ink-400 transition-colors duration-300 appearance-none rounded-none outline-none border-0 border-b border-ink-200/80 ring-0 shadow-none focus:ring-0 focus:ring-transparent focus:shadow-none focus:border-ink-400 dark:border-ink-700 dark:text-ink-100 dark:placeholder:text-ink-600 dark:focus:border-ink-200';
 	const underlineWrapperClasses =
 		'after:pointer-events-none after:absolute after:left-0 after:right-0 after:bottom-0 after:h-[2px] after:origin-left after:scale-x-0 after:bg-jade-600/70 after:transition-transform after:duration-300 group-focus-within:after:scale-x-100 dark:after:bg-jade-500/70';
 	const resizeClasses = {
@@ -47,14 +55,28 @@
 			variant === 'underline' ? underlineTextareaClasses : baseTextareaClasses,
 			resizeClasses[resize],
 			'ui-textarea-scrollbar',
+			error && '!border-cinnabar-400/70 focus:!ring-cinnabar-500/10',
 			textareaClassName
 		)
 	);
 </script>
 
 <div class={wrapperClasses}>
-	<textarea bind:value {rows} maxlength={maxLength} {placeholder} {oninput} class={textareaClasses}
-	></textarea>
+	<textarea
+		bind:value
+		{rows}
+		maxlength={maxLength}
+		{placeholder}
+		{oninput}
+		aria-invalid={error ? true : undefined}
+		aria-describedby={error ? errorId : undefined}
+		{...rest}
+		class={textareaClasses}></textarea>
+	{#if error}
+		<p id={errorId} class="mt-1.5 text-micro text-cinnabar-600 dark:text-cinnabar-400" role="alert">
+			{error}
+		</p>
+	{/if}
 </div>
 
 <style>

@@ -22,7 +22,7 @@
 </script>
 
 {#if $hasPostStore}
-	<StickyHeader title={$postTitleStore} />
+	<StickyHeader title={$postTitleStore} showReadingSettings />
 
 	<article class="article-enter space-y-10">
 		<PostDetailHeader />

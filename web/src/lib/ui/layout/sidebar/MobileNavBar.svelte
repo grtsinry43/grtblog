@@ -306,14 +306,14 @@
 						<div class="flex flex-col">
 							<!-- Main Item -->
 							<div
-								class="relative flex select-none items-center gap-3 overflow-hidden rounded-xl px-3 py-2 transition-all duration-300
+								class="relative flex select-none items-center gap-3 overflow-hidden rounded-default px-3 py-2 transition-all duration-300
                                 {active
 									? 'bg-white dark:bg-ink-800'
 									: 'hover:bg-white/50 dark:hover:bg-ink-800/50'}"
 							>
 								{#if active}
 									<div
-										class="pointer-events-none absolute inset-0 rounded-xl border border-jade-200 dark:border-jade-800"
+										class="pointer-events-none absolute inset-0 rounded-default border border-jade-200 dark:border-jade-800"
 									></div>
 								{/if}
 
@@ -383,7 +383,7 @@
 										<a
 											href={/^(https?:|\/\/)/i.test(sub.url) ? sub.url : resolveHref(sub.url)}
 											onclick={handleNavigate}
-											class="group/sub relative flex items-center gap-3 rounded-lg ml-2 mr-2 py-2.5 pl-[54px] pr-4 text-left transition-colors
+											class="group/sub relative flex items-center gap-3 rounded-default ml-2 mr-2 py-2.5 pl-[54px] pr-4 text-left transition-colors
                                             {subActive
 												? 'bg-jade-50/50 dark:bg-jade-900/20'
 												: 'hover:bg-white/60 dark:hover:bg-white/5'}"

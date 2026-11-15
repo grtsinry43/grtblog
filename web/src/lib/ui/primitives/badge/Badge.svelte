@@ -31,7 +31,7 @@
 	{#if icon}
 		{@render icon()}
 	{/if}
-	<span class="font-mono text-[9px] font-bold tracking-[0.1em] uppercase">
+	<span class="font-mono text-[10px] font-bold tracking-[0.1em] uppercase">
 		{@render children()}
 	</span>
 </div>

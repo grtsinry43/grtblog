@@ -205,7 +205,7 @@
 	class={cx(
 		'group relative flex scroll-mt-24 gap-4 rounded-default transition-[background-color,box-shadow] duration-300',
 		$highlightedCommentIdStore === comment.id &&
-			'bg-jade-50/70 shadow-[0_0_0_3px_rgba(16,185,129,0.18)] dark:bg-jade-950/20'
+			'bg-jade-50/70 shadow-[0_0_0_3px_rgba(20,184,166,0.18)] dark:bg-jade-950/20'
 	)}
 	id="comment-{comment.id}"
 	in:fly={{ y: 20, duration: 300 }}
@@ -263,7 +263,7 @@
 			{/if}
 			{#if comment.isFederated}
 				<span
-					class="text-[10px] rounded-sm px-1.5 py-0.5 bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+					class="text-[10px] rounded-default px-1.5 py-0.5 bg-jade-50 text-jade-700 dark:bg-jade-900/30 dark:text-jade-300"
 				>
 					来自联邦 · {formatFederatedProtocol(comment.federatedProtocol)}
 					{#if parseFederatedHost(comment.federatedActor)}
@@ -376,7 +376,7 @@
 						<button
 							onclick={handleConfirmDelete}
 							disabled={deleteMutation.isPending}
-							class="text-red-500 hover:text-red-600 transition-colors font-medium disabled:opacity-50"
+							class="text-cinnabar-500 hover:text-cinnabar-600 transition-colors font-medium disabled:opacity-50"
 						>
 							{deleteMutation.isPending ? '删除中...' : '确认删除'}
 						</button>

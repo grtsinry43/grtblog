@@ -50,7 +50,7 @@
 			name: '思考',
 			desc: '碎片化的逻辑与灵感',
 			icon: Brain,
-			color: 'text-purple-500'
+			color: 'text-bamboo-500'
 		}
 	];
 

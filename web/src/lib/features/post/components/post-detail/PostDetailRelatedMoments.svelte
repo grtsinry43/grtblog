@@ -20,7 +20,7 @@
 	<div class="flex items-center justify-between border-b border-ink-50 pb-2 dark:border-ink-800/30">
 		<div class="flex items-center gap-2">
 			<NotebookPen size={12} class="text-jade-500" />
-			<span class="font-mono text-[8px] font-bold tracking-[0.4em] text-ink-300 uppercase">
+			<span class="font-mono text-[10px] font-bold tracking-[0.4em] text-ink-300 uppercase">
 				同期手记
 			</span>
 		</div>
@@ -47,7 +47,7 @@
 					in:fly={{ x: 10, delay: i * 100 }}
 				>
 					<div class="flex items-center justify-between">
-						<div class="flex items-center gap-1 text-[9px] font-medium text-ink-400">
+						<div class="flex items-center gap-1 text-[10px] font-medium text-ink-400">
 							<Calendar size={10} strokeWidth={2} />
 							{formatDate(moment.createdAt)}
 						</div>

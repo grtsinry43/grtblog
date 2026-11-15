@@ -4,6 +4,8 @@
 	import { createCommentLogin, createCommentVisitor } from '$lib/features/comment/api';
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
+	import { tick } from 'svelte';
+	import { commentQuote, toQuoteBlock } from '$lib/features/comment/quote.svelte';
 	import SafeMarkdownView from '$lib/shared/markdown/SafeMarkdownView.svelte';
 	import ClientOnly from '$lib/ui/common/ClientOnly.svelte';
 	import Input from '$lib/ui/primitives/input/Input.svelte';
@@ -114,6 +116,24 @@
 	$effect(() => {
 		if (!draftKey) return;
 		writeCommentDraft(draftKey, content);
+	});
+
+	const ROOT_TEXTAREA_ID = 'comment-root-content';
+
+	// Consume quotes sent from the article body ("引用到评论"); wait for the draft restore first.
+	$effect(() => {
+		if (!isRootForm || !commentQuote.pending) return;
+		if (draftKey && restoredDraftKey !== draftKey) return;
+		const quote = commentQuote.take();
+		if (!quote) return;
+		previewMode = false;
+		content = truncateToMaxLength(toQuoteBlock(quote) + content, commentContentMaxLength);
+		tick().then(() => {
+			const el = document.getElementById(ROOT_TEXTAREA_ID) as HTMLTextAreaElement | null;
+			if (!el) return;
+			el.focus({ preventScroll: true });
+			el.setSelectionRange(el.value.length, el.value.length);
+		});
 	});
 
 	const mutation = createMutation(() => ({
@@ -346,6 +366,7 @@
 		{:else}
 			<Textarea
 				bind:value={content}
+				id={isRootForm ? ROOT_TEXTAREA_ID : undefined}
 				placeholder="在此留下您的思绪..."
 				rows={6}
 				maxLength={commentContentMaxLength}
@@ -366,7 +387,7 @@
 							<button
 								type="button"
 								onclick={handleClearDraft}
-								class="text-red-500 hover:text-red-600 transition-colors"
+								class="text-cinnabar-500 hover:text-cinnabar-600 transition-colors"
 							>
 								确认清空
 							</button>

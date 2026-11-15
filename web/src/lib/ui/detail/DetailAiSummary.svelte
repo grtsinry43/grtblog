@@ -11,10 +11,17 @@
 
 	let isExpanded = $state(false);
 	let contentHeight = $state(0);
-	const summaryHeight = spring(60, { stiffness: 0.15, damping: 0.6 });
+	const COLLAPSED_HEIGHT = 60;
+	const summaryHeight = spring(COLLAPSED_HEIGHT, { stiffness: 0.15, damping: 0.6 });
+	// Only offer the toggle when the content actually overflows the collapsed height.
+	const collapsible = $derived(contentHeight > COLLAPSED_HEIGHT + 4);
+	const collapsed = $derived(collapsible && !isExpanded);
 
 	$effect(() => {
-		summaryHeight.set(isExpanded ? contentHeight : 60);
+		if (contentHeight === 0) return;
+		const target = collapsible ? (isExpanded ? contentHeight : COLLAPSED_HEIGHT) : contentHeight;
+		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		summaryHeight.set(target, { hard: reduced || !collapsible });
 	});
 </script>
 
@@ -33,19 +40,24 @@
 				>AI 摘要</span
 			>
 		</div>
-		<button
-			class="flex cursor-pointer items-center gap-1 select-none text-[10px] font-medium text-jade-600/80 transition-colors hover:text-jade-600"
-			onclick={() => (isExpanded = !isExpanded)}
-		>
-			{isExpanded ? '收起' : '展开'}
-			<ChevronDown
-				size={12}
-				class={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-			/>
-		</button>
+		{#if collapsible}
+			<button
+				class="flex cursor-pointer items-center gap-1 select-none rounded-default px-1.5 py-1 -my-1 -mr-1.5 text-[11px] font-medium text-jade-700/80 transition-colors hover:text-jade-700 dark:text-jade-400/80 dark:hover:text-jade-400"
+				onclick={() => (isExpanded = !isExpanded)}
+				aria-expanded={isExpanded}
+				aria-controls="ai-summary-content"
+			>
+				{isExpanded ? '收起' : '展开'}
+				<ChevronDown
+					size={12}
+					class={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+				/>
+			</button>
+		{/if}
 	</div>
 	<div
-		class={`relative overflow-hidden will-change-[height] ${!isExpanded ? 'mask-gradient' : ''}`}
+		id="ai-summary-content"
+		class={`relative overflow-hidden will-change-[height] ${collapsed ? '[mask-image:linear-gradient(to_bottom,black_45%,transparent)]' : ''}`}
 		style:height="{$summaryHeight}px"
 	>
 		<div

@@ -97,7 +97,7 @@
 			class="absolute top-0 right-6 h-16 w-8 bg-jade-500/5 dark:bg-jade-500/10 border-x border-jade-500/10 flex items-center justify-center pt-2 z-10"
 		>
 			<span
-				class="[writing-mode:vertical-rl] text-[9px] font-serif font-bold text-jade-700 dark:text-jade-400 tracking-[0.2em] opacity-80 uppercase"
+				class="[writing-mode:vertical-rl] text-[10px] font-serif font-bold text-jade-700 dark:text-jade-400 tracking-[0.2em] opacity-80 uppercase"
 			>
 				{columnLabel}
 			</span>
@@ -115,7 +115,7 @@
 						</span>
 						{#if moment.isTop}
 							<span
-								class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
+								class="inline-flex shrink-0 items-center gap-0.5 align-middle px-1 py-px text-[10px] font-mono font-normal tracking-wider text-jade-600 dark:text-jade-400"
 							>
 								<Pin size={9} strokeWidth={2} class="rotate-45" />
 							</span>

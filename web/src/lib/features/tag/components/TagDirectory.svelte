@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { windowStore } from '$lib/shared/stores/windowStore.svelte';
 	import type { PublicTag } from '../types';
-	import { BookText, ArrowUpRight } from 'lucide-svelte';
+	import { ArrowUpRight } from 'lucide-svelte';
 
 	let { tags = [] }: { tags: PublicTag[] } = $props();
 
@@ -37,21 +37,11 @@
 		<PageHeader
 			title="标签档案馆"
 			tag="Tags"
+			meta={`${tags.length} 个标签 · ${totalArticles} 篇`}
 			subtitle="万物皆有其名"
 			description="按主题整理公开文章。点击任意标签即可打开内容弹窗，快速查看相关文章与手记。"
 			className="mb-8"
 		/>
-
-		<div
-			class="flex items-center gap-2 rounded-default border border-jade-500/20 bg-jade-500/6 px-3 py-2 dark:border-jade-500/25 dark:bg-jade-500/10 mb-8 w-fit mx-auto"
-		>
-			<BookText size={14} class="text-jade-600 dark:text-jade-400" />
-			<span
-				class="font-mono text-[10px] tracking-[0.14em] text-jade-700 uppercase dark:text-jade-300"
-			>
-				{tags.length} Tags · {totalArticles} Articles
-			</span>
-		</div>
 
 		{#if tags.length === 0}
 			<div
@@ -77,14 +67,14 @@
 								>
 									#{tag.name}
 								</p>
-								<p class="font-mono text-[9px] tracking-[0.1em] text-ink-400 uppercase">
+								<p class="font-mono text-[10px] tracking-[0.1em] text-ink-400 uppercase">
 									{tag.articleCount} articles
 								</p>
 							</div>
 							<div
 								class="flex items-center gap-0.5 text-ink-300 transition-colors group-hover:text-jade-500 dark:text-ink-600 dark:group-hover:text-jade-400"
 							>
-								<span class="font-mono text-[9px]">#{index + 1}</span>
+								<span class="font-mono text-[10px]">#{index + 1}</span>
 								<ArrowUpRight size={11} />
 							</div>
 						</div>

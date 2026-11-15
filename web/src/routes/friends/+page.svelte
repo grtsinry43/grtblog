@@ -24,6 +24,7 @@
 	<PageHeader
 		title="友情链接"
 		tag="Friends"
+		meta={data.links?.length ? `${data.links.length} 位朋友` : undefined}
 		subtitle="青山一道同云雨，明月何曾是两乡"
 		description="志同道合者的数字家园，感谢在这个广袤网络中的相遇。"
 	/>

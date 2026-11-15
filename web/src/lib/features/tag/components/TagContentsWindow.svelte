@@ -40,7 +40,7 @@
 				<div class="space-y-3">
 					<div class="flex items-center gap-2 px-1">
 						<span class="h-px w-3 bg-jade-500/30"></span>
-						<span class="font-mono text-[9px] font-bold tracking-[0.2em] text-ink-400 uppercase"
+						<span class="font-mono text-[10px] font-bold tracking-[0.2em] text-ink-400 uppercase"
 							>Articles</span
 						>
 					</div>
@@ -55,7 +55,7 @@
 								>
 									{article.title}
 								</span>
-								<span class="shrink-0 font-mono text-[9px] tracking-tighter text-ink-300">
+								<span class="shrink-0 font-mono text-[10px] tracking-tighter text-ink-300">
 									{formatDateDotted(article.createdAt)}
 								</span>
 							</a>
@@ -68,7 +68,7 @@
 				<div class="space-y-3">
 					<div class="flex items-center gap-2 px-1">
 						<span class="h-px w-3 bg-cinnabar-500/30"></span>
-						<span class="font-mono text-[9px] font-bold tracking-[0.2em] text-ink-400 uppercase"
+						<span class="font-mono text-[10px] font-bold tracking-[0.2em] text-ink-400 uppercase"
 							>Moments</span
 						>
 					</div>
@@ -83,7 +83,7 @@
 								>
 									{moment.title}
 								</span>
-								<span class="shrink-0 font-mono text-[9px] tracking-tighter text-ink-300">
+								<span class="shrink-0 font-mono text-[10px] tracking-tighter text-ink-300">
 									{formatDateDotted(moment.createdAt)}
 								</span>
 							</a>

@@ -51,7 +51,7 @@
 		/>
 
 		<div class="flex items-end justify-between border-t border-ink-200 pt-3 dark:border-ink-800">
-			<span class="font-mono text-[9px] tracking-[0.16em] text-ink-400">CHRONOLOGICAL ORDER</span>
+			<span class="font-mono text-[10px] tracking-[0.16em] text-ink-400">CHRONOLOGICAL ORDER</span>
 			<span
 				class="text-right font-mono text-[10px] leading-4 tabular-nums text-ink-600 dark:text-ink-300"
 			>
@@ -70,7 +70,9 @@
 						>
 							{year.year}
 						</h2>
-						<p class="pb-1 text-right font-mono text-[8px] leading-4 tracking-[0.1em] text-ink-400">
+						<p
+							class="pb-1 text-right font-mono text-[10px] leading-4 tracking-[0.1em] text-ink-400"
+						>
 							{year.stats.posts} POSTS<br />{year.stats.moments} MOMENTS · {year.stats.thinkings} THOUGHTS
 						</p>
 					</div>
@@ -119,7 +121,7 @@
 
 	<footer class="mx-auto mt-20 flex max-w-md items-center gap-4" aria-label="时间线仍在继续">
 		<span class="h-px flex-1 bg-ink-300 dark:bg-ink-700"></span>
-		<span class="font-mono text-[9px] tracking-[0.2em] text-ink-400">NOW / 仍在继续</span>
+		<span class="font-mono text-[10px] tracking-[0.2em] text-ink-400">NOW / 仍在继续</span>
 		<span class="h-px flex-1 bg-ink-300 dark:bg-ink-700"></span>
 	</footer>
 </section>

@@ -40,6 +40,7 @@
 	<PageHeader
 		title="手记"
 		tag="Moments"
+		meta={$total ? `${$total} 篇` : undefined}
 		subtitle="碎碎念，亦是生活的注脚"
 		description="捕捉转瞬即逝的灵感与生活碎片。在这里，文字与心情一同流淌。"
 	/>

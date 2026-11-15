@@ -56,7 +56,7 @@
 					<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
 				</svg>
 				<span
-					class="text-[9px] font-bold tracking-[0.1em] text-jade-600 uppercase dark:text-jade-400"
+					class="text-[10px] font-bold tracking-[0.1em] text-jade-600 uppercase dark:text-jade-400"
 				>
 					引用自 {instance}
 				</span>

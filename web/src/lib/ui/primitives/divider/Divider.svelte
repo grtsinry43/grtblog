@@ -30,7 +30,7 @@
 		decorative
 	/>
 	{#if label}
-		<span class="whitespace-nowrap font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase">
+		<span class="whitespace-nowrap font-mono text-[10px] tracking-[0.3em] text-ink-400 uppercase">
 			{label}
 		</span>
 		<Separator.Root

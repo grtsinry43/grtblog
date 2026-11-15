@@ -27,7 +27,7 @@
 				{side}
 				{align}
 				sideOffset={4}
-				class="z-50 overflow-hidden rounded-default bg-white dark:bg-ink-800 px-3 py-1.5 text-xs text-ink-900 dark:text-jade-100 shadow-lg animate-in fade-in zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-ink-100 dark:border-ink-700 font-serif"
+				class="z-(--z-tooltip) overflow-hidden rounded-default bg-white dark:bg-ink-800 px-3 py-1.5 text-xs text-ink-900 dark:text-jade-100 shadow-float dark:shadow-glass-dark animate-in fade-in zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-ink-100 dark:border-ink-700 font-serif"
 			>
 				{#if typeof content === 'string'}
 					{content}

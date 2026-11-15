@@ -12,6 +12,7 @@
 	import TagList from '$lib/features/tag/components/TagList.svelte';
 	import { buildCategoryPath } from '$lib/shared/utils/content-path';
 	import { RollingNumber } from '$lib/ui/animation';
+	import ReadingSettings from '$lib/features/reading/components/ReadingSettings.svelte';
 
 	const titleStore = postDetailCtx.selectModelData((data) => data?.title ?? '');
 	const postIdStore = postDetailCtx.selectModelData((data) => data?.id ?? 0);
@@ -63,12 +64,12 @@
 			{#if $categoryShortUrlStore}
 				<a
 					href={resolvePath(buildCategoryPath($categoryShortUrlStore))}
-					class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
+					class="font-mono text-[10px] tracking-[0.3em] text-ink-400 uppercase hover:text-jade-600 dark:hover:text-jade-400 transition-colors"
 				>
 					{categoryLabelStore}
 				</a>
 			{:else}
-				<span class="font-mono text-[9px] tracking-[0.3em] text-ink-400 uppercase"
+				<span class="font-mono text-[10px] tracking-[0.3em] text-ink-400 uppercase"
 					>{categoryLabelStore}</span
 				>
 			{/if}
@@ -82,15 +83,15 @@
 
 		<div class="flex flex-col gap-4">
 			<div
-				class="flex flex-wrap items-center gap-5 font-mono text-[9px] tracking-widest text-ink-400 uppercase"
+				class="flex flex-wrap items-center gap-5 font-mono text-[10px] tracking-widest text-ink-400 uppercase"
 			>
 				{#if $isHotStore}
 					{#snippet hotIcon()}
-						<Icon icon="ph:fire-fill" class="size-4 text-red-500" />
+						<Icon icon="ph:fire-fill" class="size-4 text-cinnabar-500" />
 					{/snippet}
 					<Badge
 						variant="soft"
-						class="!border-red-500/20 !bg-red-500/5 !text-red-600 dark:!text-red-400"
+						class="!border-cinnabar-500/20 !bg-cinnabar-500/5 !text-cinnabar-600 dark:!text-cinnabar-400"
 						icon={hotIcon}
 					>
 						热门
@@ -119,6 +120,7 @@
 				<span class="flex items-center gap-1.5"
 					>评论 <RollingNumber value={$metricsStore?.comments ?? 0} /></span
 				>
+				<ReadingSettings class="sm:ml-auto" />
 			</div>
 
 			<TagList tags={$tagsStore} />

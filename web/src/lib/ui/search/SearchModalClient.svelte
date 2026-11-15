@@ -267,24 +267,35 @@
 		activeItemIndex = index;
 	}
 
-	// Keyword Highlighting Helper
+	const HTML_ESCAPES: Record<string, string> = {
+		'&': '&amp;',
+		'<': '&lt;',
+		'>': '&gt;',
+		'"': '&quot;',
+		"'": '&#39;'
+	};
+	const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
+
+	// Keyword Highlighting Helper — output goes to {@html}, so every text segment is escaped.
 	function highlightKeywords(text: string, keywords: string[]): string {
-		if (!keywords || keywords.length === 0) return text;
-		let highlighted = text;
+		const raw = text ?? '';
 		// Sort keywords by length (descending) to match longest phrases first
-		const sortedKeywords = [...keywords].sort((a, b) => b.length - a.length);
+		const pattern = [...(keywords ?? [])]
+			.filter((k) => k.trim())
+			.sort((a, b) => b.length - a.length)
+			.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+			.join('|');
+		if (!pattern) return escapeHtml(raw);
 
-		// Escape special regex characters in keywords
-		const escapedKeywords = sortedKeywords.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-
-		// Create a regex to match all keywords, case-insensitive
-		const regex = new RegExp(`(${escapedKeywords.join('|')})`, 'gi');
-
-		highlighted = highlighted.replace(
-			regex,
-			'<span class="text-jade-600 dark:text-jade-400 font-medium">$1</span>'
-		);
-		return highlighted;
+		// split() with a capture group keeps matches at odd indexes
+		return raw
+			.split(new RegExp(`(${pattern})`, 'gi'))
+			.map((part, i) =>
+				i % 2 === 1
+					? `<span class="text-jade-600 dark:text-jade-400 font-medium">${escapeHtml(part)}</span>`
+					: escapeHtml(part)
+			)
+			.join('');
 	}
 </script>
 
@@ -292,7 +303,7 @@
 
 {#if shouldRender}
 	<div
-		class="fixed inset-0 z-[100] flex items-start justify-center bg-ink-900/20 dark:bg-black/60 pt-[15vh] px-4 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+		class="fixed inset-0 z-(--z-modal) flex items-start justify-center bg-ink-900/20 dark:bg-black/60 pt-[15vh] px-4 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
 		class:opacity-100={isAnimating}
 		class:opacity-0={!isAnimating}
 		class:backdrop-blur-[3px]={isAnimating}
@@ -302,7 +313,7 @@
 		></button>
 
 		<div
-			class="relative w-full max-w-2xl overflow-hidden rounded-sm border border-ink-200/80 bg-ink-50/95 shadow-glass dark:border-ink-700/70 dark:bg-ink-900/95 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+			class="relative w-full max-w-2xl overflow-hidden rounded-sm border border-ink-200/80 bg-ink-50/95 shadow-float dark:shadow-glass-dark dark:border-ink-700/70 dark:bg-ink-900/95 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
 			class:translate-y-0={isAnimating}
 			class:translate-y-8={!isAnimating}
 			class:scale-100={isAnimating}

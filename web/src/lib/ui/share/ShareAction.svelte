@@ -152,7 +152,7 @@
 
 	{#if isMenuOpen}
 		<div
-			class="absolute top-full right-0 z-[120] mt-2 w-52 overflow-hidden rounded-default border border-ink-200/70 bg-[#fbfaf7]/98 p-1.5 shadow-deep backdrop-blur-md dark:border-ink-700 dark:bg-ink-900/98"
+			class="absolute top-full right-0 z-[120] mt-2 w-52 overflow-hidden rounded-default border border-ink-200/70 bg-paper/98 p-1.5 shadow-deep backdrop-blur-md dark:border-ink-700 dark:bg-ink-900/98"
 			role="menu"
 			aria-label="选择分享方式"
 			transition:fly={{ y: -5, duration: 160, easing: cubicOut }}
@@ -210,7 +210,7 @@
 		></button>
 
 		<div
-			class="relative z-10 max-h-full w-full max-w-[880px] overflow-auto rounded-default border border-ink-200/70 bg-[#fbfaf7] shadow-deep dark:border-ink-800 dark:bg-ink-900"
+			class="relative z-10 max-h-full w-full max-w-[880px] overflow-auto rounded-default border border-ink-200/70 bg-paper shadow-deep dark:border-ink-800 dark:bg-ink-900"
 			role="dialog"
 			aria-modal="true"
 			aria-label="分享此页"

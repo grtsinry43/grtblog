@@ -3,7 +3,16 @@
 	import { getCommentTree } from '$lib/features/comment/api';
 	import CommentForm from './CommentForm.svelte';
 	import CommentList from './CommentList.svelte';
-	import { MessageSquare, Globe, ChevronLeft, ChevronRight, Lock } from 'lucide-svelte';
+	import {
+		MessageSquare,
+		Globe,
+		ChevronLeft,
+		ChevronRight,
+		ChevronDown,
+		Lock,
+		Copy,
+		Check
+	} from 'lucide-svelte';
 	import { commentAreaCtx } from '$lib/features/comment/context';
 	import { browser } from '$app/environment';
 	import { onDestroy } from 'svelte';
@@ -205,12 +214,13 @@
 				>
 					<Globe size={12} />
 					<span>在联邦宇宙 (Fediverse) 上互动</span>
-					<div
-						class="i-lucide-chevron-down w-3 h-3 text-ink-400 group-open:rotate-180 transition-transform"
-					></div>
+					<ChevronDown
+						size={12}
+						class="text-ink-400 group-open:rotate-180 transition-transform duration-300"
+					/>
 				</summary>
 				<div
-					class="mt-4 p-5 bg-ink-50 dark:bg-[#252525] border border-ink-200 dark:border-ink-200/50 rounded-default animate-in slide-in-from-top-2 duration-300"
+					class="mt-4 p-5 bg-ink-50 dark:bg-ink-800/40 border border-ink-200 dark:border-ink-200/50 rounded-default animate-in slide-in-from-top-2 duration-300"
 				>
 					<div class="space-y-3">
 						<div>
@@ -220,7 +230,7 @@
 								>ActivityPub 对象地址</label
 							>
 							<div
-								class="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] border border-ink-200 dark:border-ink-200/30 p-2 rounded-default w-full"
+								class="flex items-center gap-2 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-200/30 p-2 rounded-default w-full"
 							>
 								<input
 									id="fediverse-object-url"
@@ -234,7 +244,11 @@
 									aria-label="复制 AP 对象地址"
 									onclick={copyObjectUrl}
 								>
-									<div class="i-lucide-copy w-3.5 h-3.5"></div>
+									{#if copied}
+										<Check size={14} class="text-jade-600 dark:text-jade-400" />
+									{:else}
+										<Copy size={14} />
+									{/if}
 								</button>
 							</div>
 							<div class="text-[10px] text-ink-400 dark:text-ink-500 mt-1">
@@ -254,7 +268,7 @@
 									type="text"
 									bind:value={instanceDomain}
 									placeholder="例如 mastodon.social"
-									class="flex-1 bg-white dark:bg-[#1a1a1a] border border-ink-200 dark:border-ink-200/30 p-2 rounded-default text-xs font-mono text-ink-800 dark:text-ink-200 outline-none placeholder:text-ink-300 dark:placeholder:text-ink-600"
+									class="flex-1 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-200/30 p-2 rounded-default text-xs font-mono text-ink-800 dark:text-ink-200 outline-none placeholder:text-ink-300 dark:placeholder:text-ink-600"
 								/>
 								<button
 									type="button"

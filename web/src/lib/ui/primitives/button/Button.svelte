@@ -9,7 +9,8 @@
 
 	type Props = {
 		variant?: 'primary' | 'secondary' | 'ghost' | 'icon';
-		size?: 'sm' | 'md' | 'lg';
+		/** `none` skips padding/text-size so callers can size the button themselves. */
+		size?: 'sm' | 'md' | 'lg' | 'none';
 		fullWidth?: boolean;
 		content?: Snippet;
 		children?: Snippet;
@@ -24,11 +25,12 @@
 	} & Record<string, unknown>;
 
 	const baseClasses =
-		'inline-flex items-center justify-center gap-2 rounded-[var(--radius-default)] transition-all duration-300 outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 text-[13px] font-normal tracking-wide';
+		'inline-flex items-center justify-center gap-2 rounded-default transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-jade-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-50 dark:focus-visible:ring-offset-ink-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 text-[13px] font-normal tracking-wide';
 	const sizeClasses = {
 		sm: 'px-3 py-1.5 text-[12px]',
 		md: 'px-3.5 py-1.5 text-[13px]',
-		lg: 'px-4 py-2 text-[14px]'
+		lg: 'px-4 py-2 text-[14px]',
+		none: ''
 	} as const;
 	const variantClasses = {
 		primary:
@@ -76,7 +78,8 @@
 	let classes = $derived(
 		cx(
 			baseClasses,
-			sizeClasses[size],
+			// Icon buttons are fixed-size squares; size padding would squeeze the icon.
+			variant !== 'icon' && sizeClasses[size],
 			variantClasses[variant],
 			fullWidth && 'w-full',
 			isDisabled && 'pointer-events-none opacity-50',

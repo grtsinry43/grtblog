@@ -69,7 +69,7 @@
 			{#if faviconUrl}
 				<img src={faviconUrl} alt="" class="h-3 w-3 opacity-80" />
 			{/if}
-			<span class="text-[9px] font-bold tracking-[0.1em] text-ink-400 uppercase dark:text-ink-500">
+			<span class="text-[10px] font-bold tracking-[0.1em] text-ink-400 uppercase dark:text-ink-500">
 				{hostname || 'LINK'}
 			</span>
 		</div>

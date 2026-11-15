@@ -201,7 +201,7 @@
 				{#if highQuality}
 					<div
 						class="pointer-events-none absolute inset-0 z-[1] transition-opacity duration-500"
-						style="background: radial-gradient(ellipse 700px 500px at 50% 50%, rgba(16,185,129,0.07) 0%, transparent 70%);"
+						style="background: radial-gradient(ellipse 700px 500px at 50% 50%, rgba(20, 184, 166, 0.07) 0%, transparent 70%);"
 					></div>
 				{/if}
 
@@ -219,7 +219,7 @@
 
 							<!-- Month Label -->
 							<div class="absolute top-4 flex flex-col items-center gap-0.5">
-								<span class="font-mono text-[9px] font-bold text-ink-300 dark:text-ink-600">
+								<span class="font-mono text-[10px] font-bold text-ink-300 dark:text-ink-600">
 									{[
 										'JAN',
 										'FEB',
@@ -292,7 +292,7 @@
 										? 'bg-jade-400 dark:bg-jade-500'
 										: 'bg-ink-400/60 dark:bg-ink-500/60'}"
 									style="left: -2px; top: -2px; transform: scale({flyProgress});{isHqNear
-										? ` box-shadow: 0 0 ${focusWeight * 8}px ${focusWeight * 3}px rgba(16,185,129,${focusWeight * 0.5});`
+										? ` box-shadow: 0 0 ${focusWeight * 8}px ${focusWeight * 3}px rgba(20, 184, 166, ${focusWeight * 0.5});`
 										: ''}"
 								></div>
 
@@ -324,7 +324,7 @@
 									rotate({prefersReducedMotion.current || isPast ? 0 : (1 - flyProgress) * 10}deg)
 									{highQuality ? `rotateY(${Math.max(-5, Math.min(5, distFromFocus * 0.004))}deg)` : ''};
 								{highQuality
-									? `filter: blur(${(1 - focusWeight) * 4}px) grayscale(${(1 - focusWeight) * 0.5}); box-shadow: 0 0 ${focusWeight * 30}px ${focusWeight * 8}px rgba(16,185,129,${focusWeight * 0.12});`
+									? `filter: blur(${(1 - focusWeight) * 4}px) grayscale(${(1 - focusWeight) * 0.5}); box-shadow: 0 0 ${focusWeight * 30}px ${focusWeight * 8}px rgba(20, 184, 166, ${focusWeight * 0.12});`
 									: ''}
 							"
 							>

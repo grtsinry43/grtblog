@@ -17,6 +17,7 @@
 	<PageHeader
 		title="朋友圈"
 		tag="Friend Timeline"
+		meta={data.pagination?.total ? `${data.pagination.total} 条动态` : undefined}
 		subtitle="见字如面，相逢在字里行间"
 		description="聚合了友情链接中朋友们的最新文章与动态，感受网络邻居们的思考与生活。"
 	/>

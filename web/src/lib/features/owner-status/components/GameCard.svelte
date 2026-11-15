@@ -108,7 +108,7 @@
 				class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"
 			></div>
 			<span
-				class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-white backdrop-blur-sm"
+				class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white backdrop-blur-sm"
 			>
 				<span class="relative flex h-1.5 w-1.5">
 					<span

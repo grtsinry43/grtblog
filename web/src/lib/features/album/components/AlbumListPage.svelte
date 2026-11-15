@@ -38,6 +38,7 @@
 
 <div class="mx-auto w-full max-w-[1200px] px-3.5 py-8 sm:px-6 sm:py-14 md:px-0 md:py-16">
 	<PageHeader
+		meta={$total ? `${$total} 个相册` : undefined}
 		title="相册"
 		tag="Gallery"
 		subtitle="光与影的私人收藏"

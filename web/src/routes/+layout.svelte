@@ -92,6 +92,8 @@
 	});
 
 	import '@fontsource/google-sans/400.css';
+	import '@fontsource/google-sans/500.css';
+	import '@fontsource/google-sans/700.css';
 	import '@fontsource/noto-serif-sc/400.css';
 	import '@fontsource/noto-serif-sc/500.css';
 	import '@fontsource/noto-serif-sc/600.css';
@@ -369,10 +371,6 @@
 	{#if seoMeta.markdownUrl}
 		<link rel="alternate" href={seoMeta.markdownUrl} type="text/markdown" />
 	{/if}
-	<meta
-		name="viewport"
-		content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-	/>
 	<meta name="description" content={seoMeta.description} />
 	<meta name="keywords" content={seoMeta.keywords} />
 	<meta name="robots" content={seoMeta.robots} />

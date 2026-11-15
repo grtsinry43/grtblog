@@ -6,14 +6,21 @@
 	import { browser } from '$app/environment';
 	import { toast } from 'svelte-sonner';
 	import ShareAction from '$lib/ui/share/ShareAction.svelte';
+	import ReadingSettings from '$lib/features/reading/components/ReadingSettings.svelte';
 
 	interface Props {
 		title: string;
 		showThreshold?: number;
 		showCommentShortcut?: boolean;
+		showReadingSettings?: boolean;
 	}
 
-	let { title, showThreshold = 300, showCommentShortcut = true }: Props = $props();
+	let {
+		title,
+		showThreshold = 300,
+		showCommentShortcut = true,
+		showReadingSettings = false
+	}: Props = $props();
 
 	let scrollY = $state(0);
 	let clientHeight = $state(0);
@@ -128,6 +135,10 @@
 					</Button>
 				{/if}
 
+				{#if showReadingSettings}
+					<ReadingSettings variant="icon" />
+				{/if}
+
 				<ShareAction
 					iconSize={18}
 					buttonTitle="分享文章"
@@ -160,7 +171,7 @@
 		left: 0;
 		right: 0;
 		height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), transparent);
+		background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.2), transparent);
 		pointer-events: none;
 	}
 </style>

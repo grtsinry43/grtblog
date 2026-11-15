@@ -11,7 +11,7 @@
 	let { page }: Props = $props();
 </script>
 
-<StickyHeader title={page.title} />
+<StickyHeader title={page.title} showReadingSettings />
 
 <article class="article-enter space-y-10">
 	<PageDetailHeader {page} />

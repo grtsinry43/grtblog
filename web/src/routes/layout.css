@@ -89,10 +89,35 @@
 	--shadow-deep: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
 	--shadow-glow: 0 0 30px -5px rgba(45, 212, 191, 0.2);
 
+	--shadow-glass-lg: 0 16px 48px -8px rgba(28, 25, 23, 0.12);
+
+	/* Type: micro scale for meta labels. 11px is the floor for readable CJK. */
+	--text-micro: 11px;
+	--text-micro--line-height: 1.5;
+	--text-caption: 12px;
+	--text-caption--line-height: 1.6;
+
+	/* Motion: two curves cover enter/exit and playful overshoot. */
+	--ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-spring: cubic-bezier(0.18, 0.89, 0.32, 1.28);
+
+	/* Surfaces */
+	--color-paper: #fbf9f5;
+
 	/* Border Radius */
 	--radius-default: 3px;
 	--radius-4xl: 2rem;
 	--radius-5xl: 2.5rem;
+}
+
+/* Stacking scale. Usage: z-(--z-modal) */
+:root {
+	--z-nav: 50;
+	--z-popover: 60;
+	--z-window-backdrop: 70;
+	--z-window: 71;
+	--z-modal: 100;
+	--z-tooltip: 200;
 }
 
 /* Base Styles */
@@ -312,6 +337,30 @@ body {
 	filter: invert(1) sepia(10%) hue-rotate(10deg);
 }
 
+/* Reading preferences (set on <html> by features/reading/prefs + boot script in app.html).
+   Unlayered so they override the body's text-[15px] md:text-base utilities. */
+:root[data-reading-size='sm'] .reading-body {
+	font-size: 14px;
+}
+
+:root[data-reading-size='lg'] .reading-body {
+	font-size: 17px;
+}
+
+@media (min-width: 768px) {
+	:root[data-reading-size='sm'] .reading-body {
+		font-size: 15px;
+	}
+
+	:root[data-reading-size='lg'] .reading-body {
+		font-size: 18px;
+	}
+}
+
+:root[data-reading-font='serif'] .reading-body {
+	font-family: var(--font-serif);
+}
+
 /* Markdown content: prevent any child from stretching the page */
 .markdown-preview {
 	overflow-x: clip;
@@ -357,6 +406,33 @@ body {
 /* Global resets for polish */
 button {
 	cursor: pointer;
+}
+
+/* Keyboard focus fallback. Unlayered so it beats `outline-none` utilities; elements
+   that declare their own `focus-visible:*` styles opt out automatically. */
+:where(a, button, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus-visible:not(
+		[class*='focus-visible:']
+	) {
+	outline: 2px solid color-mix(in srgb, var(--color-jade-500) 70%, transparent);
+	outline-offset: 2px;
+	border-radius: var(--radius-default);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	::before,
+	::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		animation-delay: 0s !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation: none !important;
+	}
 }
 
 /* Back navigation: disable per-card morph so moment-sheet handles the exit */

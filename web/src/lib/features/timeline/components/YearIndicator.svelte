@@ -48,15 +48,15 @@
 			</div>
 			<div class="mt-2 flex gap-4 text-[11px] font-medium text-ink-100">
 				<div class="flex flex-col items-end">
-					<span class="text-[9px] uppercase tracking-wider opacity-50">Posts</span>
+					<span class="text-[10px] uppercase tracking-wider opacity-50">Posts</span>
 					<span>{monthStats.posts}</span>
 				</div>
 				<div class="flex flex-col items-end">
-					<span class="text-[9px] uppercase tracking-wider opacity-50">Moments</span>
+					<span class="text-[10px] uppercase tracking-wider opacity-50">Moments</span>
 					<span>{monthStats.moments}</span>
 				</div>
 				<div class="flex flex-col items-end">
-					<span class="text-[9px] uppercase tracking-wider opacity-50">Thinkings</span>
+					<span class="text-[10px] uppercase tracking-wider opacity-50">Thinkings</span>
 					<span>{monthStats.thinkings}</span>
 				</div>
 			</div>
@@ -69,15 +69,15 @@
 			</div>
 			<div class="mt-2 flex gap-4 text-[11px] font-medium text-ink-100">
 				<div class="flex flex-col items-end">
-					<span class="text-[9px] uppercase tracking-wider opacity-50">Posts</span>
+					<span class="text-[10px] uppercase tracking-wider opacity-50">Posts</span>
 					<span>{yearStats.posts}</span>
 				</div>
 				<div class="flex flex-col items-end">
-					<span class="text-[9px] uppercase tracking-wider opacity-50">Moments</span>
+					<span class="text-[10px] uppercase tracking-wider opacity-50">Moments</span>
 					<span>{yearStats.moments}</span>
 				</div>
 				<div class="flex flex-col items-end">
-					<span class="text-[9px] uppercase tracking-wider opacity-50">Thinkings</span>
+					<span class="text-[10px] uppercase tracking-wider opacity-50">Thinkings</span>
 					<span>{yearStats.thinkings}</span>
 				</div>
 			</div>

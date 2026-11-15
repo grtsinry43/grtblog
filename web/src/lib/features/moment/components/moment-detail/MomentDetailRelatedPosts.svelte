@@ -46,7 +46,7 @@
 	<div class="flex items-center justify-between border-b border-ink-800/10 pb-2">
 		<div class="flex items-center gap-2">
 			<FileText size={12} class="text-cinnabar-500" />
-			<span class="font-mono text-[8px] font-bold tracking-[0.4em] text-ink-400 uppercase">
+			<span class="font-mono text-[10px] font-bold tracking-[0.4em] text-ink-400 uppercase">
 				同期文章
 			</span>
 		</div>
@@ -73,7 +73,7 @@
 					in:fly={{ x: 10, delay: i * 100 }}
 				>
 					<div class="flex items-center justify-between">
-						<div class="flex items-center gap-1 text-[9px] font-medium text-ink-400">
+						<div class="flex items-center gap-1 text-[10px] font-medium text-ink-400">
 							<Calendar size={10} strokeWidth={2} />
 							{formatDate(post.createdAt)}
 						</div>

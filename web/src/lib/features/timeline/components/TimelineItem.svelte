@@ -61,7 +61,7 @@
 				>
 					<Icon size={9} class="text-ink-800 dark:text-ink-200 {isSummary ? 'text-white' : ''}" />
 					<span
-						class="text-[8px] font-bold uppercase tracking-wider text-ink-800 dark:text-ink-200 {isSummary
+						class="text-[10px] font-bold uppercase tracking-wider text-ink-800 dark:text-ink-200 {isSummary
 							? 'text-white'
 							: ''}"
 					>
@@ -69,7 +69,7 @@
 					</span>
 				</div>
 				<time
-					class="font-mono text-[9px] font-medium text-ink-400 dark:text-ink-500 {isSummary
+					class="font-mono text-[10px] font-medium text-ink-400 dark:text-ink-500 {isSummary
 						? 'text-jade-100'
 						: ''}"
 				>
@@ -88,7 +88,7 @@
 						item.content?.slice(0, 40) + (item.content && item.content.length > 40 ? '...' : '')}
 				</h3>
 				{#if item.type === 'thinking' && item.content}
-					<p class="mt-1 line-clamp-2 text-[9px] leading-relaxed text-ink-500 dark:text-ink-400">
+					<p class="mt-1 line-clamp-2 text-[10px] leading-relaxed text-ink-500 dark:text-ink-400">
 						{item.content}
 					</p>
 				{/if}

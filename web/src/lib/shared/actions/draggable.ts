@@ -1,6 +1,9 @@
 type DraggableOptions = {
 	handle?: string;
 	onMove: (dx: number, dy: number) => void;
+	onEnd?: () => void;
+	/** Cursor while idle and while dragging; defaults to grab/grabbing. */
+	cursor?: string;
 };
 
 const NON_DRAG_SELECTOR =
@@ -50,8 +53,9 @@ export function draggable(node: HTMLElement, initialOptions: DraggableOptions) {
 		if (dragDistance > 3) {
 			suppressClickUntil = Date.now() + 120;
 		}
-		handleEl.style.cursor = 'grab';
+		handleEl.style.cursor = options.cursor ?? 'grab';
 		cleanupDragListeners();
+		options.onEnd?.();
 	}
 
 	function handlePointerDown(event: PointerEvent) {
@@ -66,7 +70,7 @@ export function draggable(node: HTMLElement, initialOptions: DraggableOptions) {
 		dragDistance = 0;
 		pointerX = event.clientX;
 		pointerY = event.clientY;
-		handleEl.style.cursor = 'grabbing';
+		handleEl.style.cursor = options.cursor ?? 'grabbing';
 		document.body.style.userSelect = 'none';
 		window.addEventListener('pointermove', handlePointerMove);
 		window.addEventListener('pointerup', stopDragging);
@@ -76,7 +80,7 @@ export function draggable(node: HTMLElement, initialOptions: DraggableOptions) {
 
 	const bindHandle = () => {
 		handleEl = getHandleElement();
-		handleEl.style.cursor = 'grab';
+		handleEl.style.cursor = options.cursor ?? 'grab';
 		handleEl.style.touchAction = 'none';
 		handleEl.addEventListener('pointerdown', handlePointerDown);
 		window.addEventListener('click', suppressDragEndClick, true);

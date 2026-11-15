@@ -49,7 +49,7 @@
 		{#each messages as msg, index (`${index}-${msg!.role}-${msg!.content}`)}
 			<div class="flex flex-col {isMe(msg!.role) ? 'items-end' : 'items-start'}">
 				<!-- 极简角色标识 -->
-				<span class="mb-1 text-[9px] font-bold text-ink-400 uppercase tracking-tighter">
+				<span class="mb-1 text-[10px] font-bold text-ink-400 uppercase tracking-tighter">
 					{msg!.role}
 				</span>
 
