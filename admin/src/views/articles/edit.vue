@@ -14,7 +14,11 @@ import {
   type ArticleDetail,
 } from '@/services/articles'
 import { publishFederationActivityPub } from '@/services/federation-admin'
+import AiTitleButton from '@/views/shared/content-editor/components/AiTitleButton.vue'
 import EditorStatsOverlay from '@/views/shared/content-editor/components/EditorStatsOverlay.vue'
+import RealtimeAIToggle, {
+  type RealtimeAIPrefs,
+} from '@/views/shared/content-editor/components/RealtimeAIToggle.vue'
 import {
   useAiSummaryGeneration,
   useAiTitleGeneration,
@@ -29,9 +33,17 @@ import { useEditorStats } from './composables/use-editor-stats'
 import { useTaxonomySelect } from './composables/use-taxonomy-select'
 
 import type { FederationSignalRow } from './components/ArticleMetaDrawer.vue'
+import type { RealtimeAIStatus } from '@/composables/markdown-editor/use-realtime-ai'
 import type { FederationOutboundInteractionResp } from '@/types/federation'
 
 defineOptions({ name: 'ArticleEdit' })
+
+const realtimeAiPrefs = ref<RealtimeAIPrefs>({
+  enabled: false,
+  completion: true,
+  lint: true,
+})
+const realtimeAiStatus = ref<RealtimeAIStatus>('idle')
 
 const message = useMessage()
 
@@ -559,16 +571,12 @@ watch([isYearSummary, yearSummaryYear], () => {
           />
         </div>
 
-        <NButton
-          quaternary
-          size="small"
+        <AiTitleButton
           :loading="aiGenerating"
-          :disabled="!form.content?.trim()"
-          @click="handleAIGenerate"
-        >
-          <template #icon><div class="iconify ph--robot" /></template>
-          AI
-        </NButton>
+          :has-content="!!form.content?.trim()"
+          :has-existing-title="!!(form.title?.trim() || form.shortUrl?.trim())"
+          @generate="handleAIGenerate"
+        />
 
         <NButtonGroup>
           <NButton
@@ -613,6 +621,11 @@ watch([isYearSummary, yearSummaryYear], () => {
             <template #icon><PreviewLink20Regular /></template>
           </NButton>
 
+          <RealtimeAIToggle
+            v-model="realtimeAiPrefs"
+            :status="realtimeAiStatus"
+          />
+
           <NButton
             type="primary"
             size="medium"
@@ -640,8 +653,13 @@ watch([isYearSummary, yearSummaryYear], () => {
         >
           <MarkdownEditor
             v-model="form.content"
+            :realtime-ai="realtimeAiPrefs.enabled"
+            :realtime-ai-completion="realtimeAiPrefs.completion"
+            :realtime-ai-lint="realtimeAiPrefs.lint"
+            :article-title="form.title"
             class="h-full min-h-full"
             @cursor-change="handleCursorChange"
+            @ai-status-change="(s) => (realtimeAiStatus = s)"
           />
 
           <EditorStatsOverlay

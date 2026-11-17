@@ -364,6 +364,70 @@ func (h *AIHandler) GenerateSummaryStream(c *fiber.Ctx) error {
 	return nil
 }
 
+// CompleteStream 实时幽灵续写流式接口（不写入任务日志）。
+func (h *AIHandler) CompleteStream(c *fiber.Ctx) error {
+	var req contract.AICompleteReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if strings.TrimSpace(req.Prefix) == "" {
+		return response.NewBizErrorWithMsg(response.ParamsError, "上文不能为空")
+	}
+
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+	c.Set("X-Accel-Buffering", "no")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		defer cancel()
+		err := h.svc.CompleteTextStream(ctx, req.Prefix, req.Suffix, req.Title, func(chunk string) error {
+			data, _ := json.Marshal(map[string]string{"content": chunk})
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
+				return err
+			}
+			return w.Flush()
+		})
+		if err != nil {
+			data, _ := json.Marshal(map[string]string{"error": err.Error()})
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			w.Flush()
+		}
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+		w.Flush()
+	})
+	return nil
+}
+
+// CheckWriting 实时行文纠错检查接口（不写入任务日志）。
+func (h *AIHandler) CheckWriting(c *fiber.Ctx) error {
+	var req contract.AICheckWritingReq
+	if err := c.BodyParser(&req); err != nil {
+		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
+	}
+	if strings.TrimSpace(req.Content) == "" {
+		return response.Success(c, contract.AICheckWritingResp{Issues: []contract.AIWritingIssue{}})
+	}
+
+	issues, err := h.svc.CheckWriting(c.UserContext(), req.Content)
+	if err != nil {
+		return response.NewBizErrorWithCause(response.ServerError, "行文检查失败", err)
+	}
+
+	respIssues := make([]contract.AIWritingIssue, 0, len(issues))
+	for _, item := range issues {
+		respIssues = append(respIssues, contract.AIWritingIssue{
+			Original:   item.Original,
+			Suggestion: item.Suggestion,
+			Reason:     item.Reason,
+			Severity:   item.Severity,
+		})
+	}
+	return response.Success(c, contract.AICheckWritingResp{Issues: respIssues})
+}
+
 // ── TaskLog ──
 
 func (h *AIHandler) ListTaskLogs(c *fiber.Ctx) error {

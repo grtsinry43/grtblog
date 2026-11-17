@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import {
+  ArrowClockwise20Regular,
   ArrowUp20Filled,
   Checkmark20Filled,
   Dismiss20Filled,
   Sparkle20Filled,
 } from '@vicons/fluent'
-import { NIcon, NScrollbar, useThemeVars } from 'naive-ui'
+import { NCard, NIcon, NScrollbar, useThemeVars } from 'naive-ui'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { computeLineDiff } from '@/composables/markdown-editor/use-ai-toolbar'
@@ -19,15 +20,58 @@ const props = defineProps<{
   resultContent: string
   showResult: boolean
   originalContent: string
+  anchorPos?: { top: number; left: number } | null
 }>()
 
 const emit = defineEmits<{
   'update:instruction': [value: string]
-  execute: []
+  execute: [customInstruction?: string]
   accept: []
   reject: []
   close: []
 }>()
+
+const quickIntents = [
+  { label: '扩写细节', instruction: '保持原意和文风，自然扩写细节和例子，使其更丰满' },
+  { label: '润色表达', instruction: '润色这段文字，使表达更流畅、凝练、高级' },
+  { label: '精简', instruction: '精简这段文字，保留核心信息，去掉冗余修饰' },
+  { label: '转列表', instruction: '将这段内容整理为结构清晰的 Markdown 要点列表' },
+  { label: '译为英文', instruction: '将这段内容地道地翻译为英文，保留 Markdown 格式' },
+]
+
+const containerStyle = computed(() => {
+  const base = {
+    backgroundColor: themeVars.value.popoverColor,
+    borderColor: themeVars.value.dividerColor,
+    borderRadius: themeVars.value.borderRadius,
+    boxShadow: themeVars.value.boxShadow2,
+  }
+  if (!props.anchorPos) return base
+  const panelWidth = Math.min(540, window.innerWidth - 32)
+  const left = Math.max(16, Math.min(props.anchorPos.left, window.innerWidth - panelWidth - 16))
+  const nearBottom = props.anchorPos.top > window.innerHeight - 260
+  if (nearBottom) {
+    return {
+      ...base,
+      position: 'fixed' as const,
+      left: `${left}px`,
+      bottom: `${Math.max(16, window.innerHeight - props.anchorPos.top + 32)}px`,
+      transform: 'none',
+      width: `${panelWidth}px`,
+      zIndex: 9998,
+    }
+  }
+  return {
+    ...base,
+    position: 'fixed' as const,
+    left: `${left}px`,
+    top: `${Math.max(16, props.anchorPos.top)}px`,
+    bottom: 'auto',
+    transform: 'none',
+    width: `${panelWidth}px`,
+    zIndex: 9998,
+  }
+})
 
 const themeVars = useThemeVars()
 const inputRef = ref<HTMLInputElement>()
@@ -89,9 +133,12 @@ function onInputKeydown(e: KeyboardEvent) {
 
 <template>
   <Transition name="ai-toolbar">
-    <div
+    <NCard
       v-if="visible"
+      size="small"
       class="ai-toolbar-container"
+      :style="containerStyle"
+      content-style="padding: 0;"
     >
       <!-- Upper panel: streaming or diff -->
       <div
@@ -134,6 +181,22 @@ function onInputKeydown(e: KeyboardEvent) {
         </NScrollbar>
       </div>
 
+      <!-- Quick intent chips when waiting for input -->
+      <div
+        v-if="phase === 'input'"
+        class="ai-quick-intents"
+      >
+        <button
+          v-for="item in quickIntents"
+          :key="item.label"
+          type="button"
+          class="ai-intent-chip"
+          @click="emit('execute', item.instruction)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+
       <!-- Bottom input bar (always present) -->
       <div class="ai-input-bar">
         <NIcon
@@ -152,6 +215,16 @@ function onInputKeydown(e: KeyboardEvent) {
         />
         <div class="ai-input-actions">
           <template v-if="phase === 'diff'">
+            <button
+              class="ai-btn ai-btn--reject"
+              title="重新生成"
+              @click="emit('execute')"
+            >
+              <NIcon
+                :component="ArrowClockwise20Regular"
+                :size="14"
+              />
+            </button>
             <button
               class="ai-btn ai-btn--reject"
               title="放弃"
@@ -192,7 +265,7 @@ function onInputKeydown(e: KeyboardEvent) {
           </template>
         </div>
       </div>
-    </div>
+    </NCard>
   </Transition>
 </template>
 
@@ -204,11 +277,37 @@ function onInputKeydown(e: KeyboardEvent) {
   transform: translateX(-50%);
   z-index: 20;
   width: min(560px, calc(100% - 32px));
-  border-radius: 8px;
-  background-color: v-bind('themeVars.popoverColor');
-  border: 1px solid v-bind('themeVars.dividerColor');
-  box-shadow: v-bind('themeVars.boxShadow2');
   overflow: hidden;
+}
+
+/* ── Quick intent chips ── */
+.ai-quick-intents {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 2px;
+}
+
+.ai-intent-chip {
+  padding: 2px 8px;
+  border-radius: v-bind('themeVars.borderRadius');
+  border: 1px solid v-bind('themeVars.dividerColor');
+  background-color: transparent;
+  color: v-bind('themeVars.textColor2');
+  font-size: 11.5px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+.ai-intent-chip:hover {
+  border-color: color-mix(in srgb, v-bind('themeVars.primaryColor') 45%, transparent);
+  color: v-bind('themeVars.primaryColor');
+  background-color: color-mix(in srgb, v-bind('themeVars.primaryColor') 8%, transparent);
 }
 
 /* ── Upper panels ── */
@@ -374,7 +473,7 @@ function onInputKeydown(e: KeyboardEvent) {
   gap: 4px;
   border: none;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: v-bind('themeVars.borderRadius');
   font-size: 12px;
   line-height: 1;
   transition: all 0.15s ease;

@@ -15,6 +15,7 @@ export function useFloatingMenu({ view, onViewUpdate }: EditorContext) {
   const isVisible = ref(false)
   const menuPos = ref({ top: 0, left: 0 })
   const activeFormats = ref<Set<FormatType>>(new Set())
+  const selectedText = ref('')
 
   onViewUpdate((update: ViewUpdate) => {
     const currentView = update.view
@@ -23,6 +24,7 @@ export function useFloatingMenu({ view, onViewUpdate }: EditorContext) {
     // 1. 基础显隐判断
     if (selection.main.empty) {
       isVisible.value = false
+      selectedText.value = ''
       return
     }
 
@@ -32,6 +34,7 @@ export function useFloatingMenu({ view, onViewUpdate }: EditorContext) {
 
     if (!start || !end) {
       isVisible.value = false
+      selectedText.value = ''
       return
     }
 
@@ -43,6 +46,7 @@ export function useFloatingMenu({ view, onViewUpdate }: EditorContext) {
 
     // 4. 状态回填 (查询 AST)
     activeFormats.value = getActiveStyles(currentView)
+    selectedText.value = currentView.state.doc.sliceString(selection.main.from, selection.main.to)
     isVisible.value = true
   })
 
@@ -58,6 +62,7 @@ export function useFloatingMenu({ view, onViewUpdate }: EditorContext) {
     isVisible,
     menuPos,
     activeFormats,
+    selectedText,
     executeCommand,
   }
 }

@@ -69,6 +69,17 @@ export interface RewriteResult {
   content: string
 }
 
+export interface WritingIssue {
+  original: string
+  suggestion: string
+  reason: string
+  severity: 'typo' | 'style'
+}
+
+export interface CheckWritingResp {
+  issues: WritingIssue[]
+}
+
 // ── TaskLog ──
 
 export interface AITaskLog {
@@ -176,9 +187,11 @@ export function rewriteContent(content: string, instruction: string) {
   })
 }
 
-export async function generateSummaryStream(
-  content: string,
+async function consumeAIStream(
+  path: string,
+  body: Record<string, unknown>,
   onChunk: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const token = getAuthToken()
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -186,10 +199,11 @@ export async function generateSummaryStream(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const resp = await fetch(`${API_BASE_URL}/admin/ai/generate-summary/stream`, {
+  const resp = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ content }),
+    body: JSON.stringify(body),
+    signal,
   })
 
   if (!resp.ok) {
@@ -225,54 +239,37 @@ export async function generateSummaryStream(
   }
 }
 
+export async function generateSummaryStream(
+  content: string,
+  onChunk: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return consumeAIStream('/admin/ai/generate-summary/stream', { content }, onChunk, signal)
+}
+
 export async function rewriteContentStream(
   content: string,
   instruction: string,
   onChunk: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
-  const token = getAuthToken()
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
+  return consumeAIStream('/admin/ai/rewrite-content/stream', { content, instruction }, onChunk, signal)
+}
 
-  const resp = await fetch(`${API_BASE_URL}/admin/ai/rewrite-content/stream`, {
+export async function completeTextStream(
+  params: { prefix: string; suffix?: string; title?: string },
+  onChunk: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return consumeAIStream('/admin/ai/complete/stream', params, onChunk, signal)
+}
+
+export function checkWriting(content: string, signal?: AbortSignal) {
+  return request<CheckWritingResp>('/admin/ai/check-writing', {
     method: 'POST',
-    headers,
-    body: JSON.stringify({ content, instruction }),
+    body: { content },
+    signal,
   })
-
-  if (!resp.ok) {
-    throw new Error(`请求失败（${resp.status}）`)
-  }
-
-  const reader = resp.body?.getReader()
-  if (!reader) throw new Error('无法读取响应流')
-
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() || ''
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue
-      const data = line.slice(6)
-      if (data === '[DONE]') return
-      try {
-        const parsed = JSON.parse(data) as { content?: string; error?: string }
-        if (parsed.error) throw new Error(parsed.error)
-        if (parsed.content) onChunk(parsed.content)
-      } catch (e) {
-        if (e instanceof Error && e.message !== data) throw e
-      }
-    }
-  }
 }
 
 // ── TaskLog API ──

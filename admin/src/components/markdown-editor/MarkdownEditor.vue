@@ -16,6 +16,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import EditorAIToolbar from '@/components/markdown-editor/EditorAIToolbar.vue'
 import EditorCitationPicker from '@/components/markdown-editor/EditorCitationPicker.vue'
 import EditorFloatingMenu from '@/components/markdown-editor/EditorFloatingMenu.vue'
+import EditorLintPopover from '@/components/markdown-editor/EditorLintPopover.vue'
 import EditorMentionPicker from '@/components/markdown-editor/EditorMentionPicker.vue'
 import { useAIToolbar } from '@/composables/markdown-editor/use-ai-toolbar'
 import { useCitationPicker } from '@/composables/markdown-editor/use-citation-picker'
@@ -23,15 +24,21 @@ import { useCodeMirror } from '@/composables/markdown-editor/use-codemirror'
 import { useComponentInserter } from '@/composables/markdown-editor/use-component-inserter.ts'
 import { useFloatingMenu } from '@/composables/markdown-editor/use-floating-menu'
 import { useMentionPicker } from '@/composables/markdown-editor/use-mention-picker'
+import { useRealtimeAI, type RealtimeAIStatus } from '@/composables/markdown-editor/use-realtime-ai'
 import { uploadFile } from '@/services/uploads'
 import { cah } from '@/utils/chromaHelper'
 
 const props = defineProps<{
   modelValue: string
+  realtimeAi?: boolean
+  realtimeAiCompletion?: boolean
+  realtimeAiLint?: boolean
+  articleTitle?: string
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
+  (e: 'ai-status-change', value: RealtimeAIStatus): void
   (
     e: 'cursor-change',
     value: {
@@ -101,13 +108,34 @@ const { view, onViewUpdate } = useCodeMirror(editorRef, {
 const inserter = useComponentInserter(view)
 
 // 3. 挂载浮动菜单逻辑
-const { isVisible, menuPos, activeFormats, executeCommand } = useFloatingMenu({
+const { isVisible, menuPos, activeFormats, selectedText, executeCommand } = useFloatingMenu({
   view,
   onViewUpdate,
 })
 
 // 4. AI 改写工具栏
 const aiToolbar = useAIToolbar(() => view.value)
+
+// 4.5 实时 AI 帮写（幽灵续写 + 行内纠错）
+const realtimeAIEnabled = computed(() => !!props.realtimeAi)
+const realtimeAICompletion = computed(() => props.realtimeAiCompletion ?? true)
+const realtimeAILint = computed(() => props.realtimeAiLint ?? true)
+const realtimeAI = useRealtimeAI({
+  view,
+  onViewUpdate,
+  enabled: realtimeAIEnabled,
+  enableCompletion: realtimeAICompletion,
+  enableLint: realtimeAILint,
+  getTitle: () => props.articleTitle,
+})
+
+watch(
+  () => realtimeAI.status.value,
+  (status) => {
+    emit('ai-status-change', status)
+  },
+  { immediate: true },
+)
 
 // 5. Federation pickers
 const mentionPicker = useMentionPicker(view)
@@ -125,11 +153,19 @@ function onCitationTrigger() {
   citationPicker.open()
 }
 
-async function handleAIExecute() {
+async function handleAIExecute(customInstruction?: string) {
   try {
-    await aiToolbar.execute()
+    await aiToolbar.execute(customInstruction)
   } catch (e: unknown) {
     message.error(e instanceof Error ? e.message : 'AI 改写失败')
+  }
+}
+
+function handleFloatingAIAction(instruction?: string) {
+  if (instruction) {
+    aiToolbar.openAndExecute(instruction)
+  } else {
+    aiToolbar.open()
   }
 }
 
@@ -240,7 +276,17 @@ watch(
       :visible="isVisible"
       :pos="menuPos"
       :active-formats="activeFormats"
+      :realtime-ai="realtimeAIEnabled"
+      :selected-text="selectedText"
       @command="executeCommand"
+      @ai-action="handleFloatingAIAction"
+    />
+
+    <EditorLintPopover
+      :match="realtimeAI.activeLint.value?.match ?? null"
+      :pos="realtimeAI.activeLint.value?.pos ?? null"
+      @accept="realtimeAI.acceptLint"
+      @dismiss="realtimeAI.dismissLint"
     />
 
     <EditorAIToolbar
@@ -250,6 +296,7 @@ watch(
       :result-content="aiToolbar.resultContent.value"
       :show-result="aiToolbar.showResult.value"
       :original-content="aiToolbar.originalContent.value"
+      :anchor-pos="aiToolbar.anchorPos.value"
       @update:instruction="(v) => (aiToolbar.instruction.value = v)"
       @execute="handleAIExecute"
       @accept="aiToolbar.accept()"

@@ -96,6 +96,27 @@ type AIGenerateSummaryResp struct {
 	Summary string `json:"summary"`
 }
 
+type AICompleteReq struct {
+	Prefix string `json:"prefix"`
+	Suffix string `json:"suffix,omitempty"`
+	Title  string `json:"title,omitempty"`
+}
+
+type AICheckWritingReq struct {
+	Content string `json:"content"`
+}
+
+type AIWritingIssue struct {
+	Original   string `json:"original"`
+	Suggestion string `json:"suggestion"`
+	Reason     string `json:"reason"`
+	Severity   string `json:"severity"`
+}
+
+type AICheckWritingResp struct {
+	Issues []AIWritingIssue `json:"issues"`
+}
+
 // ── TaskLog ──
 
 type AITaskLogResp struct {

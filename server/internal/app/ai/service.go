@@ -238,6 +238,122 @@ func (s *Service) RewriteContentStream(ctx context.Context, content, instruction
 	return streamErr
 }
 
+// WritingIssue 表示实时行文检查发现的拼写或表达问题。
+type WritingIssue struct {
+	Original   string `json:"original"`
+	Suggestion string `json:"suggestion"`
+	Reason     string `json:"reason"`
+	Severity   string `json:"severity"` // "typo" | "style"
+}
+
+const defaultCompletePrompt = `你是一个极简、克制的中文/英文技术博客实时续写助手。
+请根据用户光标前的上文（以及可选的标题和下文），自然续写接下来最贴合语境的 1 到 2 句话。
+要求：
+1. 只输出续写内容本身，不要重复上文末尾的任何文字。
+2. 不要输出任何解释、引号、Markdown 代码块包裹或寒暄。
+3. 保持与上文一致的语言、人称、语气与技术深度。
+4. 如果上文是一个未完的句子，自然接续并补全它；如果是新段落开头，给出自然的下一句。`
+
+const defaultCheckWritingPrompt = `你是一个克制、精准的博客编辑校对助手。
+请检查用户提供的片段中是否存在明显的错别字、语法错误、标点误用或明显别扭的表达。
+要求：
+1. 仅返回真正有问题的地方，没有问题时返回空数组 {"issues": []}。
+2. 每次最多返回 5 条最值得修改的问题，不要吹毛求疵。
+3. "original" 必须是原文中精确存在的连续子串，不可改写。
+4. "suggestion" 是可直接替换 "original" 的文本。
+5. "reason" 用不超过 15 个字简述原因（如"常见错别字"、"语序更流畅"）。
+6. "severity" 只能是 "typo"（错别字/语法错误）或 "style"（表达优化）。
+7. 严格输出合法 JSON：{"issues":[{"original":"...","suggestion":"...","reason":"...","severity":"typo"}]}`
+
+// CompleteTextStream 用于编辑器的实时幽灵续写（不记入 ai_task_logs）。
+func (s *Service) CompleteTextStream(ctx context.Context, prefix, suffix, title string, onChunk func(string) error) error {
+	if err := s.checkEnabled(ctx); err != nil {
+		return err
+	}
+
+	client, modelID, _, _, err := s.buildClientExt(ctx, taskKeyContentRewrite)
+	if err != nil {
+		return fmt.Errorf("build ai client: %w", err)
+	}
+
+	var sb strings.Builder
+	if strings.TrimSpace(title) != "" {
+		sb.WriteString("文章标题：")
+		sb.WriteString(strings.TrimSpace(title))
+		sb.WriteString("\n\n")
+	}
+	sb.WriteString("光标前上文：\n")
+	sb.WriteString(prefix)
+	if strings.TrimSpace(suffix) != "" {
+		sb.WriteString("\n\n光标后下文（供衔接参考）：\n")
+		sb.WriteString(suffix)
+	}
+
+	temp := 0.45
+	return client.ChatStream(ctx, infraai.ChatRequest{
+		Model:       modelID,
+		Temperature: &temp,
+		Messages: []infraai.ChatMessage{
+			{Role: "system", Content: defaultCompletePrompt},
+			{Role: "user", Content: sb.String()},
+		},
+	}, onChunk)
+}
+
+// CheckWriting 用于编辑器的轻量行内纠错与润色检查（不记入 ai_task_logs）。
+func (s *Service) CheckWriting(ctx context.Context, content string) ([]WritingIssue, error) {
+	if err := s.checkEnabled(ctx); err != nil {
+		return nil, err
+	}
+
+	client, modelID, _, _, err := s.buildClientExt(ctx, taskKeyContentRewrite)
+	if err != nil {
+		return nil, fmt.Errorf("build ai client: %w", err)
+	}
+
+	temp := 0.2
+	maxTokens := 512
+	resp, err := client.Chat(ctx, infraai.ChatRequest{
+		Model:       modelID,
+		Temperature: &temp,
+		MaxTokens:   &maxTokens,
+		Messages: []infraai.ChatMessage{
+			{Role: "system", Content: defaultCheckWritingPrompt},
+			{Role: "user", Content: content},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ai chat: %w", err)
+	}
+
+	raw := extractJSON(resp.Content)
+	var parsed struct {
+		Issues []WritingIssue `json:"issues"`
+	}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		var list []WritingIssue
+		if err2 := json.Unmarshal([]byte(raw), &list); err2 != nil {
+			return []WritingIssue{}, nil
+		}
+		parsed.Issues = list
+	}
+
+	valid := make([]WritingIssue, 0, len(parsed.Issues))
+	for _, issue := range parsed.Issues {
+		if issue.Original == "" || issue.Suggestion == "" || issue.Original == issue.Suggestion {
+			continue
+		}
+		if !strings.Contains(content, issue.Original) {
+			continue
+		}
+		if issue.Severity != "typo" && issue.Severity != "style" {
+			issue.Severity = "style"
+		}
+		valid = append(valid, issue)
+	}
+	return valid, nil
+}
+
 // GenerateSummaryStream 使用 AI 流式生成文章摘要，通过 onChunk 回调增量返回。
 func (s *Service) GenerateSummaryStream(ctx context.Context, content string, onChunk func(string) error) error {
 	if err := s.checkEnabled(ctx); err != nil {

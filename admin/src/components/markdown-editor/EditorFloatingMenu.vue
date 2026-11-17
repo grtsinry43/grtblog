@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { TextBold20Regular as IconBold, TextItalic20Regular as IconItalic } from '@vicons/fluent'
+import {
+  Sparkle20Filled as IconSparkle,
+  TextBold20Regular as IconBold,
+  TextItalic20Regular as IconItalic,
+} from '@vicons/fluent'
 import { CodeSlash as IconCode, RemoveCircleOutline as IconStrike } from '@vicons/ionicons5'
-import { NButton, NIcon, useThemeVars } from 'naive-ui'
+import { NButton, NCard, NIcon, useThemeVars } from 'naive-ui'
 import { computed } from 'vue'
 
 import type { FormatType } from '@/composables/markdown-editor/utils/ast'
@@ -10,21 +14,34 @@ interface Props {
   visible: boolean
   pos: { top: number; left: number }
   activeFormats: Set<FormatType>
+  realtimeAi?: boolean
+  selectedText?: string
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'command', type: FormatType): void
+  (e: 'ai-action', instruction?: string): void
 }>()
 
 const themeVars = useThemeVars()
 
-const style = computed(() => ({
-  top: `${props.pos.top}px`,
-  left: `${props.pos.left}px`,
-  transform: 'translate(-50%, -120%)',
-  position: 'fixed' as const,
-  zIndex: 9999,
+const style = computed(() => {
+  const clampedLeft = Math.max(120, Math.min(props.pos.left, window.innerWidth - 140))
+  return {
+    top: `${props.pos.top}px`,
+    left: `${clampedLeft}px`,
+    transform: 'translate(-50%, -120%)',
+    position: 'fixed' as const,
+    zIndex: 9999,
+  }
+})
+
+const menuContentStyle = computed(() => ({
+  backgroundColor: themeVars.value.popoverColor,
+  borderRadius: themeVars.value.borderRadius,
+  boxShadow: themeVars.value.boxShadow2,
+  borderColor: themeVars.value.dividerColor,
 }))
 
 const buttons = [
@@ -48,21 +65,46 @@ const handleMousedown = () => {
         :style="style"
         @mousedown.prevent="handleMousedown"
       >
-        <div class="menu-content">
-          <n-button
-            v-for="btn in buttons"
-            :key="btn.type"
-            quaternary
-            size="small"
-            class="action-btn"
-            :class="{ 'is-active': activeFormats.has(btn.type as FormatType) }"
-            @click="emit('command', btn.type as FormatType)"
-          >
-            <template #icon>
-              <n-icon :component="btn.icon" />
-            </template>
-          </n-button>
-        </div>
+        <NCard
+          size="small"
+          :style="menuContentStyle"
+          content-style="padding: 4px;"
+        >
+          <div class="menu-content">
+            <n-button
+              v-for="btn in buttons"
+              :key="btn.type"
+              quaternary
+              size="small"
+              class="action-btn"
+              :class="{ 'is-active': activeFormats.has(btn.type as FormatType) }"
+              @click="emit('command', btn.type as FormatType)"
+            >
+              <template #icon>
+                <n-icon :component="btn.icon" />
+              </template>
+            </n-button>
+
+            <span
+              class="menu-divider"
+              :style="{ backgroundColor: themeVars.dividerColor }"
+            />
+
+            <n-button
+              quaternary
+              size="small"
+              class="action-btn ai-trigger-btn"
+              :class="{ 'is-active': props.realtimeAi }"
+              :style="{ color: themeVars.primaryColor }"
+              title="AI 改写或扩写"
+              @click="emit('ai-action')"
+            >
+              <template #icon>
+                <n-icon :component="IconSparkle" />
+              </template>
+            </n-button>
+          </div>
+        </NCard>
       </div>
     </Transition>
   </Teleport>
@@ -74,24 +116,9 @@ const handleMousedown = () => {
 }
 
 .menu-content {
-  /* * 核心改动：回归纯色
-   * 使用 popoverColor 确保背景是不透明的实色（深色模式下是深灰，浅色下是纯白）
-   */
-  background-color: v-bind('themeVars.popoverColor');
-
-  /* 严格使用 Naive UI 系统变量 */
-  border-radius: v-bind('themeVars.borderRadius');
-  box-shadow: v-bind('themeVars.boxShadow2');
-  border: 1px solid v-bind('themeVars.dividerColor'); /* 加上边框防止和背景融为一体 */
-
   display: flex;
   align-items: center;
-  padding: 4px;
   gap: 2px;
-
-  transition:
-    background-color 0.3s var(--n-bezier),
-    box-shadow 0.3s var(--n-bezier);
 }
 
 .action-btn {
@@ -119,6 +146,17 @@ const handleMousedown = () => {
 .action-btn:not(.is-active):hover {
   background-color: v-bind('themeVars.hoverColor');
   color: v-bind('themeVars.textColor1');
+}
+
+.menu-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 3px;
+  background-color: v-bind('themeVars.dividerColor');
+}
+
+.ai-trigger-btn {
+  color: v-bind('themeVars.primaryColor');
 }
 
 /* 动画保持不变，依旧使用 Naive 标准曲线 */

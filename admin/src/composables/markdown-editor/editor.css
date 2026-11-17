@@ -280,3 +280,129 @@
   -webkit-text-fill-color: transparent;
   animation: cm-upload-shimmer 1.4s infinite;
 }
+
+/* ── AI 实时帮写：幽灵续写（Ghost Text） ── */
+@keyframes cm-ai-ink-emerge {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.94);
+    filter: blur(3px);
+  }
+  65% {
+    opacity: 0.64;
+    transform: translateY(-1.5px) scale(1.03);
+    filter: blur(0.2px);
+  }
+  100% {
+    opacity: 0.56;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes cm-ai-ghost-breathe {
+  0%,
+  100% {
+    opacity: 0.48;
+  }
+  50% {
+    opacity: 0.64;
+  }
+}
+
+@keyframes cm-ai-hint-emerge {
+  0% {
+    opacity: 0;
+    transform: translateY(3px) scale(0.95);
+    filter: blur(1.5px);
+  }
+  65% {
+    opacity: 0.84;
+    transform: translateY(-1px) scale(1.02);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0.78;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.cm-ai-ghost-wrapper {
+  pointer-events: none;
+  user-select: none;
+}
+
+.cm-ai-ghost-text {
+  color: color-mix(in srgb, var(--cm-fg-muted, #64748b) 78%, var(--cm-accent, #3b82f6) 22%);
+  font-style: italic;
+  animation: cm-ai-ghost-breathe 3.2s ease-in-out infinite;
+}
+
+.cm-ai-ghost-ink {
+  display: inline-block;
+  white-space: pre-wrap;
+  opacity: 0;
+  transform-origin: center bottom;
+  animation:
+    cm-ai-ink-emerge 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    cm-ai-ghost-breathe 3.2s ease-in-out 440ms infinite;
+}
+
+.cm-ai-ghost-hint {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-style: normal;
+  line-height: 1.5;
+  vertical-align: baseline;
+  color: var(--cm-fg-muted, #64748b);
+  background: color-mix(in srgb, var(--cm-tooltip-bg, #ffffff) 75%, var(--cm-accent, #3b82f6) 8%);
+  border: 1px solid color-mix(in srgb, var(--cm-tooltip-border, #e5e7eb) 80%, transparent);
+  opacity: 0;
+  animation: cm-ai-hint-emerge 360ms cubic-bezier(0.22, 1, 0.36, 1) 180ms forwards;
+}
+
+/* ── AI 实时纠错：柔光波浪线 ── */
+.cm-ai-lint-typo {
+  text-decoration: underline wavy color-mix(in srgb, var(--cm-syntax-number, #f59e0b) 85%, transparent);
+  text-decoration-thickness: 1.25px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 150ms ease;
+}
+
+.cm-ai-lint-typo:hover {
+  background-color: color-mix(in srgb, var(--cm-syntax-number, #f59e0b) 12%, transparent);
+}
+
+.cm-ai-lint-style {
+  text-decoration: underline wavy color-mix(in srgb, var(--cm-accent, #3b82f6) 65%, transparent);
+  text-decoration-thickness: 1.25px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 150ms ease;
+}
+
+.cm-ai-lint-style:hover {
+  background-color: color-mix(in srgb, var(--cm-accent, #3b82f6) 10%, transparent);
+}
+
+@keyframes cm-ai-flash-fade {
+  0% {
+    background-color: color-mix(in srgb, var(--cm-accent, #3b82f6) 28%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.cm-ai-lint-flash {
+  border-radius: 3px;
+  animation: cm-ai-flash-fade 550ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

@@ -25,8 +25,12 @@ import MarkdownPreview from '@/components/markdown-editor/MarkdownPreview.vue'
 import { publishFederationActivityPub } from '@/services/federation-admin'
 import { useEditorStats } from '@/views/articles/composables/use-editor-stats'
 import AiSummaryAssist from '@/views/shared/content-editor/components/AiSummaryAssist.vue'
+import AiTitleButton from '@/views/shared/content-editor/components/AiTitleButton.vue'
 import ContentTagSelect from '@/views/shared/content-editor/components/ContentTagSelect.vue'
 import EditorStatsOverlay from '@/views/shared/content-editor/components/EditorStatsOverlay.vue'
+import RealtimeAIToggle, {
+  type RealtimeAIPrefs,
+} from '@/views/shared/content-editor/components/RealtimeAIToggle.vue'
 import {
   useAiSummaryGeneration,
   useAiTitleGeneration,
@@ -35,6 +39,15 @@ import { usePreviewFrame } from '@/views/shared/content-editor/composables/use-p
 
 import MomentAtmosphereFields from './components/MomentAtmosphereFields.vue'
 import { useMomentForm } from './composables/use-moment-form'
+
+import type { RealtimeAIStatus } from '@/composables/markdown-editor/use-realtime-ai'
+
+const realtimeAiPrefs = ref<RealtimeAIPrefs>({
+  enabled: false,
+  completion: true,
+  lint: true,
+})
+const realtimeAiStatus = ref<RealtimeAIStatus>('idle')
 import { useMomentTaxonomySelect } from './composables/use-moment-taxonomy-select'
 
 import type { MomentDetail } from '@/services/moments'
@@ -263,16 +276,12 @@ watch(previewUrl, () => {
           />
         </div>
 
-        <NButton
-          quaternary
-          size="small"
+        <AiTitleButton
           :loading="aiGenerating"
-          :disabled="!form.content?.trim()"
-          @click="handleAIGenerate"
-        >
-          <template #icon><div class="iconify ph--robot" /></template>
-          AI
-        </NButton>
+          :has-content="!!form.content?.trim()"
+          :has-existing-title="!!(form.title?.trim() || form.shortUrl?.trim())"
+          @generate="handleAIGenerate"
+        />
 
         <NButtonGroup>
           <NButton
@@ -317,6 +326,11 @@ watch(previewUrl, () => {
             <template #icon><PreviewLink20Regular /></template>
           </NButton>
 
+          <RealtimeAIToggle
+            v-model="realtimeAiPrefs"
+            :status="realtimeAiStatus"
+          />
+
           <NButton
             type="primary"
             size="medium"
@@ -344,8 +358,13 @@ watch(previewUrl, () => {
         >
           <MarkdownEditor
             v-model="form.content"
+            :realtime-ai="realtimeAiPrefs.enabled"
+            :realtime-ai-completion="realtimeAiPrefs.completion"
+            :realtime-ai-lint="realtimeAiPrefs.lint"
+            :article-title="form.title"
             class="h-full min-h-full"
             @cursor-change="handleCursorChange"
+            @ai-status-change="(s) => (realtimeAiStatus = s)"
           />
 
           <EditorStatsOverlay

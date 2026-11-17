@@ -279,6 +279,8 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/ai/rewrite-content", aiHandler.RewriteContent)
 	admin.Post("/ai/rewrite-content/stream", aiHandler.RewriteContentStream)
 	admin.Post("/ai/generate-summary/stream", aiHandler.GenerateSummaryStream)
+	admin.Post("/ai/complete/stream", aiHandler.CompleteStream)
+	admin.Post("/ai/check-writing", aiHandler.CheckWriting)
 	admin.Get("/ai/task-logs", aiHandler.ListTaskLogs)
 	admin.Get("/ai/task-logs/:id", aiHandler.GetTaskLog)
 }

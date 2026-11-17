@@ -56,6 +56,8 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
   const showResult = ref(false)
   const selectionRange = ref<{ from: number; to: number } | null>(null)
   const originalContent = ref('')
+  const anchorPos = ref<{ top: number; left: number } | null>(null)
+  let abortController: AbortController | null = null
 
   // 记录最近一次非空选区，供 slash 命令触发时恢复
   let lastNonEmptySelection: { from: number; to: number } | null = null
@@ -64,6 +66,19 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
   function trackSelection(from: number, to: number) {
     if (from !== to) {
       lastNonEmptySelection = { from, to }
+    }
+  }
+
+  function updateAnchorFromRange(view: EditorView, range: { from: number; to: number }) {
+    const endPos = Math.min(range.to, view.state.doc.length)
+    const coords = view.coordsAtPos(endPos)
+    if (coords) {
+      anchorPos.value = {
+        top: coords.bottom + 10,
+        left: coords.left,
+      }
+    } else {
+      anchorPos.value = null
     }
   }
 
@@ -92,28 +107,59 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
     }
     // 用完即清，避免下次误用旧选区
     lastNonEmptySelection = null
+    if (selectionRange.value) {
+      updateAnchorFromRange(view, selectionRange.value)
+    }
     visible.value = true
     instruction.value = ''
     resultContent.value = ''
     showResult.value = false
   }
 
-  async function execute() {
+  async function execute(customInstruction?: string) {
     const view = getView()
     if (!view || !selectionRange.value) return
     const { from, to } = selectionRange.value
     const content = view.state.doc.sliceString(from, to)
     if (!content.trim()) return
+
+    if (typeof customInstruction === 'string') {
+      instruction.value = customInstruction
+    }
+
+    abortController?.abort()
+    abortController = new AbortController()
+    const signal = abortController.signal
+
     originalContent.value = content
     loading.value = true
     showResult.value = true
     resultContent.value = ''
     try {
-      await rewriteContentStream(content, instruction.value, (chunk) => {
-        resultContent.value += chunk
-      })
+      await rewriteContentStream(
+        content,
+        instruction.value,
+        (chunk) => {
+          if (!signal.aborted) {
+            resultContent.value += chunk
+          }
+        },
+        signal,
+      )
+    } catch (e) {
+      if (signal.aborted) return
+      throw e
     } finally {
-      loading.value = false
+      if (!signal.aborted) {
+        loading.value = false
+      }
+    }
+  }
+
+  function openAndExecute(customInstruction?: string) {
+    open()
+    if (customInstruction) {
+      void execute(customInstruction)
     }
   }
 
@@ -130,11 +176,15 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
   }
 
   function close() {
+    abortController?.abort()
+    abortController = null
+    loading.value = false
     visible.value = false
     resultContent.value = ''
     showResult.value = false
     selectionRange.value = null
     originalContent.value = ''
+    anchorPos.value = null
   }
 
   return {
@@ -144,8 +194,10 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
     resultContent,
     showResult,
     originalContent,
+    anchorPos,
     trackSelection,
     open,
+    openAndExecute,
     execute,
     accept,
     reject,
