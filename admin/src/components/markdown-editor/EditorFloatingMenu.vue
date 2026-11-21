@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  AlignSpaceBetweenHorizontal20Regular as IconPangu,
   Sparkle20Filled as IconSparkle,
   TextBold20Regular as IconBold,
   TextItalic20Regular as IconItalic,
@@ -21,17 +22,19 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'command', type: FormatType): void
+  (e: 'pangu'): void
   (e: 'ai-action', instruction?: string): void
 }>()
 
 const themeVars = useThemeVars()
 
 const style = computed(() => {
-  const clampedLeft = Math.max(120, Math.min(props.pos.left, window.innerWidth - 140))
+  const clampedLeft = Math.max(140, Math.min(props.pos.left, window.innerWidth - 140))
+  const flipBelow = props.pos.top < 72
   return {
-    top: `${props.pos.top}px`,
+    top: `${flipBelow ? Math.max(60, props.pos.top + 36) : props.pos.top}px`,
     left: `${clampedLeft}px`,
-    transform: 'translate(-50%, -120%)',
+    transform: flipBelow ? 'translate(-50%, 0)' : 'translate(-50%, -120%)',
     position: 'fixed' as const,
     zIndex: 9999,
   }
@@ -78,6 +81,7 @@ const handleMousedown = () => {
               size="small"
               class="action-btn"
               :class="{ 'is-active': activeFormats.has(btn.type as FormatType) }"
+              :title="btn.tip"
               @click="emit('command', btn.type as FormatType)"
             >
               <template #icon>
@@ -89,6 +93,18 @@ const handleMousedown = () => {
               class="menu-divider"
               :style="{ backgroundColor: themeVars.dividerColor }"
             />
+
+            <n-button
+              quaternary
+              size="small"
+              class="action-btn"
+              title="盘古格式化（中英文间自动加空格）"
+              @click="emit('pangu')"
+            >
+              <template #icon>
+                <n-icon :component="IconPangu" />
+              </template>
+            </n-button>
 
             <n-button
               quaternary

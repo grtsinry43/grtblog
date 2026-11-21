@@ -36,6 +36,7 @@ type CommentRepository interface {
 	Update(ctx context.Context, comment *Comment) error
 	Delete(ctx context.Context, id int64) error
 	SetViewedStatus(ctx context.Context, ids []int64, isViewed bool) error
+	SetAllViewedStatus(ctx context.Context, isViewed bool) error
 	SetAuthorStatus(ctx context.Context, id int64, isAuthor bool) error
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	SetTopStatus(ctx context.Context, id int64, isTop bool) error

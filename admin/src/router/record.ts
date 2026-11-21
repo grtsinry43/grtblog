@@ -563,6 +563,17 @@ export const routeRecordRaw: MenuMixedOptions[] = [
     redirect: 'ai/task-logs',
     children: [
       {
+        path: 'ops-report',
+        name: 'aiOpsReport',
+        label: '运营复盘',
+        icon: 'iconify ph--compass',
+        meta: {
+          componentName: 'AIOpsReport',
+          showTab: true,
+        },
+        component: 'ai/ops-report/index',
+      },
+      {
         path: 'task-logs',
         name: 'aiTaskLogs',
         label: '任务日志',

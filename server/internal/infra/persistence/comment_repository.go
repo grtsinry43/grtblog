@@ -495,6 +495,13 @@ func (r *CommentRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&model.Comment{}, id).Error
 }
 
+func (r *CommentRepository) SetAllViewedStatus(ctx context.Context, isViewed bool) error {
+	return r.db.WithContext(ctx).
+		Model(&model.Comment{}).
+		Where("is_viewed = ?", !isViewed).
+		Update("is_viewed", isViewed).Error
+}
+
 func (r *CommentRepository) SetViewedStatus(ctx context.Context, ids []int64, isViewed bool) error {
 	if len(ids) == 0 {
 		return nil

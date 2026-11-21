@@ -74,6 +74,7 @@ export interface SetCommentAreaClosePayload {
 }
 
 export interface MarkCommentsViewedPayload {
-  ids: string[]
+  ids?: string[]
+  markAll?: boolean
   isViewed?: boolean
 }

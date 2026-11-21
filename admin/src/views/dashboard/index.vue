@@ -7,6 +7,7 @@ import { ChartPanel, ScrollContainer } from '@/components'
 import { getDashboardStats, getHitokoto } from '@/services/stats'
 import { toRefsUserStore } from '@/stores/user'
 
+import AiOpsBriefCard from './components/AiOpsBriefCard.vue'
 import { useDashboardCharts } from './composables/use-dashboard-charts'
 
 defineOptions({
@@ -71,12 +72,22 @@ const cardList = computed(() => {
     },
     {
       title: '待办事项',
-      value: s.pending.unviewedComments + s.pending.friendLinkApplications,
+      value:
+        (s.pending.pendingComments ?? 0) +
+        s.pending.unviewedComments +
+        s.pending.friendLinkApplications,
       precision: 0,
       iconClass: 'iconify ph--list-checks-bold text-orange-50 dark:text-orange-150',
       iconBgClass:
         'text-orange-500/5 bg-orange-400 ring-4 ring-orange-200 dark:bg-orange-650 dark:ring-orange-500/30 transition-all',
-      description: '待审核评论与友链',
+      description: (() => {
+        const parts: string[] = []
+        if ((s.pending.pendingComments ?? 0) > 0) parts.push(`${s.pending.pendingComments} 待审评论`)
+        if (s.pending.unviewedComments > 0) parts.push(`${s.pending.unviewedComments} 未读评论`)
+        if (s.pending.friendLinkApplications > 0)
+          parts.push(`${s.pending.friendLinkApplications} 友链申请`)
+        return parts.length > 0 ? parts.join(' · ') : '暂无待办事项'
+      })(),
     },
   ]
 })
@@ -165,6 +176,9 @@ const topContentTabs = [
         </div>
       </div>
     </div>
+
+    <!-- AI 运营简报（非侵入式） -->
+    <AiOpsBriefCard />
 
     <!-- Top Cards -->
     <div class="grid grid-cols-1 gap-4 max-sm:gap-2 md:grid-cols-2 lg:grid-cols-4">

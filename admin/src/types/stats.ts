@@ -45,6 +45,7 @@ export interface WordCountStats {
 }
 
 export interface PendingStats {
+  pendingComments: number
   unviewedComments: number
   friendLinkApplications: number
 }

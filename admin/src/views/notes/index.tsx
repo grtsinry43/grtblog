@@ -23,6 +23,7 @@ import {
 } from '@/services/moments'
 import { listWebsiteInfo } from '@/services/website-info'
 import ContentQuickPreview from '@/views/shared/content-editor/components/ContentQuickPreview.vue'
+import WritingIdeaHint from '@/views/shared/content-editor/components/WritingIdeaHint.vue'
 
 import type { MomentListItem } from '@/services/moments'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
@@ -397,6 +398,8 @@ export default defineComponent({
             </NSpace>
           </div>
         </NCard>
+
+        <WritingIdeaHint target='note' />
 
         <NCard
           bordered={false}

@@ -163,11 +163,42 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
     }
   }
 
+  function openForRange(from: number, to: number, customInstruction?: string) {
+    const view = getView()
+    if (!view) return
+    const docLen = view.state.doc.length
+    const clampedFrom = Math.max(0, Math.min(from, docLen))
+    const clampedTo = Math.max(clampedFrom, Math.min(to, docLen))
+    if (clampedFrom === clampedTo) return
+
+    selectionRange.value = { from: clampedFrom, to: clampedTo }
+    updateAnchorFromRange(view, selectionRange.value)
+    visible.value = true
+    instruction.value = customInstruction ?? ''
+    resultContent.value = ''
+    showResult.value = false
+    if (customInstruction) {
+      void execute(customInstruction)
+    }
+  }
+
   function accept() {
     const view = getView()
     if (!view || !selectionRange.value) return
     const { from, to } = selectionRange.value
-    view.dispatch({ changes: { from, to, insert: resultContent.value } })
+    let insertText = resultContent.value
+    // 如果采纳的是顶部的 Markdown HTML 注释大纲，自动在下方留出空行并将光标移到正文起点
+    const trimmed = insertText.trim()
+    const isCommentBlock = trimmed.startsWith('<!--') && trimmed.endsWith('-->')
+    const atDocEnd = to >= view.state.doc.length
+    if (isCommentBlock && atDocEnd) {
+      insertText = `${trimmed}\n\n`
+    }
+    view.dispatch({
+      changes: { from, to, insert: insertText },
+      selection: { anchor: from + insertText.length },
+    })
+    view.focus()
     close()
   }
 
@@ -198,6 +229,7 @@ export function useAIToolbar(getView: () => EditorView | undefined) {
     trackSelection,
     open,
     openAndExecute,
+    openForRange,
     execute,
     accept,
     reject,

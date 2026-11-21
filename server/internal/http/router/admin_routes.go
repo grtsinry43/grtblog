@@ -266,6 +266,11 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 
 	// AI 功能
 	aiHandler := handler.NewAIHandler(aiSvc)
+	aiHandler.SetSysConfigService(sysCfgSvc)
+	aiHandler.SetDashboardBriefDeps(adminStatsSvc, deps.Redis, deps.Config.Redis.Prefix)
+	aiHandler.SetOpsReportDeps(deps.DB, persistence.NewCommentRepository(deps.DB))
+	admin.Get("/ai/features", aiHandler.GetFeatureFlags)
+	admin.Put("/ai/features", aiHandler.UpdateFeatureFlags)
 	admin.Get("/ai/providers", aiHandler.ListProviders)
 	admin.Post("/ai/providers", aiHandler.CreateProvider)
 	admin.Put("/ai/providers/:id", aiHandler.UpdateProvider)
@@ -281,6 +286,12 @@ func registerAdminRoutes(v2 fiber.Router, deps Dependencies, websiteInfoHandler 
 	admin.Post("/ai/generate-summary/stream", aiHandler.GenerateSummaryStream)
 	admin.Post("/ai/complete/stream", aiHandler.CompleteStream)
 	admin.Post("/ai/check-writing", aiHandler.CheckWriting)
+	admin.Post("/ai/annotate-paragraph", aiHandler.AnnotateParagraph)
+	admin.Get("/ai/dashboard-brief", aiHandler.GetDashboardBrief)
+	admin.Post("/ai/dashboard-brief/refresh", aiHandler.RefreshDashboardBrief)
+	admin.Post("/ai/dashboard-brief/stream", aiHandler.DashboardBriefStream)
+	admin.Post("/ai/ops-report/stream", aiHandler.OpsReportStream)
+	admin.Get("/ai/ops-report/ideas", aiHandler.GetCachedOpsReportIdeas)
 	admin.Get("/ai/task-logs", aiHandler.ListTaskLogs)
 	admin.Get("/ai/task-logs/:id", aiHandler.GetTaskLog)
 }

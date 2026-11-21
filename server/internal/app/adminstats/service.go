@@ -18,7 +18,7 @@ import (
 
 const (
 	defaultDashboardCacheTTL = 2 * time.Minute
-	dashboardCacheVersion    = "v2"
+	dashboardCacheVersion    = "v3"
 )
 
 type OnlineProvider interface {
@@ -107,6 +107,7 @@ type WordCountStats struct {
 }
 
 type PendingStats struct {
+	PendingComments        int64 `json:"pendingComments"`
 	UnviewedComments       int64 `json:"unviewedComments"`
 	FriendLinkApplications int64 `json:"friendLinkApplications"`
 }
@@ -393,7 +394,10 @@ func (s *Service) queryWordStats(ctx context.Context) (WordCountStats, error) {
 func (s *Service) queryPendingStats(ctx context.Context) (PendingStats, error) {
 	var out PendingStats
 	var err error
-	if out.UnviewedComments, err = s.countWhere(ctx, &model.Comment{}, "is_viewed = ?", false); err != nil {
+	if out.PendingComments, err = s.countWhere(ctx, &model.Comment{}, "status = ?", "pending"); err != nil {
+		return out, err
+	}
+	if out.UnviewedComments, err = s.countWhere(ctx, &model.Comment{}, "is_viewed = ? AND status = ? AND is_owner = ?", false, "approved", false); err != nil {
 		return out, err
 	}
 	if out.FriendLinkApplications, err = s.countWhere(ctx, &model.FriendLinkApplication{}, "status = ?", "pending"); err != nil {

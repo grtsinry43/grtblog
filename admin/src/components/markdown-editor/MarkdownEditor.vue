@@ -17,14 +17,20 @@ import EditorAIToolbar from '@/components/markdown-editor/EditorAIToolbar.vue'
 import EditorCitationPicker from '@/components/markdown-editor/EditorCitationPicker.vue'
 import EditorFloatingMenu from '@/components/markdown-editor/EditorFloatingMenu.vue'
 import EditorLintPopover from '@/components/markdown-editor/EditorLintPopover.vue'
+import EditorMarginNotePopover from '@/components/markdown-editor/EditorMarginNotePopover.vue'
 import EditorMentionPicker from '@/components/markdown-editor/EditorMentionPicker.vue'
+import { type MarginNote } from '@/composables/markdown-editor/extensions/ai-margin-notes'
 import { useAIToolbar } from '@/composables/markdown-editor/use-ai-toolbar'
 import { useCitationPicker } from '@/composables/markdown-editor/use-citation-picker'
 import { useCodeMirror } from '@/composables/markdown-editor/use-codemirror'
 import { useComponentInserter } from '@/composables/markdown-editor/use-component-inserter.ts'
 import { useFloatingMenu } from '@/composables/markdown-editor/use-floating-menu'
 import { useMentionPicker } from '@/composables/markdown-editor/use-mention-picker'
-import { useRealtimeAI, type RealtimeAIStatus } from '@/composables/markdown-editor/use-realtime-ai'
+import {
+  useRealtimeAI,
+  type CompletionPace,
+  type RealtimeAIStatus,
+} from '@/composables/markdown-editor/use-realtime-ai'
 import { uploadFile } from '@/services/uploads'
 import { cah } from '@/utils/chromaHelper'
 
@@ -32,6 +38,8 @@ const props = defineProps<{
   modelValue: string
   realtimeAi?: boolean
   realtimeAiCompletion?: boolean
+  realtimeAiCompletionPace?: CompletionPace
+  realtimeAiMarginNotes?: boolean
   realtimeAiLint?: boolean
   articleTitle?: string
 }>()
@@ -108,23 +116,30 @@ const { view, onViewUpdate } = useCodeMirror(editorRef, {
 const inserter = useComponentInserter(view)
 
 // 3. 挂载浮动菜单逻辑
-const { isVisible, menuPos, activeFormats, selectedText, executeCommand } = useFloatingMenu({
-  view,
-  onViewUpdate,
-})
+const { isVisible, menuPos, activeFormats, selectedText, executeCommand, formatPangu } =
+  useFloatingMenu({
+    view,
+    onViewUpdate,
+  })
 
 // 4. AI 改写工具栏
 const aiToolbar = useAIToolbar(() => view.value)
 
-// 4.5 实时 AI 帮写（幽灵续写 + 行内纠错）
+// 4.5 实时 AI 帮写（幽灵续写 + 纸边眉批 + 错字校对）
 const realtimeAIEnabled = computed(() => !!props.realtimeAi)
 const realtimeAICompletion = computed(() => props.realtimeAiCompletion ?? true)
+const realtimeAICompletionPace = computed<CompletionPace>(
+  () => props.realtimeAiCompletionPace ?? 'restrained',
+)
+const realtimeAIMarginNotes = computed(() => props.realtimeAiMarginNotes ?? true)
 const realtimeAILint = computed(() => props.realtimeAiLint ?? true)
 const realtimeAI = useRealtimeAI({
   view,
   onViewUpdate,
   enabled: realtimeAIEnabled,
   enableCompletion: realtimeAICompletion,
+  completionPace: realtimeAICompletionPace,
+  enableMarginNotes: realtimeAIMarginNotes,
   enableLint: realtimeAILint,
   getTitle: () => props.articleTitle,
 })
@@ -143,6 +158,24 @@ const citationPicker = useCitationPicker(view)
 
 function onAIRewriteTrigger() {
   aiToolbar.open()
+}
+
+function onPanguFormatTrigger() {
+  const changed = formatPangu(true)
+  if (changed) {
+    message.success('已完成全文盘古格式化')
+  } else {
+    message.info('当前排版已很规范，无需调整')
+  }
+}
+
+function handlePanguFormat() {
+  const changed = formatPangu(false)
+  if (changed) {
+    message.success('已完成盘古格式化')
+  } else {
+    message.info('选中内容排版已很规范，无需调整')
+  }
 }
 
 function onMentionTrigger() {
@@ -169,13 +202,23 @@ function handleFloatingAIAction(instruction?: string) {
   }
 }
 
+function handleMarginNoteRewrite(note: MarginNote) {
+  const hint = note.suggestion
+    ? `参考这条眉批进行微调（保持原意与个人文风）：${note.comment}。参考方向：${note.suggestion}`
+    : `参考这条眉批进行微调（保持原意与个人文风）：${note.comment}`
+  realtimeAI.closeMarginNote()
+  aiToolbar.openForRange(note.paragraphFrom, note.paragraphTo, hint)
+}
+
 onMounted(() => {
   editorRef.value?.addEventListener('ai-rewrite-trigger', onAIRewriteTrigger)
+  editorRef.value?.addEventListener('pangu-format-trigger', onPanguFormatTrigger)
   editorRef.value?.addEventListener('federation-mention-trigger', onMentionTrigger)
   editorRef.value?.addEventListener('federation-citation-trigger', onCitationTrigger)
 })
 onUnmounted(() => {
   editorRef.value?.removeEventListener('ai-rewrite-trigger', onAIRewriteTrigger)
+  editorRef.value?.removeEventListener('pangu-format-trigger', onPanguFormatTrigger)
   editorRef.value?.removeEventListener('federation-mention-trigger', onMentionTrigger)
   editorRef.value?.removeEventListener('federation-citation-trigger', onCitationTrigger)
 })
@@ -214,6 +257,32 @@ watch(
     }
   },
 )
+
+/** 承接选题灵感：在空文档顶部植入注释种子并自动打开 AI 工具栏生成注释大纲 */
+function seedAndOpenAIOutline(seedComment: string, instruction: string) {
+  const currentView = view.value
+  if (!currentView) return
+
+  const currentDoc = currentView.state.doc.toString()
+  if (!currentDoc.trim()) {
+    currentView.dispatch({
+      changes: { from: 0, to: currentView.state.doc.length, insert: seedComment },
+      selection: { anchor: seedComment.length },
+    })
+    aiToolbar.openForRange(0, seedComment.length, instruction)
+  } else {
+    const insertText = `${seedComment}\n\n`
+    currentView.dispatch({
+      changes: { from: 0, to: 0, insert: insertText },
+      selection: { anchor: seedComment.length },
+    })
+    aiToolbar.openForRange(0, seedComment.length, instruction)
+  }
+}
+
+defineExpose({
+  seedAndOpenAIOutline,
+})
 </script>
 
 <template>
@@ -279,6 +348,7 @@ watch(
       :realtime-ai="realtimeAIEnabled"
       :selected-text="selectedText"
       @command="executeCommand"
+      @pangu="handlePanguFormat"
       @ai-action="handleFloatingAIAction"
     />
 
@@ -287,6 +357,14 @@ watch(
       :pos="realtimeAI.activeLint.value?.pos ?? null"
       @accept="realtimeAI.acceptLint"
       @dismiss="realtimeAI.dismissLint"
+    />
+
+    <EditorMarginNotePopover
+      :note="realtimeAI.activeMarginNote.value?.note ?? null"
+      :pos="realtimeAI.activeMarginNote.value?.pos ?? null"
+      @rewrite="handleMarginNoteRewrite"
+      @dismiss="realtimeAI.dismissMarginNote"
+      @close="realtimeAI.closeMarginNote"
     />
 
     <EditorAIToolbar

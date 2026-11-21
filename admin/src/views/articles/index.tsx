@@ -24,6 +24,7 @@ import {
 } from '@/services/articles'
 import { listWebsiteInfo } from '@/services/website-info'
 import ContentQuickPreview from '@/views/shared/content-editor/components/ContentQuickPreview.vue'
+import WritingIdeaHint from '@/views/shared/content-editor/components/WritingIdeaHint.vue'
 
 import { useHotArticleThresholds } from './composables/use-hot-article-thresholds'
 
@@ -411,6 +412,8 @@ export default defineComponent({
             </NSpace>
           </div>
         </NCard>
+
+        <WritingIdeaHint target='article' />
 
         {/* 表格主体 */}
         <NCard

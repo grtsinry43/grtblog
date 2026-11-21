@@ -282,49 +282,31 @@
 }
 
 /* ── AI 实时帮写：幽灵续写（Ghost Text） ── */
-@keyframes cm-ai-ink-emerge {
+@keyframes cm-ai-ink-write {
   0% {
     opacity: 0;
-    transform: translateY(4px) scale(0.94);
-    filter: blur(3px);
+    transform: translateX(-2px);
+    filter: blur(1.2px);
   }
-  65% {
-    opacity: 0.64;
-    transform: translateY(-1.5px) scale(1.03);
-    filter: blur(0.2px);
-  }
-  100% {
-    opacity: 0.56;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes cm-ai-ghost-breathe {
-  0%,
   100% {
     opacity: 0.48;
-  }
-  50% {
-    opacity: 0.64;
+    transform: translateX(0);
+    filter: blur(0);
   }
 }
 
-@keyframes cm-ai-hint-emerge {
+@keyframes cm-ai-ghost-settle-sweep {
   0% {
-    opacity: 0;
-    transform: translateY(3px) scale(0.95);
-    filter: blur(1.5px);
+    opacity: 0.52;
+    background-position: 100% 0;
   }
-  65% {
-    opacity: 0.84;
-    transform: translateY(-1px) scale(1.02);
-    filter: blur(0);
+  45% {
+    opacity: 1;
+    background-position: 0% 0;
   }
   100% {
-    opacity: 0.78;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
+    opacity: 1;
+    background-position: -100% 0;
   }
 }
 
@@ -333,37 +315,132 @@
   user-select: none;
 }
 
-.cm-ai-ghost-text {
-  color: color-mix(in srgb, var(--cm-fg-muted, #64748b) 78%, var(--cm-accent, #3b82f6) 22%);
-  font-style: italic;
-  animation: cm-ai-ghost-breathe 3.2s ease-in-out infinite;
+.cm-ai-ghost-content {
+  color: color-mix(in srgb, var(--cm-fg-muted, #64748b) 82%, var(--cm-accent, #3b82f6) 18%);
+  font-style: normal;
 }
 
-.cm-ai-ghost-ink {
+.cm-ai-ghost-char {
   display: inline-block;
   white-space: pre-wrap;
+  opacity: 0.48;
+}
+
+.cm-ai-ghost-char--fresh {
   opacity: 0;
-  transform-origin: center bottom;
-  animation:
-    cm-ai-ink-emerge 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    cm-ai-ghost-breathe 3.2s ease-in-out 440ms infinite;
+  animation: cm-ai-ink-write 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .cm-ai-ghost-hint {
   display: inline-flex;
   align-items: center;
-  margin-left: 8px;
-  padding: 1px 6px;
+  margin-left: 7px;
+  padding: 0 5px;
   border-radius: 4px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-style: normal;
-  line-height: 1.5;
-  vertical-align: baseline;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.55;
+  vertical-align: 1px;
   color: var(--cm-fg-muted, #64748b);
-  background: color-mix(in srgb, var(--cm-tooltip-bg, #ffffff) 75%, var(--cm-accent, #3b82f6) 8%);
-  border: 1px solid color-mix(in srgb, var(--cm-tooltip-border, #e5e7eb) 80%, transparent);
+  background: color-mix(in srgb, var(--cm-tooltip-bg, #ffffff) 82%, var(--cm-accent, #3b82f6) 6%);
+  border: 1px solid color-mix(in srgb, var(--cm-tooltip-border, #e5e7eb) 72%, transparent);
   opacity: 0;
-  animation: cm-ai-hint-emerge 360ms cubic-bezier(0.22, 1, 0.36, 1) 180ms forwards;
+  transform: translateX(-3px);
+  transition:
+    opacity 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cm-ai-ghost-hint.is-visible {
+  opacity: 0.68;
+  transform: translateX(0);
+}
+
+/* 采纳幽灵续写时的“墨迹落定”微光扫过 */
+.cm-ai-ghost-settle {
+  border-radius: 3px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--cm-accent, #3b82f6) 16%, transparent) 38%,
+    color-mix(in srgb, var(--cm-accent, #3b82f6) 6%, transparent) 62%,
+    transparent 100%
+  );
+  background-size: 240% 100%;
+  background-repeat: no-repeat;
+  animation: cm-ai-ghost-settle-sweep 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── AI 纸边眉批（Margin Notes） ── */
+@keyframes cm-ai-margin-dot-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cm-ai-margin-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  vertical-align: middle;
+  cursor: pointer;
+  animation: cm-ai-margin-dot-in 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition:
+    background-color 180ms ease,
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cm-ai-margin-dot-core {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  opacity: 0.72;
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease;
+}
+
+.cm-ai-margin-dot--refine .cm-ai-margin-dot-core {
+  background-color: var(--cm-syntax-number, #f59e0b);
+}
+
+.cm-ai-margin-dot--spark .cm-ai-margin-dot-core {
+  background-color: var(--cm-accent, #3b82f6);
+}
+
+.cm-ai-margin-dot--structure .cm-ai-margin-dot-core {
+  background-color: var(--cm-syntax-string, #22c55e);
+}
+
+.cm-ai-margin-dot--refine:hover {
+  background-color: color-mix(in srgb, var(--cm-syntax-number, #f59e0b) 14%, transparent);
+}
+
+.cm-ai-margin-dot--spark:hover {
+  background-color: color-mix(in srgb, var(--cm-accent, #3b82f6) 14%, transparent);
+}
+
+.cm-ai-margin-dot--structure:hover {
+  background-color: color-mix(in srgb, var(--cm-syntax-string, #22c55e) 14%, transparent);
+}
+
+.cm-ai-margin-dot:hover .cm-ai-margin-dot-core {
+  opacity: 1;
+  transform: scale(1.25);
 }
 
 /* ── AI 实时纠错：柔光波浪线 ── */

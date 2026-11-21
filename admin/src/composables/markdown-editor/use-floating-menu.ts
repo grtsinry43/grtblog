@@ -1,6 +1,8 @@
 import { ref, type Ref } from 'vue'
 
+import { settleRangeEffect } from './extensions/ai-ghost-text'
 import { getActiveStyles, toggleFormat, type FormatType } from './utils/ast'
+import { formatPanguMarkdown } from './utils/pangu'
 
 import type { UpdateHook } from './use-codemirror'
 import type { EditorView, ViewUpdate } from '@codemirror/view'
@@ -28,20 +30,22 @@ export function useFloatingMenu({ view, onViewUpdate }: EditorContext) {
       return
     }
 
-    // 2. 计算坐标
+    // 2. 计算坐标（兼容全选 Cmd/Ctrl+A 时起止位置滚出视口的情况）
     const start = currentView.coordsAtPos(selection.main.from)
     const end = currentView.coordsAtPos(selection.main.to)
 
-    if (!start || !end) {
-      isVisible.value = false
-      selectedText.value = ''
-      return
-    }
-
-    // 3. 更新 UI 位置
-    menuPos.value = {
-      left: (start.left + end.right) / 2,
-      top: start.top - 6,
+    if (start && end) {
+      menuPos.value = {
+        left: (start.left + end.right) / 2,
+        top: start.top - 6,
+      }
+    } else {
+      const editorRect = currentView.dom.getBoundingClientRect()
+      const anchor = start ?? end
+      menuPos.value = {
+        left: anchor ? anchor.left : editorRect.left + editorRect.width / 2,
+        top: anchor ? anchor.top - 6 : Math.max(76, editorRect.top + 16),
+      }
     }
 
     // 4. 状态回填 (查询 AST)
@@ -58,11 +62,48 @@ export function useFloatingMenu({ view, onViewUpdate }: EditorContext) {
     }
   }
 
+  /** 对当前选区（或全选/全文）执行盘古格式化 */
+  const formatPangu = (fullDocument = false): boolean => {
+    const currentView = view.value
+    if (!currentView) return false
+
+    const { state } = currentView
+    const sel = state.selection.main
+    const from = fullDocument || sel.empty ? 0 : sel.from
+    const to = fullDocument || sel.empty ? state.doc.length : sel.to
+    if (from >= to) return false
+
+    const original = state.doc.sliceString(from, to)
+    const formatted = formatPanguMarkdown(original)
+    if (formatted === original) {
+      currentView.focus()
+      return false
+    }
+
+    const newTo = from + formatted.length
+    const settleId = Date.now()
+    currentView.dispatch({
+      changes: { from, to, insert: formatted },
+      selection: fullDocument || sel.empty ? undefined : { anchor: from, head: newTo },
+      effects: settleRangeEffect.of({ from, to: newTo, id: settleId }),
+      userEvent: 'format.pangu',
+    })
+
+    window.setTimeout(() => {
+      if (!currentView.dom.isConnected) return
+      currentView.dispatch({ effects: settleRangeEffect.of(null) })
+    }, 540)
+
+    currentView.focus()
+    return true
+  }
+
   return {
     isVisible,
     menuPos,
     activeFormats,
     selectedText,
     executeCommand,
+    formatPangu,
   }
 }

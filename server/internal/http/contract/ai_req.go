@@ -117,6 +117,125 @@ type AICheckWritingResp struct {
 	Issues []AIWritingIssue `json:"issues"`
 }
 
+type AIAnnotateParagraphReq struct {
+	Paragraph   string `json:"paragraph"`
+	PrevContext string `json:"prevContext,omitempty"`
+	Title       string `json:"title,omitempty"`
+}
+
+type AIMarginAnnotation struct {
+	Kind       string `json:"kind"`
+	Quote      string `json:"quote,omitempty"`
+	Comment    string `json:"comment"`
+	Suggestion string `json:"suggestion,omitempty"`
+}
+
+type AIAnnotateParagraphResp struct {
+	Annotations []AIMarginAnnotation `json:"annotations"`
+}
+
+type AIDashboardBriefHighlight struct {
+	Label  string `json:"label"`
+	Detail string `json:"detail"`
+}
+
+type AIDashboardBriefAction struct {
+	Title  string `json:"title"`
+	Reason string `json:"reason"`
+	Route  string `json:"route,omitempty"`
+}
+
+type AIDashboardBriefResp struct {
+	Enabled     bool                        `json:"enabled"`
+	Headline    string                      `json:"headline,omitempty"`
+	Mood        string                      `json:"mood,omitempty"`
+	Highlights  []AIDashboardBriefHighlight `json:"highlights,omitempty"`
+	Actions     []AIDashboardBriefAction    `json:"actions,omitempty"`
+	GeneratedAt *time.Time                  `json:"generatedAt,omitempty"`
+	Cached      bool                        `json:"cached"`
+}
+
+type AIOpsReportTopicPillar struct {
+	Name        string `json:"name"`
+	Strength    string `json:"strength"`
+	Observation string `json:"observation"`
+}
+
+type AIOpsReportTopicIdea struct {
+	Title string `json:"title"`
+	Angle string `json:"angle"`
+	Why   string `json:"why"`
+}
+
+type AIOpsReportTopicsSection struct {
+	Overview string                   `json:"overview"`
+	Pillars  []AIOpsReportTopicPillar `json:"pillars"`
+	Ideas    []AIOpsReportTopicIdea   `json:"ideas"`
+}
+
+type AIOpsReportAudienceSection struct {
+	Overview      string   `json:"overview"`
+	Highlights    []string `json:"highlights"`
+	RetentionNote string   `json:"retentionNote"`
+}
+
+type AIOpsReportCommentsSection struct {
+	Overview   string   `json:"overview"`
+	Themes     []string `json:"themes"`
+	Suggestion string   `json:"suggestion"`
+}
+
+type AIOpsReportActionItem struct {
+	Priority string `json:"priority"`
+	Title    string `json:"title"`
+	Detail   string `json:"detail"`
+	Route    string `json:"route,omitempty"`
+}
+
+type AIOpsReportOperationsSection struct {
+	Overview string                  `json:"overview"`
+	Actions  []AIOpsReportActionItem `json:"actions"`
+}
+
+type AIOpsReportResp struct {
+	Enabled     bool                          `json:"enabled"`
+	Summary     string                        `json:"summary,omitempty"`
+	Mood        string                        `json:"mood,omitempty"`
+	Days        int                           `json:"days,omitempty"`
+	Topics      *AIOpsReportTopicsSection     `json:"topics,omitempty"`
+	Audience    *AIOpsReportAudienceSection   `json:"audience,omitempty"`
+	Comments    *AIOpsReportCommentsSection   `json:"comments,omitempty"`
+	Operations  *AIOpsReportOperationsSection `json:"operations,omitempty"`
+	GeneratedAt *time.Time                    `json:"generatedAt,omitempty"`
+	Cached      bool                          `json:"cached"`
+}
+
+type AIOpsReportIdeasResp struct {
+	Ideas       []AIOpsReportTopicIdea `json:"ideas"`
+	GeneratedAt *time.Time             `json:"generatedAt,omitempty"`
+}
+
+type AIFeatureFlagsResp struct {
+	Enabled         bool `json:"enabled"`
+	RealtimeAssist  bool `json:"realtimeAssist"`
+	GhostCompletion bool `json:"ghostCompletion"`
+	MarginNotes     bool `json:"marginNotes"`
+	InlineLint      bool `json:"inlineLint"`
+	DashboardBrief  bool `json:"dashboardBrief"`
+	OpsReport       bool `json:"opsReport"`
+	OnboardingSeen  bool `json:"onboardingSeen"`
+}
+
+type UpdateAIFeatureFlagsReq struct {
+	RealtimeAssist  *bool `json:"realtimeAssist,omitempty"`
+	GhostCompletion *bool `json:"ghostCompletion,omitempty"`
+	MarginNotes     *bool `json:"marginNotes,omitempty"`
+	InlineLint      *bool `json:"inlineLint,omitempty"`
+	DashboardBrief  *bool `json:"dashboardBrief,omitempty"`
+	OpsReport       *bool `json:"opsReport,omitempty"`
+	OnboardingSeen  *bool `json:"onboardingSeen,omitempty"`
+}
+
 // ── TaskLog ──
 
 type AITaskLogResp struct {

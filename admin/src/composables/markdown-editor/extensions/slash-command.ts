@@ -21,6 +21,15 @@ const baseOptions: Completion[] = [
     },
   },
   {
+    label: 'Pangu 盘古格式化',
+    type: 'function',
+    detail: '全文中英文间自动加空格',
+    apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
+      view.dispatch({ changes: { from, to, insert: '' } })
+      view.dom.dispatchEvent(new CustomEvent('pangu-format-trigger', { bubbles: true }))
+    },
+  },
+  {
     label: '@mention',
     type: 'function',
     detail: '联合提及',

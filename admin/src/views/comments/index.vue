@@ -131,7 +131,18 @@ const markViewedMutation = useMutation({
         ),
       }
     })
+    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
   },
+})
+
+const markAllViewedMutation = useMutation({
+  mutationFn: () => markCommentsViewed({ markAll: true, isViewed: true }),
+  onSuccess: () => {
+    message.success('已将全部评论标记为已读')
+    queryClient.invalidateQueries({ queryKey: ['comments'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+  },
+  onError: () => message.error('操作失败'),
 })
 
 // Actions
@@ -267,6 +278,14 @@ const handleMouseLeave = () => {
                 size="small"
                 class="pb-1"
               >
+                <n-button
+                  size="tiny"
+                  quaternary
+                  :loading="markAllViewedMutation.isPending.value"
+                  @click="markAllViewedMutation.mutate()"
+                >
+                  全部已读
+                </n-button>
                 <span class="text-xs text-gray-500">仅看未读</span>
                 <n-switch
                   v-model:value="onlyUnviewed"

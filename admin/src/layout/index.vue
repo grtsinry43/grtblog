@@ -6,6 +6,7 @@ import { computed, defineAsyncComponent, h, onMounted, onUnmounted, watch } from
 
 import texturePng from '@/assets/texture.png'
 import { CollapseTransition, EmptyPlaceholder } from '@/components'
+import AiOnboardingModal from '@/components/ai/AiOnboardingModal.vue'
 import HealthBanner from '@/components/health/HealthBanner.vue'
 import { useInjection } from '@/composables'
 import { createMarkdownIt } from '@/composables/markdown-it/core'
@@ -401,6 +402,7 @@ function normalizeOwnerStatusPayload(payload: unknown): OwnerStatusPayload | nul
       "
     >
       <HealthBanner />
+      <AiOnboardingModal />
       <HeaderLayout v-if="!isMaxSm" />
       <AsyncMobileHeader v-else />
       <div class="flex flex-1 overflow-hidden">

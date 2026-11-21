@@ -8,6 +8,7 @@ import { type Ref, shallowRef, onMounted, onUnmounted } from 'vue'
 import { codeMirrorTheme } from './codemirror-theme'
 import { aiGhostTextExtension } from './extensions/ai-ghost-text'
 import { aiInlineLintExtension } from './extensions/ai-inline-lint'
+import { aiMarginNotesExtension } from './extensions/ai-margin-notes'
 import { componentAttributeSource } from './extensions/component-attrs'
 import {
   createComponentEditorExtension,
@@ -126,6 +127,7 @@ export function useCodeMirror(container: Ref<HTMLElement | undefined>, props: Us
         federationHighlightPlugin,
         aiGhostTextExtension,
         aiInlineLintExtension,
+        aiMarginNotesExtension,
         createComponentEditorExtension({ onEdit: props.onComponentEdit }),
 
         // 注册事件总线扩展

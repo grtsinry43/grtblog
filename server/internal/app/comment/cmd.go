@@ -73,6 +73,7 @@ type SetCommentTopCmd struct {
 
 type MarkCommentsViewedCmd struct {
 	IDs      []int64
+	MarkAll  bool
 	IsViewed bool
 }
 

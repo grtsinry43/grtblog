@@ -310,7 +310,7 @@ func (s *Service) ImportComment(ctx context.Context, cmd ImportCommentCmd) (*dom
 		IsOwner:           boolOrDefault(cmd.IsOwner, false),
 		IsFriend:          boolOrDefault(cmd.IsFriend, false),
 		IsAuthor:          boolOrDefault(cmd.IsAuthor, false),
-		IsViewed:          boolOrDefault(cmd.IsViewed, false),
+		IsViewed:          boolOrDefault(cmd.IsViewed, true),
 		IsTop:             boolOrDefault(cmd.IsTop, false),
 		IsMy:              false,
 		IsFederated:       boolOrDefault(cmd.IsFederated, false),
@@ -460,6 +460,9 @@ func (s *Service) GetVisitorInsights(ctx context.Context, cmd GetVisitorInsights
 }
 
 func (s *Service) MarkCommentsViewed(ctx context.Context, cmd MarkCommentsViewedCmd) error {
+	if cmd.MarkAll {
+		return s.repo.SetAllViewedStatus(ctx, cmd.IsViewed)
+	}
 	if len(cmd.IDs) == 0 {
 		return nil
 	}
@@ -526,6 +529,9 @@ func (s *Service) ReplyComment(ctx context.Context, cmd ReplyCommentCmd) (*domai
 	reply.Avatar = s.resolveCommentAvatar(ctx, reply, nil)
 	if err := s.repo.Create(ctx, reply); err != nil {
 		return nil, err
+	}
+	if !parent.IsViewed {
+		_ = s.repo.SetViewedStatus(ctx, []int64{parent.ID}, true)
 	}
 	if shouldSkipReplyNotification(parent, adminUser) {
 		return reply, nil
@@ -681,6 +687,9 @@ func (s *Service) UpdateCommentStatus(ctx context.Context, cmd UpdateCommentStat
 	}
 	if err := s.repo.UpdateStatus(ctx, cmd.ID, status); err != nil {
 		return err
+	}
+	if !commentEntity.IsViewed {
+		_ = s.repo.SetViewedStatus(ctx, []int64{cmd.ID}, true)
 	}
 	eventName := "comment.updated"
 	if status == domaincomment.CommentStatusBlocked {

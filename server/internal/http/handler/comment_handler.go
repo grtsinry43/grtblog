@@ -326,16 +326,18 @@ func (h *CommentHandler) MarkCommentsViewed(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return response.NewBizErrorWithCause(response.ParamsError, "请求体解析失败", err)
 	}
-	if len(req.IDs) == 0 {
+	if !req.MarkAll && len(req.IDs) == 0 {
 		return response.NewBizErrorWithMsg(response.ParamsError, "ids 不能为空")
 	}
 	ids := make([]int64, 0, len(req.IDs))
-	for _, raw := range req.IDs {
-		id, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
-		if err != nil || id <= 0 {
-			return response.NewBizErrorWithMsg(response.ParamsError, "ids 包含无效值")
+	if !req.MarkAll {
+		for _, raw := range req.IDs {
+			id, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+			if err != nil || id <= 0 {
+				return response.NewBizErrorWithMsg(response.ParamsError, "ids 包含无效值")
+			}
+			ids = append(ids, id)
 		}
-		ids = append(ids, id)
 	}
 	isViewed := true
 	if req.IsViewed != nil {
@@ -343,6 +345,7 @@ func (h *CommentHandler) MarkCommentsViewed(c *fiber.Ctx) error {
 	}
 	if err := h.svc.MarkCommentsViewed(c.Context(), comment.MarkCommentsViewedCmd{
 		IDs:      ids,
+		MarkAll:  req.MarkAll,
 		IsViewed: isViewed,
 	}); err != nil {
 		return h.mapCommentError(c, err)

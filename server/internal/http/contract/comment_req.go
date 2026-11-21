@@ -56,6 +56,7 @@ type SetCommentAreaCloseReq struct {
 
 type MarkCommentsViewedReq struct {
 	IDs      []string `json:"ids"`
+	MarkAll  bool     `json:"markAll,omitempty"`
 	IsViewed *bool    `json:"isViewed,omitempty"`
 }
 

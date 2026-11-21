@@ -17,7 +17,7 @@ import {
   NSwitch,
   useMessage,
 } from 'naive-ui'
-import { computed, onMounted, onUnmounted, ref, watch, toRef } from 'vue'
+import { computed, nextTick, onActivated, onMounted, onUnmounted, ref, watch, toRef } from 'vue'
 
 import MultiImageInput from '@/components/image-picker/MultiImageInput.vue'
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
@@ -36,6 +36,11 @@ import {
   useAiTitleGeneration,
 } from '@/views/shared/content-editor/composables/use-ai-tools'
 import { usePreviewFrame } from '@/views/shared/content-editor/composables/use-preview-frame'
+import {
+  buildIdeaOutlineInstruction,
+  buildIdeaSeedComment,
+  consumePendingWritingIdea,
+} from '@/views/shared/content-editor/utils/writing-idea-handoff'
 
 import MomentAtmosphereFields from './components/MomentAtmosphereFields.vue'
 import { useMomentForm } from './composables/use-moment-form'
@@ -44,10 +49,13 @@ import type { RealtimeAIStatus } from '@/composables/markdown-editor/use-realtim
 
 const realtimeAiPrefs = ref<RealtimeAIPrefs>({
   enabled: false,
-  completion: true,
+  completion: false,
+  completionPace: 'restrained',
+  marginNotes: true,
   lint: true,
 })
 const realtimeAiStatus = ref<RealtimeAIStatus>('idle')
+const editorCompRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
 import { useMomentTaxonomySelect } from './composables/use-moment-taxonomy-select'
 
 import type { MomentDetail } from '@/services/moments'
@@ -203,6 +211,20 @@ function buildPreviewPayload() {
     authorId: loadedMoment.value?.authorId ?? 0,
   }
 }
+async function applyPendingWritingIdea() {
+  if (!isCreating.value) return
+  const idea = consumePendingWritingIdea('note')
+  if (!idea) return
+  if (!form.title.trim() && idea.title) {
+    form.title = idea.title
+  }
+  await nextTick()
+  editorCompRef.value?.seedAndOpenAIOutline(
+    buildIdeaSeedComment(idea),
+    buildIdeaOutlineInstruction(idea, 'note'),
+  )
+}
+
 onMounted(async () => {
   window.addEventListener('message', handlePreviewMessage)
 
@@ -211,6 +233,12 @@ onMounted(async () => {
   if (data?.topics) {
     setInitialTopics(data.topics)
   }
+
+  await applyPendingWritingIdea()
+})
+
+onActivated(() => {
+  void applyPendingWritingIdea()
 })
 
 onUnmounted(() => {
@@ -357,9 +385,12 @@ watch(previewUrl, () => {
           @wheel="markActivity"
         >
           <MarkdownEditor
+            ref="editorCompRef"
             v-model="form.content"
             :realtime-ai="realtimeAiPrefs.enabled"
             :realtime-ai-completion="realtimeAiPrefs.completion"
+            :realtime-ai-completion-pace="realtimeAiPrefs.completionPace"
+            :realtime-ai-margin-notes="realtimeAiPrefs.marginNotes"
             :realtime-ai-lint="realtimeAiPrefs.lint"
             :article-title="form.title"
             class="h-full min-h-full"

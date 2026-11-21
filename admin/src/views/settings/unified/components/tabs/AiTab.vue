@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import {
   NButton,
   NCard,
@@ -17,6 +18,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 
+import { useAiOnboardingModal } from '@/composables/ai/use-ai-onboarding'
 import {
   createAIModel,
   createAIProvider,
@@ -36,6 +38,16 @@ import type { DataTableColumns, SelectOption } from 'naive-ui'
 
 const emit = defineEmits<{ 'dirty-change': [dirty: boolean] }>()
 const message = useMessage()
+const queryClient = useQueryClient()
+const { open: openAiOnboarding } = useAiOnboardingModal()
+
+async function handleUpdateSysConfigs(items: Parameters<typeof updateSysConfigs>[0]) {
+  const res = await updateSysConfigs(items)
+  queryClient.invalidateQueries({ queryKey: ['ai-feature-flags'] })
+  queryClient.invalidateQueries({ queryKey: ['dashboard-ai-brief'] })
+  queryClient.invalidateQueries({ queryKey: ['ops-report-cached-ideas'] })
+  return res
+}
 
 // ── Providers ──
 
@@ -369,14 +381,24 @@ onMounted(async () => {
     />
   </NCard>
 
-  <!-- 任务配置（提示词和模型分配） -->
+  <!-- 任务配置（总开关、子功能开关、模型分配与提示词） -->
   <NDivider />
+  <div class="mb-3 flex items-center justify-end">
+    <NButton
+      size="small"
+      quaternary
+      @click="openAiOnboarding(0)"
+    >
+      查看 AI 功能演示
+    </NButton>
+  </div>
   <ConfigPanel
     :list-fn="listSysConfigs"
-    :update-fn="updateSysConfigs"
-    title="AI 任务配置"
-    description="启用开关、任务模型分配和提示词配置"
-    :filter-groups="['ai', 'ai/task', 'ai/prompt']"
+    :update-fn="handleUpdateSysConfigs"
+    title="AI 功能与任务配置"
+    description="全局总开关、各子功能开关、任务模型分配与提示词配置"
+    :filter-groups="['ai', 'ai/feature', 'ai/task', 'ai/prompt']"
+    :exclude-groups="['ai/internal']"
     :on-dirty-change="(dirty: boolean) => emit('dirty-change', dirty)"
   />
 

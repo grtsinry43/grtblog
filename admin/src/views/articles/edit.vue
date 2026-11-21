@@ -2,7 +2,7 @@
 import { PreviewLink20Regular } from '@vicons/fluent'
 import { PaperPlaneOutline, SaveOutline } from '@vicons/ionicons5'
 import { NButton, NButtonGroup, NInput, NPopover, useMessage } from 'naive-ui'
-import { computed, onMounted, onUnmounted, ref, toRaw, toRef, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, onUnmounted, ref, toRaw, toRef, watch } from 'vue'
 
 // 组件
 import MarkdownEditor from '@/components/markdown-editor/MarkdownEditor.vue'
@@ -24,6 +24,11 @@ import {
   useAiTitleGeneration,
 } from '@/views/shared/content-editor/composables/use-ai-tools'
 import { usePreviewFrame } from '@/views/shared/content-editor/composables/use-preview-frame'
+import {
+  buildIdeaOutlineInstruction,
+  buildIdeaSeedComment,
+  consumePendingWritingIdea,
+} from '@/views/shared/content-editor/utils/writing-idea-handoff'
 
 import ArticleCategoryModal from './components/ArticleCategoryModal.vue'
 import ArticleMetaDrawer from './components/ArticleMetaDrawer.vue'
@@ -40,10 +45,13 @@ defineOptions({ name: 'ArticleEdit' })
 
 const realtimeAiPrefs = ref<RealtimeAIPrefs>({
   enabled: false,
-  completion: true,
+  completion: false,
+  completionPace: 'restrained',
+  marginNotes: true,
   lint: true,
 })
 const realtimeAiStatus = ref<RealtimeAIStatus>('idle')
+const editorCompRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
 
 const message = useMessage()
 
@@ -484,6 +492,20 @@ async function handleSave() {
 }
 
 // 6. 生命周期
+async function applyPendingWritingIdea() {
+  if (!isCreating.value) return
+  const idea = consumePendingWritingIdea('article')
+  if (!idea) return
+  if (!form.title.trim() && idea.title) {
+    form.title = idea.title
+  }
+  await nextTick()
+  editorCompRef.value?.seedAndOpenAIOutline(
+    buildIdeaSeedComment(idea),
+    buildIdeaOutlineInstruction(idea, 'article'),
+  )
+}
+
 onMounted(async () => {
   window.addEventListener('message', handlePreviewMessage)
 
@@ -503,6 +525,12 @@ onMounted(async () => {
   if (data?.tags) {
     setInitialTags(data.tags)
   }
+
+  await applyPendingWritingIdea()
+})
+
+onActivated(() => {
+  void applyPendingWritingIdea()
 })
 
 onUnmounted(() => {
@@ -652,9 +680,12 @@ watch([isYearSummary, yearSummaryYear], () => {
           @wheel="markActivity"
         >
           <MarkdownEditor
+            ref="editorCompRef"
             v-model="form.content"
             :realtime-ai="realtimeAiPrefs.enabled"
             :realtime-ai-completion="realtimeAiPrefs.completion"
+            :realtime-ai-completion-pace="realtimeAiPrefs.completionPace"
+            :realtime-ai-margin-notes="realtimeAiPrefs.marginNotes"
             :realtime-ai-lint="realtimeAiPrefs.lint"
             :article-title="form.title"
             class="h-full min-h-full"
