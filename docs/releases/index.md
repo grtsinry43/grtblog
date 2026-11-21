@@ -16,6 +16,7 @@
 ## Stable
 
 <!-- stable:start -->
+- [v2.3.0](/releases/v2.3.0) - 2026-11-21 · stable
 - [v2.2.3](/releases/v2.2.3) - 2026-11-17 · stable
 - [v2.2.2](/releases/v2.2.2) - 2026-11-15 · stable
 - [v2.2.1](/releases/v2.2.1) - 2026-09-19 · stable
